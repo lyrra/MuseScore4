@@ -7179,7 +7179,7 @@ int main(int argc, char* av[])
             QFile::remove(settings.fileName());
             settings.clear();
             }
-      // Start Guile/Scheme
+      // Start Guile SCHEME Script extension
       ScriptGuile::start();
       sleep(20);
       return 0;
