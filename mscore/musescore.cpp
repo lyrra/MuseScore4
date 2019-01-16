@@ -77,6 +77,7 @@
 #include "omrpanel.h"
 #endif
 #include "shortcut.h"
+#include "guile.h"
 #ifdef SCRIPT_INTERFACE
 #include "pluginCreator.h"
 #include "pluginManager.h"
@@ -7178,6 +7179,10 @@ int main(int argc, char* av[])
             QFile::remove(settings.fileName());
             settings.clear();
             }
+      // Start Guile/Scheme
+      ScriptGuile::start();
+      sleep(20);
+      return 0;
 
       // create local plugin directory
       // if not already there:

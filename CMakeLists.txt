@@ -131,6 +131,9 @@ option(COVERAGE "Build with instrumentation to record code coverage." OFF)
 option(BUILD_64 "Build 64 bit version of editor" ON)
 option(BUILD_AUTOUPDATE "Build with autoupdate support" OFF)
 
+# Scripting
+option(BUILD_GUILE "Build with GNU Guile SCHEME support" ON) # GNU Guile SCHEME support
+
 if (APPLE)
       set (CMAKE_CXX_COMPILER   clang++)
       set (CMAKE_CXX_COMPILER_ID "Clang")
@@ -582,6 +585,17 @@ else(APPLE)
 
    set(VORBIS_LIB vorbis)
 endif(APPLE)
+
+##
+## Guile scripting
+##
+if (BUILD_GUILE)
+    set(USE_GUILE 1)
+    execute_process(COMMAND guile-config compile OUTPUT_VARIABLE GUILE_COMPILE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND guile-config link OUTPUT_VARIABLE GUILE_LINK OUTPUT_STRIP_TRAILING_WHITESPACE)
+    message(STATUS "Guile compile time directives: ${GUILE_COMPILE}")
+    message(STATUS "Guile link directives: ${GUILE_LINK}")
+endif(BUILD_GUILE)
 
 ##
 ## QtSingleApplication

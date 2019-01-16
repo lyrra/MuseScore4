@@ -291,6 +291,8 @@ add_executable ( ${ExecutableName}
       ${resource_file}
       ${INCS}
 
+      guile.h guile.cpp
+
       abstractdialog.h accessibletoolbutton.h albummanager.h
       alsa.h alsamidi.h analyse.h articulationprop.h bb.h
       bendcanvas.h bendproperties.h breaksdialog.h capella.h
@@ -723,6 +725,18 @@ else (MINGW)
        if (USE_PULSEAUDIO)
          target_link_libraries(mscore ${PULSEAUDIO_LIBRARY})
        endif (USE_PULSEAUDIO)
+
+       if (USE_GUILE)
+         message(STATUS "GUILE_COMPILE: ${GUILE_COMPILE}")
+         target_link_libraries(mscore ${GUILE_LINK})
+         #add_compile_options(${GUILE_COMPILE})
+         string(REPLACE " " ";" GUILE_COMPILE_LIST ${GUILE_COMPILE})
+         set_target_properties (mscore
+                                PROPERTIES
+                                COMPILE_OPTIONS "${GUILE_COMPILE_LIST}"
+         )
+       endif (USE_GUILE)
+       message(STATUS "compile flags has GUILE?: ${COMPILE_FLAGS}")
 
       set_target_properties (
          mscore
