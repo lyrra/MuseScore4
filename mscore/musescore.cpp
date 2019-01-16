@@ -6965,6 +6965,7 @@ int main(int argc, char* av[])
       parser.addOption(QCommandLineOption("score-media", "Export all media (excepting mp3) for a given score in a single JSON file and print it to std out"));
       parser.addOption(QCommandLineOption("score-mp3", "Generates mp3 for the given score and export the data to a single JSON file, print it to std out"));
       parser.addOption(QCommandLineOption("score-parts-pdf", "Generates parts data for the given score and export the data to a single JSON file, print it to std out"));
+      parser.addOption(QCommandLineOption("no-gui", "Disable GUI (for batch jobs, etc)"));
       parser.addOption(QCommandLineOption("raw-diff", "Print a raw diff for the given scores"));
       parser.addOption(QCommandLineOption("diff", "Print a diff for the given scores"));
 
@@ -7136,6 +7137,9 @@ int main(int argc, char* av[])
                   qFatal("incompatible options");
             MScore::noGui = true;
             scriptTestMode = true;
+            }
+      if (parser.isSet("no-gui")) {
+            MScore::noGui = true;
             }
 
       QStringList argv = parser.positionalArguments();
