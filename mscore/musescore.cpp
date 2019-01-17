@@ -6953,6 +6953,7 @@ int main(int argc, char* av[])
       parser.addOption(QCommandLineOption({"j", "job"}, "Process a conversion job", "file"));
       parser.addOption(QCommandLineOption({"e", "experimental"}, "Enable experimental features"));
       parser.addOption(QCommandLineOption({"c", "config-folder"}, "Override configuration and settings folder", "dir"));
+      parser.addOption(QCommandLineOption("script-scheme-shell", "Start GNU/Guile Scheme scripting interpreter REPL."));
       parser.addOption(QCommandLineOption({"t", "test-mode"}, "Set test mode flag for all files")); // this includes --template-mode
       parser.addOption(QCommandLineOption("run-test-script", "Run script tests listed in the command line arguments"));
       parser.addOption(QCommandLineOption({"M", "midi-operations"}, "Specify MIDI import operations file", "file"));
@@ -7183,10 +7184,6 @@ int main(int argc, char* av[])
             QFile::remove(settings.fileName());
             settings.clear();
             }
-      // Start Guile SCHEME Script extension
-      ScriptGuile::start();
-      sleep(20);
-      return 0;
 
       // create local plugin directory
       // if not already there:
@@ -7392,6 +7389,13 @@ int main(int argc, char* av[])
                   QString keyboardLayout = preferences.getString(PREF_APP_KEYBOARDLAYOUT);
                   StartupWizard::autoSelectShortcuts(keyboardLayout);
                   }
+            }
+
+      if (parser.isSet("script-scheme-shell")) {
+            // Start Guile SCHEME Script extension
+            ScriptGuile::start();
+            for(;;){sleep(20);}
+            // FIX: we would like to run the console on a separate thread, and continue startup with mscore (also add --no-gui)
             }
 
       QApplication::instance()->installEventFilter(mscore);
