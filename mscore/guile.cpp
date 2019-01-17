@@ -3,10 +3,15 @@
 #include <thread>
 #include <iostream>
 #include <libguile.h>
-#include "guile.h"
 
-#include "scoretab.h"
+#include "libmscore/mscore.h"
+#include "libmscore/part.h"
+
 #include "musescore.h"
+#include "scoreview.h"
+#include "scoretab.h"
+
+#include "guile.h"
 
 namespace ScriptGuile {
 
@@ -104,16 +109,104 @@ ms_scores_count (void)
     return scm_from_int (c);
     }
 
-// current score
-//    Ms::mscore->currentScore()
+static SCM
+ms_scoreview_cmd (SCM str)
+{
+      char *cmd = scm_to_locale_string(str);
+      // need to check mscore->currentScore() != NULL ?
+      Ms::ScoreView* cv = Ms::mscore->currentScoreView();
+      if(cv){
+            cv->cmd(cmd);
+            }
+      else {
+            return scm_from_int (-666);
+            }
+      return SCM_EOL;
+      }
 
-// synti
-// MasterSynthesizer* synti;
+static SCM
+ms_current_score ()
+      {
+      Ms::Score* _score = Ms::mscore->currentScore();
+      return _score ? SCM_BOOL_T : SCM_BOOL_F;
+      }
+
+static SCM
+ms_parts ()
+      {
+      Ms::Score* _score = Ms::mscore->currentScore();
+      if (_score->parts().isEmpty()) {
+            std::cerr << "No parts!" << std::endl;
+            return SCM_EOL; // return an empty list
+            }
+      else {
+            for (Ms::Part* part : _score->parts()) {
+                  //const InstrumentList* il = part->instruments();
+                  std::cerr << "part %s" << qPrintable(part->partName()) << std::endl;
+                  }
+            return SCM_EOL; // return an empty list
+            }
+      }
+
+// returns last cons in a single-listed list
+// where data has been appended to
+SCM scm_push (SCM last, SCM data)
+{
+      if (last == SCM_EOL) {
+            return scm_cons(data, SCM_EOL);
+            }
+      else {
+            SCM cons = scm_cons(data, SCM_EOL);
+            SCM_CDR(last) = cons; // extend chain with a new link
+            return cons;
+            }
+      }
+
+// ms_parts_instruments x :: List String
+// where x :: Int -- 1 = instrumentId, 2 = trackName
+// example: (ms_parts_instruments 1) => ("voice.alto" "voice.bass")
+static SCM
+ms_parts_instruments (SCM part)
+      {
+      int midx = scm_to_int(part); // member index
+      SCM head = SCM_EOL; // head of (single-linked) list
+      SCM last = SCM_EOL; // last cons in list
+      Ms::Score* _score = Ms::mscore->currentScore();
+      if (_score->parts().isEmpty()) {
+            return SCM_EOL; // return an empty list
+            }
+      else {
+            foreach(Ms::Part* part, _score->parts()) {
+                  const Ms::InstrumentList* il = part->instruments();
+                  // il :: a std:map of class Instrument*
+                  for(auto inst = il->begin(); inst != il->end(); inst++) {
+                        // inst :: (Pair idx (class Instrument))
+                        int     idx = inst->first;
+                        QString iid = inst->second->instrumentId();
+                        QString trn = inst->second->trackName();
+                        // append to list
+                        SCM data;
+                        if(midx == 1){
+                              data = scm_from_locale_string(iid.toLocal8Bit().data());
+                              }
+                        else {
+                              data = scm_from_locale_string(trn.toLocal8Bit().data());
+                              }
+                        last = scm_push(last, data);
+                        if (head == SCM_EOL) {
+                              head = last;
+                              }
+                        }
+                  }
+            return head; // return first element cons in list
+            }
+      }
 
 /***************************************************************/
 
+// first parameter is a closure, not used here
 static void
-guile_main (void *closure, int argc, char **argv)
+guile_main (void *, int argc, char **argv)
 {
     std::cerr << "guile main started" << std::endl;
     scm_c_define_gsubr ("j0", 1, 0, 0, (void *)j0_wrapper);
@@ -125,6 +218,10 @@ guile_main (void *closure, int argc, char **argv)
     scm_c_define_gsubr ("ms-pan-playback", 0, 0, 0, (void *)ms_panPlayback);
     scm_c_define_gsubr ("ms-play-repeats", 0, 0, 0, (void *)ms_playRepeats);
     scm_c_define_gsubr ("ms-scores-count", 0, 0, 0, (void *)ms_scores_count);
+    scm_c_define_gsubr ("ms-current-score", 0, 0, 0, (void *)ms_current_score);
+    scm_c_define_gsubr ("ms-parts", 0, 0, 0, (void *)ms_parts);
+    scm_c_define_gsubr ("ms-scoreview-cmd", 1, 0, 0, (void *)ms_scoreview_cmd);
+    scm_c_define_gsubr ("ms-parts-instruments", 1, 0, 0, (void *)ms_parts_instruments);
 
     if(scheme_filename){
         std::cerr << "Guile load primitive file " << scheme_filename << std::endl;
