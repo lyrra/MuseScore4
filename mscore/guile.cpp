@@ -4,6 +4,9 @@
 #include <libguile.h>
 #include "guile.h"
 
+#include "scoretab.h"
+#include "musescore.h"
+
 namespace ScriptGuile {
 
 static std::thread guileThread;
@@ -46,6 +49,7 @@ static inline SCM scm_false_or_string (const char *s)
     else
         return scm_from_locale_string (s);
     }
+
 /***************************************************************/
 // core musescore function, callable from scheme
 static SCM
@@ -66,9 +70,29 @@ core_appversion (void)
     return scm_false_or_string(cs);
     }
 
+static SCM
+core_experimental (void)
+{
+    bool ee = Ms::enableExperimental;
+    return scm_from_bool(ee);
+    }
+
+// MasterScores
+
+static SCM
+ms_scores_count (void)
+{
+    int c = Ms::mscore->currentScoreTab()->count();
+    return scm_from_int (c);
+    }
+
+// current score
+//    Ms::mscore->currentScore()
+
+// synti
+// MasterSynthesizer* synti;
+
 /***************************************************************/
-
-
 
 static void
 guile_main (void *closure, int argc, char **argv)
@@ -78,6 +102,8 @@ guile_main (void *closure, int argc, char **argv)
     scm_c_define_gsubr ("my-hostname", 0, 0, 0, (void *)my_hostname);
     scm_c_define_gsubr ("ms-core-name", 0, 0, 0, (void *)core_appname);
     scm_c_define_gsubr ("ms-core-version", 0, 0, 0, (void *)core_appversion);
+    scm_c_define_gsubr ("ms-core-experimental", 0, 0, 0, (void *)core_experimental);
+    scm_c_define_gsubr ("ms-scores-count", 0, 0, 0, (void *)ms_scores_count);
     scm_shell (argc, argv);
     }
 
