@@ -1,5 +1,6 @@
 //
 
+#include <thread>
 #include <iostream>
 #include <libguile.h>
 #include "guile.h"
@@ -9,6 +10,7 @@
 
 namespace ScriptGuile {
 
+static char *scheme_filename = NULL;
 static std::thread guileThread;
 
 /***************************************************************/
@@ -123,7 +125,15 @@ guile_main (void *closure, int argc, char **argv)
     scm_c_define_gsubr ("ms-pan-playback", 0, 0, 0, (void *)ms_panPlayback);
     scm_c_define_gsubr ("ms-play-repeats", 0, 0, 0, (void *)ms_playRepeats);
     scm_c_define_gsubr ("ms-scores-count", 0, 0, 0, (void *)ms_scores_count);
-    scm_shell (argc, argv);
+
+    if(scheme_filename){
+        std::cerr << "Guile load primitive file " << scheme_filename << std::endl;
+        scm_c_primitive_load(scheme_filename);
+        }
+    else{
+        std::cerr << "Guile entering REPL" << std::endl;
+        scm_shell (argc, argv);
+        }
     }
 
 static void funcGuileThread()
@@ -140,5 +150,14 @@ Guile start ()
     return g;
     }
 
-} // Namespace ScriptGuile
+Guile start (char *filename)
+{
+    Guile g;
+    scheme_filename = filename;
+    std::cerr << "Starting Guile thread, will load file " << filename << std::endl;
+    guileThread = std::thread(&funcGuileThread);
 
+    return g;
+    }
+
+} // Eof namescape ScriptGuile

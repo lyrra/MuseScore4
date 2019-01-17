@@ -6954,6 +6954,7 @@ int main(int argc, char* av[])
       parser.addOption(QCommandLineOption({"e", "experimental"}, "Enable experimental features"));
       parser.addOption(QCommandLineOption({"c", "config-folder"}, "Override configuration and settings folder", "dir"));
       parser.addOption(QCommandLineOption("script-scheme-shell", "Start GNU/Guile Scheme scripting interpreter REPL."));
+      parser.addOption(QCommandLineOption("script-scheme", "Run GNU/Guile Scheme file.", "file"));
       parser.addOption(QCommandLineOption({"t", "test-mode"}, "Set test mode flag for all files")); // this includes --template-mode
       parser.addOption(QCommandLineOption("run-test-script", "Run script tests listed in the command line arguments"));
       parser.addOption(QCommandLineOption({"M", "midi-operations"}, "Specify MIDI import operations file", "file"));
@@ -7391,11 +7392,19 @@ int main(int argc, char* av[])
                   }
             }
 
+      if (parser.isSet("script-scheme")) {
+            QString temp = parser.value("script-scheme");
+            if (temp.isEmpty())
+                  parser.showHelp(EXIT_FAILURE);
+            QByteArray ba = temp.toLocal8Bit(); // extend scope
+            char *filename = ba.data();
+            qDebug("Run Guile/Scheme script %s", filename);
+            ScriptGuile::start(filename);
+            }
       if (parser.isSet("script-scheme-shell")) {
-            // Start Guile SCHEME Script extension
+            // Start Guile Scheme Script extension
             ScriptGuile::start();
-            for(;;){sleep(20);}
-            // FIX: we would like to run the console on a separate thread, and continue startup with mscore (also add --no-gui)
+            // continue musescore startup (--no-gui is useful if scripting only)
             }
 
       QApplication::instance()->installEventFilter(mscore);

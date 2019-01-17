@@ -7,5 +7,6 @@ class Guile {
     };
 
 Guile start ();
+Guile start (char* filename);
 
 } // namespace ScriptGuile
