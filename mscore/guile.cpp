@@ -77,6 +77,22 @@ core_experimental (void)
     return scm_from_bool(ee);
     }
 
+// musescore musical globals
+
+static SCM
+ms_panPlayback (void)
+{
+    bool ee = Ms::MScore::panPlayback;
+    return scm_from_bool(ee);
+    }
+
+static SCM
+ms_playRepeats (void)
+{
+    bool ee = Ms::MScore::playRepeats;
+    return scm_from_bool(ee);
+    }
+
 // MasterScores
 
 static SCM
@@ -103,6 +119,9 @@ guile_main (void *closure, int argc, char **argv)
     scm_c_define_gsubr ("ms-core-name", 0, 0, 0, (void *)core_appname);
     scm_c_define_gsubr ("ms-core-version", 0, 0, 0, (void *)core_appversion);
     scm_c_define_gsubr ("ms-core-experimental", 0, 0, 0, (void *)core_experimental);
+
+    scm_c_define_gsubr ("ms-pan-playback", 0, 0, 0, (void *)ms_panPlayback);
+    scm_c_define_gsubr ("ms-play-repeats", 0, 0, 0, (void *)ms_playRepeats);
     scm_c_define_gsubr ("ms-scores-count", 0, 0, 0, (void *)ms_scores_count);
     scm_shell (argc, argv);
     }
