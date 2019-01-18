@@ -19,6 +19,7 @@
 #include "guile-glue.h"
 
 namespace ScriptGuile {
+using namespace Ms;
 
 //
 // musescore types
@@ -41,8 +42,8 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
 SCM
 make_ms_obj_score (int idx)
 {
-  QList<Ms::MasterScore*> scoreList = Ms::mscore->scores();
-  Ms::MasterScore *score = nullptr;
+  QList<MasterScore*> scoreList = mscore->scores();
+  MasterScore *score = nullptr;
   int n = 0;
   for (auto &ms : scoreList) {
     if(n == idx){
@@ -82,7 +83,7 @@ core_appversion (void)
 static SCM
 core_experimental (void)
 {
-      bool ee = Ms::enableExperimental;
+      bool ee = enableExperimental;
       return scm_from_bool(ee);
       }
 
@@ -93,14 +94,14 @@ core_experimental (void)
 static SCM
 ms_panPlayback (void)
 {
-      bool ee = Ms::MScore::panPlayback;
+      bool ee = MScore::panPlayback;
       return scm_from_bool(ee);
       }
 
 static SCM
 ms_playRepeats (void)
 {
-      bool ee = Ms::MScore::playRepeats;
+      bool ee = MScore::playRepeats;
       return scm_from_bool(ee);
       }
 
@@ -111,7 +112,7 @@ ms_playRepeats (void)
 static SCM
 ms_scores_count (void)
 {
-      int c = Ms::mscore->currentScoreTab()->count();
+      int c = mscore->currentScoreTab()->count();
       return scm_from_int (c);
       }
 
@@ -120,7 +121,7 @@ ms_scoreview_cmd (SCM str)
 {
       char *cmd = scm_to_locale_string(str);
       // need to check mscore->currentScore() != NULL ?
-      Ms::ScoreView* cv = Ms::mscore->currentScoreView();
+      ScoreView* cv = mscore->currentScoreView();
       if(cv){
             cv->cmd(cmd);
             }
@@ -133,20 +134,20 @@ ms_scoreview_cmd (SCM str)
 static SCM
 ms_current_score ()
       {
-      Ms::Score* _score = Ms::mscore->currentScore();
+      Score* _score = mscore->currentScore();
       return _score ? SCM_BOOL_T : SCM_BOOL_F;
       }
 
 static SCM
 ms_parts ()
       {
-      Ms::Score* _score = Ms::mscore->currentScore();
+      Score* _score = mscore->currentScore();
       if (_score->parts().isEmpty()) {
             std::cerr << "No parts!" << std::endl;
             return SCM_EOL; // return an empty list
             }
       else {
-            for (Ms::Part* part : _score->parts()) {
+            for (Part* part : _score->parts()) {
                   //const InstrumentList* il = part->instruments();
                   std::cerr << "part %s" << qPrintable(part->partName()) << std::endl;
                   }
@@ -163,13 +164,13 @@ ms_parts_instruments (SCM part)
       int midx = scm_to_int(part); // member index
       SCM head = SCM_EOL; // head of (single-linked) list
       SCM last = SCM_EOL; // last cons in list
-      Ms::Score* _score = Ms::mscore->currentScore();
+      Score* _score = mscore->currentScore();
       if (_score->parts().isEmpty()) {
             return SCM_EOL; // return an empty list
             }
       else {
-            foreach(Ms::Part* part, _score->parts()) {
-                  const Ms::InstrumentList* il = part->instruments();
+            foreach(Part* part, _score->parts()) {
+                  const InstrumentList* il = part->instruments();
                   // il :: a std:map of class Instrument*
                   for(auto inst = il->begin(); inst != il->end(); inst++) {
                         // inst :: (Pair idx (class Instrument))
@@ -200,7 +201,7 @@ ms_scores_nstaves (void)
       {
       SCM head = SCM_EOL; // head of (single-linked) list
       SCM last = SCM_EOL; // last cons in list
-      QList<Ms::MasterScore*> scoreList = Ms::mscore->scores();
+      QList<MasterScore*> scoreList = mscore->scores();
       for (auto &ms : scoreList) {
             int nstaves = ms->nstaves();
             SCM data = scm_from_int(nstaves);
@@ -218,7 +219,7 @@ ms_scores (void)
       {
       SCM head = SCM_EOL; // head of (single-linked) list
       SCM last = SCM_EOL; // last cons in list
-      QList<Ms::MasterScore*> scoreList = Ms::mscore->scores();
+      QList<MasterScore*> scoreList = mscore->scores();
       for (auto &ms : scoreList) {
             SCM data = scm_make_foreign_object_1 ((SCM)ms_obj_score_type, (SCM) ms);
             last = s_push(last, data);
@@ -235,7 +236,7 @@ ms_score_nstaves (SCM score_obj)
 {
       scm_assert_foreign_object_type (ms_obj_score_type, score_obj);
       void* obj = scm_foreign_object_ref(score_obj, 0);
-      Ms::MasterScore *ms_score = (Ms::MasterScore *) obj;
+      MasterScore *ms_score = (MasterScore *) obj;
       int nstaves = ms_score->nstaves();
       return scm_from_int(nstaves);
       }
@@ -247,8 +248,8 @@ ms_score_staves (SCM score_obj)
       SCM head = SCM_EOL; // head of (single-linked) list
       SCM last = SCM_EOL; // last cons in list
       void* obj = scm_foreign_object_ref(score_obj, 0);
-      Ms::MasterScore *ms_score = (Ms::MasterScore *) obj;
-      QList<Ms::Staff*>& staves = ms_score->staves();
+      MasterScore *ms_score = (MasterScore *) obj;
+      QList<Staff*>& staves = ms_score->staves();
 
       for (auto &stave : staves) {
             SCM data = scm_make_foreign_object_1 ((SCM)ms_obj_score_type, (SCM) stave);
@@ -266,7 +267,6 @@ void init_guile_musescore_functions ()
       scm_c_define_gsubr ("ms-core-name", 0, 0, 0, (void *)core_appname);
       scm_c_define_gsubr ("ms-core-version", 0, 0, 0, (void *)core_appversion);
       scm_c_define_gsubr ("ms-core-experimental", 0, 0, 0, (void *)core_experimental);
-
       scm_c_define_gsubr ("ms-pan-playback", 0, 0, 0, (void *)ms_panPlayback);
       scm_c_define_gsubr ("ms-play-repeats", 0, 0, 0, (void *)ms_playRepeats);
       scm_c_define_gsubr ("ms-scores-count", 0, 0, 0, (void *)ms_scores_count);
