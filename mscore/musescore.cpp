@@ -77,7 +77,7 @@
 #include "omrpanel.h"
 #endif
 #include "shortcut.h"
-#include "guile.h"
+#include "guile-glue.h"
 #ifdef SCRIPT_INTERFACE
 #include "pluginCreator.h"
 #include "pluginManager.h"

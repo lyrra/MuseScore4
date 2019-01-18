@@ -291,7 +291,7 @@ add_executable ( ${ExecutableName}
       ${resource_file}
       ${INCS}
 
-      guile.h guile.cpp
+      guile.h guile.cpp guile-glue.h guile-glue.cpp
 
       abstractdialog.h accessibletoolbutton.h albummanager.h
       alsa.h alsamidi.h analyse.h articulationprop.h bb.h
