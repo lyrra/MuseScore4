@@ -220,6 +220,65 @@ ms_scores_nstaves (void)
       return head; // return first element cons in list
       }
 
+static SCM ms_obj_score_type;
+
+void
+init_ms_obj_score_type ()
+{
+  SCM name, slo;
+  scm_t_struct_finalize finalizer = NULL;
+  name = scm_from_utf8_symbol ("ms-score");
+  slo = scm_list_1 (scm_from_utf8_symbol ("score"));
+  ms_obj_score_type = scm_make_foreign_object_type (name, slo, finalizer);
+}
+
+// To make a scheme-object containing a musescore-score-class object from the scheme-side, an index into scoreList is needed.
+SCM
+make_ms_obj_score (int idx)
+{
+  QList<Ms::MasterScore*> scoreList = Ms::mscore->scores();
+  Ms::MasterScore *score = nullptr;
+  int n = 0;
+  for (auto &ms : scoreList) {
+    if(n == idx){
+      score = ms;
+      break;
+    }
+    n++;
+  }
+  if(! score){ // index was out of range
+    return SCM_EOL;
+  }
+  return scm_make_foreign_object_1 (ms_obj_score_type, (SCM) score);
+}
+
+// make a scheme list of all musescore-score-class objects
+static SCM
+ms_scores (void)
+      {
+      SCM head = SCM_EOL; // head of (single-linked) list
+      SCM last = SCM_EOL; // last cons in list
+      QList<Ms::MasterScore*> scoreList = Ms::mscore->scores();
+      for (auto &ms : scoreList) {
+            SCM data = scm_make_foreign_object_1 ((SCM)ms_obj_score_type, (SCM) ms);
+            last = s_push(last, data);
+            if (head == SCM_EOL) {
+                  head = last;
+                  }
+            }
+      return head; // return first element cons in list
+      }
+
+static SCM
+ms_score_nstaves (SCM score_obj)
+{
+  scm_assert_foreign_object_type (ms_obj_score_type, score_obj);
+  void* obj = scm_foreign_object_ref(score_obj, 0);
+  Ms::MasterScore *ms_score = (Ms::MasterScore *) obj;
+  int nstaves = ms_score->nstaves();
+  return scm_from_int(nstaves);
+}
+
 /***************************************************************/
 
 // first parameter is a closure, not used here
@@ -241,6 +300,10 @@ guile_main (void *, int argc, char **argv)
     scm_c_define_gsubr ("ms-scoreview-cmd", 1, 0, 0, (void *)ms_scoreview_cmd);
     scm_c_define_gsubr ("ms-parts-instruments", 1, 0, 0, (void *)ms_parts_instruments);
     scm_c_define_gsubr ("ms-scores-nstaves", 0, 0, 0, (void *)ms_scores_nstaves);
+    scm_c_define_gsubr ("ms-scores", 0, 0, 0, (void *)ms_scores);
+    scm_c_define_gsubr ("ms-score-nstaves", 1, 0, 0, (void *)ms_score_nstaves);
+
+    init_ms_obj_score_type();
 
     if(scheme_filename){
         std::cerr << "Guile load primitive file " << scheme_filename << std::endl;
