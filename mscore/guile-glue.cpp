@@ -9,6 +9,7 @@
 
 #include "libmscore/mscore.h"
 #include "libmscore/part.h"
+#include "libmscore/staff.h"
 
 #include "musescore.h"
 #include "scoreview.h"
@@ -19,17 +20,22 @@
 
 namespace ScriptGuile {
 
-static SCM ms_obj_score_type;
+//
+// musescore types
+//
 
-void
-init_ms_obj_score_type ()
+static SCM ms_obj_score_type;
+static SCM ms_obj_staff_type;
+
+SCM
+init_ms_object_1 (const char *type_name, const char *slotname1)
 {
-  SCM name, slo;
-  scm_t_struct_finalize finalizer = NULL;
-  name = scm_from_utf8_symbol ("ms-score");
-  slo = scm_list_1 (scm_from_utf8_symbol ("score"));
-  ms_obj_score_type = scm_make_foreign_object_type (name, slo, finalizer);
-}
+      SCM name, slo;
+      scm_t_struct_finalize finalizer = NULL;
+      name = scm_from_utf8_symbol (type_name);
+      slo = scm_list_1 (scm_from_utf8_symbol (slotname1));
+      return scm_make_foreign_object_type (name, slo, finalizer);
+      }
 
 // To make a scheme-object containing a musescore-score-class object from the scheme-side, an index into scoreList is needed.
 SCM
@@ -232,7 +238,27 @@ ms_score_nstaves (SCM score_obj)
       Ms::MasterScore *ms_score = (Ms::MasterScore *) obj;
       int nstaves = ms_score->nstaves();
       return scm_from_int(nstaves);
-}
+      }
+
+// make a scheme list of all staves in a score
+static SCM
+ms_score_staves (SCM score_obj)
+      {
+      SCM head = SCM_EOL; // head of (single-linked) list
+      SCM last = SCM_EOL; // last cons in list
+      void* obj = scm_foreign_object_ref(score_obj, 0);
+      Ms::MasterScore *ms_score = (Ms::MasterScore *) obj;
+      QList<Ms::Staff*>& staves = ms_score->staves();
+
+      for (auto &stave : staves) {
+            SCM data = scm_make_foreign_object_1 ((SCM)ms_obj_score_type, (SCM) stave);
+            last = s_push(last, data);
+            if (head == SCM_EOL) {
+                  head = last;
+                  }
+            }
+      return head; // return first element cons in list
+      }
 
 void init_guile_musescore_functions ()
 {
@@ -251,9 +277,11 @@ void init_guile_musescore_functions ()
       scm_c_define_gsubr ("ms-scores-nstaves", 0, 0, 0, (void *)ms_scores_nstaves);
       scm_c_define_gsubr ("ms-scores", 0, 0, 0, (void *)ms_scores);
       scm_c_define_gsubr ("ms-score-nstaves", 1, 0, 0, (void *)ms_score_nstaves);
+      scm_c_define_gsubr ("ms-score-staves", 1, 0, 0, (void *)ms_score_staves);
 
       // initialize types
-      init_ms_obj_score_type();
+      ms_obj_score_type = init_ms_object_1("ms-score", "score");
+      ms_obj_staff_type = init_ms_object_1("ms-staff", "staff");
 }
 
 } // Eof Namespace ScriptGuile
