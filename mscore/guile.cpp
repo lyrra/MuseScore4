@@ -15,6 +15,20 @@
 
 namespace ScriptGuile {
 
+// returns last cons in a single-listed list
+// where data has been appended to
+SCM s_push (SCM last, SCM data)
+{
+      if (last == SCM_EOL) {
+            return scm_cons(data, SCM_EOL);
+            }
+      else {
+            SCM cons = scm_cons(data, SCM_EOL);
+            SCM_CDR(last) = cons; // extend chain with a new link
+            return cons;
+            }
+      }
+
 static char *scheme_filename = NULL;
 static std::thread guileThread;
 
@@ -148,20 +162,6 @@ ms_parts ()
             }
       }
 
-// returns last cons in a single-listed list
-// where data has been appended to
-SCM scm_push (SCM last, SCM data)
-{
-      if (last == SCM_EOL) {
-            return scm_cons(data, SCM_EOL);
-            }
-      else {
-            SCM cons = scm_cons(data, SCM_EOL);
-            SCM_CDR(last) = cons; // extend chain with a new link
-            return cons;
-            }
-      }
-
 // ms_parts_instruments x :: List String
 // where x :: Int -- 1 = instrumentId, 2 = trackName
 // example: (ms_parts_instruments 1) => ("voice.alto" "voice.bass")
@@ -181,7 +181,6 @@ ms_parts_instruments (SCM part)
                   // il :: a std:map of class Instrument*
                   for(auto inst = il->begin(); inst != il->end(); inst++) {
                         // inst :: (Pair idx (class Instrument))
-                        int     idx = inst->first;
                         QString iid = inst->second->instrumentId();
                         QString trn = inst->second->trackName();
                         // append to list
@@ -192,7 +191,7 @@ ms_parts_instruments (SCM part)
                         else {
                               data = scm_from_locale_string(trn.toLocal8Bit().data());
                               }
-                        last = scm_push(last, data);
+                        last = s_push(last, data);
                         if (head == SCM_EOL) {
                               head = last;
                               }
@@ -200,6 +199,25 @@ ms_parts_instruments (SCM part)
                   }
             return head; // return first element cons in list
             }
+      }
+
+// traverse Score->nstaves() over [MuseScoreCore->scores()]
+// Example: (ms-scores-nstaves) => (3 2)
+static SCM
+ms_scores_nstaves (void)
+      {
+      SCM head = SCM_EOL; // head of (single-linked) list
+      SCM last = SCM_EOL; // last cons in list
+      QList<Ms::MasterScore*> scoreList = Ms::mscore->scores();
+      for (auto &ms : scoreList) {
+            int nstaves = ms->nstaves();
+            SCM data = scm_from_int(nstaves);
+            last = s_push(last, data);
+            if (head == SCM_EOL) {
+                  head = last;
+                  }
+            }
+      return head; // return first element cons in list
       }
 
 /***************************************************************/
@@ -222,6 +240,7 @@ guile_main (void *, int argc, char **argv)
     scm_c_define_gsubr ("ms-parts", 0, 0, 0, (void *)ms_parts);
     scm_c_define_gsubr ("ms-scoreview-cmd", 1, 0, 0, (void *)ms_scoreview_cmd);
     scm_c_define_gsubr ("ms-parts-instruments", 1, 0, 0, (void *)ms_parts_instruments);
+    scm_c_define_gsubr ("ms-scores-nstaves", 0, 0, 0, (void *)ms_scores_nstaves);
 
     if(scheme_filename){
         std::cerr << "Guile load primitive file " << scheme_filename << std::endl;
