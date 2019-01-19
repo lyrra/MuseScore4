@@ -50,6 +50,7 @@
        "\"libmscore/mscore.h\"" "\"libmscore/part.h\""
        "\"libmscore/staff.h\"" "\"libmscore/measurebase.h\""
        "\"libmscore/measure.h\""
+       "\"libmscore/segment.h\"" "\"libmscore/segmentlist.h\""
        "\"musescore.h\""
        "\"scoreview.h\"" "\"scoretab.h\""
        "\"guile.h\"" "\"guile-glue.h\""))
@@ -64,6 +65,7 @@ using namespace Ms;
 static SCM ms_obj_score_type;
 static SCM ms_obj_staff_type;
 static SCM ms_obj_measure_type;
+static SCM ms_obj_segment_type;
 
 SCM
 init_ms_object_1 (const char *type_name, const char *slotname1)
@@ -250,6 +252,7 @@ ms_parts_instruments (SCM part)
     for (auto &item : staves) {~%"))
 
 ; See libmscore/score.cpp:Score::fixTicks for similar code
+; FIX: Whatabout Score->firstMeasure() ?
 (scm/c-fun "ms_score_measures" "SCM score_obj"
   '("make a scheme list of all measures in a score")
   (c-make-scheme-list 6 "ms_obj_measure_type"
@@ -260,6 +263,15 @@ ms_parts_instruments (SCM part)
                 continue;
                 }
           Measure *item = toMeasure(mb);~%"))
+
+; no information is kept in SegmentList
+(scm/c-fun "ms_measure_segments" "SCM measure_obj"
+  '("list of Ms::Segment from a measure")
+  (c-make-scheme-list 6 "ms_obj_segment_type"
+    "void* obj = scm_foreign_object_ref(measure_obj, 0);
+    Measure *m = (Measure *) obj;
+    Segment *seg = m->first();
+    for (Segment *item = m->first(); item; item = item->next()) {~%"))
 
 (f "
 void init_guile_musescore_functions ()
@@ -285,12 +297,15 @@ void init_guile_musescore_functions ()
               ("ms-scores"         "ms_scores" 0)
               ("ms-score-nstaves"  "ms_score_nstaves" 1)
               ("ms-score-staves"   "ms_score_staves" 1)
-              ("ms-score-measures"   "ms_score_measures" 1)))
+              ("ms-score-measures"   "ms_score_measures" 1)
+              ("ms-measure-segments"   "ms_measure_segments" 1)))
+
 (f "
       // initialize types
       ms_obj_score_type = init_ms_object_1(\"ms-score\", \"score\");
       ms_obj_staff_type = init_ms_object_1(\"ms-staff\", \"staff\");
       ms_obj_measure_type = init_ms_object_1(\"ms-measure\", \"measure\");
+      ms_obj_segment_type = init_ms_object_1(\"ms-segment\", \"segment\");
 }
 
 } // Eof Namespace ScriptGuile
