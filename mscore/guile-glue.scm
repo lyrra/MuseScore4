@@ -47,13 +47,12 @@
        (f "#include ~a~%" file))
      '("<iostream>"
        "<libguile.h>"
-
        "\"libmscore/mscore.h\"" "\"libmscore/part.h\""
-       "\"libmscore/staff.h\""
-        "\"musescore.h\""
-        "\"scoreview.h\"" "\"scoretab.h\""
-
-        "\"guile.h\"" "\"guile-glue.h\""))
+       "\"libmscore/staff.h\"" "\"libmscore/measurebase.h\""
+       "\"libmscore/measure.h\""
+       "\"musescore.h\""
+       "\"scoreview.h\"" "\"scoretab.h\""
+       "\"guile.h\"" "\"guile-glue.h\""))
 
 (f "
 namespace ScriptGuile {
@@ -64,6 +63,7 @@ using namespace Ms;
 
 static SCM ms_obj_score_type;
 static SCM ms_obj_staff_type;
+static SCM ms_obj_measure_type;
 
 SCM
 init_ms_object_1 (const char *type_name, const char *slotname1)
@@ -249,6 +249,18 @@ ms_parts_instruments (SCM part)
     QList<Staff*>& staves = ms_score->staves();
     for (auto &item : staves) {~%"))
 
+; See libmscore/score.cpp:Score::fixTicks for similar code
+(scm/c-fun "ms_score_measures" "SCM score_obj"
+  '("make a scheme list of all measures in a score")
+  (c-make-scheme-list 6 "ms_obj_measure_type"
+    "void* obj = scm_foreign_object_ref(score_obj, 0);
+    MasterScore *ms_score = (MasterScore *) obj;
+    for (MeasureBase* mb = ms_score->first(); mb; mb = mb->next()) {
+          if (mb->type() != ElementType::MEASURE) {
+                continue;
+                }
+          Measure *item = toMeasure(mb);~%"))
+
 (f "
 void init_guile_musescore_functions ()
 {
@@ -272,11 +284,13 @@ void init_guile_musescore_functions ()
               ("ms-scores-nstaves" "ms_scores_nstaves" 0)
               ("ms-scores"         "ms_scores" 0)
               ("ms-score-nstaves"  "ms_score_nstaves" 1)
-              ("ms-score-staves"   "ms_score_staves" 1)))
+              ("ms-score-staves"   "ms_score_staves" 1)
+              ("ms-score-measures"   "ms_score_measures" 1)))
 (f "
       // initialize types
       ms_obj_score_type = init_ms_object_1(\"ms-score\", \"score\");
       ms_obj_staff_type = init_ms_object_1(\"ms-staff\", \"staff\");
+      ms_obj_measure_type = init_ms_object_1(\"ms-measure\", \"measure\");
 }
 
 } // Eof Namespace ScriptGuile
