@@ -63,7 +63,7 @@ make_ms_obj_score (int idx)
 //
 
 static SCM
-core_appname (void)
+core_appname ()
 {
       QString s = QCoreApplication::applicationName();
       QByteArray ba = s.toLocal8Bit();
@@ -72,7 +72,7 @@ core_appname (void)
       }
 
 static SCM
-core_appversion (void)
+core_appversion ()
 {
       QString s = QCoreApplication::applicationVersion();
       QByteArray ba = s.toLocal8Bit();
@@ -81,7 +81,7 @@ core_appversion (void)
       }
 
 static SCM
-core_experimental (void)
+core_experimental ()
 {
       bool ee = enableExperimental;
       return scm_from_bool(ee);
@@ -197,14 +197,14 @@ ms_parts_instruments (SCM part)
 // traverse Score->nstaves() over [MuseScoreCore->scores()]
 // Example: (ms-scores-nstaves) => (3 2)
 static SCM
-ms_scores_nstaves (void)
+ms_scores_nstaves ()
       {
       SCM head = SCM_EOL; // head of (single-linked) list
       SCM last = SCM_EOL; // last cons in list
       QList<MasterScore*> scoreList = mscore->scores();
       for (auto &ms : scoreList) {
-            int nstaves = ms->nstaves();
-            SCM data = scm_from_int(nstaves);
+            int item = ms->nstaves();
+            SCM data = scm_from_int(item);
             last = s_push(last, data);
             if (head == SCM_EOL) {
                   head = last;
@@ -215,13 +215,13 @@ ms_scores_nstaves (void)
 
 // make a scheme list of all musescore-score-class objects
 static SCM
-ms_scores (void)
+ms_scores ()
       {
       SCM head = SCM_EOL; // head of (single-linked) list
       SCM last = SCM_EOL; // last cons in list
       QList<MasterScore*> scoreList = mscore->scores();
-      for (auto &ms : scoreList) {
-            SCM data = scm_make_foreign_object_1 ((SCM)ms_obj_score_type, (SCM) ms);
+      for (auto &item : scoreList) {
+            SCM data = scm_make_foreign_object_1 ((SCM)ms_obj_score_type, (SCM) item);
             last = s_push(last, data);
             if (head == SCM_EOL) {
                   head = last;
@@ -251,8 +251,8 @@ ms_score_staves (SCM score_obj)
       MasterScore *ms_score = (MasterScore *) obj;
       QList<Staff*>& staves = ms_score->staves();
 
-      for (auto &stave : staves) {
-            SCM data = scm_make_foreign_object_1 ((SCM)ms_obj_score_type, (SCM) stave);
+      for (auto &item : staves) {
+            SCM data = scm_make_foreign_object_1 ((SCM)ms_obj_staff_type, (SCM) item);
             last = s_push(last, data);
             if (head == SCM_EOL) {
                   head = last;
