@@ -286,6 +286,11 @@ endif (NOT MSVC)
 set(GUILE_FILES)
 if (USE_GUILE)
    set(GUILE_FILES guile.h guile.cpp guile-glue.h guile-glue.cpp)
+   # Preprocessor/generated source files
+   add_custom_command(OUTPUT guile-glue.cpp
+                      COMMAND guile ${PROJECT_SOURCE_DIR}/mscore/guile-glue.scm > guile-glue.cpp
+                      MAIN_DEPENDENCY guile-glue.scm)
+   set_source_files_properties(guile-glue.cpp PROPERTIES GENERATED true)
 endif (USE_GUILE)
 
 add_executable ( ${ExecutableName}
