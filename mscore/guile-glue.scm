@@ -51,6 +51,7 @@
        "\"libmscore/staff.h\"" "\"libmscore/measurebase.h\""
        "\"libmscore/measure.h\""
        "\"libmscore/segment.h\"" "\"libmscore/segmentlist.h\""
+       "\"libmscore/element.h\""
        "\"musescore.h\""
        "\"scoreview.h\"" "\"scoretab.h\""
        "\"guile.h\"" "\"guile-glue.h\""))
@@ -66,6 +67,7 @@ static SCM ms_obj_score_type;
 static SCM ms_obj_staff_type;
 static SCM ms_obj_measure_type;
 static SCM ms_obj_segment_type;
+static SCM ms_obj_element_type;
 
 SCM
 init_ms_object_1 (const char *type_name, const char *slotname1)
@@ -273,6 +275,13 @@ ms_parts_instruments (SCM part)
     Segment *seg = m->first();
     for (Segment *item = m->first(); item; item = item->next()) {~%"))
 
+(scm/c-fun "ms_segment_elements" "SCM segment_obj"
+  '("list of Ms::Element from a segment")
+  (c-make-scheme-list 6 "ms_obj_element_type"
+    "void* obj = scm_foreign_object_ref(segment_obj, 0);
+    Segment *seg = (Segment *) obj;
+    for(auto &item : seg->elist()) {~%"))
+
 (f "
 void init_guile_musescore_functions ()
 {
@@ -298,7 +307,8 @@ void init_guile_musescore_functions ()
               ("ms-score-nstaves"  "ms_score_nstaves" 1)
               ("ms-score-staves"   "ms_score_staves" 1)
               ("ms-score-measures"   "ms_score_measures" 1)
-              ("ms-measure-segments"   "ms_measure_segments" 1)))
+              ("ms-measure-segments"   "ms_measure_segments" 1)
+              ("ms-segment-elements"   "ms_segment_elements" 1)))
 
 (f "
       // initialize types
@@ -306,6 +316,7 @@ void init_guile_musescore_functions ()
       ms_obj_staff_type = init_ms_object_1(\"ms-staff\", \"staff\");
       ms_obj_measure_type = init_ms_object_1(\"ms-measure\", \"measure\");
       ms_obj_segment_type = init_ms_object_1(\"ms-segment\", \"segment\");
+      ms_obj_element_type = init_ms_object_1(\"ms-element\", \"element\");
 }
 
 } // Eof Namespace ScriptGuile
