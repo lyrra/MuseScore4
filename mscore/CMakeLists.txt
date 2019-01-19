@@ -283,6 +283,11 @@ else (NOT MSVC)
    set(_all_h_file "${PROJECT_SOURCE_DIR}/all.h")
 endif (NOT MSVC)
 
+set(GUILE_FILES)
+if (USE_GUILE)
+   set(GUILE_FILES guile.h guile.cpp guile-glue.h guile-glue.cpp)
+endif (USE_GUILE)
+
 add_executable ( ${ExecutableName}
       ${qrc_files}
       ${ui_headers}
@@ -290,8 +295,6 @@ add_executable ( ${ExecutableName}
       ${PCH}
       ${resource_file}
       ${INCS}
-
-      guile.h guile.cpp guile-glue.h guile-glue.cpp
 
       abstractdialog.h accessibletoolbutton.h albummanager.h
       alsa.h alsamidi.h analyse.h articulationprop.h bb.h
@@ -453,6 +456,7 @@ add_executable ( ${ExecutableName}
       extension.cpp extension.h
       tourhandler.cpp
       script/script.cpp script/scriptentry.cpp script/testscript.cpp script/recorderwidget.cpp
+      ${GUILE_FILES}
 
       ${WIDGETS_SOURCE_FILES}
       ${COCOABRIDGE}
@@ -735,8 +739,8 @@ else (MINGW)
                                 PROPERTIES
                                 COMPILE_OPTIONS "${GUILE_COMPILE_LIST}"
          )
+         message(STATUS "Guile compile flags: ${COMPILE_FLAGS}")
        endif (USE_GUILE)
-       message(STATUS "compile flags has GUILE?: ${COMPILE_FLAGS}")
 
       set_target_properties (
          mscore
