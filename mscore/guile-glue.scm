@@ -253,6 +253,22 @@ ms_parts_instruments (SCM part)
     QList<Staff*>& staves = ms_score->staves();
     for (auto &item : staves) {~%"))
 
+(scm/c-fun "ms_staff_info" "SCM staff_obj"
+  '("returns a vector containing staff information")
+   (f "void* obj = scm_foreign_object_ref(staff_obj, 0);
+       Staff *staff = (Staff *) obj;
+       // from score.cpp:cmdConcertPitchChanged
+       int staffIdx   = staff->idx();
+       int startTrack = staffIdx * VOICES;
+       int endTrack   = startTrack + VOICES;
+       int ninst = staff->part()->instruments()->size();
+       SCM v = scm_c_make_vector(4, SCM_EOL);
+       SCM_SIMPLE_VECTOR_SET(v, 0, scm_from_int(staffIdx));
+       SCM_SIMPLE_VECTOR_SET(v, 1, scm_from_int(startTrack));
+       SCM_SIMPLE_VECTOR_SET(v, 2, scm_from_int(endTrack));
+       SCM_SIMPLE_VECTOR_SET(v, 3, scm_from_int(ninst));
+       return v;~%"))
+
 ; See libmscore/score.cpp:Score::fixTicks for similar code
 ; FIX: Whatabout Score->firstMeasure() ?
 (scm/c-fun "ms_score_measures" "SCM score_obj"
@@ -307,6 +323,7 @@ void init_guile_musescore_functions ()
               ("ms-score-nstaves"  "ms_score_nstaves" 1)
               ("ms-score-staves"   "ms_score_staves" 1)
               ("ms-score-measures"   "ms_score_measures" 1)
+              ("ms-staff-info" "ms_staff_info" 1)
               ("ms-measure-segments"   "ms_measure_segments" 1)
               ("ms-segment-elements"   "ms_segment_elements" 1)))
 
