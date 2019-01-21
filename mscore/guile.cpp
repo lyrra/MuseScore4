@@ -16,7 +16,6 @@
 
 namespace ScriptGuile {
 
-static char *scheme_filename = NULL;
 static std::thread guileThread;
 
 //
@@ -57,14 +56,29 @@ guile_main (void *, int argc, char **argv)
 
     init_guile_musescore_functions();
 
-    if(scheme_filename){
-        std::cerr << "Guile load primitive file " << scheme_filename << std::endl;
-        scm_c_primitive_load(scheme_filename);
+    std::cerr << "Guile entering REPL" << std::endl;
+    scm_shell (argc, argv);
+    }
+
+static void*
+guile_main2 (void *)
+    {
+    guile_main(NULL, 0, NULL);
+    }
+
+static void *
+guile_run_script (void *file)
+{
+    char *filename = (char *) file;
+    init_guile_musescore_functions();
+    if(filename){
+        std::cerr << "Guile load primitive file " << filename << std::endl;
+        scm_c_primitive_load(filename);
         }
     else{
-        std::cerr << "Guile entering REPL" << std::endl;
-        scm_shell (argc, argv);
+        std::cerr << "ERROR: no Guile/Scheme script file given" << std::endl;
         }
+    return NULL;
     }
 
 static void funcGuileThread()
@@ -73,22 +87,29 @@ static void funcGuileThread()
     scm_boot_guile (0, nullptr, guile_main, 0);
     }
 
+void start_shell (int argc, char **argv)
+{
+    scm_with_guile(guile_main2, NULL);
+    }
+
 Guile start ()
 {
     Guile g;
     guileThread = std::thread(&funcGuileThread);
-
     return g;
     }
 
-Guile start (char *filename)
+void start (char *filename)
 {
-    Guile g;
-    scheme_filename = filename;
-    std::cerr << "Starting Guile thread, will load file " << filename << std::endl;
-    guileThread = std::thread(&funcGuileThread);
+    std::cerr << "Running Guile/Scheme script: " << filename << std::endl;
+    scm_with_guile (guile_run_script, (void *)filename);
+    return;
+    }
 
-    return g;
+long start_func (void *(*func)(void *))
+{
+    std::cerr << "Running function under Guile/Scheme." << std::endl;
+    return (long) scm_with_guile (func, NULL);
     }
 
 } // Eof namescape ScriptGuile

@@ -21,7 +21,9 @@ class Guile {
  * loaded an evaluated.
  */
 Guile start ();
-Guile start (char* filename);
+void  start (char *filename);
+long  start_func  (void *(*func)(void*));
+void  start_shell (int argc, char **argv);
 
 } // namespace ScriptGuile
 

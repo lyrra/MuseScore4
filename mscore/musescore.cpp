@@ -3497,7 +3497,7 @@ static bool doProcessJob(QString jsonFile)
 //   processNonGui
 //---------------------------------------------------------
 
-static bool processNonGui(const QStringList& argv)
+static bool processNonGui(const QStringList& argv, bool scriptMode)
       {
       if (exportScoreMedia)
             return mscore->exportAllMediaFiles(argv[0]);
@@ -3570,7 +3570,10 @@ static bool processNonGui(const QStringList& argv)
 
       if (scriptTestMode)
             return mscore->runTestScripts(argv);
-
+      if (scriptMode) {
+            loadScores(argv);
+            return false;
+            }
       return true;
       }
 
@@ -6869,6 +6872,48 @@ void MuseScore::updateUiStyleAndTheme()
 
 using namespace Ms;
 
+// Handle Guile/Scheme Scripting
+void run_guile_script(char *script_scheme_file)
+      {
+      ScriptGuile::start(script_scheme_file);
+      }
+
+int main_nongui(int cargc, char **cargv,
+                QStringList argv,
+                bool script_scheme_shell,
+                char *script_scheme_file)
+      {
+      bool scriptMode = false;
+      if (script_scheme_file || script_scheme_shell) {
+            scriptMode = true;
+            }
+      std::cerr << "non-gui script_scheme_shell: " << script_scheme_shell << std::endl;
+      std::cerr << "non-gui script_scheme_file:  " << (script_scheme_file ? script_scheme_file : "") << std::endl;
+      std::cerr << "Process non-gui requests." << std::endl;
+      if (processNonGui(argv, scriptMode) == true) {
+            exit(EXIT_FAILURE);
+            }
+
+      if (script_scheme_file) {
+            std::cerr << "Running Guile/Scheme script." << std::endl;
+            run_guile_script(script_scheme_file);
+            }
+
+      if (script_scheme_shell) {
+            std::cerr << "Launching Guile/Scheme shell." << std::endl;
+            // Start Guile/Scheme script shell
+            ScriptGuile::start_shell(cargc, cargv);
+            std::cerr << "Exited  Guile/Scheme shell." << std::endl;
+            }
+      return 0;
+      }
+
+void * main_gui (void *)
+{
+      long ret = (long) qApp->exec();
+      return (void *) ret;
+      }
+
 //---------------------------------------------------------
 //   main
 //---------------------------------------------------------
@@ -7392,32 +7437,33 @@ int main(int argc, char* av[])
                   }
             }
 
-      if (parser.isSet("script-scheme")) {
-            QString temp = parser.value("script-scheme");
-            if (temp.isEmpty())
-                  parser.showHelp(EXIT_FAILURE);
-            QByteArray ba = temp.toLocal8Bit(); // extend scope
-            char *filename = ba.data();
-            qDebug("Run Guile/Scheme script %s", filename);
-            ScriptGuile::start(filename);
-            }
-      if (parser.isSet("script-scheme-shell")) {
-            // Start Guile Scheme Script extension
-            ScriptGuile::start();
-            // continue musescore startup (--no-gui is useful if scripting only)
-            }
-
       QApplication::instance()->installEventFilter(mscore);
 
       mscore->setRevision(revision);
       int files = 0;
       bool restoredSession = false;
+      // lhz
+      bool script_scheme_shell = false;
+      char *script_scheme_file  = NULL;
+      if (parser.isSet("script-scheme-shell")) {
+            script_scheme_shell = true;
+            }
+      if (parser.isSet("script-scheme")) {
+            QString temp = parser.value("script-scheme");
+            if (temp.isEmpty())
+                  parser.showHelp(EXIT_FAILURE);
+            // due to scope issue, take a copy of the string
+            script_scheme_file = strdup(temp.toLocal8Bit().data());
+            std::cout << "Guile/Scheme script: " << script_scheme_file << std::endl;
+            }
+
       if (MScore::noGui) {
+            std::cout << "No GUI requested." << std::endl;
 #ifdef Q_OS_MAC
             // see issue #28706: Hangup in converter mode with MusicXML source
             qApp->processEvents();
 #endif
-            exit(processNonGui(argv) ? 0 : EXIT_FAILURE);
+            return main_nongui(0, nullptr, argv, script_scheme_shell, script_scheme_file);
             }
       else {
             mscore->readSettings();
@@ -7509,7 +7555,21 @@ int main(int argc, char* av[])
       if (settings.value("mixerVisible", false).toBool())
             mscore->showMixer(true);
 
-      return qApp->exec();
+      /* runs any Guile/Scheme script files, before running app */
+      if (script_scheme_file) {
+            run_guile_script(script_scheme_file);
+            }
+
+      if (script_scheme_shell) {
+            /* Starts a Guile/Scheme script shell thread on console */
+            ScriptGuile::start();
+            /* Runs MuseScore App inside a Guile/Scheme environment, giving it access to Guile/Scheme procedures */
+            return (int) ScriptGuile::start_func(main_gui);
+            }
+      else {
+            long x = (long) main_gui(nullptr);
+            return (int) x;
+            }
       }
 
 //---------------------------------------------------------
