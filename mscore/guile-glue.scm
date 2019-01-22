@@ -35,7 +35,25 @@
      (indent (* i 2)) (f "if (head == SCM_EOL) {~%")
      (indent (* i 2)) (f "      head = last;~%")
      (indent (* i 2)) (f "      }~%")
-     (indent (* i 2)) (f "}~%")
+     (indent (* i 2)) (f "}~%") ; // close the for-loop
+     (indent i) (f "return head; // return first element cons in list~%"))))
+
+(define-syntax-rule (c-make-scheme-list2 i dtype code postfor)
+  (let ((datastr (cond
+                   ((eq? dtype 'int) "SCM data = scm_from_int(item);~%")
+                   (else (format #f "SCM data = scm_make_foreign_object_1 ((SCM)~a, (SCM) item);~%" dtype)))))
+  (begin
+     (indent i) (f "SCM head = SCM_EOL; // head of (single-linked) list~%")
+     (indent i) (f "SCM last = SCM_EOL; // last cons in list~%")
+     (indent i) (f code)
+     (indent (* i 2)) (f datastr)
+     (indent (* i 2)) (f "last = s_push(last, data);~%")
+     (indent (* i 2)) (f "if (head == SCM_EOL) {~%")
+     (indent (* i 2)) (f "      head = last;~%")
+     (indent (* i 2)) (f "      }~%")
+     ; bad hack
+     (f postfor)
+     (indent (* i 2)) (f "}~%") ; // close the for-loop
      (indent i) (f "return head; // return first element cons in list~%"))))
 
 (f "/*
@@ -288,15 +306,42 @@ ms_parts_instruments (SCM part)
   (c-make-scheme-list 6 "ms_obj_segment_type"
     "void* obj = scm_foreign_object_ref(measure_obj, 0);
     Measure *m = (Measure *) obj;
-    Segment *seg = m->first();
     for (Segment *item = m->first(); item; item = item->next()) {~%"))
 
 (scm/c-fun "ms_segment_elements" "SCM segment_obj"
   '("list of Ms::Element from a segment")
-  (c-make-scheme-list 6 "ms_obj_element_type"
+  (c-make-scheme-list2 6 "ms_obj_element_type"
     "void* obj = scm_foreign_object_ref(segment_obj, 0);
     Segment *seg = (Segment *) obj;
-    for(auto &item : seg->elist()) {~%"))
+    for(auto &item : seg->elist()) {
+      // only return elements elist() will return NULLs too
+      if(item){
+      ~%"
+    "}~%" ; close for loop
+    ))
+
+(scm/c-fun "ms_element_type" "SCM element_obj"
+  '("returns type of element")
+  (f "void* obj = scm_foreign_object_ref(element_obj, 0);
+      Element *e = (Element *) obj;
+      int etype = (int) e->type();
+      return scm_from_int(etype);~%"))
+
+(scm/c-fun "ms_element_info" "SCM element_obj"
+  '("returns type of element")
+  (f "void* obj = scm_foreign_object_ref(element_obj, 0);
+      Element *e = (Element *) obj;
+      ElementType etype = e->type();
+      int ietype = (int) etype;
+      const char* ename = e->name(etype);
+      QString quname = e->userName();
+      QByteArray baquname = quname.toLocal8Bit();
+      const char *uname = baquname.data();
+      SCM v = scm_c_make_vector(3, SCM_EOL);
+      SCM_SIMPLE_VECTOR_SET(v, 0, scm_from_int(ietype));
+      SCM_SIMPLE_VECTOR_SET(v, 1, scm_from_utf8_string(ename));
+      SCM_SIMPLE_VECTOR_SET(v, 2, scm_from_utf8_string(uname));
+      return v;~%"))
 
 (f "
 void init_guile_musescore_functions ()
@@ -325,7 +370,10 @@ void init_guile_musescore_functions ()
               ("ms-score-measures"   "ms_score_measures" 1)
               ("ms-staff-info" "ms_staff_info" 1)
               ("ms-measure-segments"   "ms_measure_segments" 1)
-              ("ms-segment-elements"   "ms_segment_elements" 1)))
+              ("ms-segment-elements"   "ms_segment_elements" 1)
+              ("ms-element-type" "ms_element_type" 1)
+              ("ms-element-info" "ms_element_info" 1)
+              ))
 
 (f "
       // initialize types

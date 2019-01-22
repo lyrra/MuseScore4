@@ -21,20 +21,20 @@
         '((name "Fugue_1"
                 measures 29
                 total-segments 505
-                total-elements 8080
+                total-elements 1217
                 staves 4
                 staff-info (#(0 0 4 1) #(1 4 8 1)
                             #(2 8 12 1) #(3 12 16 1)))
           (name "Unclaimed_Gift"
                 measures 40
                 total-segments 230
-                total-elements 920
+                total-elements 225
                 staves 1
                 staff-info (#(0 0 4 1)))
           (name "Reunion"
                 measures 23
                 total-segments 207
-                total-elements 1656
+                total-elements 360
                 staves 2
                 staff-info (#(0 0 4 1) #(1 4 8 1)))))
 
@@ -49,12 +49,21 @@
 ; Load an scheme module that makes output print formatting nicer
 (use-modules (ice-9 format))
 
+; define a simple assert macro that lets out quit when
+; an error has occured. Check that the unix-return-code is 0.
+(define-syntax-rule (assert expr msg ...)
+  (if (not expr)
+    (begin
+      (format #t msg ...)
+      (format #t "~%")
+      (quit 111))))
+
 ; Try calling some very simple Scheme/C shim functions
 (format #t "MuseScore name: ~a~%" (ms-core-name))
-(if (not (string? (ms-core-name))) (error "ms-core-name returned non string type"))
+(assert (string? (ms-core-name)) "ms-core-name returned non string type")
 
 (format #t "MuseScore version: ~a~%" (ms-core-version))
-(if (not (string? (ms-core-version))) (error "ms-core-version returned non string type"))
+(assert (string? (ms-core-version)) "ms-core-version returned non string type")
 
 ; Load all feasible examples
 
@@ -69,47 +78,47 @@
 
 ; MS-SCORES-COUNT should return a non-zero number
 ; if MuseScore has a score open.
-(if (not (= (ms-scores-count) *number-of-scores*))
-  (error "ms-scores-count reported wrong number of opened scores."))
+(assert (= (ms-scores-count) *number-of-scores*)
+  "ms-scores-count reported wrong number of opened scores.")
 
 ; Get some arbitrary information about each staff
 (let ((lst (scores-staves-info)))
-  (if (not (list? lst)) (error "scores-staves-info returned non-list type"))
+  (assert (list? lst) "scores-staves-info returned non-list type")
   (for-each (lambda (prop infos)
               (let ((infos2 (cadr (memq 'staff-info prop))))
                 (format #t "score info: ~s ~s~%" infos infos2)
-                (if (not (equal? infos infos2))
-                  (error (format #f "scores-staves-info has returned wrong staff-info: ~s, ~s" infos infos2)))))
+                (assert (equal? infos infos2)
+                  "scores-staves-info has returned wrong staff-info: ~s, ~s" infos infos2)))
             *score-information* lst)
   "scores-staves-info test succeeded")
 
 ; Print a list of all staves in all opened scores
 (let ((lst (scores-staves)))
-  (if (not (= (length lst) *number-of-scores*))
-    (error "scores-staves returned a list of bad length"))
+  (assert (= (length lst) *number-of-scores*)
+    "scores-staves returned a list of bad length")
   (for-each (lambda (prop staves)
               (let ((staves-number (cadr (memq 'staves prop))))
-                (if (not (= staves-number (length staves)))
-                  (error (format #f "scores-staves returned wrong number of staves: ~a != ~a." staves-number (length staves))))))
+                (assert (= staves-number (length staves))
+                  "scores-staves returned wrong number of staves: ~a != ~a." staves-number (length staves))))
             ; call the above lambda with elements from the two lists "zipped"
             *score-information*
             lst)
   "scores-staves test succeded")
 
 (let ((lst (scores-nstaves)))
-  (if (not (list? lst)) (error "scores-nstaves returned non-list type"))
-  (if (not (= (length lst) *number-of-scores*)) (error "scores-nstaves returned an empty list"))
+  (assert (list? lst) "scores-nstaves returned non-list type")
+  (assert (= (length lst) *number-of-scores*) "scores-nstaves returned an empty list")
   (for-each (lambda (prop nstaves)
               (let ((num-staves (cadr (memq 'staves prop))))
-                (if (not (number? nstaves))
-                  (error "scores-nstaves, nstaves is non-number"))
-                (if (not (= nstaves num-staves))
-                  (error (format #f "scores-staves returned wrong number of staves: ~a != ~a." num-staves nstaves)))))
+                (assert (number? nstaves)
+                  "scores-nstaves, nstaves is non-number")
+                (assert (= nstaves num-staves)
+                  "scores-staves returned wrong number of staves: ~a != ~a." num-staves nstaves)))
             *score-information* lst)
   "scores-nstaves test succeeded")
 
 (let ((lst (scores-segments)))
-  (if (not (list? lst)) (error "scores-segments returned non-list type"))
+  (assert (list? lst) "scores-segments returned non-list type")
   (for-each (lambda (prop measures)
               (let ((num-measures (cadr (memq 'measures prop)))
                     (total-segments (cadr (memq 'total-segments prop))))
@@ -118,37 +127,66 @@
                   (map (lambda (measure)
                          (set! tot-segments (+ tot-segments (length measure))))
                        measures)
-                  (if (not (= tot-segments total-segments))
-                    (error (format #f "scores-staves returned wrong number of segments (sum of all segments in all measures): ~a != ~a." tot-segments total-segments))))))
+                  (assert (= tot-segments total-segments)
+                    "scores-staves returned wrong number of segments (sum of all segments in all measures): ~a != ~a." tot-segments total-segments))))
             *score-information* lst)
   "scores-segments test succeeded")
 
 (let ((lst (scores-elements)))
-  (if (not (list? lst)) (error "scores-elements returned non-list type"))
+  (assert (list? lst) "scores-elements returned non-list type")
   (for-each (lambda (prop measures)
               (let ((num-measures (cadr (memq 'measures prop)))
                     (total-elements (cadr (memq 'total-elements prop))))
-                (if (not (list? measures))
-                  (error "scores-elements, measures list is not a list"))
+                (assert (list? measures)
+                  "scores-elements, measures list is not a list")
                 (let ((tot-elements 0))
                   (map (lambda (segments)
                          (map (lambda (elements)
                                 (set! tot-elements (+ tot-elements (length elements))))
                               segments))
                        measures)
-                  (if (not (= tot-elements total-elements))
-                    (error (format #f "scores-staves returned wrong number of elements (summary): ~a != ~a." tot-elements total-elements))))))
+                  (assert (= tot-elements total-elements)
+                    "scores-staves returned wrong number of elements (summary): ~a != ~a." tot-elements total-elements))))
             *score-information* lst)
   "scores-elements test succeeded")
 
 (let ((lst (scores-staves-info)))
-  (if (not (list? lst)) (error "scores-staves-info returned non-list type"))
+  (assert (list? lst) "scores-staves-info returned non-list type")
   (for-each (lambda (prop infos)
               (let ((infos2 (cadr (memq 'staff-info prop))))
                 (format #t "score info: ~s ~s~%" infos infos2)
-                (if (not (equal? infos infos2))
-                  (error (format #f "scores-staves-info has returned wrong staff-info: ~s, ~s" infos infos2)))))
+                (assert (equal? infos infos2)
+                  "scores-staves-info has returned wrong staff-info: ~s, ~s" infos infos2)))
             *score-information* lst)
   "scores-staves-info test succeeded")
 
 ; End of examples tests
+
+;;;; Define some helper functions to remove boilerplate code
+;;;; from testing code, also exit the script if we get
+;;;; an error.
+
+; flatten the tree of elements into a list
+(define (elements-list)
+  (let ((lst (scores-elements)))
+    ; scores-elements returns a tree:
+    ; lst :: [measures [segments [elements ...]]]
+    ; by flattening the list (each flatten works on the most outer lists), we finally get a single list (no tree structure)
+    ; we begin with an outer-list of scores, each score is a list of measures
+    (set! lst (apply append lst)) ; :: list of all measures in scores
+    (set! lst (apply append lst)) ; :: list of all segments
+    (set! lst (apply append lst)) ; :: list of all elements
+    lst))
+
+(let ((elements (elements-list)))
+  (for-each (lambda (element)
+              (let ((type (ms-element-type element))
+                    (info (ms-element-info element)))
+                (assert (number? type) "element-type is not a number")
+                (assert (or (vector? info)
+                            (length info) 3) "bad element-info: ~s" info)))
+            elements)
+  "element-type/info test succeeded")
+
+
+(format #t "Testing has finished.~%")
