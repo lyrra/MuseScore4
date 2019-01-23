@@ -70,6 +70,7 @@
        "\"libmscore/measure.h\""
        "\"libmscore/segment.h\"" "\"libmscore/segmentlist.h\""
        "\"libmscore/element.h\""
+       "\"libmscore/utils.h\""
        "\"musescore.h\""
        "\"scoreview.h\"" "\"scoretab.h\""
        "\"guile.h\"" "\"guile-glue.h\""))
@@ -135,6 +136,23 @@ make_ms_obj_score (int idx)
           )))))
   (emit "core_appname"    "applicationName")
   (emit "core_appversion" "applicationVersion"))
+
+(scm/c-fun "ms_version_major" "" '()
+  (f " return scm_from_int(majorVersion());~%"))
+
+(scm/c-fun "ms_version_minor" "" '()
+  (f " return scm_from_int(minorVersion());~%"))
+
+(scm/c-fun "ms_version_update" "" '()
+  (f " return scm_from_int(updateVersion());~%"))
+
+; Returns true if running musescore version is
+; higher or equal than given version argument.
+(scm/c-fun "ms_version_check" "SCM version" '()
+  (f "const char *verstr = scm_to_locale_string(version);
+      QString ver = QString::fromUtf8(verstr);
+      bool c = compareVersion(QCoreApplication::applicationVersion(), ver);
+      return (c ? SCM_BOOL_F : SCM_BOOL_T);~%"))
 
 (scm/c-fun "core_experimental" "" '()
   (f "bool ee = enableExperimental;
@@ -373,6 +391,10 @@ void init_guile_musescore_functions ()
               ("ms-segment-elements"   "ms_segment_elements" 1)
               ("ms-element-type" "ms_element_type" 1)
               ("ms-element-info" "ms_element_info" 1)
+              ("ms-version-major" "ms_version_major" 0)
+              ("ms-version-minor" "ms_version_minor" 0)
+              ("ms-version-update" "ms_version_update" 0)
+              ("ms-version-check" "ms_version_check" 1)
               ))
 
 (f "

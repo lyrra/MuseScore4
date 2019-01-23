@@ -65,6 +65,37 @@
 (format #t "MuseScore version: ~a~%" (ms-core-version))
 (assert (string? (ms-core-version)) "ms-core-version returned non string type")
 
+; Note ms-core-version could contain things like "-beta" ?
+(assert (ms-version-check (ms-core-version)) "musescore-version self-version fail")
+
+(let ((ver (ms-core-version))
+      (maj (ms-version-major))
+      (min (ms-version-minor))
+      (upd (ms-version-update)))
+  (format #t "MuseScore major-version: ~a/~a/~a/~a~%" ver maj min upd)
+  (assert (and ver maj min upd) "Can't get musescore version")
+  ; Note ms-core-version could contain things like "-beta" ?
+  (assert (ms-version-check ver) "musescore-version self-version fail")
+
+  (for-each
+    (lambda (args)
+      (apply (lambda (ma mi up tf) ; destructuring-bind
+               (let ((vercmp (format #f "~a.~a.~a" ma mi up)))
+                 (if tf (assert (ms-version-check vercmp)
+                                "musescore version fail: ~a -> ~a" vercmp tf)
+                        (assert (not (ms-version-check vercmp))
+                                "musescore version fail: ~a -> ~a" vercmp tf))))
+             args))
+    (list (list maj min upd #t)
+          (list (+ maj 1) min upd #f)
+          (list (- maj 1) min upd #t)
+          (list maj (+ min 1) upd #f)
+          (list maj (- min 1) upd #t)
+          (list maj min (+ upd 1) #f)
+          (list maj min (- upd 1) #t)
+          (list (+ maj 1) 0 0 #f) ; silly but important
+          (list (- maj 1) 99 99 #t))))
+
 ; Load all feasible examples
 
 (for-each
