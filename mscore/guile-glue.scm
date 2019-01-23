@@ -87,6 +87,7 @@ static SCM ms_obj_staff_type;
 static SCM ms_obj_measure_type;
 static SCM ms_obj_segment_type;
 static SCM ms_obj_element_type;
+static SCM ms_obj_note_type;
 
 SCM
 init_ms_object_1 (const char *type_name, const char *slotname1)
@@ -361,6 +362,55 @@ ms_parts_instruments (SCM part)
       SCM_SIMPLE_VECTOR_SET(v, 2, scm_from_utf8_string(uname));
       return v;~%"))
 
+; Note object get functions
+(let-syntax
+  ((emit
+    (syntax-rules ()
+      ((emit name typ kod)
+       (scm/c-fun name "SCM element_obj" '()
+         (format #t "
+      void* obj = scm_foreign_object_ref(element_obj, 0);
+      Note *note = (Note *) obj;
+      ~a r = note->~a();
+      return scm_from_~a(r);~%" typ kod typ))))))
+  ;     scheme-name         type   note-method
+  (emit "ms_note_mark"      "bool" "mark")
+  (emit "ms_note_velo_offset" "int"  "veloOffset")
+  (emit "ms_note_subchannel"  "int"  "subchannel")
+  (emit "ms_note_play"        "bool" "play")
+  (emit "ms_note_playticks" "int"  "playTicks")
+  (emit "ms_note_tpc"       "int"  "tpc")
+  (emit "ms_note_tpc1"      "int"  "tpc1")
+  (emit "ms_note_tpc2"      "int"  "tpc2")
+  (emit "ms_note_pitch"     "int"  "pitch")
+  (emit "ms_note_ppitch"    "int"  "ppitch")
+  (emit "ms_note_epitch"    "int"  "epitch")
+  (emit "ms_note_tuning"    "double" "tuning")
+  )
+
+; Note object set arg-1
+(let-syntax
+  ((emit
+   (lambda (_)
+     (syntax-case _ ()
+       ((emit name typ kod)
+        #`(scm/c-fun name "SCM element_obj, SCM val" '()
+            (format #t "
+      void* obj = scm_foreign_object_ref(element_obj, 0);
+      Note *note = (Note *) obj;
+      ~a v = scm_to_~a(val);
+      note->~a(v);
+      return SCM_BOOL_T;~%" typ typ kod)))))))
+  ;     scheme-name       type          note-method
+  (emit "ms_note_set_tuning" "double"   "setTuning")
+  (emit "ms_note_set_subchannel" "int"  "setSubchannel")
+  (emit "ms_note_set_velo_offset" "int" "setVeloOffset")
+  (emit "ms_note_set_ontime_offset" "int" "setOnTimeOffset")
+  (emit "ms_note_set_offtime_offset" "int" "setOffTimeOffset")
+  (emit "ms_note_set_play"        "bool" "setPlay")
+  (emit "ms_note_set_pitch"       "int"  "setPitch")
+  )
+
 (f "
 void init_guile_musescore_functions ()
 {
@@ -395,6 +445,25 @@ void init_guile_musescore_functions ()
               ("ms-version-minor" "ms_version_minor" 0)
               ("ms-version-update" "ms_version_update" 0)
               ("ms-version-check" "ms_version_check" 1)
+              ("ms-note-mark" "ms_note_mark" 1)
+              ("ms-note-velo-offset" "ms_note_velo_offset" 1)
+              ("ms-note-subchannel" "ms_note_subchannel" 1)
+              ("ms-note-play" "ms_note_play" 1)
+              ("ms-note-playticks" "ms_note_playticks" 1)
+              ("ms-note-tpc" "ms_note_tpc" 1)
+              ("ms-note-tpc1" "ms_note_tpc1"   1)
+              ("ms-note-tpc2" "ms_note_tpc2"   1)
+              ("ms-note-pitch" "ms_note_pitch" 1)
+              ("ms-note-ppitch" "ms_note_ppitch" 1)
+              ("ms-note-epitch" "ms_note_epitch" 1)
+              ("ms-note-tuning" "ms_note_tuning" 1)
+              ("ms-note-tuning!" "ms_note_set_tuning" 2)
+              ("ms-note-subchannel!" "ms_note_set_subchannel" 2)
+              ("ms-note-velo-offset!" "ms_note_set_velo_offset" 2)
+              ("ms-note-ontime-offset!" "ms_note_set_ontime_offset" 2)
+              ("ms-note-offtime-offset!" "ms_note_set_offtime_offset" 2)
+              ("ms-note-play!" "ms_note_set_play" 2)
+              ("ms-note-pitch!" "ms_note_set_pitch" 2)
               ))
 
 (f "
@@ -404,6 +473,7 @@ void init_guile_musescore_functions ()
       ms_obj_measure_type = init_ms_object_1(\"ms-measure\", \"measure\");
       ms_obj_segment_type = init_ms_object_1(\"ms-segment\", \"segment\");
       ms_obj_element_type = init_ms_object_1(\"ms-element\", \"element\");
+      ms_obj_note_type = init_ms_object_1(\"ms-note\", \"note\");
 }
 
 } // Eof Namespace ScriptGuile
