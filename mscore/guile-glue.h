@@ -15,6 +15,9 @@ class Guile {
     public:
     };
 
+// Before doing anything guile, call guile_init
+void guile_init ();
+
 /* starts Guile/Scheme
  * if given an argument, it is
  * an scheme-file that will be

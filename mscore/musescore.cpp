@@ -7442,12 +7442,13 @@ int main(int argc, char* av[])
       mscore->setRevision(revision);
       int files = 0;
       bool restoredSession = false;
-      // lhz
       bool script_scheme_shell = false;
       char *script_scheme_file  = NULL;
+
       if (parser.isSet("script-scheme-shell")) {
             script_scheme_shell = true;
             }
+
       if (parser.isSet("script-scheme")) {
             QString temp = parser.value("script-scheme");
             if (temp.isEmpty())
@@ -7455,6 +7456,10 @@ int main(int argc, char* av[])
             // due to scope issue, take a copy of the string
             script_scheme_file = strdup(temp.toLocal8Bit().data());
             std::cout << "Guile/Scheme script: " << script_scheme_file << std::endl;
+            }
+      // if Guile/Scheme is requested, initialize it
+      if (script_scheme_shell || script_scheme_file) {
+            ScriptGuile::guile_init();
             }
 
       if (MScore::noGui) {
