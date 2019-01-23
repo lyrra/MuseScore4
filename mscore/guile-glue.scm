@@ -341,6 +341,19 @@ ms_parts_instruments (SCM part)
     "}~%" ; close for loop
     ))
 
+(scm/c-fun "ms_segment_element" "SCM segment_obj, SCM index"
+  '("returns element by index from segment")
+  (f "void* obj = scm_foreign_object_ref(segment_obj, 0);
+      Segment *seg = (Segment *) obj;
+      if (! seg) return SCM_BOOL_F;
+      int idx = scm_to_int(index);
+      Element *e = seg->element(idx);
+      if (e) {
+        return scm_make_foreign_object_1 ((SCM)ms_obj_element_type, (SCM) e);
+      } else {
+        return SCM_BOOL_F;
+      }~%"))
+
 (scm/c-fun "ms_segment_next1" "SCM segment_obj"
   '("returns next1 segment from segment (goes beyond measure if needed)")
   (f "void* obj = scm_foreign_object_ref(segment_obj, 0);
@@ -505,6 +518,7 @@ void init_guile_musescore_functions ()
               ("ms-staff-info" "ms_staff_info" 1)
               ("ms-measure-segments"   "ms_measure_segments" 1)
               ("ms-segment-elements"   "ms_segment_elements" 1)
+              ("ms-segment-element" "ms_segment_element" 2)
               ("ms-segment-next1" "ms_segment_next1" 1)
               ("ms-element-type" "ms_element_type" 1)
               ("ms-element-info" "ms_element_info" 1)
