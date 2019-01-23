@@ -69,9 +69,10 @@
 
 (for-each
   (lambda (file)
-    ; Guile changes working directory to MS/build.debug/mscore
     (format #t "Loading example file ~s~%" file)
-    (load (string-append "script/guile/" file)))
+    ; primitive-load does not use this scripts load path as base,
+    ; which enables loading this script through guile, and by STDIN.
+    (primitive-load (string-append "script/guile/" file)))
   *test-files*)
 
 ; Run the examples
