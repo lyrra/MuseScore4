@@ -68,7 +68,7 @@ Cursor::Cursor(Score* s)
    : QObject(0)
       {
       _track   = 0;
-      _segment = 0;
+      _segment = nullptr;
       _filter  = SegmentType::ChordRest;
       setScore(s);
       }
@@ -359,4 +359,3 @@ int Cursor::qmlKeySignature()
       return (int) staff->key(tick());
       }
 }
-

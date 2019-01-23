@@ -88,6 +88,8 @@ static SCM ms_obj_measure_type;
 static SCM ms_obj_segment_type;
 static SCM ms_obj_element_type;
 static SCM ms_obj_note_type;
+static SCM ms_obj_selection_type;
+static SCM ms_obj_inputstate_type;
 
 SCM
 init_ms_object_1 (const char *type_name, const char *slotname1)
@@ -198,8 +200,8 @@ ms_scoreview_cmd (SCM str)
 static SCM
 ms_current_score ()
       {
-      Score* _score = mscore->currentScore();
-      return _score ? SCM_BOOL_T : SCM_BOOL_F;
+      Score* score = mscore->currentScore();
+      return scm_make_foreign_object_1 ((SCM)ms_obj_score_type, (SCM) score);
       }
 
 static SCM
@@ -339,6 +341,12 @@ ms_parts_instruments (SCM part)
     "}~%" ; close for loop
     ))
 
+(scm/c-fun "ms_segment_next1" "SCM segment_obj"
+  '("returns next1 segment from segment (goes beyond measure if needed)")
+  (f "void* obj = scm_foreign_object_ref(segment_obj, 0);
+      Segment *seg = (Segment *) obj;
+      return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg->next1());~%"))
+
 (scm/c-fun "ms_element_type" "SCM element_obj"
   '("returns type of element")
   (f "void* obj = scm_foreign_object_ref(element_obj, 0);
@@ -411,6 +419,60 @@ ms_parts_instruments (SCM part)
   (emit "ms_note_set_pitch"       "int"  "setPitch")
   )
 
+(scm/c-fun "ms_score_inputstate" "SCM score_obj"
+  '("returns inputstate object from score")
+  (f "void* obj = scm_foreign_object_ref(score_obj, 0);
+      Score *s = (Score *) obj;
+      InputState *is = &(s->inputState());
+      return scm_make_foreign_object_1 ((SCM)ms_obj_inputstate_type, (SCM) is);~%"))
+
+(scm/c-fun "ms_inputstate_settrack" "SCM inputstate_obj, SCM track"
+  '("sets track index in inputstate")
+  (f "void* obj = scm_foreign_object_ref(inputstate_obj, 0);
+      InputState *is = (InputState *) obj;
+      is->setTrack(scm_to_int(track));
+      return SCM_BOOL_T;~%"))
+
+; special in the way that segment can be NULL, and is represented by scheme-false object (#f).
+(scm/c-fun "ms_inputstate_setsegment" "SCM inputstate_obj, SCM segment"
+  '("sets segment index in inputstate")
+  (f "void* obj = scm_foreign_object_ref(inputstate_obj, 0);
+      InputState *is = (InputState *) obj;
+      if (segment == SCM_BOOL_F) {
+            is->setSegment(nullptr);
+            }
+      else {
+            Segment *seg = (Segment *) scm_foreign_object_ref(segment, 0);
+            is->setSegment(seg);
+           }
+      return SCM_BOOL_T;~%"))
+
+(scm/c-fun "ms_score_selection" "SCM score_obj"
+  '("returns selection object from score")
+  (f "void* obj = scm_foreign_object_ref(score_obj, 0);
+      Score *s = (Score *) obj;
+      Selection *sel = &(s->selection());
+      return scm_make_foreign_object_1 ((SCM)ms_obj_selection_type, (SCM) sel);~%"))
+
+(scm/c-fun "ms_selection_startsegment" "SCM selection_obj"
+  '("returns first segment in selection")
+  (f "void* obj = scm_foreign_object_ref(selection_obj, 0);
+      Selection *sel = (Selection *) obj;
+      Segment *seg = sel->startSegment();
+      return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg);~%"))
+
+(scm/c-fun "ms_selection_staffstart" "SCM selection_obj"
+  '("returns staffstart index")
+  (f "void* obj = scm_foreign_object_ref(selection_obj, 0);
+      Selection *sel = (Selection *) obj;
+      return scm_from_int(sel->staffStart());~%"))
+
+(scm/c-fun "ms_selection_staffend" "SCM selection_obj"
+  '("returns staffstart index")
+  (f "void* obj = scm_foreign_object_ref(selection_obj, 0);
+      Selection *sel = (Selection *) obj;
+      return scm_from_int(sel->staffEnd());~%"))
+
 (f "
 void init_guile_musescore_functions ()
 {
@@ -436,9 +498,14 @@ void init_guile_musescore_functions ()
               ("ms-score-nstaves"  "ms_score_nstaves" 1)
               ("ms-score-staves"   "ms_score_staves" 1)
               ("ms-score-measures"   "ms_score_measures" 1)
+              ("ms-score-selection" "ms_score_selection" 1)
+              ("ms-score-inputstate" "ms_score_inputstate" 1)
+              ("ms-inputstate-track!"   "ms_inputstate_settrack" 2)
+              ("ms-inputstate-segment!" "ms_inputstate_setsegment" 2)
               ("ms-staff-info" "ms_staff_info" 1)
               ("ms-measure-segments"   "ms_measure_segments" 1)
               ("ms-segment-elements"   "ms_segment_elements" 1)
+              ("ms-segment-next1" "ms_segment_next1" 1)
               ("ms-element-type" "ms_element_type" 1)
               ("ms-element-info" "ms_element_info" 1)
               ("ms-version-major" "ms_version_major" 0)
@@ -464,6 +531,10 @@ void init_guile_musescore_functions ()
               ("ms-note-offtime-offset!" "ms_note_set_offtime_offset" 2)
               ("ms-note-play!" "ms_note_set_play" 2)
               ("ms-note-pitch!" "ms_note_set_pitch" 2)
+              ; selection
+              ("ms-selection-startsegment" "ms_selection_startsegment" 1)
+              ("ms-selection-staffstart" "ms_selection_staffstart" 1)
+              ("ms-selection-staffend" "ms_selection_staffend" 1)
               ))
 
 (f "
@@ -474,6 +545,8 @@ void init_guile_musescore_functions ()
       ms_obj_segment_type = init_ms_object_1(\"ms-segment\", \"segment\");
       ms_obj_element_type = init_ms_object_1(\"ms-element\", \"element\");
       ms_obj_note_type = init_ms_object_1(\"ms-note\", \"note\");
+      ms_obj_selection_type = init_ms_object_1(\"ms-selection\", \"selection\");
+      ms_obj_inputstate_type = init_ms_object_1(\"ms-inputstate\", \"inputstate\");
 }
 
 } // Eof Namespace ScriptGuile
