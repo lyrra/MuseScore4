@@ -220,23 +220,14 @@
             elements)
   "element-type/info test succeeded")
 
-; Catch any errors and quit, needed if this script is loaded from STDIN, where guile will put us in debugger and continue taking forms
-(catch #t
-  (lambda ()
-    (primitive-load "script/guile/test/segment.scm")
-    (primitive-load "script/guile/test/inputstate.scm")
-    )
-  (lambda (key . args)
-    (format #t "Test Error: ~s ~s~%" key args)
-    (quit 111)))
+(eval-when (expand load eval)
+  (load "script/guile/test/test.scm")
 
-(catch #t
-  (lambda ()
-    ; These test-cases are found in the files loaded.
-    (test-segment-next1)
-    (test-inputstate))
-  (lambda (key . args)
-    (format #t "Test Error: ~s ~s~%" key args)
-    (quit 111)))
+  (load-test "script/guile/test/segment.scm")
+  (load-test "script/guile/test/inputstate.scm")
+
+  (run-test test-segment-next1)
+  (run-test test-inputstate)
+  )
 
 (format #t "Testing has finished.~%")
