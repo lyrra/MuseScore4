@@ -308,6 +308,14 @@ ms_parts_instruments (SCM part)
        SCM_SIMPLE_VECTOR_SET(v, 3, scm_from_int(ninst));
        return v;~%"))
 
+(scm/c-fun "ms_score_segment_last" "SCM score_obj"
+  '("get the last segment in score")
+  (f "scm_assert_foreign_object_type (ms_obj_score_type, score_obj);
+      void* obj = scm_foreign_object_ref(score_obj, 0);
+      Score *score = (Score *) obj;
+      Segment *seg = score->lastSegment();
+      return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg);~%"))
+
 ; See libmscore/score.cpp:Score::fixTicks for similar code
 ; FIX: Whatabout Score->firstMeasure() ?
 (scm/c-fun "ms_score_measures" "SCM score_obj"
@@ -358,7 +366,15 @@ ms_parts_instruments (SCM part)
   '("returns next1 segment from segment (goes beyond measure if needed)")
   (f "void* obj = scm_foreign_object_ref(segment_obj, 0);
       Segment *seg = (Segment *) obj;
-      return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg->next1());~%"))
+      Segment *segnext = seg->next1();
+      if (!segnext) return SCM_BOOL_F;
+      return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) segnext);~%"))
+
+(scm/c-fun "ms_segment_tick" "SCM segment_obj"
+  '("returns segment tick")
+  (f "void* obj = scm_foreign_object_ref(segment_obj, 0);
+      Segment *seg = (Segment *) obj;
+      return scm_from_int(seg->tick());~%"))
 
 (scm/c-fun "ms_element_type" "SCM element_obj"
   '("returns type of element")
@@ -472,6 +488,15 @@ ms_parts_instruments (SCM part)
   (f "void* obj = scm_foreign_object_ref(selection_obj, 0);
       Selection *sel = (Selection *) obj;
       Segment *seg = sel->startSegment();
+      if (!seg) return SCM_BOOL_F;
+      return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg);~%"))
+
+(scm/c-fun "ms_selection_endsegment" "SCM selection_obj"
+  '("returns last segment in selection")
+  (f "void* obj = scm_foreign_object_ref(selection_obj, 0);
+      Selection *sel = (Selection *) obj;
+      Segment *seg = sel->endSegment();
+      if (!seg) return SCM_BOOL_F;
       return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg);~%"))
 
 (scm/c-fun "ms_selection_staffstart" "SCM selection_obj"
@@ -511,6 +536,7 @@ void init_guile_musescore_functions ()
               ("ms-score-nstaves"  "ms_score_nstaves" 1)
               ("ms-score-staves"   "ms_score_staves" 1)
               ("ms-score-measures"   "ms_score_measures" 1)
+              ("ms-score-segment-last" "ms_score_segment_last" 1)
               ("ms-score-selection" "ms_score_selection" 1)
               ("ms-score-inputstate" "ms_score_inputstate" 1)
               ("ms-inputstate-track!"   "ms_inputstate_settrack" 2)
@@ -520,6 +546,7 @@ void init_guile_musescore_functions ()
               ("ms-segment-elements"   "ms_segment_elements" 1)
               ("ms-segment-element" "ms_segment_element" 2)
               ("ms-segment-next1" "ms_segment_next1" 1)
+              ("ms-segment-tick" "ms_segment_tick" 1)
               ("ms-element-type" "ms_element_type" 1)
               ("ms-element-info" "ms_element_info" 1)
               ("ms-version-major" "ms_version_major" 0)
@@ -547,6 +574,7 @@ void init_guile_musescore_functions ()
               ("ms-note-pitch!" "ms_note_set_pitch" 2)
               ; selection
               ("ms-selection-startsegment" "ms_selection_startsegment" 1)
+              ("ms-selection-endsegment" "ms_selection_endsegment" 1)
               ("ms-selection-staffstart" "ms_selection_staffstart" 1)
               ("ms-selection-staffend" "ms_selection_staffend" 1)
               ))
