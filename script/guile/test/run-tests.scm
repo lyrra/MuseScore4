@@ -223,10 +223,12 @@
 (eval-when (expand load eval)
   (load "script/guile/test/test.scm")
 
+  (load-test "script/guile/test/measure.scm")
   (load-test "script/guile/test/segment.scm")
   (load-test "script/guile/test/inputstate.scm")
 
-  (run-test test-segment-next1)
+  (run-test test-score-firstmeasure)
+  (run-test test-segment)
   (run-test test-inputstate)
   )
 
