@@ -1,5 +1,19 @@
 (use-modules (ice-9 format))
 
+(define (nth idx lst)
+  (if (= idx 0)
+    (car lst)
+    (if (null? (cdr lst))
+      '()
+      (nth (- idx 1) (cdr lst)))))
+
+(define (nthcdr idx lst)
+  (if (= idx 0)
+    lst
+    (if (null? (cdr lst))
+      '()
+      (nthcdr (- idx 1) (cdr lst)))))
+
 (define-syntax-rule (f exp ...)
   (format #t exp ...))
 
@@ -21,6 +35,50 @@
     exp ...
     (f "}~%~%")
     ))
+
+; Generates code that transfers data in the c-variable 'input'
+; to 'output'.
+; The list 'flow' describes how to do the transfers.
+(define (expand-transfer input flow output)
+  (let ((lst '())
+        (invar input))
+    (do ((l flow (cdr l))
+         (a 97 (+ a 1)))
+        ((null? l))
+      (let* ((line (car l))
+             (typ  (nth 0 line)) ; variable type
+             (ini  (nth 1 line)) ; assignment/initialization
+             (meth #f) ; ass/init by obj-method
+             (n 2))
+        (if (eq? ini 'm) ; ini-prefix
+          (begin (set! meth #t)
+                 (set! ini (nth 2 line))
+                 (set! n 3)))
+        (let ((flags (nthcdr n line))
+              (var (if (null? (cdr l)) ; last line
+                     output
+                     (format #f "~c" (integer->char a))))
+              (castline ""))
+          (if (eq? ini 'scm-ref)
+            (set! ini (format #f "scm_foreign_object_ref(~a, 0)" invar)))
+          (if (null? ini) (set! ini invar))
+          (if meth
+            (set! ini (format #f "~a->~a" invar ini)))
+          (if (not (memq 'c flags)) ; skip explicit casting
+            (set! castline (string-append "(" typ ") ")))
+          (set! lst (cons (format #f "~a ~a = ~a~a;~%"
+                                  typ var castline ini)
+                          lst))
+          (if (memq 'r flags) ; if NULL return scheme/false
+            (set! lst (cons (format #f "if (! ~a) { return SCM_BOOL_F; }~%" var)
+                            lst)))
+          ; connect the current output variable becoming next input
+          (set! invar var))))
+    (reverse lst)))
+
+(define-syntax-rule (var-transfer-expand i in ut ck)
+  (for-each (lambda (line) (indent i) (f line))
+            (expand-transfer in ck ut)))
 
 (define-syntax-rule (c-make-scheme-list i dtype code)
   (let ((datastr (cond
@@ -278,11 +336,11 @@ ms_parts_instruments (SCM part)
 
 (scm/c-fun "ms_score_nstaves" "SCM score_obj"
   '("get the number of staves from a score")
-  (f "scm_assert_foreign_object_type (ms_obj_score_type, score_obj);
-      void* obj = scm_foreign_object_ref(score_obj, 0);
-      MasterScore *ms_score = (MasterScore *) obj;
-      int nstaves = ms_score->nstaves();
-      return scm_from_int(nstaves);~%"))
+  (var-transfer-expand 6 "score_obj" "nstaves"
+   '(("void*" scm-ref c) ("MasterScore*")
+     ("int" m"nstaves()" c)))
+  (f "return scm_from_int(nstaves);~%"))
+
 
 (scm/c-fun "ms_score_staves" "SCM score_obj"
   '("make a scheme list of all staves in a score")
@@ -310,11 +368,10 @@ ms_parts_instruments (SCM part)
 
 (scm/c-fun "ms_score_segment_last" "SCM score_obj"
   '("get the last segment in score")
-  (f "scm_assert_foreign_object_type (ms_obj_score_type, score_obj);
-      void* obj = scm_foreign_object_ref(score_obj, 0);
-      Score *score = (Score *) obj;
-      Segment *seg = score->lastSegment();
-      return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg);~%"))
+  (var-transfer-expand 6 "score_obj" "seg"
+   '(("void*" scm-ref c) ("Score*")
+     ("Segment*" m"lastSegment()" c)))
+  (f "return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg);~%"))
 
 ; See libmscore/score.cpp:Score::fixTicks for similar code
 ; FIX: Whatabout Score->firstMeasure() ?
@@ -351,37 +408,30 @@ ms_parts_instruments (SCM part)
 
 (scm/c-fun "ms_segment_element" "SCM segment_obj, SCM index"
   '("returns element by index from segment")
-  (f "void* obj = scm_foreign_object_ref(segment_obj, 0);
-      Segment *seg = (Segment *) obj;
-      if (! seg) return SCM_BOOL_F;
-      int idx = scm_to_int(index);
-      Element *e = seg->element(idx);
-      if (e) {
-        return scm_make_foreign_object_1 ((SCM)ms_obj_element_type, (SCM) e);
-      } else {
-        return SCM_BOOL_F;
-      }~%"))
+  (f "int idx = scm_to_int(index);~%")
+  (var-transfer-expand 6 "segment_obj" "elt"
+   '(("void*" scm-ref c r) ("Segment*")
+     ("Element*" m"element(idx)" c r)))
+  (f "return scm_make_foreign_object_1 ((SCM)ms_obj_element_type, (SCM) elt);~%"))
 
 (scm/c-fun "ms_segment_next1" "SCM segment_obj"
   '("returns next1 segment from segment (goes beyond measure if needed)")
-  (f "void* obj = scm_foreign_object_ref(segment_obj, 0);
-      Segment *seg = (Segment *) obj;
-      Segment *segnext = seg->next1();
-      if (!segnext) return SCM_BOOL_F;
-      return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) segnext);~%"))
+  (var-transfer-expand 6 "segment_obj" "segnext"
+   '(("void*" scm-ref c) ("Segment*")
+     ("Segment*" m"next1()" c r)))
+   (f "return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) segnext);~%"))
 
 (scm/c-fun "ms_segment_tick" "SCM segment_obj"
   '("returns segment tick")
-  (f "void* obj = scm_foreign_object_ref(segment_obj, 0);
-      Segment *seg = (Segment *) obj;
-      return scm_from_int(seg->tick());~%"))
+  (var-transfer-expand 6 "segment_obj" "seg"
+   '(("void*" scm-ref c) ("Segment*")))
+  (f "return scm_from_int(seg->tick());~%"))
 
 (scm/c-fun "ms_element_type" "SCM element_obj"
   '("returns type of element")
-  (f "void* obj = scm_foreign_object_ref(element_obj, 0);
-      Element *e = (Element *) obj;
-      int etype = (int) e->type();
-      return scm_from_int(etype);~%"))
+  (var-transfer-expand 6 "element_obj" "etype"
+   '(("void*" scm-ref c) ("Element*") ("int" m"type()")))
+  (f "return scm_from_int(etype);~%"))
 
 (scm/c-fun "ms_element_info" "SCM element_obj"
   '("returns type of element")
@@ -485,19 +535,17 @@ ms_parts_instruments (SCM part)
 
 (scm/c-fun "ms_selection_startsegment" "SCM selection_obj"
   '("returns first segment in selection")
-  (f "void* obj = scm_foreign_object_ref(selection_obj, 0);
-      Selection *sel = (Selection *) obj;
-      Segment *seg = sel->startSegment();
-      if (!seg) return SCM_BOOL_F;
-      return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg);~%"))
+  (var-transfer-expand 6 "selection_obj" "seg"
+   '(("void*" scm-ref c) ("Selection*")
+     ("Segment*" m"startSegment()" c r)))
+  (f "return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg);~%"))
 
 (scm/c-fun "ms_selection_endsegment" "SCM selection_obj"
   '("returns last segment in selection")
-  (f "void* obj = scm_foreign_object_ref(selection_obj, 0);
-      Selection *sel = (Selection *) obj;
-      Segment *seg = sel->endSegment();
-      if (!seg) return SCM_BOOL_F;
-      return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg);~%"))
+  (var-transfer-expand 6 "selection_obj" "seg"
+   '(("void*" scm-ref c) ("Selection*")
+     ("Segment*" m"endSegment()" c r)))
+  (f "return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg);~%"))
 
 (scm/c-fun "ms_selection_staffstart" "SCM selection_obj"
   '("returns staffstart index")
