@@ -1,6 +1,6 @@
 
 (for-each (lambda (score)
-            (assert (ms-score-firstmeasure score)
-                    "firstMeasure failed"))
+            (let ((mea (ms-score-firstmeasure score)))
+              (assert mea "firstMeasure failed")
+              (assert (measure? mea) "firstMeasure returned non-measure object")))
           (ms-scores))
-
