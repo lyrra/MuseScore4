@@ -282,6 +282,21 @@ ms_parts_instruments (SCM part)
      ("Measure*" m"firstMeasure()" c r)))
   (f "return scm_make_foreign_object_1 ((SCM)ms_obj_measure_type, (SCM) mea);~%"))
 
+(scm/c-fun "ms_measure_first" "SCM measure_obj"
+  '("first segment in measures segmentlist")
+  (var-transfer-expand 6 "measure_obj" "seg"
+   '(("void*" scm-ref c r) ("Measure*")
+     ("Segment*" m"first()" c r)))
+  (f "return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg);~%"))
+
+(scm/c-fun "ms_measure_first_type" "SCM measure_obj, SCM stype"
+  '("first segment in measures segmentlist of type")
+  (f "SegmentType st = (SegmentType) scm_to_int(stype);~%")
+  (var-transfer-expand 6 "measure_obj" "seg"
+   '(("void*" scm-ref c r) ("Measure*")
+     ("Segment*" m"first(st)" c r)))
+  (f "return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg);~%"))
+
 ; no information is kept in SegmentList
 (scm/c-fun "ms_measure_segments" "SCM measure_obj"
   '("list of Ms::Segment from a measure")
@@ -310,6 +325,13 @@ ms_parts_instruments (SCM part)
      ("Element*" m"element(idx)" c r)))
   (f "return scm_make_foreign_object_1 ((SCM)ms_obj_element_type, (SCM) elt);~%"))
 
+(scm/c-fun "ms_segment_type" "SCM segment_obj"
+  '("returns segment type")
+  (var-transfer-expand 6 "segment_obj" "st"
+   '(("void*" scm-ref c) ("Segment*")
+     ("SegmentType" m"segmentType()" c)))
+   (f "return scm_from_int((int) st);~%"))
+
 (scm/c-fun "ms_segment_next" "SCM segment_obj"
   '("returns next segment")
   (var-transfer-expand 6 "segment_obj" "segnext"
@@ -324,18 +346,20 @@ ms_parts_instruments (SCM part)
      ("Segment*" m"next1()" c r)))
    (f "return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) segnext);~%"))
 
-(scm/c-fun "ms_segment_next_type" "SCM segment_obj, SegmentType stype"
+(scm/c-fun "ms_segment_next_type" "SCM segment_obj, SCM stype"
   '("returns next segment of type stype (goes beyond measure if needed)")
+  (f "SegmentType st = (SegmentType) scm_to_int(stype);~%")
   (var-transfer-expand 6 "segment_obj" "segnext"
    '(("void*" scm-ref c) ("Segment*")
-     ("Segment*" m"next(stype)" c r)))
+     ("Segment*" m"next(st)" c r)))
    (f "return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) segnext);~%"))
 
-(scm/c-fun "ms_segment_next1_type" "SCM segment_obj, SegmentType stype"
+(scm/c-fun "ms_segment_next1_type" "SCM segment_obj, SCM stype"
   '("returns next segment of type stype (goes beyond measure if needed)")
+  (f "SegmentType st = (SegmentType) scm_to_int(stype);~%")
   (var-transfer-expand 6 "segment_obj" "segnext"
    '(("void*" scm-ref c) ("Segment*")
-     ("Segment*" m"next1(stype)" c r)))
+     ("Segment*" m"next1(st)" c r)))
    (f "return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) segnext);~%"))
 
 (scm/c-fun "ms_segment_tick" "SCM segment_obj"
@@ -508,10 +532,13 @@ void init_guile_musescore_functions ()
               ("ms-inputstate-track!"   "ms_inputstate_settrack" 2)
               ("ms-inputstate-segment!" "ms_inputstate_setsegment" 2)
               ("ms-staff-info" "ms_staff_info" 1)
+              ("ms-measure-first"   "ms_measure_first" 1)
+              ("ms-measure-first-type"   "ms_measure_first_type" 2)
               ("ms-measure-segments"   "ms_measure_segments" 1)
               ("ms-segment-elements"   "ms_segment_elements" 1)
               ("ms-segment-element" "ms_segment_element" 2)
 
+              ("ms-segment-type"  "ms_segment_type" 1)
               ("ms-segment-next"  "ms_segment_next" 1)
               ("ms-segment-next1" "ms_segment_next1" 1)
               ("ms-segment-next-type"  "ms_segment_next_type" 2)

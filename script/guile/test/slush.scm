@@ -79,9 +79,12 @@
       (ms-inputstate-track!  (inputstate 0 bool))
       (ms-inputstate-segment! (inputstate segment bool))
       (ms-staff-info         (staff vec))
+      (ms-measure-first      (measure segment))
+      (ms-measure-first-type (measure #x200 segment)) ; SegmentType::ChordRest
       (ms-measure-segments   (measure (segment)))
       (ms-segment-elements   (segment (element)))
       (ms-segment-element (segment 0 element))
+      (ms-segment-type  (segment int))
       (ms-segment-next  (segment segment))
       (ms-segment-next1 (segment segment))
       (ms-segment-next-type  (segment 92 segment)) ; chord/rest type
