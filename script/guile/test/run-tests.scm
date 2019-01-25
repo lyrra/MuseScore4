@@ -56,7 +56,7 @@
     (begin
       (format #t msg ...)
       (format #t "~%")
-      (quit 111))))
+      (error msg ...))))
 
 ; Try calling some very simple Scheme/C shim functions
 (format #t "MuseScore name: ~a~%" (ms-core-name))
@@ -220,16 +220,24 @@
             elements)
   "element-type/info test succeeded")
 
-(eval-when (expand load eval)
-  (load "script/guile/test/test.scm")
+; Load testing framework
+(primitive-load "script/guile/test/test.scm")
 
-  (load-test "script/guile/test/measure.scm")
-  (load-test "script/guile/test/segment.scm")
-  (load-test "script/guile/test/inputstate.scm")
+; A test is defined as simply as this
+(deftest (test-trivial)
+  'test-code-goes-here
+  'raise-error-to-fail-test
+  'any-return-code)
 
-  (run-test test-score-firstmeasure)
-  (run-test test-segment)
-  (run-test test-inputstate)
-  )
+; Load test files, each test consist of loading and
+; evaulating the top-level expressions in each file
+(deftest (measure) (primitive-load "script/guile/test/measure.scm"))
+(deftest (segment) (primitive-load "script/guile/test/segment.scm"))
+(deftest (inputstate) (primitive-load "script/guile/test/inputstate.scm"))
+
+(let ((good (run-tests)))
+  (format #t "Test passed: ~s/~s~%" good (length *tests*))
+  (if (not (= good (length *tests*)))
+    (quit 1)))
 
 (format #t "Testing has finished.~%")
