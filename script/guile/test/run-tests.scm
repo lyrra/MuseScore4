@@ -239,6 +239,7 @@
 (deftest (measure) (primitive-load "script/guile/test/measure.scm"))
 (deftest (segment) (primitive-load "script/guile/test/segment.scm"))
 (deftest (inputstate) (primitive-load "script/guile/test/inputstate.scm"))
+(deftest (slush) (primitive-load "script/guile/test/slush.scm"))
 
 (let ((good (run-tests)))
   (format #t "Test passed: ~s/~s~%" good (length *tests*))
