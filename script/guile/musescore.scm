@@ -52,10 +52,11 @@
     (syntax-rules ()
       ((def class-name str-name)
         (define-method (write (obj class-name) port)
-          (format port "#<~a c=~x, s=~x>"
+          (format port "#<~a ~x>"
                   str-name
                   (struct-ref/unboxed obj 0)
-                  (pointer-address (scm->pointer obj))))))))
+                  ;(pointer-address (scm->pointer obj))
+                  ))))))
   (def <ms-score>      "ms-score")
   (def <ms-staff>      "ms-staff")
   (def <ms-measure>    "ms-measure")
