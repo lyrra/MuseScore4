@@ -220,13 +220,15 @@
             elements)
   "element-type/info test succeeded")
 
+; Load Musescore Scheme library
+(primitive-load "script/guile/musescore.scm")
+
 ; Load testing framework
 (primitive-load "script/guile/test/test.scm")
 
 ; Load tools used for testing musescore
-(use-modules (oop goops))
-(use-modules (srfi srfi-43))
 (primitive-load "script/guile/test/test-musescore.scm")
+(use-modules (srfi srfi-43)) ; vector library
 
 ; A test is defined as simply as this
 (deftest (test-trivial)

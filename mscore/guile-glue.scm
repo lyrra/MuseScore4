@@ -24,20 +24,21 @@
        "\"guile.h\"" "\"guile-glue.h\""))
 
 (f "
+// Keep this outside any c++ namespace because we want FFI access
+SCM ms_obj_score_type;
+SCM ms_obj_staff_type;
+SCM ms_obj_measure_type;
+SCM ms_obj_segment_type;
+SCM ms_obj_element_type;
+SCM ms_obj_note_type;
+SCM ms_obj_selection_type;
+SCM ms_obj_inputstate_type;
+
 namespace ScriptGuile {
 using namespace Ms;
 //
 // musescore types
 //
-
-static SCM ms_obj_score_type;
-static SCM ms_obj_staff_type;
-static SCM ms_obj_measure_type;
-static SCM ms_obj_segment_type;
-static SCM ms_obj_element_type;
-static SCM ms_obj_note_type;
-static SCM ms_obj_selection_type;
-static SCM ms_obj_inputstate_type;
 
 SCM
 init_ms_object_1 (const char *type_name, const char *slotname1)
