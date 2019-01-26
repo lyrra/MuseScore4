@@ -225,6 +225,7 @@
 
 ; Load tools used for testing musescore
 (use-modules (oop goops))
+(use-modules (srfi srfi-43))
 (primitive-load "script/guile/test/test-musescore.scm")
 
 ; A test is defined as simply as this
@@ -238,6 +239,7 @@
 (deftest (measure) (primitive-load "script/guile/test/score.scm"))
 (deftest (measure) (primitive-load "script/guile/test/measure.scm"))
 (deftest (segment) (primitive-load "script/guile/test/segment.scm"))
+(deftest (notes) (primitive-load "script/guile/test/notes.scm"))
 (deftest (inputstate) (primitive-load "script/guile/test/inputstate.scm"))
 (deftest (slush) (primitive-load "script/guile/test/slush.scm"))
 

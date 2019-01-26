@@ -90,6 +90,8 @@
       (ms-segment-next-type  (segment 92 segment)) ; chord/rest type
       (ms-segment-next1-type (segment 92 segment)) ; chord/rest type
       (ms-segment-tick (segment int))
+      ; FIX: need type language: (or (List) (List note))
+      ;(ms-element-notes  (element (note)))
       (ms-element-type (segment int))
       (ms-element-info (element vec))
       (ms-version-major  (int))

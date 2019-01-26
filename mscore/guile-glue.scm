@@ -15,7 +15,7 @@
        "<libguile.h>"
        "\"libmscore/mscore.h\"" "\"libmscore/part.h\""
        "\"libmscore/staff.h\"" "\"libmscore/measurebase.h\""
-       "\"libmscore/measure.h\""
+       "\"libmscore/measure.h\"" "\"libmscore/chord.h\""
        "\"libmscore/segment.h\"" "\"libmscore/segmentlist.h\""
        "\"libmscore/element.h\""
        "\"libmscore/utils.h\""
@@ -374,6 +374,23 @@ ms_parts_instruments (SCM part)
    '(("void*" scm-ref c) ("Element*") ("int" m"type()")))
   (f "return scm_from_int(etype);~%"))
 
+(scm/c-fun "ms_element_notes" "SCM element_obj"
+  '("returns notes from element")
+  (var-transfer-expand 6 "element_obj" "elm"
+   '(("void*" scm-ref c) ("Element*")))
+  (f "if (! elm->isChord()) { return SCM_EOL; }~%{~%")
+  (var-transfer-expand 6 "elm" "notelist"
+   '(("Chord*") ("std::vector<Note*>&" m"notes()" c)))
+  (f "int numnotes = notelist.size();
+      SCM v = scm_c_make_vector(numnotes, SCM_EOL);
+      int n = 0;
+      for (Note* note : notelist) {
+            SCM scmnote = scm_make_foreign_object_1 ((SCM)ms_obj_note_type, (SCM) note);
+            SCM_SIMPLE_VECTOR_SET(v, n, scmnote);
+            n++;
+      }
+      return v;~%}~%"))
+
 (scm/c-fun "ms_element_info" "SCM element_obj"
   '("returns type of element")
   (f "void* obj = scm_foreign_object_ref(element_obj, 0);
@@ -546,6 +563,7 @@ void init_guile_musescore_functions ()
               ("ms-segment-tick" "ms_segment_tick" 1)
               ("ms-element-type" "ms_element_type" 1)
               ("ms-element-info" "ms_element_info" 1)
+              ("ms-element-notes" "ms_element_notes" 1)
               ("ms-version-major" "ms_version_major" 0)
               ("ms-version-minor" "ms_version_minor" 0)
               ("ms-version-update" "ms_version_update" 0)
