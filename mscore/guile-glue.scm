@@ -597,14 +597,14 @@ void init_guile_musescore_functions ()
 
 (f "
       // initialize types
-      ms_obj_score_type = init_ms_object_1(\"ms-score\", \"score\");
-      ms_obj_staff_type = init_ms_object_1(\"ms-staff\", \"staff\");
-      ms_obj_measure_type = init_ms_object_1(\"ms-measure\", \"measure\");
-      ms_obj_segment_type = init_ms_object_1(\"ms-segment\", \"segment\");
-      ms_obj_element_type = init_ms_object_1(\"ms-element\", \"element\");
-      ms_obj_note_type = init_ms_object_1(\"ms-note\", \"note\");
-      ms_obj_selection_type = init_ms_object_1(\"ms-selection\", \"selection\");
-      ms_obj_inputstate_type = init_ms_object_1(\"ms-inputstate\", \"inputstate\");
+      ms_obj_score_type = init_ms_object_1(\"<ms-score>\", \"score\");
+      ms_obj_staff_type = init_ms_object_1(\"<ms-staff>\", \"staff\");
+      ms_obj_measure_type = init_ms_object_1(\"<ms-measure>\", \"measure\");
+      ms_obj_segment_type = init_ms_object_1(\"<ms-segment>\", \"segment\");
+      ms_obj_element_type = init_ms_object_1(\"<ms-element>\", \"element\");
+      ms_obj_note_type = init_ms_object_1(\"<ms-note>\", \"note\");
+      ms_obj_selection_type = init_ms_object_1(\"<ms-selection>\", \"selection\");
+      ms_obj_inputstate_type = init_ms_object_1(\"<ms-inputstate>\", \"inputstate\");
 }
 
 } // Eof Namespace ScriptGuile
