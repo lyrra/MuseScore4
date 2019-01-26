@@ -16,27 +16,30 @@
 
 ; Score-information.
 ; Staff-info is a bit cryptic. It is a list of:
-; (staffIdx startTrack endTrack numInstruments)
+; (staffIdx startTrack endTrack numInstruments partname volume)
 (define *score-information*
         '((name "Fugue_1"
                 measures 29
                 total-segments 505
                 total-elements 1217
                 staves 4
-                staff-info (#(0 0 4 1) #(1 4 8 1)
-                            #(2 8 12 1) #(3 12 16 1)))
+                staff-info (#(0  0  4 1 "Violin I"    100.0)
+                            #(1  4  8 1 "Violin II"   100.0)
+                            #(2  8 12 1 "Viola"       100.0)
+                            #(3 12 16 1 "Violoncello" 100.0)))
           (name "Unclaimed_Gift"
                 measures 40
                 total-segments 230
                 total-elements 225
                 staves 1
-                staff-info (#(0 0 4 1)))
+                staff-info (#(0 0 4 1 "Piano" 100.0)))
           (name "Reunion"
                 measures 23
                 total-segments 207
                 total-elements 360
                 staves 2
-                staff-info (#(0 0 4 1) #(1 4 8 1)))))
+                staff-info (#(0 0 4 1 "Piano" 100.0)
+                            #(1 4 8 1 "Piano" 100.0)))))
 
 ; Begin testing by looking at the scheme examples and run them.
 ; Some examples can be reused in testing, make a list of those:

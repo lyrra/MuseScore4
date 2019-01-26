@@ -249,12 +249,17 @@ ms_parts_instruments (SCM part)
        int staffIdx   = staff->idx();
        int startTrack = staffIdx * VOICES;
        int endTrack   = startTrack + VOICES;
-       int ninst = staff->part()->instruments()->size();
-       SCM v = scm_c_make_vector(4, SCM_EOL);
+       Part *part = staff->part();
+       int ninst = part->instruments()->size();
+       SCM partname = scm_from_locale_string(qPrintable(part->partName()));
+       double volume = part->volume();
+       SCM v = scm_c_make_vector(6, SCM_EOL);
        SCM_SIMPLE_VECTOR_SET(v, 0, scm_from_int(staffIdx));
        SCM_SIMPLE_VECTOR_SET(v, 1, scm_from_int(startTrack));
        SCM_SIMPLE_VECTOR_SET(v, 2, scm_from_int(endTrack));
        SCM_SIMPLE_VECTOR_SET(v, 3, scm_from_int(ninst));
+       SCM_SIMPLE_VECTOR_SET(v, 4, partname);
+       SCM_SIMPLE_VECTOR_SET(v, 5, scm_from_double(volume));
        return v;~%"))
 
 (scm/c-fun "ms_score_segment_last" "SCM score_obj"
