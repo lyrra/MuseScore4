@@ -244,6 +244,7 @@
 (deftest (measure) (primitive-load "script/guile/test/score.scm"))
 (deftest (measure) (primitive-load "script/guile/test/measure.scm"))
 (deftest (segment) (primitive-load "script/guile/test/segment.scm"))
+(deftest (element) (primitive-load "script/guile/test/element.scm"))
 (deftest (notes) (primitive-load "script/guile/test/notes.scm"))
 (deftest (inputstate) (primitive-load "script/guile/test/inputstate.scm"))
 (deftest (slush) (primitive-load "script/guile/test/slush.scm"))

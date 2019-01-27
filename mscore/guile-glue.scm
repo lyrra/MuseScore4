@@ -407,10 +407,11 @@ ms_parts_instruments (SCM part)
       QString quname = e->userName();
       QByteArray baquname = quname.toLocal8Bit();
       const char *uname = baquname.data();
-      SCM v = scm_c_make_vector(3, SCM_EOL);
+      SCM v = scm_c_make_vector(4, SCM_EOL);
       SCM_SIMPLE_VECTOR_SET(v, 0, scm_from_int(ietype));
       SCM_SIMPLE_VECTOR_SET(v, 1, scm_from_utf8_string(ename));
       SCM_SIMPLE_VECTOR_SET(v, 2, scm_from_utf8_string(uname));
+      SCM_SIMPLE_VECTOR_SET(v, 3, scm_from_int(e->track()));
       return v;~%"))
 
 ; Note object get functions
