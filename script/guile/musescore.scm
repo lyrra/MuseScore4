@@ -3,6 +3,11 @@
 (use-modules (oop goops))      ; CLOS-like object orientation
 (use-modules (system foreign)) ; FFI access
 
+;;; foreign-objects holding c-pointers to various
+;;; musescore objects is represented as 'wrappes'
+;;; in scheme. A wrapper is a structure (like a C struct)
+;;; with only one member: the underlying c-object
+
 ; goops define-method needs the class-object
 ; available as a function
 
@@ -68,3 +73,24 @@
   (def <ms-note>       "ms-note")
   (def <ms-selection>  "ms-selection")
   (def <ms-inputstate> "ms-inputstate"))
+
+;;; define predicates for musescore-wrapper objects
+
+(let-syntax
+    ((def
+      (syntax-rules ()
+        ((def name objname)
+          (define (name obj)
+            (and (struct? obj)
+                 (instance? obj)
+                 (eq? 'objname (struct-vtable-name (struct-vtable obj)))))))))
+
+  (def ms-staff?   <ms-staff>)
+  (def ms-score?   <ms-score>)
+  (def ms-element? <ms-element>)
+  (def ms-measure? <ms-measure>)
+  (def ms-segment? <ms-segment>)
+  (def ms-note?    <ms-note>)
+  (def ms-accidental? <ms-accidental>)
+  (def ms-selection?  <ms-selection>)
+  (def ms-inputstate? <ms-inputstate>))

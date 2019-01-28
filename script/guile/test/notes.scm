@@ -7,7 +7,7 @@
   ; test for note accidental
   (let ((acc (ms-note-accidental note)))
     (if acc
-      (assert (accidental? acc) "not an accidental")))
+      (assert (ms-accidental? acc) "not an accidental")))
   ; test for note dots
   (let ((dots (ms-note-dots note)))
     (if dots
@@ -23,13 +23,13 @@
     (lambda (score)
       (let ((mea (ms-score-firstmeasure score)))
         (assert mea "firstMeasure failed")
-        (assert (measure? mea) "firstMeasure returned non-measure object")
+        (assert (ms-measure? mea) "firstMeasure returned non-measure object")
         (for-each
             (lambda (seg)
-              (assert (segment? seg) "not a segment")
+              (assert (ms-segment? seg) "not a segment")
               (for-each
                   (lambda (elm)
-                    (assert (element? elm) "not an element")
+                    (assert (ms-element? elm) "not an element")
                     ; Scheme/C shim ensures it is safe
                     ; to take the notes of elements no matter element-type
                     (let ((notes (ms-element-notes elm)))
@@ -37,7 +37,7 @@
                       (if (= (ms-element-type elm) 92)
                         (vector-for-each
                             (lambda (i note)
-                              (assert (note? note) "not a note")
+                              (assert (ms-note? note) "not a note")
                               (test-note note))
                             notes))))
                   (ms-segment-elements seg)))

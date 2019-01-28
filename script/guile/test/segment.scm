@@ -7,7 +7,7 @@
   ; get first measure in current score
   (let ((measure (car (ms-score-measures score))))
     (let ((segment (car (ms-measure-segments measure))))
-      (assert (segment? segment) "not a segment")
+      (assert (ms-segment? segment) "not a segment")
 
       (if (not (ms-segment-next segment))
         (error "cant get segment-next"))
