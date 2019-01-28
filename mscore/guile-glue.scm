@@ -488,6 +488,21 @@ ms_parts_instruments (SCM part)
       if (! acc) { return SCM_BOOL_F; }
       return scm_make_foreign_object_1 ((SCM)ms_obj_accidental_type, (SCM) acc);~%"))
 
+(scm/c-fun "ms_note_numdots" "SCM note_obj"
+  '("return number of note dots")
+  (var-transfer-expand 6 "note_obj" "num"
+   '(("void*" scm-ref c) ("Note*")
+     ("int" m"qmlDotsCount()" c)))
+  (f "return scm_from_int(num);~%"))
+
+(scm/c-fun "ms_note_dots" "SCM note_obj"
+  '("return note dots")
+  (var-transfer-expand 6 "note_obj" "dots"
+   '(("void*" scm-ref c) ("Note*")
+     ("QVector<NoteDot*>&" m"dots()" c)))
+  (c-make-scheme-list 6 "ms_obj_element_type"
+    "for (auto &item : dots) {~%"))
+
 (scm/c-fun "ms_score_inputstate" "SCM score_obj"
   '("returns inputstate object from score")
   (f "void* obj = scm_foreign_object_ref(score_obj, 0);
@@ -622,6 +637,8 @@ void init_guile_musescore_functions ()
               ("ms-note-play!" "ms_note_set_play" 2)
               ("ms-note-pitch!" "ms_note_set_pitch" 2)
               ("ms-note-accidental" "ms_note_accidental" 1)
+              ("ms-note-numdots" "ms_note_numdots" 1)
+              ("ms-note-dots" "ms_note_dots" 1)
               ; selection
               ("ms-selection-startsegment" "ms_selection_startsegment" 1)
               ("ms-selection-endsegment" "ms_selection_endsegment" 1)

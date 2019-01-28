@@ -7,7 +7,17 @@
   ; test for note accidental
   (let ((acc (ms-note-accidental note)))
     (if acc
-      (assert (accidental? acc) "not an accidental"))))
+      (assert (accidental? acc) "not an accidental")))
+  ; test for note dots
+  (let ((dots (ms-note-dots note)))
+    (if dots
+      (begin
+        (assert (list? dots) "not a dot-list")
+        (for-each (lambda (dot)
+                    (assert (element? dot) "dot is not an element"))
+                  dots)))
+    (assert (integer? (ms-note-numdots note))
+            "number of dots is not an integer")))
 
 (for-each
     (lambda (score)
