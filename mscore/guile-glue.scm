@@ -380,8 +380,24 @@ ms_parts_instruments (SCM part)
    '(("void*" scm-ref c) ("Element*") ("int" m"type()")))
   (f "return scm_from_int(etype);~%"))
 
+(scm/c-fun "ms_element_color" "SCM element_obj"
+  '("returns element color")
+  (var-transfer-expand 6 "element_obj" "col"
+   '(("void*" scm-ref c) ("Element*") ("QColor" m"color()")))
+  ; The typedef QRgb, is identical to unsigned int
+  (f "QRgb qc = col.rgba();
+      return scm_from_uint(qc);~%"))
+
+(scm/c-fun "ms_element_set_color" "SCM element_obj, SCM color"
+  '("set element color RGB")
+  (var-transfer-expand 6 "element_obj" "elm"
+   '(("void*" scm-ref c) ("Element*")))
+  (f "unsigned int col = scm_to_uint(color);
+      elm->setColor(QRgb(col));
+      return SCM_BOOL_T;~%"))
+
 (scm/c-fun "ms_element_notes" "SCM element_obj"
-  '("returns notes from element")
+  '("return notes from element")
   (var-transfer-expand 6 "element_obj" "elm"
    '(("void*" scm-ref c) ("Element*")))
   (f "if (! elm->isChord()) { return SCM_EOL; }~%{~%")
@@ -570,6 +586,8 @@ void init_guile_musescore_functions ()
               ("ms-segment-tick" "ms_segment_tick" 1)
               ("ms-element-type" "ms_element_type" 1)
               ("ms-element-info" "ms_element_info" 1)
+              ("ms-element-color" "ms_element_color" 1)
+              ("ms-element-color!" "ms_element_set_color" 2)
               ("ms-element-notes" "ms_element_notes" 1)
               ("ms-version-major" "ms_version_major" 0)
               ("ms-version-minor" "ms_version_minor" 0)
