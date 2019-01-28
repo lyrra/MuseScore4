@@ -1,10 +1,12 @@
 ;;;; unpolished tests
 
+(use-modules (ice-9 match))
+
 (define (check-type obj)
   (cond
     ((or (eq? obj #t) (eq? obj #f)) 'bool)
     ((string? obj) 'string)
-    ((exact-integer? obj) 'int)
+    ((exact-integer? obj) (list 'int obj))
     ((number?  obj) 'double)
     ((staff? obj) 'staff)
     ((score? obj) 'score)
@@ -16,7 +18,7 @@
     ((vector? obj) 'vec)
     ((list? obj)
       (if (> (length obj) 0)
-        (list (check-type (car obj)))
+        (list 'L (check-type (car obj)))
         '()))
     (else 'error)))
 
@@ -38,6 +40,22 @@
            (else 'error)))
        parms))
 
+(define (compare-type etype ctype)
+  (match etype
+    ('nat ; match 'nat against '(int x)
+     (match ctype
+       (('int num) (> num 0))
+       (_ #f)))
+    ('int (and (list? ctype)
+               (eq? (car ctype) 'int)))
+    (('L) (list? ctype))
+    (('L type)
+     (match ctype
+       (('L var) (compare-type type var))
+       (_ #f)))
+    (symbol (eq? etype ctype)) ; match simple types like string
+    (_ #f)))
+
 (define (run-func func type . info)
   (cond
     ((list? type)
@@ -52,7 +70,7 @@
            ; check result according to expected return type
            (let ((ctype (check-type res)))
              (format #t "=> ~s :: ~a want: ~s~%" res ctype etype)
-             (assert (equal? etype ctype)
+             (assert (compare-type etype ctype)
                      "~a has wrong result type: ~s, expected ~s"
                      func ctype etype))))))))
 
@@ -62,16 +80,16 @@
       (ms-core-experimental  (bool))
       (ms-pan-playback       (bool))
       (ms-play-repeats       (bool))
-      (ms-scores-count       (int))
+      (ms-scores-count       (nat))
       (ms-current-score      (score))
-      (ms-parts              (())) ; FIX: flesh-out ms-parts
+      (ms-parts              ((L))) ; FIX: flesh-out ms-parts
       (ms-scoreview-cmd 1    (score string))
-      (ms-parts-instruments  (0 (string))) ; 0 = part-index
-      (ms-scores-nstaves     ((int)))
-      (ms-scores             ((score)))
-      (ms-score-nstaves      (score int))
-      (ms-score-staves       (score (staff)))
-      (ms-score-measures     (score (measure)))
+      (ms-parts-instruments  (0 (L string))) ; 0 = part-index
+      (ms-scores-nstaves     ((L nat)))
+      (ms-scores             ((L score)))
+      (ms-score-nstaves      (score nat))
+      (ms-score-staves       (score (L staff)))
+      (ms-score-measures     (score (L measure)))
       (ms-score-firstmeasure (score measure))
       (ms-score-segment-last (score segment))
       (ms-score-selection    (score selection))
@@ -81,8 +99,8 @@
       (ms-staff-info         (staff vec))
       (ms-measure-first      (measure segment))
       (ms-measure-first-type (measure #x200 segment)) ; SegmentType::ChordRest
-      (ms-measure-segments   (measure (segment)))
-      (ms-segment-elements   (segment (element)))
+      (ms-measure-segments   (measure (L segment)))
+      (ms-segment-elements   (segment (L element)))
       (ms-segment-element (segment 0 element))
       (ms-segment-type  (segment int))
       (ms-segment-next  (segment segment))
@@ -91,7 +109,7 @@
       (ms-segment-next1-type (segment 92 segment)) ; chord/rest type
       (ms-segment-tick (segment int))
       ; FIX: need type language: (or (List) (List note))
-      ;(ms-element-notes  (element (note)))
+      (ms-element-notes  (element (L)))
       (ms-element-type (segment int))
       (ms-element-info (element vec))
       (ms-version-major  (int))
