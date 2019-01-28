@@ -15,3 +15,7 @@
     (if (null? (cdr lst))
       '()
       (nthcdr (- idx 1) (cdr lst)))))
+
+(define (last lst)
+  (do ((l lst (cdr l)))
+      ((eq? '() (cdr l)) l)))

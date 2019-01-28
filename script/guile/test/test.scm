@@ -2,7 +2,8 @@
 ;;;; probably replace this with some test framework
 
 ; Load an scheme module that makes output print formatting nicer
-(use-modules (ice-9 format))
+(use-modules (ice-9 format)) ; easier and nicer formatting
+(use-modules (ice-9 match)) ; match (a more expressive cond)
 
 ; define a simple assert macro that lets out quit when
 ; an error has occured. Check that the unix-return-code is 0.
@@ -34,19 +35,17 @@
     (lambda (key . args)
       (catch #t
         (lambda ()
-          (cond
-            ((eq? key 'misc-error)
-             (apply
-               (lambda (a fmt arg b)
-                 (format #t "Run Test Error: test=~a, error=~s~%  " name key)
-                 (apply format (cons* #t arg))
-                 (newline)
-                 'test-fail)
-               args))
-            (else
-             (format #t "Test error:~%")
-             (apply format (cons* #t (cadr args) (caddr args)))
-             'unknown-error)))
+          (match args
+            (((or #f #t) string (or #f #t) (or #f #t))
+             (format #t "Test Error: test=~a, error=~s~%  " name key)
+             'test-fail)
+            (((or #f #t) string (arg ...) (or #f #t))
+             (format #t "Test Error: test=~a, error=~s~%  " name key)
+             (apply format (cons* #t arg))
+             (newline)
+             'test-fail)
+            (_ (format #t "Test Error: test=~a, error=~s, ~s~%  " name key args)
+               'test-fail)))
         (lambda (key . args)
           ; A fail occured when trying to report the test-error
           ; just silently fail to avoid ending up in debugger

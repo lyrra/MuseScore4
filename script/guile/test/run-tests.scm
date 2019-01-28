@@ -62,22 +62,21 @@
       (error msg ...))))
 
 ; Try calling some very simple Scheme/C shim functions
-(format #t "MuseScore name: ~a~%" (ms-core-name))
-(assert (string? (ms-core-name)) "ms-core-name returned non string type")
+(format #t "MuseScore name: ~a~%" (ms-name))
+(assert (string? (ms-name)) "ms-name returned non string type")
 
-(format #t "MuseScore version: ~a~%" (ms-core-version))
-(assert (string? (ms-core-version)) "ms-core-version returned non string type")
+(format #t "MuseScore version: ~a~%" (ms-version))
+(assert (string? (ms-version)) "ms-version returned non string type")
 
-; Note ms-core-version could contain things like "-beta" ?
-(assert (ms-version-check (ms-core-version)) "musescore-version self-version fail")
+; Note ms-version could contain things like "-beta" ?
+(assert (ms-version-check (ms-version)) "ms-version self-version fail")
 
-(let ((ver (ms-core-version))
+(let ((ver (ms-version))
       (maj (ms-version-major))
       (min (ms-version-minor))
       (upd (ms-version-update)))
   (format #t "MuseScore major-version: ~a/~a/~a/~a~%" ver maj min upd)
   (assert (and ver maj min upd) "Can't get musescore version")
-  ; Note ms-core-version could contain things like "-beta" ?
   (assert (ms-version-check ver) "musescore-version self-version fail")
 
   (for-each
@@ -223,6 +222,9 @@
             elements)
   "element-type/info test succeeded")
 
+; Load common functions (and some Common Lisp helpers)
+(primitive-load "script/guile/common.scm")
+
 ; Load Musescore Scheme library
 (primitive-load "script/guile/musescore.scm")
 
@@ -241,7 +243,7 @@
 
 ; Load test files, each test consist of loading and
 ; evaulating the top-level expressions in each file
-(deftest (measure) (primitive-load "script/guile/test/score.scm"))
+(deftest (score) (primitive-load "script/guile/test/score.scm"))
 (deftest (measure) (primitive-load "script/guile/test/measure.scm"))
 (deftest (segment) (primitive-load "script/guile/test/segment.scm"))
 (deftest (element) (primitive-load "script/guile/test/element.scm"))

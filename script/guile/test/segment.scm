@@ -1,3 +1,4 @@
+
 (let ((score (ms-current-score))
       (assert-segmenttype-chordrest
        (lambda (seg)
@@ -9,17 +10,32 @@
     (let ((segment (car (ms-measure-segments measure))))
       (assert (ms-segment? segment) "not a segment")
 
-      (if (not (ms-segment-next segment))
-        (error "cant get segment-next"))
+      (assert (ms-segment-next segment)
+              "cant get segment-next")
+      (assert (not (ms-segment-prev segment))
+              "got prev on first segment")
 
       (let ((seg (ms-segment-next-type segment #x200)))
         (assert-segmenttype-chordrest seg))
 
-      (if (not (ms-segment-next1 segment))
-        (error "cant get segment-next1"))
+      (assert (ms-segment-next1 segment)
+              "cant get segment-next1")
 
       (let ((seg (ms-segment-next1-type segment #x200)))
         (assert-segmenttype-chordrest seg))
 
-      (if (not (ms-segment-element segment 0))
-        (error "cant get segment-element")))))
+      (assert (ms-segment-element segment 0)
+              "cant get segment-element")))
+
+  ; get last measure in current score
+  (let* ((measure (car (last (ms-score-measures score))))
+         (segment (car (last (ms-measure-segments measure)))))
+    (assert (ms-measure? measure) "not a measure")
+    (assert (not (ms-segment-next segment))
+            "got segment-next on last segment")
+    (assert (ms-segment-prev segment)
+            "got no prev on last segment")
+    (assert (not (ms-segment-next1 segment))
+            "got segment-next1 on last segment")
+    (assert (ms-segment-prev1 segment)
+            "got no prev1 on last segment")))

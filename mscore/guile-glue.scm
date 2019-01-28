@@ -51,26 +51,6 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
       return scm_make_foreign_object_type (name, slo, finalizer);
       }
 
-// To make a scheme-object containing a musescore-score-class object from the scheme-side, an index into scoreList is needed.
-SCM
-make_ms_obj_score (int idx)
-{
-  QList<MasterScore*> scoreList = mscore->scores();
-  MasterScore *score = nullptr;
-  int n = 0;
-  for (auto &ms : scoreList) {
-    if(n == idx){
-      score = ms;
-      break;
-    }
-    n++;
-  }
-  if(! score){ // index was out of range
-    return SCM_EOL;
-  }
-  return scm_make_foreign_object_1 (ms_obj_score_type, (SCM) score);
-}
-
 //
 // core musescore function
 //
@@ -87,8 +67,8 @@ make_ms_obj_score (int idx)
           const char *cs = ba.data();
           return scm_false_or_string(cs);~%" fun)
           )))))
-  (emit "core_appname"    "applicationName")
-  (emit "core_appversion" "applicationVersion"))
+  (emit "ms_appname"    "applicationName")
+  (emit "ms_appversion" "applicationVersion"))
 
 (scm/c-fun "ms_version_major" "" '()
   (f " return scm_from_int(majorVersion());~%"))
@@ -107,7 +87,7 @@ make_ms_obj_score (int idx)
       bool c = compareVersion(QCoreApplication::applicationVersion(), ver);
       return (c ? SCM_BOOL_F : SCM_BOOL_T);~%"))
 
-(scm/c-fun "core_experimental" "" '()
+(scm/c-fun "ms_experimental" "" '()
   (f "bool ee = enableExperimental;
       return scm_from_bool(ee);~%"))
 
@@ -131,41 +111,34 @@ make_ms_obj_score (int idx)
   (f "int c = mscore->currentScoreTab()->count();
       return scm_from_int (c);~%"))
 
-(f "
-static SCM
-ms_scoreview_cmd (SCM str)
-{
-      char *cmd = scm_to_locale_string(str);
-      // need to check mscore->currentScore() != NULL ?
-      ScoreView* cv = mscore->currentScoreView();
-      if(cv){
-            cv->cmd(cmd);
-            }
-      else {
-            return scm_from_int (-666);
-            }
-      return SCM_EOL;
-      }
+(scm/c-fun "ms_scoreview_cmd" "SCM str" '()
+ (f "char *cmd = scm_to_locale_string(str);
+     // need to check mscore->currentScore() != NULL ?
+     ScoreView* cv = mscore->currentScoreView();
+     if(cv){
+         cv->cmd(cmd);
+     } else {
+         return SCM_BOOL_F;
+     }
+     return SCM_BOOL_T;~%"))
 
-static SCM
-ms_current_score ()
-      {
-      Score* score = mscore->currentScore();
-      return scm_make_foreign_object_1 ((SCM)ms_obj_score_type, (SCM) score);
-      }
+(scm/c-fun "ms_current_score" "" '()
+  (f "Score* score = mscore->currentScore();
+      return scm_make_foreign_object_1 ((SCM)ms_obj_score_type, (SCM) score);~%"))
+
+(f "
 
 static SCM
 ms_parts ()
       {
       Score* _score = mscore->currentScore();
       if (_score->parts().isEmpty()) {
-            std::cerr << \"No parts!\" << std::endl;
             return SCM_EOL; // return an empty list
             }
       else {
             for (Part* part : _score->parts()) {
                   //const InstrumentList* il = part->instruments();
-                  std::cerr << \"part %s\" << qPrintable(part->partName()) << std::endl;
+                  // part %s <- qPrintable(part->partName())
                   }
             return SCM_EOL; // return an empty list
             }
@@ -339,19 +312,21 @@ ms_parts_instruments (SCM part)
      ("SegmentType" m"segmentType()" c)))
    (f "return scm_from_int((int) st);~%"))
 
-(scm/c-fun "ms_segment_next" "SCM segment_obj"
-  '("returns next segment")
-  (var-transfer-expand 6 "segment_obj" "segnext"
-   '(("void*" scm-ref c) ("Segment*")
-     ("Segment*" m"next()" c r)))
-   (f "return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) segnext);~%"))
-
-(scm/c-fun "ms_segment_next1" "SCM segment_obj"
-  '("returns next segment (goes beyond measure if needed)")
-  (var-transfer-expand 6 "segment_obj" "segnext"
-   '(("void*" scm-ref c) ("Segment*")
-     ("Segment*" m"next1()" c r)))
-   (f "return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) segnext);~%"))
+(let-syntax
+  ((def
+    (syntax-rules ()
+      ((def cname meth descr)
+        (scm/c-fun cname "SCM segment_obj"
+          '(descr)
+          (var-transfer-expand 6 "segment_obj" "seg"
+           '(("void*" scm-ref c) ("Segment*")
+             ("Segment*" m meth c r)))
+           (f "return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg);~%"))))))
+  (def "ms_segment_next"  "next()" "returns next segment")
+  (def "ms_segment_next1" "next1()" "returns next segment (goes beyond measure if needed)")
+  (def "ms_segment_prev"  "prev()" "returns prev segment")
+  (def "ms_segment_prev1" "prev1()" "returns prev segment (goes beyond measure if needed)")
+)
 
 (scm/c-fun "ms_segment_next_type" "SCM segment_obj, SCM stype"
   '("returns next segment of type stype (goes beyond measure if needed)")
@@ -574,9 +549,9 @@ void init_guile_musescore_functions ()
              (apply (lambda (name cfun aritry)
                       (indent 6) (scheme-subr name cfun aritry))
                     lst))
-            '(("ms-core-name" "core_appname" 0)
-              ("ms-core-version" "core_appversion" 0)
-              ("ms-core-experimental" "core_experimental" 0)
+            '(("ms-name" "ms_appname" 0)
+              ("ms-version" "ms_appversion" 0)
+              ("ms-experimental" "ms_experimental" 0)
               ("ms-pan-playback" "ms_panPlayback" 0)
               ("ms-play-repeats" "ms_playRepeats" 0)
               ("ms-scores-count" "ms_scores_count" 0)
@@ -599,15 +574,18 @@ void init_guile_musescore_functions ()
               ("ms-measure-first"   "ms_measure_first" 1)
               ("ms-measure-first-type"   "ms_measure_first_type" 2)
               ("ms-measure-segments"   "ms_measure_segments" 1)
+
               ("ms-segment-elements"   "ms_segment_elements" 1)
               ("ms-segment-element" "ms_segment_element" 2)
-
               ("ms-segment-type"  "ms_segment_type" 1)
               ("ms-segment-next"  "ms_segment_next" 1)
               ("ms-segment-next1" "ms_segment_next1" 1)
+              ("ms-segment-prev"  "ms_segment_prev" 1)
+              ("ms-segment-prev1" "ms_segment_prev1" 1)
               ("ms-segment-next-type"  "ms_segment_next_type" 2)
               ("ms-segment-next1-type" "ms_segment_next1_type" 2)
               ("ms-segment-tick" "ms_segment_tick" 1)
+
               ("ms-element-type" "ms_element_type" 1)
               ("ms-element-info" "ms_element_info" 1)
               ("ms-element-color" "ms_element_color" 1)

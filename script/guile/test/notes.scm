@@ -13,33 +13,24 @@
     (if dots
       (begin
         (assert (list? dots) "not a dot-list")
-        (for-each (lambda (dot)
-                    (assert (element? dot) "dot is not an element"))
-                  dots)))
+        (loop-list dot dots
+          (assert (element? dot) "dot is not an element"))))
     (assert (integer? (ms-note-numdots note))
             "number of dots is not an integer")))
 
-(for-each
-    (lambda (score)
-      (let ((mea (ms-score-firstmeasure score)))
-        (assert mea "firstMeasure failed")
-        (assert (ms-measure? mea) "firstMeasure returned non-measure object")
-        (for-each
-            (lambda (seg)
-              (assert (ms-segment? seg) "not a segment")
-              (for-each
-                  (lambda (elm)
-                    (assert (ms-element? elm) "not an element")
-                    ; Scheme/C shim ensures it is safe
-                    ; to take the notes of elements no matter element-type
-                    (let ((notes (ms-element-notes elm)))
-                      ; if element-type was a chord/rest
-                      (if (= (ms-element-type elm) 92)
-                        (vector-for-each
-                            (lambda (i note)
-                              (assert (ms-note? note) "not a note")
-                              (test-note note))
-                            notes))))
-                  (ms-segment-elements seg)))
-            (ms-measure-segments mea))))
-    (ms-scores))
+(loop-list score (ms-scores)
+  (let ((mea (ms-score-firstmeasure score)))
+    (assert mea "firstMeasure failed")
+    (assert (ms-measure? mea) "firstMeasure returned non-measure object")
+    (loop-list seg (ms-measure-segments mea)
+      (assert (ms-segment? seg) "not a segment")
+      (loop-list elm (ms-segment-elements seg)
+        (assert (ms-element? elm) "not an element")
+        ; Scheme/C shim ensures it is safe
+        ; to take the notes of elements no matter element-type
+        (let ((notes (ms-element-notes elm)))
+          ; if element-type was a chord/rest
+          (if (= (ms-element-type elm) 92)
+            (loop-vec i note notes
+              (assert (ms-note? note) "not a note")
+              (test-note note))))))))

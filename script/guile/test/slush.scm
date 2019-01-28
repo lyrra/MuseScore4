@@ -75,15 +75,15 @@
                      func ctype etype))))))))
 
 (for-each (lambda (args) (apply run-func args))
-    '((ms-core-name          (string))
-      (ms-core-version       (string))
-      (ms-core-experimental  (bool))
+    '((ms-name               (string))
+      (ms-version            (string))
+      (ms-experimental       (bool))
       (ms-pan-playback       (bool))
       (ms-play-repeats       (bool))
       (ms-scores-count       (nat))
       (ms-current-score      (score))
       (ms-parts              ((L))) ; FIX: flesh-out ms-parts
-      (ms-scoreview-cmd 1    (score string))
+      (ms-scoreview-cmd      ("move-right" bool))
       (ms-parts-instruments  (0 (L string))) ; 0 = part-index
       (ms-scores-nstaves     ((L nat)))
       (ms-scores             ((L score)))
