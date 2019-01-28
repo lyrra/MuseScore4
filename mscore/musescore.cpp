@@ -79,8 +79,9 @@
 #include "shortcut.h"
 #include "guile-glue.h"
 #ifdef SCRIPT_INTERFACE
-#include "pluginCreator.h"
-#include "pluginManager.h"
+#include "plugin/pluginCreator.h"
+#include "plugin/pluginManager.h"
+#include "plugin/qmlpluginengine.h"
 #endif
 #include "helpBrowser.h"
 #include "drumtools.h"
@@ -111,7 +112,7 @@
 #include "synthesizer/synthesizergui.h"
 #include "synthesizer/msynthesizer.h"
 #include "fluid/fluid.h"
-#include "qmlplugin.h"
+#include "plugin/qmlplugin.h"
 #include "accessibletoolbutton.h"
 #include "toolbuttonmenu.h"
 #include "searchComboBox.h"
@@ -4290,7 +4291,7 @@ void MuseScore::readSettings()
       int w = 1024;
       int h = 768;
       QScreen* screen      = QGuiApplication::primaryScreen();
-      const QSize screenSize = screen->availableVirtualSize();
+      const QSize screenSize = screen->availableSize();
       if (screenSize.width() - margin > w)
             w = screenSize.width() - margin;
       else
@@ -4492,16 +4493,18 @@ AboutBoxDialog::AboutBoxDialog()
       revisionLabel->setText(tr("Revision: %1").arg(revision));
       setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
-      copyrightLabel->setText(QString("<span style=\"font-size:10pt;\">%1</span>")
-                              .arg(tr(   "Visit %1www.musescore.org%2 for new versions and more information.\n"
-                                         "Support MuseScore with your %3donation%4.\n\n"
-                                         "Copyright &copy; 1999-2019 Werner Schweer and Others.\n"
-                                         "Published under the GNU General Public License.")
-                                   .arg("<a href=\"http://www.musescore.org/\">")
-                                   .arg("</a>")
-                                   .arg("<a href=\"http://www.musescore.org/donate\">")
-                                   .arg("</a>")
-                                   .replace("\n","<br/>")));
+      QString visitAndDonateString;
+#if !defined(FOR_WINSTORE)
+      visitAndDonateString = tr("Visit %1www.musescore.org%2 for new versions and more information.\nSupport MuseScore with your %3donation%4.")
+                                     .arg("<a href=\"https://www.musescore.org/\">")
+                                     .arg("</a>")
+                                     .arg("<a href=\"https://www.musescore.org/donate\">")
+                                     .arg("</a>");
+      visitAndDonateString += "\n\n";
+#endif
+      QString finalString = visitAndDonateString + tr("Copyright &copy; 1999-2019 Werner Schweer and Others.\nPublished under the GNU General Public License.");
+      finalString.replace("\n", "<br/>");
+      copyrightLabel->setText(QString("<span style=\"font-size:10pt;\">%1</span>").arg(finalString));
       connect(copyRevisionButton, SIGNAL(clicked()), this, SLOT(copyRevisionToClipboard()));
       }
 
@@ -6926,6 +6929,9 @@ int main(int argc, char* av[])
 #endif
 
       QApplication::setDesktopSettingsAware(true);
+#ifdef Q_OS_LINUX
+      QGuiApplication::setDesktopFileName("mscore");
+#endif
       QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
       QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #if defined(QT_DEBUG) && defined(Q_OS_WIN)
@@ -7271,10 +7277,6 @@ int main(int argc, char* av[])
             }
 #endif
 
-#ifdef SCRIPT_INTERFACE
-      if (-1 == qmlRegisterType<QmlPlugin>  ("MuseScore", 3, 0, "MuseScore"))
-            qDebug("qmlRegisterType failed: MuseScore");
-#endif
       if (MScore::debugMode) {
             qDebug("DPI %f", DPI);
 
@@ -7499,8 +7501,10 @@ int main(int argc, char* av[])
             }
 
       errorMessage = new QErrorMessage(mscore);
+#ifdef SCRIPT_INTERFACE
       mscore->getPluginManager()->readPluginList();
       mscore->loadPlugins();
+#endif
       mscore->writeSessionFile(false);
 
 #ifdef Q_OS_MAC
@@ -7601,7 +7605,7 @@ bool MuseScore::exportPartsPdfsToJSON(const QString& inFilePath, const QString& 
       }
       score->switchToPageMode();
 
-      jsonForPdfs["scoreBin"] = mscore->exportPdfAsJSON(score);
+      jsonForPdfs["scoreBin"] = QString::fromLatin1(mscore->exportPdfAsJSON(score));
 
       //save extended score+parts and separate parts pdfs
       //if no parts, generate parts from existing instruments
@@ -7625,7 +7629,7 @@ bool MuseScore::exportPartsPdfsToJSON(const QString& inFilePath, const QString& 
             scores.append(e->partScore());
             QJsonValue partNameVal(e->title());
             partsNamesArray.append(partNameVal);
-            QJsonValue partVal(exportPdfAsJSON(e->partScore()));
+            QJsonValue partVal(QString::fromLatin1(exportPdfAsJSON(e->partScore())));
             partsArray.append(partVal);
       }
       jsonForPdfs["parts"] = partsNamesArray;
@@ -7652,4 +7656,15 @@ bool MuseScore::exportPartsPdfsToJSON(const QString& inFilePath, const QString& 
 
       delete score;
       return res;
+      }
+
+//---------------------------------------------------------
+//   getQmlEngine
+//---------------------------------------------------------
+
+QmlPluginEngine* MuseScore::getPluginEngine()
+      {
+      if (!_qmlEngine)
+            _qmlEngine = new QmlPluginEngine(this);
+      return _qmlEngine;
       }

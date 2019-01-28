@@ -20,7 +20,9 @@
 project(mscore)
 
 # Minimum tested, report if it works with older
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.3.0)
+
+include(build/functions.cmake) # library of CMake functions ("fn__" namespace)
 
 set (CI $ENV{CI})
 if (CI)
@@ -60,8 +62,13 @@ if (MSVC)
    set (MINGW false)
 endif (MSVC)
 
+set(SCRIPT_INTERFACE  TRUE)
 #  Look for Qt5
+if (SCRIPT_INTERFACE)
 SET(QT_MIN_VERSION    "5.8.0")
+else (SCRIPT_INTERFACE)
+SET(QT_MIN_VERSION    "5.7.0")
+endif (SCRIPT_INTERFACE)
 # Include modules
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/build" ${CMAKE_MODULE_PATH})
 include (FindQt5)
@@ -79,7 +86,6 @@ set(MSCORE_RELEASE_CHANNEL "devel")
 #set(MSCORE_RELEASE_CHANNEL "testing")
 #set(MSCORE_RELEASE_CHANNEL "stable")
 set(USE_SSE           TRUE)
-set(SCRIPT_INTERFACE  TRUE)
 
 # Disable components not supported on Windows
 if (MSVC OR MINGW)
@@ -235,6 +241,7 @@ else (APPLE)
       set(CMAKE_CXX_FLAGS_DEBUG          "/MT /permissive- /std:c++14 /W4 /Zi /Ob0 /Od /RTC1")
       set(CMAKE_CXX_FLAGS_RELEASE        "/MT /permissive- /std:c++14 /W4 /O2 /Ob2 /DNDEBUG /DQT_NO_DEBUG /DQT_NO_DEBUG_OUTPUT")
       set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MT /permissive- /std:c++14 /W4 /Zi /O2 /Ob1 /DNDEBUG /DQT_NO_DEBUG")
+      set(CMAKE_EXE_LINKER_FLAGS         "/DYNAMICBASE:NO")
    else (MSVC)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
       if (MINGW)
@@ -259,7 +266,7 @@ set(CMAKE_SKIP_RULE_DEPENDENCY TRUE)
 SET(MUSESCORE_NAME "MuseScore")
 SET(MUSESCORE_VERSION_MAJOR  "3")
 SET(MUSESCORE_VERSION_MINOR  "0")
-SET(MUSESCORE_VERSION_PATCH  "1")
+SET(MUSESCORE_VERSION_PATCH  "2")
 SET(MUSESCORE_VERSION       "${MUSESCORE_VERSION_MAJOR}.${MUSESCORE_VERSION_MINOR}")
 SET(MUSESCORE_NAME_VERSION "${MUSESCORE_NAME} ${MUSESCORE_VERSION_MAJOR}")
 #

@@ -771,16 +771,16 @@ Palette* MuseScore::newBracketsPalette()
       sp->setDrawGrid(true);
 
       for (auto t : std::array<std::pair<BracketType,const char*>, 4> {
-         {{ BracketType::NORMAL, "Bracket" },
-         { BracketType::BRACE,  "Brace"   },
-         { BracketType::SQUARE, "Square"  },
-         { BracketType::LINE,   "Line"    }}
+         {{ BracketType::NORMAL, QT_TRANSLATE_NOOP("Palette", "Bracket") },
+          { BracketType::BRACE,  QT_TRANSLATE_NOOP("Palette", "Brace")   },
+          { BracketType::SQUARE, QT_TRANSLATE_NOOP("Palette", "Square")  },
+          { BracketType::LINE,   QT_TRANSLATE_NOOP("Palette", "Line")    }}
          } ) {
             Bracket* b1      = new Bracket(gscore);
             BracketItem* bi1 = new BracketItem(gscore);
             bi1->setBracketType(t.first);
             b1->setBracketItem(bi1);
-            sp->append(b1, tr(t.second));      // Brace, Square, Line
+            sp->append(b1, qApp->translate("Palette", t.second));      // Bracket, Brace, Square, Line
             }
       return sp;
       }
@@ -1302,14 +1302,14 @@ Palette* MuseScore::newTextPalette(bool defaultPalette)
       sp->append(stxt, tr("System text"));
 
       if (!defaultPalette) {
-            StaffText* pz = new StaffText(gscore, Tid::EXPRESSION);
+            StaffText* pz = new StaffText(gscore);
             pz->setXmlText(tr("pizz."));
             pz->setChannelName(0, "pizzicato");
             sp->append(pz, tr("pizz."));
 
-            StaffText* ar = new StaffText(gscore, Tid::EXPRESSION);
+            StaffText* ar = new StaffText(gscore);
             ar->setXmlText(tr("arco"));
-            ar->setChannelName(0, "arco"); // needs updated instruments.xml to work with strings too, not just acoustic bass
+            ar->setChannelName(0, "arco");
             sp->append(ar, tr("arco"));
 
             StaffText* tm = new StaffText(gscore, Tid::EXPRESSION);
@@ -1317,12 +1317,12 @@ Palette* MuseScore::newTextPalette(bool defaultPalette)
             tm->setChannelName(0, "tremolo");
             sp->append(tm, tr("tremolo"));
 
-            StaffText* mu = new StaffText(gscore, Tid::EXPRESSION);
+            StaffText* mu = new StaffText(gscore);
             mu->setXmlText(tr("mute"));
             mu->setChannelName(0, "mute");
             sp->append(mu, tr("mute"));
 
-            StaffText* no = new StaffText(gscore, Tid::EXPRESSION);
+            StaffText* no = new StaffText(gscore);
             no->setXmlText(tr("open"));
             no->setChannelName(0, "open");
             sp->append(no, tr("open"));
