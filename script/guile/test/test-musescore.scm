@@ -18,5 +18,6 @@
   (def measure? <ms-measure>)
   (def segment? <ms-segment>)
   (def note?    <ms-note>)
+  (def accidental? <ms-accidental>)
   (def selection?  <ms-selection>)
   (def inputstate? <ms-inputstate>))

@@ -1,8 +1,13 @@
 
 (define (test-note note)
+  ; test adjust color
   (ms-element-color! note #x876543)
   ; ff is alpha channel
-  (assert (= #xff876543 (ms-element-color note)) "wrong note color"))
+  (assert (= #xff876543 (ms-element-color note)) "wrong note color")
+  ; test for note accidental
+  (let ((acc (ms-note-accidental note)))
+    (if acc
+      (assert (accidental? acc) "not an accidental"))))
 
 (for-each
     (lambda (score)

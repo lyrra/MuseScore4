@@ -12,6 +12,7 @@
 (define <ms-segment>)
 (define <ms-element>)
 (define <ms-note>)
+(define <ms-accidental>)
 (define <ms-selection>)
 (define <ms-inputstate>)
 
@@ -28,6 +29,7 @@
   (def <ms-segment>    "ms_obj_segment_type")
   (def <ms-element>    "ms_obj_element_type")
   (def <ms-note>       "ms_obj_note_type")
+  (def <ms-accidental> "ms_obj_accidental_type")
   (def <ms-selection>  "ms_obj_selection_type")
   (def <ms-inputstate> "ms_obj_inputstate_type"))
 
@@ -62,6 +64,7 @@
   (def <ms-measure>    "ms-measure")
   (def <ms-segment>    "ms-segment")
   (def <ms-element>    "ms-element")
+  (def <ms-accidental> "ms-accidental")
   (def <ms-note>       "ms-note")
   (def <ms-selection>  "ms-selection")
   (def <ms-inputstate> "ms-inputstate"))
