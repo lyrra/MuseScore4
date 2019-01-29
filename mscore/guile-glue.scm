@@ -19,6 +19,7 @@
        "\"libmscore/measure.h\"" "\"libmscore/chord.h\""
        "\"libmscore/segment.h\"" "\"libmscore/segmentlist.h\""
        "\"libmscore/element.h\""
+       "\"libmscore/figuredbass.h\""
        "\"libmscore/utils.h\""
        "\"musescore.h\""
        "\"scoreview.h\"" "\"scoretab.h\""
@@ -402,6 +403,36 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
       SCM_SIMPLE_VECTOR_SET(v, 1, scm_from_utf8_string(ename));
       SCM_SIMPLE_VECTOR_SET(v, 2, scm_from_utf8_string(uname));
       SCM_SIMPLE_VECTOR_SET(v, 3, scm_from_int(e->track()));
+      return v;~%"))
+
+(scm/c-fun "ms-figuredbass-info" ("SCM element_obj")
+  '("returns figuredbass info from element")
+  (var-transfer-expand 6 "element_obj" "elm"
+   '(("void*" scm-ref c) ("Element*")))
+  (f "if (elm->type() != ElementType::FIGURED_BASS) {
+          return SCM_BOOL_F;
+      }
+      FiguredBass* fb = static_cast<FiguredBass*>(elm);
+      int ticks = fb->ticks();
+      int numitems = fb->numOfItems();
+      std::vector<FiguredBassItem*> items = fb->getItems();
+      SCM v = scm_c_make_vector(numitems * 5 + 1, SCM_EOL);
+      SCM_SIMPLE_VECTOR_SET(v, 0, scm_from_int(ticks));
+      int n = 1;
+      for (FiguredBassItem* fbi : items) {
+          FiguredBassItem::Modifier pre = fbi->prefix();
+          FiguredBassItem::Modifier suf = fbi->suffix();
+          int      dig = fbi->digit();
+          FiguredBassItem::ContLine cline  = fbi->contLine();
+          QString  qs  = fbi->normalizedText();
+          SCM ntext = scm_from_utf8_string(qs.toLocal8Bit().data());
+          SCM_SIMPLE_VECTOR_SET(v, n, ntext);
+          SCM_SIMPLE_VECTOR_SET(v, n+1, scm_from_int(dig));
+          SCM_SIMPLE_VECTOR_SET(v, n+2, scm_from_int((int)pre));
+          SCM_SIMPLE_VECTOR_SET(v, n+3, scm_from_int((int)suf));
+          SCM_SIMPLE_VECTOR_SET(v, n+4, scm_from_int((int)cline));
+          n += 5;
+      }
       return v;~%"))
 
 ; Note object get functions

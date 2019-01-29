@@ -282,6 +282,7 @@ class FiguredBass final : public TextBase {
 //                                                            list.append(&item);
 //                                                      return QDeclarativeListProperty<FiguredBassItem>(this, &items, qmlItemsAppend);
 //                                                }
+      std::vector<FiguredBassItem*> getItems() { return items; }
       qreal             lineLength(int idx) const     {   if(_lineLengths.size() > idx)
                                                             return _lineLengths.at(idx);
                                                           return 0;   }
