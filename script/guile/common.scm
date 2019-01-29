@@ -19,3 +19,6 @@
 (define (last lst)
   (do ((l lst (cdr l)))
       ((eq? '() (cdr l)) l)))
+
+(define-syntax-rule (push item place)
+  (set! place (cons item place)))

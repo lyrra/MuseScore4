@@ -1,5 +1,11 @@
 ;;;; build and test tools
 
+; Hold a list of function name which are
+; converted into scm_c_define_gsubr() c-code and put into
+; c/scheme init function init_guile_musescore_functions()
+; Each use of the macro scm/c-fun will populate this list.
+(define *c-scheme-functions* '())
+
 (define-syntax-rule (f exp ...)
   (format #t exp ...))
 
@@ -7,20 +13,41 @@
 (define (indent n)
   (do ((i 0 (1+ i))) ((>= i n)) (f " ")))
 
+(define (convert-c-name sname)
+  (string-fold
+   (lambda (a b)
+     (format #f "~a~a" b
+             (cond
+               ((eq? a #\-) #\_)
+               ((eq? a #\!) "_set")
+               (else a))))
+   "" sname))
+
 
 (define (scheme-subr name cfun arn)
   (f "scm_c_define_gsubr (\"~a\", ~a, 0, 0, (void *)~a);~%"
      name arn cfun))
 
-(define-syntax-rule (scm/c-fun name args doc exp ...)
-  (begin
+(define-syntax scm/c-fun
+  (lambda (x)
+    (syntax-case x ()
+      ((scm/c-fun2 name args doc exp ...)
+        (let ((c-name (convert-c-name (syntax->datum #'name))))
+          #`(begin
+    (push (list name #,c-name (length 'args))
+          *c-scheme-functions*)
     (map (lambda (line) (f "// ~a~%" line)) doc)
-    (f "static SCM
-~a (~a)
-{~%" name args)
+    (f "static SCM~%~a (" #,c-name)
+    (do ((arg 'args (cdr arg))
+         (i 0 (+ i 1)))
+        ((eq? '() arg))
+        (if (> i 0) (f ", "))
+        (f "~a" (car arg)))
+    (f ")~%{~%")
+    ; Emit c-function body
     exp ...
     (f "}~%~%")
-    ))
+    ))))))
 
 ; Generates code that transfers data in the c-variable 'input'
 ; to 'output'.
