@@ -9,6 +9,7 @@
     ((exact-integer? obj) (list 'int obj))
     ((number?  obj) 'double)
     ((ms-staff? obj) 'staff)
+    ((ms-part? obj) 'part)
     ((ms-score? obj) 'score)
     ((ms-measure? obj) 'measure)
     ((ms-element? obj) 'element)
@@ -31,6 +32,8 @@
            ((eq? parm #t) parm)  ; pass-through numbers
            ((eq? parm #f) parm)  ; pass-through numbers
            ((eq? parm 'score) (ms-current-score))
+           ((eq? parm 'part)
+            (car (ms-score-parts (ms-current-score))))
            ((eq? parm 'measure) (car (ms-score-measures (ms-current-score))))
            ((eq? parm 'segment) (car (ms-measure-segments (ms-score-firstmeasure (ms-current-score)))))
            ((eq? parm 'element) (car (ms-segment-elements (ms-score-segment-last (ms-current-score)))))
@@ -82,9 +85,21 @@
       (ms-playrepeats       (bool))
       (ms-scores-count       (nat))
       (ms-current-score      (score))
-      (ms-parts              ((L))) ; FIX: flesh-out ms-parts
+      (ms-score-parts        (score (L part)))
       (ms-scoreview-cmd      ("move-right" bool))
-      (ms-parts-instruments  (0 (L string))) ; 0 = part-index
+
+      (ms-part-nstaves       (part int))
+      (ms-part-nstaves       (part int))
+      (ms-part-starttrack    (part int))
+      (ms-part-endtrack      (part int))
+      (ms-part-midiprogram   (part int))
+      (ms-part-midichannel   (part int))
+      (ms-part-midiport      (part int))
+      (ms-part-color         (part int))
+      (ms-part-lyricCount    (part int))
+      (ms-part-harmonyCount  (part int))
+      (ms-part-instruments   (part (L)))
+
       (ms-scores-nstaves     ((L nat)))
       (ms-scores             ((L score)))
       (ms-score-nstaves      (score nat))

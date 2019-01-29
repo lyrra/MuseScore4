@@ -28,6 +28,7 @@
 // Keep this outside any c++ namespace because we want FFI access
 SCM ms_obj_score_type;
 SCM ms_obj_staff_type;
+SCM ms_obj_part_type;
 SCM ms_obj_measure_type;
 SCM ms_obj_segment_type;
 SCM ms_obj_element_type;
@@ -127,64 +128,52 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
   (f "Score* score = mscore->currentScore();
       return scm_make_foreign_object_1 ((SCM)ms_obj_score_type, (SCM) score);~%"))
 
-(f "
+; const InstrumentList* il = part->instruments();
+; part %s <- qPrintable(part->partName())
+(scm/c-fun "ms-score-parts" ("SCM score_obj") '()
+  (var-transfer-expand 6 "score_obj" "score"
+   '(("void*" scm-ref c) ("Score*")))
+  (f "if (score->parts().isEmpty()) {
+          return SCM_EOL; // return an empty list
+      }~%")
+  (c-make-scheme-list 6 "ms_obj_part_type"
+    "QList<Part*>& parts = score->parts();
+     for (auto &item : parts) {~%
+     "))
 
-static SCM
-ms_parts ()
-      {
-      Score* _score = mscore->currentScore();
-      if (_score->parts().isEmpty()) {
-            return SCM_EOL; // return an empty list
-            }
-      else {
-            for (Part* part : _score->parts()) {
-                  //const InstrumentList* il = part->instruments();
-                  // part %s <- qPrintable(part->partName())
-                  }
-            return SCM_EOL; // return an empty list
-            }
-      }
+(scm/c-fun "ms-part-instruments" ("SCM part_obj") '()
+  (var-transfer-expand 6 "part_obj" "part"
+   '(("void*" scm-ref c) ("Part*")))
+  (f "const InstrumentList* il = part->instruments();
+      if (il) return SCM_EOL;
+      // il :: a std:map of class Instrument*
+      //for(auto inst = il->begin(); inst != il->end(); inst++) {
+          // inst :: (Pair idx (class Instrument))
+          //QString iid = inst->second->instrumentId();
+          //QString trn = inst->second->trackName();
+          //SCM data = scm_from_locale_string(iid.toLocal8Bit().data());
+          // FIX: flesh-out, need instrument-object
+      //}
+      return SCM_EOL;~%"))
 
-// ms_parts_instruments x :: List String
-// where x :: Int -- 1 = instrumentId, 2 = trackName
-// example: (ms_parts_instruments 1) => (\"voice.alto\" \"voice.bass\")
-static SCM
-ms_parts_instruments (SCM part)
-      {
-      int midx = scm_to_int(part); // member index
-      SCM head = SCM_EOL; // head of (single-linked) list
-      SCM last = SCM_EOL; // last cons in list
-      Score* _score = mscore->currentScore();
-      if (_score->parts().isEmpty()) {
-            return SCM_EOL; // return an empty list
-            }
-      else {
-            foreach(Part* part, _score->parts()) {
-                  const InstrumentList* il = part->instruments();
-                  // il :: a std:map of class Instrument*
-                  for(auto inst = il->begin(); inst != il->end(); inst++) {
-                        // inst :: (Pair idx (class Instrument))
-                        QString iid = inst->second->instrumentId();
-                        QString trn = inst->second->trackName();
-                        // append to list
-                        SCM data;
-                        if(midx == 1){
-                              data = scm_from_locale_string(iid.toLocal8Bit().data());
-                              }
-                        else {
-                              data = scm_from_locale_string(trn.toLocal8Bit().data());
-                              }
-                        last = s_push(last, data);
-                        if (head == SCM_EOL) {
-                              head = last;
-                              }
-                        }
-                  }
-            return head; // return first element cons in list
-            }
-      }
-
-")
+(let-syntax
+  ((def
+    (syntax-rules ()
+      ((def name meth descr)
+       (scm/c-fun name ("SCM part_obj") descr
+         (var-transfer-expand 6 "part_obj" "n"
+          '(("void*" scm-ref c) ("Part*")
+            ("int" m meth c)))
+         (f "return scm_from_int(n);~%"))))))
+  (def "ms-part-nstaves"     "nstaves()"     '("number of staves in part"))
+  (def "ms-part-starttrack"  "startTrack()"  '(""))
+  (def "ms-part-endtrack"    "endTrack()"    '(""))
+  (def "ms-part-midiprogram" "midiProgram()" '(""))
+  (def "ms-part-midichannel" "midiChannel()" '(""))
+  (def "ms-part-midiport"    "midiPort()"    '(""))
+  (def "ms-part-color"       "color()"       '(""))
+  (def "ms-part-lyricCount"  "lyricCount()"  '(""))
+  (def "ms-part-harmonyCount" "harmonyCount()" '("")))
 
 (scm/c-fun "ms-scores-nstaves" ()
   '("traverse Score->nstaves() over [MuseScoreCore->scores()]"
@@ -545,10 +534,6 @@ void init_guile_musescore_functions ()
 {
       // register all functions that is reachable from scheme
 ")
-
-      (scheme-subr "ms-parts" "ms_parts" 0)
-      (scheme-subr "ms-parts-instruments" "ms_parts_instruments" 1)
-      (f "// auto-gen~%")
       (for-each
         (lambda (lst)
           (match lst
@@ -560,6 +545,7 @@ void init_guile_musescore_functions ()
       // initialize types
       ms_obj_score_type = init_ms_object_1(\"<ms-score>\", \"score\");
       ms_obj_staff_type = init_ms_object_1(\"<ms-staff>\", \"staff\");
+      ms_obj_part_type = init_ms_object_1(\"<ms-part>\", \"part\");
       ms_obj_measure_type = init_ms_object_1(\"<ms-measure>\", \"measure\");
       ms_obj_segment_type = init_ms_object_1(\"<ms-segment>\", \"segment\");
       ms_obj_element_type = init_ms_object_1(\"<ms-element>\", \"element\");

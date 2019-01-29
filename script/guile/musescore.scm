@@ -13,6 +13,7 @@
 
 (define <ms-score>)
 (define <ms-staff>)
+(define <ms-part>)
 (define <ms-measure>)
 (define <ms-segment>)
 (define <ms-element>)
@@ -30,6 +31,7 @@
            (set! class-name class-obj))))))
   (def <ms-score>      "ms_obj_score_type")
   (def <ms-staff>      "ms_obj_staff_type")
+  (def <ms-part>       "ms_obj_part_type")
   (def <ms-measure>    "ms_obj_measure_type")
   (def <ms-segment>    "ms_obj_segment_type")
   (def <ms-element>    "ms_obj_element_type")
@@ -66,6 +68,7 @@
                   ))))))
   (def <ms-score>      "ms-score")
   (def <ms-staff>      "ms-staff")
+  (def <ms-part>       "ms-part")
   (def <ms-measure>    "ms-measure")
   (def <ms-segment>    "ms-segment")
   (def <ms-element>    "ms-element")
@@ -86,6 +89,7 @@
                  (eq? 'objname (struct-vtable-name (struct-vtable obj)))))))))
 
   (def ms-staff?   <ms-staff>)
+  (def ms-part?    <ms-part>)
   (def ms-score?   <ms-score>)
   (def ms-element? <ms-element>)
   (def ms-measure? <ms-measure>)
