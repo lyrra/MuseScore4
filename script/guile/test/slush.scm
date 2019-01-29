@@ -116,6 +116,7 @@
       (ms-measure-first-type (measure #x200 segment)) ; SegmentType::ChordRest
       (ms-measure-segments   (measure (L segment)))
       (ms-segment-elements   (segment (L element)))
+      (ms-segment-annotations (segment (L))) ; or list of elements
       (ms-segment-element (segment 0 element))
       (ms-segment-type  (segment int))
       (ms-segment-next  (segment segment))

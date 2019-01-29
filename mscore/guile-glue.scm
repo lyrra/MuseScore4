@@ -287,6 +287,14 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
     "}~%" ; close for loop
     ))
 
+(scm/c-fun "ms-segment-annotations" ("SCM segment_obj")
+  '("list of annotation (Element objects) in segment")
+  (var-transfer-expand 6 "segment_obj" "ann"
+   '(("void*" scm-ref c r) ("Segment*")
+     ("const std::vector<Element*>&" m"annotations()" c)))
+  (c-make-scheme-list 6 "ms_obj_element_type"
+    "for (auto item : ann) {~%"))
+
 (scm/c-fun "ms-segment-element" ("SCM segment_obj" "SCM index")
   '("returns element by index from segment")
   (f "int idx = scm_to_int(index);~%")
