@@ -714,6 +714,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
 
 
       MasterScore* readScore(const QString& name);
+      MasterScore* readScoreCString(char *content); // no file, just xml-contents
 
       bool saveAs(Score*, bool saveCopy = false);
       bool saveSelection(Score*);

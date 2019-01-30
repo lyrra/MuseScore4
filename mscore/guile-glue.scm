@@ -110,6 +110,21 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
 // MasterScores
 //~%")
 
+(scm/c-fun "ms-score-read-string" ("SCM scmstr")
+  '("creates a score from string (XML content)")
+  (f "char *s = scm_to_locale_string(scmstr);
+      MasterScore* score = readScoreCString(s);
+      if (! score) { return SCM_BOOL_F; }
+      return scm_make_foreign_object_1 ((SCM)ms_obj_score_type, (SCM) score);~%"))
+
+(scm/c-fun "ms-score-forget" ("SCM score_obj")
+  '("C++ delete a score (probably unsafe)")
+  (var-transfer-expand 6 "score_obj" "ms"
+   '(("void*" scm-ref c) ("MasterScore*")))
+  (f "scm_foreign_object_set_x(score_obj, 0, nullptr);
+      delete ms;
+      return SCM_BOOL_T;~%"))
+
 (scm/c-fun "ms-scores-count" () '()
   (f "int c = mscore->currentScoreTab()->count();
       return scm_from_int (c);~%"))

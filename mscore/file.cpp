@@ -374,6 +374,33 @@ MasterScore* MuseScore::readScore(const QString& name)
       return score;
       }
 
+
+MasterScore* readScoreCString(char *content)
+{
+    bool ignoreVersionError = false;
+    MasterScore* score = new MasterScore(MScore::defaultStyle());
+    QString msx(content);
+    XmlReader r(msx, QString());
+    //r.setReadAheadDevice(f);
+    if (score->read1(r, ignoreVersionError) != Score::FileError::FILE_NO_ERROR) {
+        return nullptr;
+    }
+    score->rebuildMidiMapping();
+    score->setSoloMute();
+    for (Score* s : score->scoreList()) {
+        s->setPlaylistDirty();
+        s->addLayoutFlags(LayoutFlag::FIX_PITCH_VELO);
+        s->setLayoutAll();
+    }
+    score->updateChannel();
+    score->setSaved(false);
+    score->update();
+    if (! score->sanityCheck(QString())) {
+      return nullptr;
+    }
+    return score;
+}
+
 //---------------------------------------------------------
 //   saveFile
 ///   Save the current score.

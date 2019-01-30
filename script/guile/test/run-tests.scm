@@ -251,6 +251,8 @@
 (deftest (notes) (primitive-load "script/guile/test/notes.scm"))
 (deftest (inputstate) (primitive-load "script/guile/test/inputstate.scm"))
 (deftest (slush) (primitive-load "script/guile/test/slush.scm"))
+(deftest (read-score-sxml) (primitive-load "script/guile/test/read-score-sxml.scm"))
+(deftest (gen-score-sxml) (primitive-load "script/guile/test/gen-score-sxml.scm"))
 
 (let ((good (run-tests)))
   (format #t "Test passed: ~s/~s~%" good (length *tests*))
