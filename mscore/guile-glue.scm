@@ -364,11 +364,30 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
    '(("void*" scm-ref c) ("Segment*")))
   (f "return scm_from_int(seg->tick());~%"))
 
+(scm/c-fun "ms-element-part" ("SCM element_obj")
+  '("returns element part")
+  (var-transfer-expand 6 "element_obj" "part"
+   '(("void*" scm-ref c) ("Element*") ("Part*" m"part()")))
+   (f "return scm_make_foreign_object_1 ((SCM)ms_obj_part_type, (SCM) part);~%"))
+
 (scm/c-fun "ms-element-type" ("SCM element_obj")
   '("returns type of element")
   (var-transfer-expand 6 "element_obj" "etype"
    '(("void*" scm-ref c) ("Element*") ("int" m"type()")))
   (f "return scm_from_int(etype);~%"))
+
+(let-syntax
+  ((def
+    (syntax-rules ()
+      ((def name meth descr)
+       (scm/c-fun name ("SCM element_obj") descr
+         (var-transfer-expand 6 "element_obj" "num"
+          '(("void*" scm-ref c) ("Element*") ("int" m meth c)))
+         (f "return scm_from_int(num);~%"))))))
+  (def "ms-element-track" "track()" '("returns element track"))
+  (def "ms-element-staffIdx" "staffIdx()" '("returns element staffIdx"))
+  (def "ms-element-voice" "voice()" '("returns element voice"))
+  (def "ms-element-tick" "tick()" '("returns element tick")))
 
 (scm/c-fun "ms-element-color" ("SCM element_obj")
   '("returns element color")
