@@ -106,11 +106,16 @@ long start_func (void *(*func)(void *))
 // https://lists.gnu.org/archive/html/guile-user/2014-01/msg00018.html
 void * guile_init_workout (void *)
 {
-    // load all scheme-to-c/musescore functions
-    init_guile_musescore_functions();
-    /* exercise guile with some arbitrary work */
+    /* Exercise guile with some arbitrary work
+     * this will initialize module system, here and now where
+     * we are running single threaded and initialization is not
+     * thread safe.
+     * In this case we happen to do something useful, create a
+     * module where all Musescore-C bindings will go
+     */
+    scm_c_eval_string ("(define-module (musescore-c))");
+    init_guile_musescore_functions(); // load all scheme-to-c/musescore functions
     SCM_TICK; // Checks any pending GC
-    scm_c_eval_string ("(use-modules (ice-9 format))"); // initialize module system by loading any module
     return NULL;
     }
 

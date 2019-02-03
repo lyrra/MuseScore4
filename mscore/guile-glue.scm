@@ -605,13 +605,17 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
 (f "
 void init_guile_musescore_functions ()
 {
+      // change into musescore-c module
+      scm_set_current_module(scm_c_resolve_module(\"musescore-c\"));
+
       // register all functions that is reachable from scheme
 ")
       (for-each
         (lambda (lst)
           (match lst
             ((name c-name numargs)
-             (indent 6) (scheme-subr name c-name numargs))))
+             (indent 6) (scheme-subr name c-name numargs)
+             (indent 6) (export-proc name))))
         *c-scheme-functions*)
 
 (f "

@@ -23,10 +23,12 @@
                (else a))))
    "" sname))
 
-
 (define (scheme-subr name cfun arn)
   (f "scm_c_define_gsubr (\"~a\", ~a, 0, 0, (void *)~a);~%"
      name arn cfun))
+
+(define (export-proc name)
+  (f "scm_c_export (\"~a\");~%" name))
 
 (define-syntax scm/c-fun
   (lambda (x)
