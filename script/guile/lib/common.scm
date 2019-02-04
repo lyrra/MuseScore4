@@ -1,6 +1,8 @@
 ;;;; load and define commonly used code
 
-(use-modules (ice-9 format))
+(define-module (lib common)
+               #:export (nth nthcdr
+                         last push))
 
 (define (nth idx lst)
   (if (= idx 0)

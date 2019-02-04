@@ -222,17 +222,15 @@
             elements)
   "element-type/info test succeeded")
 
-; Load Musescore Scheme library
-; This will change the current module
-(load-from-path "lib/musescore.scm")
+(define-module (test run-tests)
+               #:use-module (musescore-c)
+               #:use-module (lib musescore)
+               #:use-module (lib common)
+               #:use-module (srfi srfi-43) ; vector library
+               )
 
-; Load common functions (and some Common Lisp helpers)
-(load-from-path "common.scm")
 (load-from-path "test/test.scm") ; Load testing framework
-
-; Load tools used for testing musescore
-(load-from-path "test/test-musescore.scm")
-(use-modules (srfi srfi-43)) ; vector library
+(load-from-path "test/test-musescore.scm") ; Load tools used for testing musescore
 
 ; A test is defined as simply as this
 (deftest (test-trivial)

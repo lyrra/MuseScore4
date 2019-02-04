@@ -1,7 +1,20 @@
 ;;;; Guile/Scheme Musescore Library
 
-(use-modules (oop goops))      ; CLOS-like object orientation
-(use-modules (system foreign)) ; FFI access
+(define-module (lib musescore)
+               #:use-module (oop goops)      ; CLOS-like object orientation
+               #:use-module (system foreign) ; FFI access
+               #:use-module (musescore-c)
+               #:export (ms-staff?   <ms-staff>
+                         ms-part?    <ms-part>
+                         ms-score?   <ms-score>
+                         ms-element? <ms-element>
+                         ms-measure? <ms-measure>
+                         ms-segment? <ms-segment>
+                         ms-note?    <ms-note>
+                         ms-accidental? <ms-accidental>
+                         ms-selection?  <ms-selection>
+                         ms-inputstate? <ms-inputstate>))
+
 
 ;;; foreign-objects holding c-pointers to various
 ;;; musescore objects is represented as 'wrappes'
