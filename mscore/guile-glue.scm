@@ -422,6 +422,21 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
       }
       return v;~%}~%"))
 
+(let-syntax
+  ((emit
+    (syntax-rules ()
+      ((emit name typ kod)
+       (scm/c-fun name ("SCM element_obj") '()
+         (var-transfer-expand 6 "element_obj" "elm"
+          '(("void*" scm-ref c) ("Element*")))
+         (f "if (! elm->isRest()) { return SCM_BOOL_F; }
+      ChordRest *cr = (ChordRest *) elm;
+      ~a r = cr->~a();
+      return scm_from_~a(r);~%" typ kod typ))))))
+  ;     scheme-name     type   rest-method
+  (emit "ms-element-dots"  "int"  "actualDots")
+  (emit "ms-element-ticks" "int"  "durationTypeTicks"))
+
 (scm/c-fun "ms-element-info" ("SCM element_obj")
   '("returns type of element")
   (f "void* obj = scm_foreign_object_ref(element_obj, 0);

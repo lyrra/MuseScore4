@@ -133,6 +133,8 @@
       (ms-element-tick  (element int))
       (ms-element-staffIdx (element int))
       (ms-element-info (element vec))
+      (ms-element-ticks (element bool)) ; ::int, but applies for Rest
+      (ms-element-dots  (element bool)) ; ::int, but applies for Rest
       (ms-version-major  (int))
       (ms-version-minor  (int))
       (ms-version-update (int))
