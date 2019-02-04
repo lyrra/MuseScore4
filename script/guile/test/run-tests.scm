@@ -222,17 +222,16 @@
             elements)
   "element-type/info test succeeded")
 
-; Load common functions (and some Common Lisp helpers)
-(primitive-load "script/guile/common.scm")
-
 ; Load Musescore Scheme library
-(primitive-load "script/guile/musescore.scm")
+; This will change the current module
+(load-from-path "lib/musescore.scm")
 
-; Load testing framework
-(primitive-load "script/guile/test/test.scm")
+; Load common functions (and some Common Lisp helpers)
+(load-from-path "common.scm")
+(load-from-path "test/test.scm") ; Load testing framework
 
 ; Load tools used for testing musescore
-(primitive-load "script/guile/test/test-musescore.scm")
+(load-from-path "test/test-musescore.scm")
 (use-modules (srfi srfi-43)) ; vector library
 
 ; A test is defined as simply as this
