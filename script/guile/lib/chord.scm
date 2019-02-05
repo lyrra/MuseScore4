@@ -2,13 +2,16 @@
 (define-module (lib chord)
                #:use-module (oop goops)      ; CLOS-like object orientation
                #:use-module (srfi srfi-1)
+               #:use-module (ice-9 match)
                #:use-module (musescore-c)
                #:use-module (lib musescore)
                #:use-module (lib utils)
+               #:use-module (lib common)
                #:export (walk-chord
                          blending
                          find-blend-class
-                         find-blend-invl))
+                         find-blend-invl
+                         invl-bit?))
 
 (define (walk-chord sel func)
   (let ((score (slot-ref sel 'score))
@@ -36,7 +39,7 @@
                                       (pc (pitch-class pitch))
                                       (oct (pitch-octave pitch))
                                       (playticks (ms-note-playticks note)))
-                                 (push (list #:note pc oct playticks staffIdx voice track)
+                                 (push (list #:note note pc oct playticks staffIdx voice track)
                                        chord))))))
                        (24 ; rest
                         (let ((ticks (ms-element-ticks elm))
@@ -47,33 +50,34 @@
                    (func seg tick chord))))))))))
 
 ; calculate the blending of two notes
-
 ; different musical style will treat dissonances separately
-; but perhaps the ear will hear the blending of two individual notes
-; in isolated context with an absolute degree of dissonance
-; Return the degree of dissonance from highest 12 to lowest 0.
+; but perhaps the ear of any time period, will hear the blending
+; of two individual notes in a isolated context, having same
+; degree of blending.
+; Return the degree of dissonance (blending) from highest 12 to lowest 0.
 (define (blending notea noteb)
   (let* ((diff (note-invl notea noteb))
          (name (note-invl-name diff)))
     (cond
-      ((= diff 0)  (cons name  0)) ; P1 unison
-      ((= diff 1)  (cons name 10)) ; m2 semitone
-      ((= diff 2)  (cons name  8)) ; M2 tone
-      ((= diff 3)  (cons name  4)) ; m3 imperfect consonance
-      ((= diff 4)  (cons name  4)) ; M3 imperfect consonance
-      ((= diff 5)  (cons name  6)) ; P4 dissonance (without context)
+      ;                            ; #  Blend factor
+      ((= diff 0)  (cons name  0)) ; P1 pure (also octave)
+      ((= diff 1)  (cons name 10)) ; m2 discordant
+      ((= diff 2)  (cons name  8)) ; M2 tense
+      ((= diff 3)  (cons name  4)) ; m3 norm (imperfect cons.)
+      ((= diff 4)  (cons name  4)) ; M3 norm (imperfect cons.)
+      ((= diff 5)  (cons name  6)) ; P4 optimal (context dependent)
       ((= diff 6)  (cons name 12)) ; TT hit dissonance jackpot (tritone)
-      ((= diff 7)  (cons name  2)) ; P5 consonance
-      ((= diff 8)  (cons name  4)) ; m6 imperfect consonance
-      ((= diff 9)  (cons name  4)) ; M6 imperfect consonance
-      ((= diff 10) (cons name  8)) ; m7 imperfect consonance
-      ((= diff 11) (cons name 10)) ; m7 imperfect consonance
+      ((= diff 7)  (cons name  2)) ; P5 optimal (perfect consonance)
+      ((= diff 8)  (cons name  4)) ; m6 discordant (in context) impc
+      ((= diff 9)  (cons name  4)) ; M6 tense impc
+      ((= diff 10) (cons name  8)) ; m7 tense
+      ((= diff 11) (cons name 10)) ; M7 discordant
       (else (error "too large note diff: ~a" diff)))))
 
 (define (find-blend-class what blends)
   (fold (lambda (blend acc)
           (match blend
-            ((name . diff)
+            ((name . diss)
               (if (eq? (invl-class name) what)
                 #t acc))
             (else acc)))
@@ -89,3 +93,6 @@
             (else acc)))
         #f
         blends))
+
+(define (invl-bit? invl int)
+  (logbit? (note-invl-index int) invl))

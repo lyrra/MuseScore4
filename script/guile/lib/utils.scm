@@ -11,6 +11,7 @@
                          pitch-class pitch-octave
                          note-index  note>
                          note-invl note-invl-name
+                         note-invl-index
                          invl-class
                          swap-cons))
 
@@ -97,6 +98,22 @@
     ((= invl 10) 'm7)
     ((= invl 11) 'M7)
     (else (error "too large note intervall: ~a" invl))))
+
+(define (note-invl-index invl)
+  (cond
+    ((eq? invl 'P1)  0)
+    ((eq? invl 'm2)  1)
+    ((eq? invl 'M2)  2)
+    ((eq? invl 'm3)  3)
+    ((eq? invl 'M3)  4)
+    ((eq? invl 'P4)  5)
+    ((eq? invl 'TT)  6)
+    ((eq? invl 'P5)  7)
+    ((eq? invl 'm6)  8)
+    ((eq? invl 'M6)  9)
+    ((eq? invl 'm7) 10)
+    ((eq? invl 'M7) 11)
+    (else (error "bad interval name: ~s" invl))))
 
 (define (invl-class invl-name)
   (cond
