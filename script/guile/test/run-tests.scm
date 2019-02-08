@@ -33,9 +33,10 @@
               (load-from-path (format #f "test/t/~a" file)))
             files))
 
-(let ((good (run-tests)))
-  (format #t "Test passed: ~s/~s~%" good (length *tests*))
-  (if (not (= good (length *tests*)))
-    (quit 1)))
-
 (format #t "Testing has finished.~%")
+(format #t "Test passed: ~s/~s~%"
+        *tests-num-pass*
+        *tests-num-total*)
+(if (not (= *tests-num-pass*
+            *tests-num-total*))
+  (quit 1))
