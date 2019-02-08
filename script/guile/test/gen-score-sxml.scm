@@ -9,6 +9,8 @@
 ; this script builds on read-score-sxml.scm and
 ; replaces the static sxml with generators 
 
+; FIX: perhaps use a module, due to risc of name-collision
+
 (define (score cont)
   (lambda ()
     (list (list '*TOP* ; (*PI* xml version="1.0" encoding="UTF-8")
@@ -124,8 +126,9 @@
                   (ms-score-measures score)))
       (ms-score-forget score))))
 
-(let* ((cont (lambda ()
-               (meat measure)))
-       (sgen (score cont)))
-  (let ((sxml (sgen)))
-    (test-read-score-sxlm sxml)))
+(deftest (gen-score-sxml)
+  (let* ((cont (lambda ()
+                 (meat measure)))
+         (sgen (score cont)))
+    (let ((sxml (sgen)))
+      (test-read-score-sxlm sxml))))

@@ -77,6 +77,7 @@
                      "~a has wrong result type: ~s, expected ~s"
                      func ctype etype))))))))
 
+(deftest (slush)
 (for-each (lambda (args) (apply run-func args))
     '((ms-name               (string))
       (ms-version            (string))
@@ -162,4 +163,4 @@
       (ms-selection-startsegment (selection bool)) ; segment or #f
       (ms-selection-endsegment (selection bool)) ; segment or #f
       (ms-selection-staffstart (selection int))
-      (ms-selection-staffend (selection int))))
+      (ms-selection-staffend (selection int)))))

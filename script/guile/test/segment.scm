@@ -1,4 +1,4 @@
-
+(deftest (segment)
 (let ((score (ms-current-score))
       (assert-segmenttype-chordrest
        (lambda (seg)
@@ -38,4 +38,4 @@
     (assert (not (ms-segment-next1 segment))
             "got segment-next1 on last segment")
     (assert (ms-segment-prev1 segment)
-            "got no prev1 on last segment")))
+            "got no prev1 on last segment"))))

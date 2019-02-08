@@ -157,4 +157,5 @@
                               (ms-measure-segments mea)))
                   (ms-score-measures score))))))
 
-(test-read-score-sxlm read-score-sxml-1)
+(deftest (read-score-sxlm)
+  (test-read-score-sxlm read-score-sxml-1))

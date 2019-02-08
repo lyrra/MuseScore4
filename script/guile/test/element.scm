@@ -1,4 +1,4 @@
-
+(deftest (element)
 (let* ((score (ms-current-score))
        (measures (ms-score-measures score)))
   (loop-list mea measures
@@ -17,4 +17,4 @@
               (assert (exact-integer? (ms-element-staffIdx elm)) "")
               (assert (exact-integer? (ms-element-voice elm)) "")
               (assert (exact-integer? (ms-element-tick elm)) "")
-              )))))))
+              ))))))))

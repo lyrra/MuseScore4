@@ -18,6 +18,7 @@
     (assert (integer? (ms-note-numdots note))
             "number of dots is not an integer")))
 
+(deftest (notes)
 (loop-list score (ms-scores)
   (let ((mea (ms-score-firstmeasure score)))
     (assert mea "firstMeasure failed")
@@ -33,4 +34,4 @@
           (if (= (ms-element-type elm) 92)
             (loop-vec i note notes
               (assert (ms-note? note) "not a note")
-              (test-note note))))))))
+              (test-note note)))))))))
