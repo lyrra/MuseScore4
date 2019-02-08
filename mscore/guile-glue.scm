@@ -1,8 +1,9 @@
-(use-modules (ice-9 match))
 
 (eval-when (expand load eval)
-  (load "../script/guile/common.scm")
-  (load "../script/guile/build.scm"))
+  (load-from-path "lib/common.scm")
+  (use-modules (ice-9 match))
+  (use-modules (ice-9 format))
+  (load-from-path "build.scm"))
 
 (f "/*
  * This file contains functions that is
