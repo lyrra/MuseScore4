@@ -190,6 +190,19 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
   (c-make-scheme-list 6 "ms_obj_bracket_type"
     "for (auto &item : sys->brackets()) {~%"))
 
+(scm/c-fun "ms-system-measures" ("SCM system_obj")
+  '("get measures list")
+  (var-transfer-expand 6 "system_obj" "sys"
+   '(("void*" scm-ref c) ("System*")))
+  (c-make-scheme-list 6 "ms_obj_measure_type"
+    "for (auto &item : sys->measures()) {~%"))
+
+(scm/c-fun "ms-system-measure" ("SCM system_obj" "SCM idx_obj")
+  '("get measure from list")
+  (var-transfer-expand 6 "system_obj" "sys"
+   '(("void*" scm-ref c) ("System*")))
+  (f "int n = scm_to_int(idx_obj);
+      return scm_make_foreign_object_1 ((SCM)ms_obj_measure_type, (SCM) sys->measure(n));~%"))
 
 (let-syntax
   ((def
