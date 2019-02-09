@@ -32,6 +32,7 @@
 SCM ms_obj_score_type;
 SCM ms_obj_system_type;
 SCM ms_obj_staff_type;
+SCM ms_obj_bracket_type;
 SCM ms_obj_part_type;
 SCM ms_obj_measure_type;
 SCM ms_obj_segment_type;
@@ -181,6 +182,14 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
           // FIX: flesh-out, need instrument-object
       //}
       return SCM_EOL;~%"))
+
+(scm/c-fun "ms-system-brackets" ("SCM system_obj")
+  '("get brackets list")
+  (var-transfer-expand 6 "system_obj" "sys"
+   '(("void*" scm-ref c) ("System*")))
+  (c-make-scheme-list 6 "ms_obj_bracket_type"
+    "for (auto &item : sys->brackets()) {~%"))
+
 
 (let-syntax
   ((def
@@ -648,6 +657,7 @@ void init_guile_musescore_functions ()
       ms_obj_score_type = init_ms_object_1(\"<ms-score>\", \"score\");
       ms_obj_system_type = init_ms_object_1(\"<ms-system>\", \"system\");
       ms_obj_staff_type = init_ms_object_1(\"<ms-staff>\", \"staff\");
+      ms_obj_bracket_type = init_ms_object_1(\"<ms-bracket>\", \"bracket\");
       ms_obj_part_type = init_ms_object_1(\"<ms-part>\", \"part\");
       ms_obj_measure_type = init_ms_object_1(\"<ms-measure>\", \"measure\");
       ms_obj_segment_type = init_ms_object_1(\"<ms-segment>\", \"segment\");

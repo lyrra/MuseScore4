@@ -6,6 +6,7 @@
                #:use-module (musescore-c)
                #:export (ms-system?  <ms-system>
                          ms-staff?   <ms-staff>
+                         ms-bracket? <ms-bracket>
                          ms-part?    <ms-part>
                          ms-score?   <ms-score>
                          ms-element? <ms-element>
@@ -28,6 +29,7 @@
 (define <ms-score>)
 (define <ms-system>)
 (define <ms-staff>)
+(define <ms-bracket>)
 (define <ms-part>)
 (define <ms-measure>)
 (define <ms-segment>)
@@ -47,6 +49,7 @@
   (def <ms-score>      "ms_obj_score_type")
   (def <ms-system>     "ms_obj_system_type")
   (def <ms-staff>      "ms_obj_staff_type")
+  (def <ms-bracket>    "ms_obj_bracket_type")
   (def <ms-part>       "ms_obj_part_type")
   (def <ms-measure>    "ms_obj_measure_type")
   (def <ms-segment>    "ms_obj_segment_type")
@@ -85,6 +88,7 @@
   (def <ms-score>      "ms-score")
   (def <ms-system>     "ms-system")
   (def <ms-staff>      "ms-staff")
+  (def <ms-bracket>    "ms-bracket")
   (def <ms-part>       "ms-part")
   (def <ms-measure>    "ms-measure")
   (def <ms-segment>    "ms-segment")
@@ -107,6 +111,7 @@
 
   (def ms-system?  <ms-system>)
   (def ms-staff?   <ms-staff>)
+  (def ms-bracket? <ms-bracket>)
   (def ms-part?    <ms-part>)
   (def ms-score?   <ms-score>)
   (def ms-element? <ms-element>)
