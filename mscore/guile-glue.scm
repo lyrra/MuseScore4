@@ -5,6 +5,16 @@
   (use-modules (ice-9 format))
   (load-from-path "build.scm"))
 
+(define obj-types
+        '("accidental"
+          "bracket"
+          "element"
+          "inputstate"
+          "measure"
+          "note"
+          "part"
+          "score"  "segment"  "selection"  "staff" "system"))
+
 (f "/*
  * This file contains functions that is
  * called from scheme.
@@ -27,20 +37,13 @@
        "\"scoreview.h\"" "\"scoretab.h\""
        "\"guile.h\"" "\"guile-glue.h\""))
 
+(f "// Keep this outside any c++ namespace because we want FFI access~%")
+(for-each
+  (lambda (obj-type)
+    (f "SCM ms_obj_~a_type;~%" obj-type))
+  obj-types)
+
 (f "
-// Keep this outside any c++ namespace because we want FFI access
-SCM ms_obj_score_type;
-SCM ms_obj_system_type;
-SCM ms_obj_staff_type;
-SCM ms_obj_bracket_type;
-SCM ms_obj_part_type;
-SCM ms_obj_measure_type;
-SCM ms_obj_segment_type;
-SCM ms_obj_element_type;
-SCM ms_obj_note_type;
-SCM ms_obj_accidental_type;
-SCM ms_obj_selection_type;
-SCM ms_obj_inputstate_type;
 
 namespace ScriptGuile {
 using namespace Ms;
@@ -159,11 +162,8 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
  (f "char *cmd = scm_to_locale_string(str);
      // need to check mscore->currentScore() != NULL ?
      ScoreView* cv = mscore->currentScoreView();
-     if(cv){
-         cv->cmd(cmd);
-     } else {
-         return SCM_BOOL_F;
-     }
+     if (! cv) { return SCM_BOOL_F; }
+     cv->cmd(cmd);
      return SCM_BOOL_T;~%"))
 
 (scm/c-fun "ms-current-score" () '()
@@ -322,26 +322,19 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
      ("Segment*" m"first()" c r)))
   (f "return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg);~%"))
 
-(scm/c-fun "ms-measure-ticks" ("SCM measure_obj")
-  '("measure length in ticks")
-  (var-transfer-expand 6 "measure_obj" "ticks"
-   '(("void*" scm-ref c r) ("Measure*")
-     ("int" m"ticks()" c)))
-  (f "return scm_from_int(ticks);~%"))
-
-(scm/c-fun "ms-measure-tick" ("SCM measure_obj")
-  '("measure position in tick")
-  (var-transfer-expand 6 "measure_obj" "tick"
-   '(("void*" scm-ref c r) ("Measure*")
-     ("int" m"tick()" c)))
-  (f "return scm_from_int(tick);~%"))
-
-(scm/c-fun "ms-measure-no" ("SCM measure_obj")
-  '("measure number")
-  (var-transfer-expand 6 "measure_obj" "no"
-   '(("void*" scm-ref c r) ("Measure*")
-     ("int" m"no()" c)))
-  (f "return scm_from_int(no);~%"))
+(let-syntax
+  ((def
+    (syntax-rules ()
+      ((def cname meth descr)
+         (scm/c-fun cname ("SCM measure_obj")
+           descr
+           (var-transfer-expand 6 "measure_obj" "x"
+            '(("void*" scm-ref c r) ("Measure*")
+              ("int" m meth c)))
+           (f "return scm_from_int(x);~%"))))))
+  (def "ms-measure-ticks" "ticks()" '("measure length in ticks"))
+  (def "ms-measure-tick" "tick()" '("measure position in ticks"))
+  (def "ms-measure-no" "no()" '("measure ordinal number")))
 
 (scm/c-fun "ms-measure-first-type" ("SCM measure_obj" "SCM stype")
   '("first segment in measures segmentlist of type")
@@ -719,21 +712,13 @@ void init_guile_musescore_functions ()
              (indent 6) (export-proc name))))
         *c-scheme-functions*)
 
+(f "// initialize types~%")
+(for-each
+  (lambda (obj-type)
+    (f "    ms_obj_~a_type = init_ms_object_1(\"<ms-~a>\", \"~a\");~%" obj-type obj-type obj-type))
+  obj-types)
 (f "
-      // initialize types
-      ms_obj_score_type = init_ms_object_1(\"<ms-score>\", \"score\");
-      ms_obj_system_type = init_ms_object_1(\"<ms-system>\", \"system\");
-      ms_obj_staff_type = init_ms_object_1(\"<ms-staff>\", \"staff\");
-      ms_obj_bracket_type = init_ms_object_1(\"<ms-bracket>\", \"bracket\");
-      ms_obj_part_type = init_ms_object_1(\"<ms-part>\", \"part\");
-      ms_obj_measure_type = init_ms_object_1(\"<ms-measure>\", \"measure\");
-      ms_obj_segment_type = init_ms_object_1(\"<ms-segment>\", \"segment\");
-      ms_obj_element_type = init_ms_object_1(\"<ms-element>\", \"element\");
-      ms_obj_note_type = init_ms_object_1(\"<ms-note>\", \"note\");
-      ms_obj_accidental_type = init_ms_object_1(\"<ms-accidental>\", \"accidental\");
-      ms_obj_selection_type = init_ms_object_1(\"<ms-selection>\", \"selection\");
-      ms_obj_inputstate_type = init_ms_object_1(\"<ms-inputstate>\", \"inputstate\");
-}
+}// Eof function init_guile_musescore_functions
 
 } // Eof Namespace ScriptGuile
 ")

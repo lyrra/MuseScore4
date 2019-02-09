@@ -113,6 +113,9 @@
       (ms-inputstate-track!  (inputstate 0 bool))
       (ms-inputstate-segment! (inputstate segment bool))
       (ms-staff-info         (staff vec))
+      (ms-measure-ticks      (measure int))
+      (ms-measure-tick       (measure int))
+      (ms-measure-no         (measure int))
       (ms-measure-first      (measure segment))
       (ms-measure-first-type (measure #x200 segment)) ; SegmentType::ChordRest
       (ms-measure-segments   (measure (L segment)))

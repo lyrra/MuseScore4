@@ -22,8 +22,7 @@
            "test/notes.scm"
            "test/inputstate.scm"
            "test/slush.scm"
-           "test/read-score-sxml.scm"
-           "test/gen-score-sxml.scm"))
+           "test/read-score-sxml.scm"))
 
 (use-modules (ice-9 ftw))
 (let ((files (sort (map car
