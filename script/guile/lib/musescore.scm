@@ -4,7 +4,8 @@
                #:use-module (oop goops)      ; CLOS-like object orientation
                #:use-module (system foreign) ; FFI access
                #:use-module (musescore-c)
-               #:export (ms-staff?   <ms-staff>
+               #:export (ms-system?  <ms-system>
+                         ms-staff?   <ms-staff>
                          ms-part?    <ms-part>
                          ms-score?   <ms-score>
                          ms-element? <ms-element>
@@ -25,6 +26,7 @@
 ; available as a function
 
 (define <ms-score>)
+(define <ms-system>)
 (define <ms-staff>)
 (define <ms-part>)
 (define <ms-measure>)
@@ -43,6 +45,7 @@
                 (class-obj (pointer->scm (dereference-pointer c-name-ptr))))
            (set! class-name class-obj))))))
   (def <ms-score>      "ms_obj_score_type")
+  (def <ms-system>     "ms_obj_system_type")
   (def <ms-staff>      "ms_obj_staff_type")
   (def <ms-part>       "ms_obj_part_type")
   (def <ms-measure>    "ms_obj_measure_type")
@@ -80,6 +83,7 @@
                   ;(pointer-address (scm->pointer obj))
                   ))))))
   (def <ms-score>      "ms-score")
+  (def <ms-system>     "ms-system")
   (def <ms-staff>      "ms-staff")
   (def <ms-part>       "ms-part")
   (def <ms-measure>    "ms-measure")
@@ -101,6 +105,7 @@
                  (instance? obj)
                  (eq? 'objname (struct-vtable-name (struct-vtable obj)))))))))
 
+  (def ms-system?  <ms-system>)
   (def ms-staff?   <ms-staff>)
   (def ms-part?    <ms-part>)
   (def ms-score?   <ms-score>)

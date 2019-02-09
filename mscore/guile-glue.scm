@@ -16,6 +16,7 @@
      '("<iostream>"
        "<libguile.h>"
        "\"libmscore/mscore.h\"" "\"libmscore/part.h\""
+       "\"libmscore/system.h\""
        "\"libmscore/staff.h\"" "\"libmscore/measurebase.h\""
        "\"libmscore/measure.h\"" "\"libmscore/chord.h\""
        "\"libmscore/segment.h\"" "\"libmscore/segmentlist.h\""
@@ -29,6 +30,7 @@
 (f "
 // Keep this outside any c++ namespace because we want FFI access
 SCM ms_obj_score_type;
+SCM ms_obj_system_type;
 SCM ms_obj_staff_type;
 SCM ms_obj_part_type;
 SCM ms_obj_measure_type;
@@ -129,6 +131,13 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
 (scm/c-fun "ms-scores-count" () '()
   (f "int c = mscore->currentScoreTab()->count();
       return scm_from_int (c);~%"))
+
+(scm/c-fun "ms-score-systems" ("SCM score_obj")
+  '("get score systems list")
+  (var-transfer-expand 6 "score_obj" "scr"
+   '(("void*" scm-ref c) ("Score*")))
+  (c-make-scheme-list 6 "ms_obj_system_type"
+    "for (auto &item : scr->systems()) {~%"))
 
 (scm/c-fun "ms-scoreview-cmd" ("SCM str") '()
  (f "char *cmd = scm_to_locale_string(str);
@@ -637,6 +646,7 @@ void init_guile_musescore_functions ()
 (f "
       // initialize types
       ms_obj_score_type = init_ms_object_1(\"<ms-score>\", \"score\");
+      ms_obj_system_type = init_ms_object_1(\"<ms-system>\", \"system\");
       ms_obj_staff_type = init_ms_object_1(\"<ms-staff>\", \"staff\");
       ms_obj_part_type = init_ms_object_1(\"<ms-part>\", \"part\");
       ms_obj_measure_type = init_ms_object_1(\"<ms-measure>\", \"measure\");
