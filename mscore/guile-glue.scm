@@ -133,12 +133,27 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
   (f "int c = mscore->currentScoreTab()->count();
       return scm_from_int (c);~%"))
 
+(scm/c-fun "ms-score-spatium" ("SCM score_obj")
+  '("get spatium")
+  (var-transfer-expand 6 "score_obj" "scr"
+   '(("void*" scm-ref c) ("Score*")))
+  (f "qreal s = scr->spatium();
+      return scm_from_double(s);~%"))
+
 (scm/c-fun "ms-score-systems" ("SCM score_obj")
   '("get score systems list")
   (var-transfer-expand 6 "score_obj" "scr"
    '(("void*" scm-ref c) ("Score*")))
   (c-make-scheme-list 6 "ms_obj_system_type"
     "for (auto &item : scr->systems()) {~%"))
+
+(scm/c-fun "ms-score-inputstate" ("SCM score_obj")
+  '("returns inputstate object from score")
+  (f "void* obj = scm_foreign_object_ref(score_obj, 0);
+      Score *s = (Score *) obj;
+      InputState *is = &(s->inputState());
+      return scm_make_foreign_object_1 ((SCM)ms_obj_inputstate_type, (SCM) is);~%"))
+
 
 (scm/c-fun "ms-scoreview-cmd" ("SCM str") '()
  (f "char *cmd = scm_to_locale_string(str);
@@ -516,6 +531,22 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
       SCM_SIMPLE_VECTOR_SET(v, 3, scm_from_int(e->track()));
       return v;~%"))
 
+(scm/c-fun "ms-element-rect" ("SCM element_obj")
+  '("returns elements rectangle")
+  (var-transfer-expand 6 "element_obj" "elm"
+   '(("void*" scm-ref c) ("Element*")))
+  (f "QRectF& bbox = elm->bbox();
+      double x = bbox.x();
+      double y = bbox.y();
+      double w = bbox.width();
+      double h = bbox.height();
+      SCM v = scm_c_make_vector(4, SCM_BOOL_F);
+      SCM_SIMPLE_VECTOR_SET(v, 0, scm_from_double(x));
+      SCM_SIMPLE_VECTOR_SET(v, 1, scm_from_double(y));
+      SCM_SIMPLE_VECTOR_SET(v, 2, scm_from_double(w));
+      SCM_SIMPLE_VECTOR_SET(v, 3, scm_from_double(h));
+      return v;~%"))
+
 (scm/c-fun "ms-figuredbass-info" ("SCM element_obj")
   '("returns figuredbass info from element")
   (var-transfer-expand 6 "element_obj" "elm"
@@ -617,13 +648,6 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
      ("QVector<NoteDot*>&" m"dots()" c)))
   (c-make-scheme-list 6 "ms_obj_element_type"
     "for (auto &item : dots) {~%"))
-
-(scm/c-fun "ms-score-inputstate" ("SCM score_obj")
-  '("returns inputstate object from score")
-  (f "void* obj = scm_foreign_object_ref(score_obj, 0);
-      Score *s = (Score *) obj;
-      InputState *is = &(s->inputState());
-      return scm_make_foreign_object_1 ((SCM)ms_obj_inputstate_type, (SCM) is);~%"))
 
 (scm/c-fun "ms-inputstate-track!" ("SCM inputstate_obj" "SCM track")
   '("sets track index in inputstate")
