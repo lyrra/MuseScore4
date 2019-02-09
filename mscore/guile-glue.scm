@@ -307,12 +307,42 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
      ("Segment*" m"first()" c r)))
   (f "return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg);~%"))
 
+(scm/c-fun "ms-measure-ticks" ("SCM measure_obj")
+  '("measure length in ticks")
+  (var-transfer-expand 6 "measure_obj" "ticks"
+   '(("void*" scm-ref c r) ("Measure*")
+     ("int" m"ticks()" c)))
+  (f "return scm_from_int(ticks);~%"))
+
+(scm/c-fun "ms-measure-tick" ("SCM measure_obj")
+  '("measure position in tick")
+  (var-transfer-expand 6 "measure_obj" "tick"
+   '(("void*" scm-ref c r) ("Measure*")
+     ("int" m"tick()" c)))
+  (f "return scm_from_int(tick);~%"))
+
+(scm/c-fun "ms-measure-no" ("SCM measure_obj")
+  '("measure number")
+  (var-transfer-expand 6 "measure_obj" "no"
+   '(("void*" scm-ref c r) ("Measure*")
+     ("int" m"no()" c)))
+  (f "return scm_from_int(no);~%"))
+
 (scm/c-fun "ms-measure-first-type" ("SCM measure_obj" "SCM stype")
   '("first segment in measures segmentlist of type")
   (f "SegmentType st = (SegmentType) scm_to_int(stype);~%")
   (var-transfer-expand 6 "measure_obj" "seg"
    '(("void*" scm-ref c r) ("Measure*")
      ("Segment*" m"first(st)" c r)))
+  (f "return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg);~%"))
+
+(scm/c-fun "ms-measure-find-segment" ("SCM measure_obj" "SCM stype_obj" "SCM tick_obj")
+  '("find segment of type, and between ticks")
+  (f "SegmentType st = (SegmentType) scm_to_int(stype_obj);
+      int tick       =  scm_to_int(tick_obj);~%")
+  (var-transfer-expand 6 "measure_obj" "seg"
+   '(("void*" scm-ref c r) ("Measure*")
+     ("Segment*" m"findSegment(st, tick)" c r)))
   (f "return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg);~%"))
 
 ; no information is kept in SegmentList
