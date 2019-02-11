@@ -28,7 +28,7 @@
      name arn cfun))
 
 (define (export-proc name)
-  (f "scm_c_export (\"~a\");~%" name))
+  (f "scm_c_export (\"~a\", NULL);~%" name))
 
 (define-syntax scm/c-fun
   (lambda (x)
