@@ -22,7 +22,7 @@ target_link_libraries(
       ${QT_QTTEST_LIBRARY}
       testutils
       testResources
-      libmscore
+      "-L${PROJECT_BINARY_DIR}/libmscore -lmusescore -Wl,-rpath -Wl,${PROJECT_BINARY_DIR}/libmscore"
       synthesizer
       midi
       qzip
