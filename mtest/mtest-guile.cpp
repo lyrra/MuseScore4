@@ -18,6 +18,7 @@
 #include "libmscore/musescoreCore.h"
 #include "libmscore/xml.h"
 #include "libmscore/score.h"
+#include "libmscore/measurebase.h"
 #include "libmscore/segment.h"
 #include "mtest/testutils.h"
 
@@ -111,22 +112,35 @@ SCM ms_score_cmd (SCM score_obj, SCM cmd_obj)
       return SCM_BOOL_T;
       }
 
-SCM ms_segment_elements_wrap (Segment *seg)
+SCM std_vector_to_scm_vector (std::vector<Element*> vec)
       {
-      std::vector<Element*> vec = seg->elist();
       int n = 0;
-      for (auto &item : vec) {
+      for (auto item : vec) {
             if (item) { // only count occupied slots in vector
                   n++;
                   }
             }
       SCM v = scm_c_make_vector(n, SCM_EOL);
       int i = 0;
-      for (auto &item : vec) {
-            SCM_SIMPLE_VECTOR_SET(v, i, scm_from_pointer(item, NULL));
-            i++;
+      for (auto item : vec) {
+            if (item) { // only count occupied slots in vector
+                  SCM_SIMPLE_VECTOR_SET(v, i, scm_from_pointer(item, NULL));
+                  i++;
+                  }
             }
       return v;
+      }
+
+SCM ms_measure_elements_wrap (MeasureBase *mea)
+      {
+      ElementList elmv = mea->el();
+      return std_vector_to_scm_vector (elmv);
+      }
+
+SCM ms_segment_elements_wrap (Segment *seg)
+      {
+      std::vector<Element*> elmv = seg->elist();
+      return std_vector_to_scm_vector (elmv);
       }
 
 SCM
@@ -154,11 +168,13 @@ void init_guile_shim ()
       scm_c_define_gsubr ("ms-score-forget", 1, 0, 0, (void *)ms_score_forget);
       scm_c_define_gsubr ("ms-score-cmd", 2, 0, 0, (void *)ms_score_cmd);
       scm_c_define_gsubr ("ms-segment-elements-wrap", 1, 0, 0, (void *)ms_segment_elements_wrap);
+      scm_c_define_gsubr ("ms-measure-elements-wrap", 1, 0, 0, (void *)ms_measure_elements_wrap);
       scm_c_export ("ms-score-read-file", NULL);
       scm_c_export ("ms-score-read-string", NULL);
       scm_c_export ("ms-score-forget", NULL);
       scm_c_export ("ms-score-cmd", NULL);
       scm_c_export ("ms-segment-elements-wrap", NULL);
+      scm_c_export ("ms-measure-elements-wrap", NULL);
       }
 
 // first parameter is a closure, not used here

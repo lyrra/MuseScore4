@@ -72,6 +72,12 @@
          (ptr (make-pointer c-score)))
     (cfun ptr)))
 
+;;; class measure
+
+; returns a SCM vector of elements
+(define (ms-measure-elements mea)
+  (ms-measure-elements-wrap (pointer->scm mea)))
+
 ;;; class Selection
 
 (let-syntax
