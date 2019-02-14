@@ -8,7 +8,8 @@
 
 (eval-when (expand load eval)
   (load-from-path "test/test.scm")
-  (load-from-path "test/ffi.scm"))
+  (load-from-path "test/ffi.scm")
+  (load-from-path "test/testlib.scm"))
 
 (let ((files (sort (map car
                         (cddr (file-system-tree "../../script/guile/test/t")))
@@ -16,5 +17,3 @@
   (for-each (lambda (file)
               (load-from-path (format #f "test/t/~a" file)))
             files))
-
-(assert #t "1 is not ")
