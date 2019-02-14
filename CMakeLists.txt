@@ -149,6 +149,12 @@ option(COVERAGE "Build with instrumentation to record code coverage." OFF)
 option(BUILD_64 "Build 64 bit version of editor" ON)
 option(BUILD_AUTOUPDATE "Build with autoupdate support" OFF)
 
+set (BUILD_SHARED $ENV{BUILD_SHARED}) # Build libmusescore shared library
+
+if(BUILD_SHARED)
+  set(LIBMUSESCORE_SHARED 1)
+endif(BUILD_SHARED)
+
 if (APPLE)
       set (CMAKE_CXX_COMPILER   clang++)
       set (CMAKE_CXX_COMPILER_ID "Clang")
