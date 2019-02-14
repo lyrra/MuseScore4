@@ -150,6 +150,7 @@ option(BUILD_64 "Build 64 bit version of editor" ON)
 option(BUILD_AUTOUPDATE "Build with autoupdate support" OFF)
 
 set (BUILD_SHARED $ENV{BUILD_SHARED}) # Build libmusescore shared library
+set (GUILE $ENV{GUILE}) # Build test environment for Scheme test script
 
 if(BUILD_SHARED)
   set(LIBMUSESCORE_SHARED 1)
@@ -359,6 +360,12 @@ endif(DOWNLOAD_SOUNDFONT)
 if (BUILD_FOR_WINSTORE)
   set(FOR_WINSTORE 1)
 endif(BUILD_FOR_WINSTORE)
+
+if (GUILE)
+  # Guile needs libmusescore as a shared library
+  set(LIBMUSESCORE_SHARED 1)
+  find_program(GUILE_BIN "guile") # Path to Guile/Scheme interpreter
+endif (GUILE)
 
 ##
 ## freetype2 >= 2.5.2
