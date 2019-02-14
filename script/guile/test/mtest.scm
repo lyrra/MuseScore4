@@ -2,6 +2,7 @@
                #:use-module (ice-9 format)
                #:use-module (ice-9 match)
                #:use-module (ice-9 ftw)
+               #:use-module (srfi srfi-1)  ; fold
                #:use-module (srfi srfi-43) ; vector library
                #:use-module (system foreign)
                #:use-module (musescore-c))
@@ -11,9 +12,51 @@
   (load-from-path "test/ffi.scm")
   (load-from-path "test/testlib.scm"))
 
-(let ((files (sort (map car
+(define (test-filter-args args)
+  (fold (lambda (item acc)
+          (cond
+            ((equal? (string-contains item "--inc=") 0)
+             (cons (cons #:inc (substring item 6)) acc))
+            ((equal? (string-contains item "--exc=") 0)
+             (cons (cons #:exc (substring item 6)) acc))
+            (else acc)))
+        '()
+        args))
+
+(define (fold-find-inc/exc name filter)
+  (fold (lambda (item acc)
+          (if (and (pair? item)
+                   (eq? (car item) name))
+              (cons (cdr item) acc)
+              acc))
+        '() filter))
+
+(define (fold-string-contains str lst beginacc found)
+  (fold (lambda (filt acc)
+          (if (string-contains str filt)
+              found acc))
+        beginacc lst))
+
+(define (apply-filter-file file test-filter)
+  (let ((inc (fold-find-inc/exc #:inc test-filter))
+        (exc (fold-find-inc/exc #:exc test-filter)))
+    (cond
+      ((not (null? inc))
+       (fold-string-contains file inc #f #t))
+      ((not (null? exc))
+       (fold-string-contains file exc #t #f))
+     (else #t))))
+
+(let ((test-filter (test-filter-args (command-line)))
+      (files (sort (map car
                         (cddr (file-system-tree "../../script/guile/test/t")))
                    string<)))
+  (set! files (fold (lambda (file acc)
+                      (if (apply-filter-file file test-filter)
+                        (cons file acc)
+                        acc))
+                    '()
+                    files))
   (for-each (lambda (file)
               (load-from-path (format #f "test/t/~a" file)))
             files))
