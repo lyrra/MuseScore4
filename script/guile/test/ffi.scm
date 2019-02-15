@@ -78,6 +78,18 @@
 (define (ms-measure-elements mea)
   (ms-measure-elements-wrap (pointer->scm mea)))
 
+(let-syntax
+  ((def
+    (syntax-rules ()
+      ((def name mangled)
+       (define (name selection)
+         (let* ((cfun (pointer->procedure int
+                   (dynamic-func mangled (dynamic-link))
+                   '(*))))
+           (cfun selection)))))))
+  (def ms-measure-noOffset "_ZNK2Ms11MeasureBase8noOffsetEv")
+  (def ms-measure-no       "_ZNK2Ms11MeasureBase2noEv"))
+
 ;;; class Selection
 
 (let-syntax
