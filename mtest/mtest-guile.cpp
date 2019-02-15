@@ -22,12 +22,6 @@
 #include "libmscore/segment.h"
 #include "mtest/testutils.h"
 
-SCM ms_foobar2 (void *pa)
-      {
-      fprintf(stderr, "foobar2: %p\n", pa);
-      return scm_from_int(0);
-      }
-
 SCM ms_obj_score_type;
 
 namespace ScriptGuile {
