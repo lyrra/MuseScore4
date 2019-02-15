@@ -94,13 +94,8 @@
   (let ((sel (ms-score-selection score))
         (section-break-element #f))
     ; fish-out the selection-break-element from the score
-    (loop-score-element
-     (lambda (mea seg elm outside)
-       (format #t "mea:-- seg:~s elm:~s ~s ~a~%"
-               ;(ms-element-tick elm)
-                seg elm
-               (ms-element-name elm)
-               (if outside "Outside staff" ""))
+    (walk-score #f #f
+     (lambda (elm)
        (if (string= (ms-element-name elm) "LayoutBreak")
          (set! section-break-element elm)))
      score)
