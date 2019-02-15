@@ -31,7 +31,9 @@
              (if (= (pointer-address retptr) 0)
                #f retptr))))))))
   (def ms-score-tick2measure "_ZNK2Ms5Score12tick2measureEi")
-  (def ms-score-tick2segment "_ZNK2Ms5Score12tick2segmentEi"))
+  (def ms-score-tick2segment "_ZNK2Ms5Score12tick2segmentEi")
+  (def ms-score-tick2measureMM "_ZNK2Ms5Score14tick2measureMMEi")
+  (def ms-score-tick2segmentMM "_ZNK2Ms5Score14tick2segmentMMEi"))
 
 (let-syntax
   ((def
@@ -45,8 +47,31 @@
                 (ptr (make-pointer c-score)))
            (cfun ptr)))))))
   (def ms-score-doLayout "_ZN2Ms5Score8doLayoutEv")
-  (def ms-score-update "_ZN2Ms5Score6updateEv")
-  )
+  (def ms-score-update "_ZN2Ms5Score6updateEv"))
+
+(let-syntax
+  ((def
+    (syntax-rules ()
+      ((def name mangled)
+       (define (name score)
+         (let* ((cfun (pointer->procedure void
+                   (dynamic-func mangled (dynamic-link))
+                   '(*)))
+                (c-score (struct-ref/unboxed score 0))
+                (ptr (make-pointer c-score)))
+           (cfun ptr)))))))
+  (def ms-score-first "_ZNK2Ms5Score5firstEv")
+  (def ms-score-firstMM "_ZNK2Ms5Score7firstMMEv")
+  (def ms-score-firstMeasure "_ZNK2Ms5Score12firstMeasureEv")
+  (def ms-score-firstMeasureMM "_ZNK2Ms5Score14firstMeasureMMEv"))
+
+(define (ms-score-crMeasure score idx)
+  (let* ((cfun (pointer->procedure '*
+          (dynamic-func "_ZNK2Ms5Score9crMeasureEi" (dynamic-link))
+          (list '* int)))
+         (c-score (struct-ref/unboxed score 0))
+         (ptr (make-pointer c-score)))
+    (cfun ptr idx)))
 
 (define (ms-score-selectAdd score elm)
   (let* ((cfun (pointer->procedure void
@@ -89,6 +114,12 @@
            (cfun selection)))))))
   (def ms-measure-noOffset "_ZNK2Ms11MeasureBase8noOffsetEv")
   (def ms-measure-no       "_ZNK2Ms11MeasureBase2noEv"))
+
+(define (ms-measure-findSegmentR mea segtype tick)
+  (let* ((cfun (pointer->procedure '*
+                (dynamic-func "_ZNK2Ms7Measure12findSegmentRENS_11SegmentTypeEi" (dynamic-link))
+               (list '* int int))))
+    (cfun mea segtype tick)))
 
 ;;; class Selection
 
@@ -198,11 +229,29 @@
   (def ms-segment-next    "_ZNK2Ms7Segment4nextEv")
   (def ms-segment-prev    "_ZNK2Ms7Segment4prevEv")
   (def ms-segment-prev1   "_ZNK2Ms7Segment5prev1Ev")
+  (def ms-segment-next1MM "_ZNK2Ms7Segment7next1MMEv")
+  (def ms-segment-prev1MM "_ZNK2Ms7Segment7prev1MMEv")
   (def ms-segment-measure "_ZNK2Ms7Segment7measureEv"))
+
+; segmentType() (NOTE: not the same as ms-element-type)
+(define (ms-segment-type seg)
+  (let ((cfun (pointer->procedure int
+               (dynamic-func "_ZNK2Ms7Segment11segmentTypeEv" (dynamic-link))
+               '(*))))
+    (cfun seg)))
 
 ; returns a SCM vector of elements
 (define (ms-segment-elements seg)
   (ms-segment-elements-wrap (pointer->scm seg)))
+
+(define (ms-segment-element seg track)
+  (let ((cfun (pointer->procedure '*
+               (dynamic-func "_ZNK2Ms7Segment7elementEi"
+                             (dynamic-link))
+               (list '* int))))
+    (let ((elm (cfun seg track)))
+      (if (= (pointer-address elm) 0)
+          #f elm))))
 
 ;;; class Element
 
