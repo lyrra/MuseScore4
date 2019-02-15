@@ -2812,6 +2812,8 @@ void Score::cmdSlashFill()
                   if (error)
                         continue;
                   // insert & turn into slash
+                  if (s->measure()->isMMRest())
+                        continue;
                   s = setNoteRest(s, track + voice, nv, f);
                   Chord* c = toChord(s->element(track + voice));
                   if (c->links()) {
