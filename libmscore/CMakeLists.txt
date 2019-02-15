@@ -100,24 +100,22 @@ set (SOURCE_FILES
      scorediff.cpp
     )
 
-add_library (
-      libmscore STATIC
-      ${_all_h_file}
-      ${INCS}
-      ${LIB_SCRIPT_FILES}
-      ${SOURCE_FILES}
-      )
-
 if (LIBMUSESCORE_SHARED)
-
-add_library (
+   add_library (
       musescore SHARED
       ${_all_h_file}
       ${INCS}
       ${LIB_SCRIPT_FILES}
       ${SOURCE_FILES}
       )
-
+else (LIBMUSESCORE_SHARED)
+   add_library (
+      libmscore STATIC
+      ${_all_h_file}
+      ${INCS}
+      ${LIB_SCRIPT_FILES}
+      ${SOURCE_FILES}
+      )
 endif (LIBMUSESCORE_SHARED)
 
 ##
@@ -133,23 +131,21 @@ if (NOT APPLE AND NOT MINGW AND NOT MSVC AND CMAKE_BUILD_TYPE MATCHES "DEBUG")
    endif (COVERAGE)
 endif (NOT APPLE AND NOT MINGW AND NOT MSVC AND CMAKE_BUILD_TYPE MATCHES "DEBUG")
 
-
-
 if (NOT MSVC)
-   set_target_properties (
-      libmscore
-      PROPERTIES
-         COMPILE_FLAGS "-g ${PCH_INCLUDE} -Wall -Wextra -Winvalid-pch -Woverloaded-virtual ${COVERAGE_OPTIONS}"
-      )
 
-if (LIBMUSESCORE_SHARED)
-   set_target_properties (
-      musescore
-      PROPERTIES
-         COMPILE_FLAGS "-g ${PCH_INCLUDE} -Wall -Wextra -Winvalid-pch -Woverloaded-virtual ${COVERAGE_OPTIONS}"
-      )
-endif (LIBMUSESCORE_SHARED)
-
+   if (LIBMUSESCORE_SHARED)
+      set_target_properties (
+         musescore
+         PROPERTIES
+            COMPILE_FLAGS "-g ${PCH_INCLUDE} -Wall -Wextra -Winvalid-pch -Woverloaded-virtual ${COVERAGE_OPTIONS}"
+         )
+   else (LIBMUSESCORE_SHARED)
+      set_target_properties (
+         libmscore
+         PROPERTIES
+            COMPILE_FLAGS "-g ${PCH_INCLUDE} -Wall -Wextra -Winvalid-pch -Woverloaded-virtual ${COVERAGE_OPTIONS}"
+         )
+   endif (LIBMUSESCORE_SHARED)
 
 else (NOT MSVC)
    set_target_properties (
@@ -166,6 +162,11 @@ vstudio_pch( libmscore )
 
 # MSVC does not depend on mops1 & mops2 for PCH
 if (NOT MSVC)
-   ADD_DEPENDENCIES(libmscore mops1)
-   ADD_DEPENDENCIES(libmscore mops2)
+   if (LIBMUSESCORE_SHARED)
+      ADD_DEPENDENCIES(musescore mops1)
+      ADD_DEPENDENCIES(musescore mops2)
+   else (LIBMUSESCORE_SHARED)
+      ADD_DEPENDENCIES(libmscore mops1)
+      ADD_DEPENDENCIES(libmscore mops2)
+   endif (LIBMUSESCORE_SHARED)
 endif (NOT MSVC)
