@@ -1,4 +1,7 @@
-;;; FFI libmusescore functions interface
+;;;; FFI libmusescore functions interface
+
+(define (get-dynfunc mangled)
+  (dynamic-func mangled (dynamic-link)))
 
 ;;; class Score
 
@@ -8,7 +11,7 @@
       ((def name mangled)
        (define (name score)
          (let* ((cfun (pointer->procedure int
-                   (dynamic-func mangled (dynamic-link))
+                   (get-dynfunc mangled)
                    '(*)))
                 (c-score (struct-ref/unboxed score 0))
                 (ptr (make-pointer c-score)))
@@ -23,7 +26,7 @@
       ((def name mangled)
        (define (name score tick)
          (let* ((cfun (pointer->procedure '*
-                   (dynamic-func mangled (dynamic-link))
+                   (get-dynfunc mangled)
                    (list '* int)))
                 (c-score (struct-ref/unboxed score 0))
                 (ptr (make-pointer c-score)))
@@ -41,7 +44,7 @@
       ((def name mangled)
        (define (name score)
          (let* ((cfun (pointer->procedure void
-                   (dynamic-func mangled (dynamic-link))
+                   (get-dynfunc mangled)
                    '(*)))
                 (c-score (struct-ref/unboxed score 0))
                 (ptr (make-pointer c-score)))
@@ -55,7 +58,7 @@
       ((def name mangled)
        (define (name score)
          (let* ((cfun (pointer->procedure void
-                   (dynamic-func mangled (dynamic-link))
+                   (get-dynfunc mangled)
                    '(*)))
                 (c-score (struct-ref/unboxed score 0))
                 (ptr (make-pointer c-score)))
@@ -67,7 +70,7 @@
 
 (define (ms-score-crMeasure score idx)
   (let* ((cfun (pointer->procedure '*
-          (dynamic-func "_ZNK2Ms5Score9crMeasureEi" (dynamic-link))
+          (get-dynfunc "_ZNK2Ms5Score9crMeasureEi")
           (list '* int)))
          (c-score (struct-ref/unboxed score 0))
          (ptr (make-pointer c-score)))
@@ -75,7 +78,7 @@
 
 (define (ms-score-selectAdd score elm)
   (let* ((cfun (pointer->procedure void
-          (dynamic-func "_ZN2Ms5Score9selectAddEPNS_7ElementE" (dynamic-link))
+          (get-dynfunc "_ZN2Ms5Score9selectAddEPNS_7ElementE")
           '(* *)))
          (c-score (struct-ref/unboxed score 0))
          (ptr (make-pointer c-score)))
@@ -83,7 +86,7 @@
 
 (define (ms-score-select score elm type staff)
   (let* ((cfun (pointer->procedure void
-          (dynamic-func "_ZN2Ms5Score6selectEPNS_7ElementENS_10SelectTypeEi" (dynamic-link))
+          (get-dynfunc "_ZN2Ms5Score6selectEPNS_7ElementENS_10SelectTypeEi")
           (list '* '* int int)))
          (c-score (struct-ref/unboxed score 0))
          (ptr (make-pointer c-score)))
@@ -91,7 +94,7 @@
 
 (define (ms-score-selection score)
   (let* ((cfun (pointer->procedure '*
-            (dynamic-func "_ZN2Ms5Score9selectionEv" (dynamic-link))
+            (get-dynfunc "_ZN2Ms5Score9selectionEv")
             '(*)))
          (c-score (struct-ref/unboxed score 0))
          (ptr (make-pointer c-score)))
@@ -109,7 +112,7 @@
       ((def name mangled)
        (define (name selection)
          (let* ((cfun (pointer->procedure int
-                   (dynamic-func mangled (dynamic-link))
+                   (get-dynfunc mangled)
                    '(*))))
            (cfun selection)))))))
   (def ms-measure-noOffset "_ZNK2Ms11MeasureBase8noOffsetEv")
@@ -117,7 +120,7 @@
 
 (define (ms-measure-findSegmentR mea segtype tick)
   (let* ((cfun (pointer->procedure '*
-                (dynamic-func "_ZNK2Ms7Measure12findSegmentRENS_11SegmentTypeEi" (dynamic-link))
+                (get-dynfunc "_ZNK2Ms7Measure12findSegmentRENS_11SegmentTypeEi")
                (list '* int int))))
     (cfun mea segtype tick)))
 
@@ -129,7 +132,7 @@
       ((def name mangled)
        (define (name selection)
          (let* ((cfun (pointer->procedure int
-                   (dynamic-func mangled (dynamic-link))
+                   (get-dynfunc mangled)
                    '(*))))
            (if (= (cfun selection) 0) #f #t)))))))
   (def ms-selection-isRange "_ZNK2Ms9Selection7isRangeEv")
@@ -139,7 +142,7 @@
 
 (define (ms-selection-deselectAll selection)
   (let* ((cfun (pointer->procedure void
-            (dynamic-func "_ZN2Ms9Selection11deselectAllEv" (dynamic-link))
+            (get-dynfunc "_ZN2Ms9Selection11deselectAllEv")
             '(*))))
     (cfun selection)))
 
@@ -149,7 +152,7 @@
       ((def name arg1type mangled)
        (define (name sel arg)
          (let ((cfun (pointer->procedure void
-                  (dynamic-func mangled (dynamic-link))
+                  (get-dynfunc mangled)
                   (list '* arg1type))))
            (cfun sel arg)))))))
   (def ms-selection-setStartSegment '* "_ZN2Ms9Selection15setStartSegmentEPNS_7SegmentE")
@@ -165,7 +168,7 @@
       ((def name mangled)
          (define (name sel)
            (let ((cfun (pointer->procedure int
-                    (dynamic-func mangled (dynamic-link))
+                    (get-dynfunc mangled)
                     '(*))))
              (cfun sel)))))))
   (def ms-selection-tickStart "_ZNK2Ms9Selection9tickStartEv")
@@ -173,44 +176,38 @@
 
 (define (ms-selection-add sel elm)
   (let ((cfun (pointer->procedure void
-               (dynamic-func "_ZN2Ms9Selection3addEPNS_7ElementE" (dynamic-link))
+               (get-dynfunc "_ZN2Ms9Selection3addEPNS_7ElementE")
                '(* *))))
     (cfun sel elm)))
 
 (define (ms-selection-update sel)
   (let ((cfun (pointer->procedure void
-               (dynamic-func "_ZN2Ms9Selection6updateEv" (dynamic-link))
+               (get-dynfunc "_ZN2Ms9Selection6updateEv")
                '(*))))
     (cfun sel)))
 
 (define (ms-selection-setState sel selstate)
   (let ((cfun (pointer->procedure void
-               (dynamic-func "_ZN2Ms9Selection8setStateENS_8SelStateE" (dynamic-link))
+               (get-dynfunc "_ZN2Ms9Selection8setStateENS_8SelStateE")
                (list '* int))))
     (cfun sel selstate)))
 
 ; suspect function (hairy logic)
 (define (ms-selection-updateSelectedElements sel)
   (let ((cfun (pointer->procedure void
-               (dynamic-func "_ZN2Ms9Selection22updateSelectedElementsEv" (dynamic-link))
+               (get-dynfunc "_ZN2Ms9Selection22updateSelectedElementsEv")
                '(*))))
     (cfun sel)))
 
 (define (ms-selection-setRangeTicks selection tick1 tick2 staffstart staffend)
   (let* ((cfun (pointer->procedure void
-            (dynamic-func "_ZN2Ms9Selection13setRangeTicksEiiii" (dynamic-link))
+            (get-dynfunc "_ZN2Ms9Selection13setRangeTicksEiiii")
             (list '* int int int int))))
     (cfun selection
           tick1
           tick2
           staffstart
           staffend)))
-
-(define (ms-foobar2 seg)
-  (let ((cfun (pointer->procedure void
-               (dynamic-func "_Z10ms_foobar2Pv" (dynamic-link))
-               '(*))))
-    (cfun seg)))
 
 ;;; class Segment
 
@@ -220,7 +217,7 @@
       ((def name mangled)
          (define (name seg)
            (let ((cfun (pointer->procedure '*
-                    (dynamic-func mangled (dynamic-link))
+                    (get-dynfunc mangled)
                     '(*))))
              (let ((seg/mea (cfun seg)))
                (if (= (pointer-address seg/mea) 0)
@@ -236,7 +233,7 @@
 ; segmentType() (NOTE: not the same as ms-element-type)
 (define (ms-segment-type seg)
   (let ((cfun (pointer->procedure int
-               (dynamic-func "_ZNK2Ms7Segment11segmentTypeEv" (dynamic-link))
+               (get-dynfunc "_ZNK2Ms7Segment11segmentTypeEv")
                '(*))))
     (cfun seg)))
 
@@ -246,8 +243,7 @@
 
 (define (ms-segment-element seg track)
   (let ((cfun (pointer->procedure '*
-               (dynamic-func "_ZNK2Ms7Segment7elementEi"
-                             (dynamic-link))
+               (get-dynfunc "_ZNK2Ms7Segment7elementEi")
                (list '* int))))
     (let ((elm (cfun seg track)))
       (if (= (pointer-address elm) 0)
@@ -261,14 +257,14 @@
       ((def name mangled)
          (define (name elm)
            (let ((cfun (pointer->procedure int
-                    (dynamic-func mangled (dynamic-link))
+                    (get-dynfunc mangled)
                     '(*))))
              (cfun elm)))))))
   (def ms-element-tick "_ZNK2Ms7Element4tickEv"))
 
 (define (ms-element-name elm)
   (let ((cfun (pointer->procedure '*
-           (dynamic-func "_ZNK2Ms12ScoreElement4nameEv" (dynamic-link))
+           (get-dynfunc "_ZNK2Ms12ScoreElement4nameEv")
            '(*))))
     (let ((ptr (cfun elm)))
       (pointer->string ptr))))
