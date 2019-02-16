@@ -57,8 +57,10 @@
         (firstMMseg (ms-score-tick2segmentMM score 0)))
     (format #t "  first-seg (tick 0): ~s~%" firstseg)
     (test-print-score-segments firstseg ms-segment-next1)
-    (format #t "  firstMM-seg (tick 0): ~s~%" firstMMseg)
-    (test-print-score-segments firstMMseg ms-segment-next1MM)))
+    (if (ms-measure-mmrest? (ms-segment-measure firstMMseg))
+      (begin
+        (format #t "  firstMM-seg (tick 0): ~s~%" firstMMseg)
+        (test-print-score-segments firstMMseg ms-segment-next1MM)))))
 
 (define (walk-segments firstseg nextfun meafun segfun elmfun)
   (let ((lastseg #f)
@@ -91,4 +93,5 @@
         (lastseg #f)
         (oldmea 0))
     (walk-segments firstseg ms-segment-next1 meafun segfun elmfun)
-    (walk-segments firstMMseg ms-segment-next1MM meafun segfun elmfun)))
+    (if (ms-measure-mmrest? (ms-segment-measure firstMMseg))
+      (walk-segments firstMMseg ms-segment-next1MM meafun segfun elmfun))))

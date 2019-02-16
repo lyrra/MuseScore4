@@ -24,6 +24,7 @@
     (ms-score-selection      (  Ms Score selection E v))
     (ms-measure-noOffset     (c Ms MeasureBase noOffset E v))
     (ms-measure-no           (c Ms MeasureBase no E v))
+    (ms-measure-mmrest?      (c Ms Measure isMMRest E v))
     (ms-measure-findSegmentR
         (c Ms Measure findSegmentR E "NS_" SegmentType E i))
     (ms-selection-isRange     (c Ms Selection isRange E v))
@@ -220,6 +221,12 @@
                 (get-dynfunc ms-measure-findSegmentR)
                (list '* int int))))
     (cfun mea segtype tick)))
+
+(define (ms-measure-mmrest? mea)
+  (let* ((cfun (pointer->procedure int
+                (get-dynfunc ms-measure-mmrest?)
+               '(*))))
+    (if (= 0 (cfun mea)) #f #t)))
 
 ;;; class Selection
 
