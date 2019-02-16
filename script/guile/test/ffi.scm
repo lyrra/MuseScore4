@@ -52,13 +52,17 @@
     (ms-segment-measure (c Ms Segment measure E v))
     (ms-segment-type    (c Ms Segment segmentType E v))
     (ms-segment-element (c Ms Segment element E i))
+
     (ms-element-tick    (c Ms Element tick E v))
     (ms-element-name    (c Ms ScoreElement name E v))
+    (ms-barline-type    (c Ms BarLine barLineType E v))
     ))
 
 
 ;;;
 
+;; See https://itanium-cxx-abi.github.io/cxx-abi/abi.html#mangling
+;; for how to perform g++ conversion (Itanium IA64 ABI).
 (define (c++mangle namelist)
   (apply string-append
    (append (list c++prefix)
@@ -353,7 +357,9 @@
                     (get-dynfunc name)
                     '(*))))
              (cfun elm)))))))
-  (def ms-element-tick))
+  (def ms-element-tick)
+  (def ms-barline-type)
+  )
 
 (define (ms-element-name elm)
   (let ((cfun (pointer->procedure '*

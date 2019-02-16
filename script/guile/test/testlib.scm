@@ -2,6 +2,12 @@
 (use-modules (ice-9 textual-ports)) ; get-string-all
 (use-modules (sxml simple))
 
+(define-syntax-rule (collect push exp ...)
+  (let* ((lst '())
+         (push (lambda (x) (set! lst (cons x lst)))))
+    exp ...
+    (reverse lst)))
+
 (define (test-sxml-to-xml sxml)
   (with-output-to-string
    (lambda () (sxml->xml sxml))))
