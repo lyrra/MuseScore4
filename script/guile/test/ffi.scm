@@ -22,6 +22,11 @@
     (ms-score-selectAdd      (  Ms Score selectAdd E "PNS_" Element E))
     (ms-score-select         (  Ms Score select E "PNS_" Element E "NS_" SelectType E i))
     (ms-score-selection      (  Ms Score selection E v))
+    (ms-score-systems        (  Ms Score systems E v))
+    (ms-score-measures       (  Ms Score measures E v))
+
+    (ms-system-staves        (  Ms System staves E v))
+
     (ms-measure-noOffset     (c Ms MeasureBase noOffset E v))
     (ms-measure-no           (c Ms MeasureBase no E v))
     (ms-measure-mmrest?      (c Ms Measure isMMRest E v))
@@ -155,7 +160,7 @@
     (syntax-rules ()
       ((def name)
        (define (name score)
-         (let* ((cfun (pointer->procedure void
+         (let* ((cfun (pointer->procedure '*
                    (get-dynfunc name)
                    '(*)))
                 (c-score (struct-ref/unboxed score 0))
@@ -190,13 +195,34 @@
          (ptr (make-pointer c-score)))
     (cfun ptr elm type staff)))
 
-(define (ms-score-selection score)
-  (let* ((cfun (pointer->procedure '*
-            (get-dynfunc ms-score-selection)
-            '(*)))
-         (c-score (struct-ref/unboxed score 0))
-         (ptr (make-pointer c-score)))
-    (cfun ptr)))
+(let-syntax
+  ((def
+    (syntax-rules ()
+      ((def name)
+       (define (name score)
+         (let* ((cfun (pointer->procedure '*
+                   (get-dynfunc name)
+                   '(*)))
+                (c-score (struct-ref/unboxed score 0))
+                (ptr (make-pointer c-score)))
+           (cfun ptr)))))))
+  (def ms-score-selection)
+  (def ms-score-systems)
+  (def ms-score-measures))
+
+;;; class system
+
+(let-syntax
+  ((def
+    (syntax-rules ()
+      ((def name)
+       (define (name sys)
+         (let* ((cfun (pointer->procedure '*
+                   (get-dynfunc name)
+                   '(*))))
+           (cfun sys ;(pointer->scm sys)
+                 )))))))
+  (def ms-system-staves))
 
 ;;; class measure
 
