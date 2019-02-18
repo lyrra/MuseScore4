@@ -18,7 +18,9 @@
 #include "libmscore/musescoreCore.h"
 #include "libmscore/xml.h"
 #include "libmscore/score.h"
+#include "libmscore/system.h"
 #include "libmscore/measurebase.h"
+#include "libmscore/measure.h"
 #include "libmscore/segment.h"
 #include "mtest/testutils.h"
 
@@ -125,16 +127,33 @@ SCM std_vector_to_scm_vector (std::vector<Element*> vec)
       return v;
       }
 
-SCM ms_measure_elements_wrap (MeasureBase *mea)
+SCM ms_measure_elements (SCM mea_scm)
       {
+      MeasureBase *mea = (Measure*) scm_to_pointer(mea_scm);
       ElementList elmv = mea->el();
       return std_vector_to_scm_vector (elmv);
       }
 
-SCM ms_segment_elements_wrap (Segment *seg)
+SCM ms_segment_elements (SCM seg_scm)
       {
+      Segment* seg = (Segment*) scm_to_pointer(seg_scm);
       std::vector<Element*> elmv = seg->elist();
       return std_vector_to_scm_vector (elmv);
+      }
+
+SCM ms_qlist_size (SCM ql_scm)
+      {
+      void *ql_ptr = scm_to_pointer(ql_scm);
+      QList<void*> *ql = (QList<void*> *) ql_ptr;
+      return scm_from_int(ql->size());
+      }
+
+SCM ms_qlist_at (SCM ql_scm, SCM idx_scm)
+      {
+      void *ql_ptr = scm_to_pointer(ql_scm);
+      int idx = scm_to_int(idx_scm);
+      QList<void*> *ql = (QList<void*> *) ql_ptr;
+      return scm_from_pointer(ql->at(idx), NULL);
       }
 
 SCM
@@ -161,14 +180,19 @@ void init_guile_shim ()
       scm_c_define_gsubr ("ms-score-read-string", 1, 0, 0, (void *)ms_score_read_string);
       scm_c_define_gsubr ("ms-score-forget", 1, 0, 0, (void *)ms_score_forget);
       scm_c_define_gsubr ("ms-score-cmd", 2, 0, 0, (void *)ms_score_cmd);
-      scm_c_define_gsubr ("ms-segment-elements-wrap", 1, 0, 0, (void *)ms_segment_elements_wrap);
-      scm_c_define_gsubr ("ms-measure-elements-wrap", 1, 0, 0, (void *)ms_measure_elements_wrap);
+      scm_c_define_gsubr ("ms-segment-elements", 1, 0, 0, (void *)ms_segment_elements);
+      scm_c_define_gsubr ("ms-measure-elements", 1, 0, 0, (void *)ms_measure_elements);
+      scm_c_define_gsubr ("ms-qlist-size", 1, 0, 0, (void *)ms_qlist_size);
+      scm_c_define_gsubr ("ms-qlist-at", 2, 0, 0, (void *)ms_qlist_at);
       scm_c_export ("ms-score-read-file", NULL);
       scm_c_export ("ms-score-read-string", NULL);
       scm_c_export ("ms-score-forget", NULL);
       scm_c_export ("ms-score-cmd", NULL);
-      scm_c_export ("ms-segment-elements-wrap", NULL);
-      scm_c_export ("ms-measure-elements-wrap", NULL);
+      scm_c_export ("ms-segment-elements", NULL);
+      scm_c_export ("ms-measure-elements", NULL);
+      scm_c_export ("ms-qlist-size", NULL);
+      scm_c_export ("ms-qlist-at", NULL);
+
       }
 
 // first parameter is a closure, not used here

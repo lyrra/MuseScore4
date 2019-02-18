@@ -226,10 +226,6 @@
 
 ;;; class measure
 
-; returns a SCM vector of elements
-(define (ms-measure-elements mea)
-  (ms-measure-elements-wrap (pointer->scm mea)))
-
 (let-syntax
   ((def
     (syntax-rules ()
@@ -366,10 +362,6 @@
                (get-dynfunc ms-segment-type)
                '(*))))
     (cfun seg)))
-
-; returns a SCM vector of elements
-(define (ms-segment-elements seg)
-  (ms-segment-elements-wrap (pointer->scm seg)))
 
 (define (ms-segment-element seg track)
   (let ((cfun (pointer->procedure '*
