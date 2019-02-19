@@ -102,293 +102,176 @@
 (define-syntax-rule (get-dynfunc symname)
   (dynamic-func (mangle symname) (dynamic-link)))
 
-;(define (get-dynfunc mangled) (dynamic-func mangled (dynamic-link)))
+(define (get-score-ptr score)
+  (let ((c-score (struct-ref/unboxed score 0)))
+    (make-pointer c-score)))
+
+; the caller has done syntax->datum on each argument
+; therefore we need to syntax wrap back name, and
+; also new symbols, like the lambda paramters we create
+(define (make-ffi-function stx name parms ret)
+  (let* ((sname (datum->syntax stx name))
+         (numparms (length parms))
+         (i 0)
+         ; make unique lambda parameter names
+         (parmnames (map-in-order
+                     (lambda (cn)
+                       (set! i (+ i 1))
+                       (datum->syntax stx
+                        (string->symbol
+                         (format #f "a~a~a"
+                                 cn i)))) parms))
+         ; translate c-argument short-hand type to FFI-types
+         (cargs (map-in-order
+                  (lambda (type)
+                    (match type
+                      ('p #''*)
+                      ('i #'int)
+                      ('s #'s)
+                      (x (error "unknown parameter type ~s" x))))
+                  parms))
+         ; translate return short-hand type to FFI-type
+         (rettype (match ret
+                    ('p #''*)
+                    ('n #''*)
+                    ('s #''*) ; FIX: add string code
+                    ('i #'int)
+                    ('b #'int) ; boolean (c++ integer)
+                    ('v #'void)
+                    (x (error "unknown return type ~s" x)))))
+    ;(format #t "Create an FFI function, that is callable from scheme and which will call into C. It has following properties:~%")
+    ;(format #t "  numparms : ~s -- it takes this many arguments~%" numparms)
+    ;(format #t "  parmnames: ~s -- names of the arguments~%" (tree-walk syntax->datum parmnames))
+    ;(format #t "  cargs  : ~s => ~s -- the types of each parameter given to the C function, (left is your code, and right is what FFI type that translates into)~%" parms (tree-walk syntax->datum cargs))
+    ;(format #t "  rettype: ~s => ~s -- the type of datum that C will return~%" ret rettype)
+    ; #,@ unsyntax-splicing
+    (let ((form
+      #`(lambda (#,@parmnames)
+          ;(format #t "Welcome to ~s, parms: ~s~%" ',name ',parmnames)
+          (let ((cfun (pointer->procedure #,rettype
+                       (get-dynfunc #,sname)
+                       (list #,@cargs))))
+            #,(cond
+               ; translate nullptr to boolean (#t #f)
+               ((eq? ret 'n)
+                #`(let ((retptr (cfun #,@parmnames)))
+                   (if (= (pointer-address retptr) 0)
+                     #f retptr)))
+               ; translate c-string-pointer to scheme-string
+               ((eq? ret 's)
+                #`(pointer->string (cfun #,@parmnames)))
+               ; translate integer to boolean
+               ((eq? ret 'b)
+                #`(if (= 0 (cfun #,@parmnames)) #f #t))
+               ; else give return value as is (only SCM converted)
+               (else
+                 #`(cfun #,@parmnames)))))))
+      ;(format #t "  FFI scheme code wrapper: ~s -> ~s~%" name (tree-walk syntax->datum form))
+      form)))
+
+(define-syntax def-ffi-c  ;-rule (def-ffi-c name (parms-type ...) ret-type)
+  (lambda (stx)
+    (syntax-case stx ()
+      ((def-ffi-c name parms ret)
+       #`(define name
+                 #,(make-ffi-function stx (syntax->datum #'name) (syntax->datum #'parms) (syntax->datum #'ret)))))))
 
 ) ; eval-when
 
 ;;; class Score
 
+; The first argument to these ffi-functions are a score-object
+; and need to be re-wrapped before calling C.
 (let-syntax
   ((def
     (syntax-rules ()
-      ((def name)
-       (define (name score)
-         (let* ((cfun (pointer->procedure int
-                   (get-dynfunc name)
-                   '(*)))
-                (c-score (struct-ref/unboxed score 0))
-                (ptr (make-pointer c-score)))
-           (cfun ptr)))))))
-  (def ms-score-nstaves)
-  (def ms-score-ntracks)
-  (def ms-score-pos))
+      ((def name (score args ...) (c-ret c-args ...))
+       (define (name score args ...)
+         (let ((cfun (pointer->procedure c-ret
+                      (get-dynfunc name)
+                      c-args ...))
+               (ptr (get-score-ptr score)))
+           (cfun ptr args ...)))))))
+  (def ms-score-nstaves (score) (int '(*)))
+  (def ms-score-ntracks (score) (int '(*)))
+  (def ms-score-pos     (score) (int '(*)))
 
-(let-syntax
-  ((def
-    (syntax-rules ()
-      ((def name)
-       (define (name score tick)
-         (let* ((cfun (pointer->procedure '*
-                   (get-dynfunc name)
-                   (list '* int)))
-                (c-score (struct-ref/unboxed score 0))
-                (ptr (make-pointer c-score)))
-           (let ((retptr (cfun ptr tick)))
-             (if (= (pointer-address retptr) 0)
-               #f retptr))))))))
-  (def ms-score-tick2measure)
-  (def ms-score-tick2segment)
-  (def ms-score-tick2measureMM)
-  (def ms-score-tick2segmentMM))
+  (def ms-score-tick2measure   (score tick) ('* (list '* int)))
+  (def ms-score-tick2segment   (score tick) ('* (list '* int)))
+  (def ms-score-tick2measureMM (score tick) ('* (list '* int)))
+  (def ms-score-tick2segmentMM (score tick) ('* (list '* int)))
 
-(let-syntax
-  ((def
-    (syntax-rules ()
-      ((def name)
-       (define (name score)
-         (let* ((cfun (pointer->procedure void
-                   (get-dynfunc name)
-                   '(*)))
-                (c-score (struct-ref/unboxed score 0))
-                (ptr (make-pointer c-score)))
-           (cfun ptr)))))))
-  (def ms-score-doLayout)
-  (def ms-score-update))
+  (def ms-score-doLayout (score) (void '(*)))
+  (def ms-score-update   (score) (void '(*)))
 
-(let-syntax
-  ((def
-    (syntax-rules ()
-      ((def name)
-       (define (name score)
-         (let* ((cfun (pointer->procedure '*
-                   (get-dynfunc name)
-                   '(*)))
-                (c-score (struct-ref/unboxed score 0))
-                (ptr (make-pointer c-score)))
-           (cfun ptr)))))))
-  (def ms-score-first)
-  (def ms-score-firstMM)
-  (def ms-score-firstMeasure)
-  (def ms-score-firstMeasureMM))
+  (def ms-score-first          (score) ('* '(*)))
+  (def ms-score-firstMM        (score) ('* '(*)))
+  (def ms-score-firstMeasure   (score) ('* '(*)))
+  (def ms-score-firstMeasureMM (score) ('* '(*)))
 
-(define (ms-score-crMeasure score idx)
-  (let* ((cfun (pointer->procedure '*
-          (get-dynfunc ms-score-crMeasure)
-          (list '* int)))
-         (c-score (struct-ref/unboxed score 0))
-         (ptr (make-pointer c-score)))
-    (cfun ptr idx)))
+  (def ms-score-crMeasure (score idx) ('* (list '* int)))
+  (def ms-score-selectAdd (score elm) (void '(* *)))
+  (def ms-score-select (score elm type staff)
+                       (void (list '* '* int int)))
 
-(define (ms-score-selectAdd score elm)
-  (let* ((cfun (pointer->procedure void
-          (get-dynfunc ms-score-selectAdd)
-          '(* *)))
-         (c-score (struct-ref/unboxed score 0))
-         (ptr (make-pointer c-score)))
-    (cfun ptr elm)))
-
-(define (ms-score-select score elm type staff)
-  (let* ((cfun (pointer->procedure void
-          (get-dynfunc ms-score-select)
-          (list '* '* int int)))
-         (c-score (struct-ref/unboxed score 0))
-         (ptr (make-pointer c-score)))
-    (cfun ptr elm type staff)))
-
-(let-syntax
-  ((def
-    (syntax-rules ()
-      ((def name)
-       (define (name score)
-         (let* ((cfun (pointer->procedure '*
-                   (get-dynfunc name)
-                   '(*)))
-                (c-score (struct-ref/unboxed score 0))
-                (ptr (make-pointer c-score)))
-           (cfun ptr)))))))
-  (def ms-score-selection)
-  (def ms-score-systems)
-  (def ms-score-measures))
+  (def ms-score-selection (score) ('* '(*)))
+  (def ms-score-systems   (score) ('* '(*)))
+  (def ms-score-measures  (score) ('* '(*))))
 
 ;;; class system
 
-(let-syntax
-  ((def
-    (syntax-rules ()
-      ((def name)
-       (define (name sys)
-         (let* ((cfun (pointer->procedure '*
-                   (get-dynfunc name)
-                   '(*))))
-           (cfun sys ;(pointer->scm sys)
-                 )))))))
-  (def ms-system-staves))
+(def-ffi-c ms-system-staves (p) p)
 
 ;;; class measure
 
-(let-syntax
-  ((def
-    (syntax-rules ()
-      ((def name)
-       (define (name selection)
-         (let* ((cfun (pointer->procedure int
-                   (get-dynfunc name)
-                   '(*))))
-           (cfun selection)))))))
-  (def ms-measure-noOffset)
-  (def ms-measure-no))
+(def-ffi-c ms-measure-noOffset (p) i)
+(def-ffi-c ms-measure-no       (p) i)
 
-(define (ms-measure-findSegmentR mea segtype tick)
-  (let* ((cfun (pointer->procedure '*
-                (get-dynfunc ms-measure-findSegmentR)
-               (list '* int int))))
-    (cfun mea segtype tick)))
-
-(define (ms-measure-mmrest? mea)
-  (let* ((cfun (pointer->procedure int
-                (get-dynfunc ms-measure-mmrest?)
-               '(*))))
-    (if (= 0 (cfun mea)) #f #t)))
+(def-ffi-c ms-measure-findSegmentR (p i i) p)
+(def-ffi-c ms-measure-mmrest? (p) b)
 
 ;;; class Selection
 
-(let-syntax
-  ((def
-    (syntax-rules ()
-      ((def name)
-       (define (name selection)
-         (let* ((cfun (pointer->procedure int
-                   (get-dynfunc name)
-                   '(*))))
-           (if (= (cfun selection) 0) #f #t)))))))
-  (def ms-selection-isRange)
-  (def ms-selection-isNone)
-  (def ms-selection-isList)
-  (def ms-selection-isSingle))
+(def-ffi-c ms-selection-isRange  (p) n)
+(def-ffi-c ms-selection-isNone   (p) n)
+(def-ffi-c ms-selection-isList   (p) n)
+(def-ffi-c ms-selection-isSingle (p) n)
 
-(define (ms-selection-deselectAll selection)
-  (let* ((cfun (pointer->procedure void
-            (get-dynfunc ms-selection-deselectAll) ;"_ZN2Ms9Selection11deselectAllEv")
-            '(*))))
-    (cfun selection)))
+(def-ffi-c ms-selection-deselectAll     (p) v)
+(def-ffi-c ms-selection-setStartSegment (p p) v)
+(def-ffi-c ms-selection-setEndSegment   (p p) v)
 
-(let-syntax
-  ((def
-    (syntax-rules ()
-      ((def name arg1type)
-       (define (name sel arg)
-         (let ((cfun (pointer->procedure void
-                  (get-dynfunc name)
-                  (list '* arg1type))))
-           (cfun sel arg)))))))
-  (def ms-selection-setStartSegment '*)
-  (def ms-selection-setEndSegment '*)
-  ; These are not exported as symbols!
-  ; (def ms-selection-setStaffStart int "???") ;  setStaffStart(int v)
-  ; (def ms-selection-setStaffEnd int  "???") ; setStaffEnd(int v)
-  )
-
-(let-syntax
-  ((def
-    (syntax-rules ()
-      ((def name)
-         (define (name sel)
-           (let ((cfun (pointer->procedure int
-                    (get-dynfunc name)
-                    '(*))))
-             (cfun sel)))))))
-  (def ms-selection-tickStart)
-  (def ms-selection-tickend))
-
-(define (ms-selection-add sel elm)
-  (let ((cfun (pointer->procedure void
-               (get-dynfunc ms-selection-add)
-               '(* *))))
-    (cfun sel elm)))
-
-(define (ms-selection-update sel)
-  (let ((cfun (pointer->procedure void
-               (get-dynfunc ms-selection-update)
-               '(*))))
-    (cfun sel)))
-
-(define (ms-selection-setState sel selstate)
-  (let ((cfun (pointer->procedure void
-               (get-dynfunc ms-selection-setState)
-               (list '* int))))
-    (cfun sel selstate)))
+(def-ffi-c ms-selection-tickStart (p) i)
+(def-ffi-c ms-selection-tickend   (p) i)
+(def-ffi-c ms-selection-add       (p p) v)
+(def-ffi-c ms-selection-update    (p) v)
+(def-ffi-c ms-selection-setState  (p i) v)
 
 ; suspect function (hairy logic)
-(define (ms-selection-updateSelectedElements sel)
-  (let ((cfun (pointer->procedure void
-               (get-dynfunc ms-selection-updateSelectedElements)
-               '(*))))
-    (cfun sel)))
+(def-ffi-c ms-selection-updateSelectedElements (p) v)
+; sel tick1 tick2 staffstart staffend = > void
+(def-ffi-c ms-selection-setRangeTicks (p i i i i) v)
 
-(define (ms-selection-setRangeTicks selection tick1 tick2 staffstart staffend)
-  (let* ((cfun (pointer->procedure void
-            (get-dynfunc ms-selection-setRangeTicks)
-            (list '* int int int int))))
-    (cfun selection
-          tick1
-          tick2
-          staffstart
-          staffend)))
+; These are not exported as symbols!
+; (def ms-selection-setStaffStart int "???") ;  setStaffStart(int v)
+; (def ms-selection-setStaffEnd int  "???") ; setStaffEnd(int v)
 
 ;;; class Segment
 
-(let-syntax
-  ((def
-    (syntax-rules ()
-      ((def name)
-         (define (name seg)
-           (let ((cfun (pointer->procedure '*
-                    (get-dynfunc name)
-                    '(*))))
-             (let ((seg/mea (cfun seg)))
-               (if (= (pointer-address seg/mea) 0)
-                   #f seg/mea))))))))
-  (def ms-segment-next1)
-  (def ms-segment-next)
-  (def ms-segment-prev)
-  (def ms-segment-prev1)
-  (def ms-segment-next1MM)
-  (def ms-segment-prev1MM)
-  (def ms-segment-measure))
+(def-ffi-c ms-segment-next1   (p) n)
+(def-ffi-c ms-segment-next    (p) n)
+(def-ffi-c ms-segment-prev    (p) n)
+(def-ffi-c ms-segment-prev1   (p) n)
+(def-ffi-c ms-segment-next1MM (p) n)
+(def-ffi-c ms-segment-prev1MM (p) n)
+(def-ffi-c ms-segment-measure (p) n)
 
 ; segmentType() (NOTE: not the same as ms-element-type)
-(define (ms-segment-type seg)
-  (let ((cfun (pointer->procedure int
-               (get-dynfunc ms-segment-type)
-               '(*))))
-    (cfun seg)))
-
-(define (ms-segment-element seg track)
-  (let ((cfun (pointer->procedure '*
-               (get-dynfunc ms-segment-element)
-               (list '* int))))
-    (let ((elm (cfun seg track)))
-      (if (= (pointer-address elm) 0)
-          #f elm))))
+(def-ffi-c ms-segment-type    (p) i)
+(def-ffi-c ms-segment-element (p i) n)
 
 ;;; class Element
 
-(let-syntax
-  ((def
-    (syntax-rules ()
-      ((def name)
-         (define (name elm)
-           (let ((cfun (pointer->procedure int
-                    (get-dynfunc name)
-                    '(*))))
-             (cfun elm)))))))
-  (def ms-element-tick)
-  (def ms-barline-type)
-  )
-
-(define (ms-element-name elm)
-  (let ((cfun (pointer->procedure '*
-           (get-dynfunc ms-element-name)
-           '(*))))
-    (let ((ptr (cfun elm)))
-      (pointer->string ptr))))
+(def-ffi-c ms-element-tick    (p) i)
+(def-ffi-c ms-barline-type    (p) i)
+(def-ffi-c ms-element-name    (p) s)
