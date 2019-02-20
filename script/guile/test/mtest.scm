@@ -8,6 +8,7 @@
                #:use-module (musescore-c))
 
 (eval-when (expand load eval)
+  (load-from-path "test/common.scm")
   (load-from-path "test/test.scm")
   (load-from-path "test/ffi.scm")
   (load-from-path "test/testlib.scm"))
