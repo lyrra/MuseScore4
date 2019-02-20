@@ -22,6 +22,7 @@
 #include "libmscore/measurebase.h"
 #include "libmscore/measure.h"
 #include "libmscore/segment.h"
+#include "libmscore/revisions.h"
 #include "mtest/testutils.h"
 
 SCM ms_obj_score_type;
@@ -70,6 +71,54 @@ MasterScore* readScoreCString(char *content)
             return nullptr;
             }
       return score;
+      }
+
+class Myqiod : public QIODevice {
+   private:
+      string _score_string = string();
+
+   public:
+      qint64 readData(char *data, qint64 maxlen);
+      qint64 writeData(const char *data, qint64 len);
+      string getData() { return _score_string; }
+};
+
+qint64 Myqiod::readData(char *, qint64)
+      {
+      fprintf(stderr, "WARNING: function Myqiod::readData is not used.\n");
+      return -1;
+      }
+qint64 Myqiod::writeData(const char *data, qint64 len)
+      {
+      // we are assuming utf-8, not binary, ie can't contain zero
+      _score_string += (char *) data;
+      return len;
+      }
+
+string* writeScoreString(Score *score)
+      {
+      Myqiod mq;
+      mq.open(QIODevice::ReadWrite);
+      XmlWriter xml(score, &mq);
+      xml.setWriteOmr(false); // not mscz-format
+      xml.header();
+      xml.stag("museScore version=\"3.01\"");
+      score->write(xml, false); // false: onlySelection
+      xml.etag();
+      if (score->isMaster()) {
+            score->masterScore()->revisions()->write(xml);
+            }
+      mq.close(); // flushes buffer
+      return new string(mq.getData());
+      }
+
+SCM ms_score_write_string (SCM score_obj)
+      {
+      MasterScore* score = (MasterScore*) scm_foreign_object_ref(score_obj, 0);
+      string *str = writeScoreString(score);
+      SCM s = scm_from_locale_string(str->c_str());
+      delete str;
+      return s;
       }
 
 SCM ms_score_read_string (SCM scmstr)
@@ -178,6 +227,7 @@ void init_guile_shim ()
       ms_obj_score_type = init_ms_object_1("<ms-score>", "score");
       scm_c_define_gsubr ("ms-score-read-file", 1, 0, 0, (void *)ms_score_read_file);
       scm_c_define_gsubr ("ms-score-read-string", 1, 0, 0, (void *)ms_score_read_string);
+      scm_c_define_gsubr ("ms-score-write-string", 1, 0, 0, (void *)ms_score_write_string);
       scm_c_define_gsubr ("ms-score-forget", 1, 0, 0, (void *)ms_score_forget);
       scm_c_define_gsubr ("ms-score-cmd", 2, 0, 0, (void *)ms_score_cmd);
       scm_c_define_gsubr ("ms-segment-elements", 1, 0, 0, (void *)ms_segment_elements);
@@ -186,6 +236,7 @@ void init_guile_shim ()
       scm_c_define_gsubr ("ms-qlist-at", 2, 0, 0, (void *)ms_qlist_at);
       scm_c_export ("ms-score-read-file", NULL);
       scm_c_export ("ms-score-read-string", NULL);
+      scm_c_export ("ms-score-write-string", NULL);
       scm_c_export ("ms-score-forget", NULL);
       scm_c_export ("ms-score-cmd", NULL);
       scm_c_export ("ms-segment-elements", NULL);
@@ -223,4 +274,3 @@ int main (int argc, char* argv[])
       scm_boot_guile (argc, argv, ScriptGuile::guile_main, 0);
       return 0;
       }
-
