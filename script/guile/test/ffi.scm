@@ -59,9 +59,18 @@
     (ms-segment-type    (c Ms Segment segmentType E v))
     (ms-segment-element (c Ms Segment element E i))
 
+    (ms-element-parent  (c Ms Element parent E v))
     (ms-element-tick    (c Ms Element tick E v))
     (ms-element-name    (c Ms ScoreElement name E v))
+    (ms-element-track   (c Ms Element track E v))
+    (ms-element-x       (c Ms Element x     E v))
+    (ms-element-y       (c Ms Element y     E v))
+    (ms-element-rx      (  Ms Element rxpos E v))
+    (ms-element-ry      (  Ms Element rypos E v))
     (ms-barline-type    (c Ms BarLine barLineType E v))
+
+    (ms-chord-notes (c Ms Chord notes E v))
+    (ms-chordrest-crossmeasure (c Ms ChordRest crossMeasure E v))
     ))
 
 
@@ -135,6 +144,7 @@
                     ('p #''*)
                     ('n #''*)
                     ('s #''*) ; FIX: add string code
+                    ('d #'double)
                     ('i #'int)
                     ('b #'int) ; boolean (c++ integer)
                     ('v #'void)
@@ -272,6 +282,17 @@
 
 ;;; class Element
 
+(def-ffi-c ms-element-parent  (p) p)
 (def-ffi-c ms-element-tick    (p) i)
 (def-ffi-c ms-barline-type    (p) i)
 (def-ffi-c ms-element-name    (p) s)
+(def-ffi-c ms-element-track   (p) i)
+(def-ffi-c ms-element-x       (p) d)
+(def-ffi-c ms-element-y       (p) d)
+(def-ffi-c ms-element-rx      (p) d)
+(def-ffi-c ms-element-ry      (p) d)
+
+;;; class chord
+
+(def-ffi-c ms-chord-notes (p) p)
+(def-ffi-c ms-chordrest-crossmeasure (p) i)

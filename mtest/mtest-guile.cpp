@@ -190,6 +190,45 @@ SCM ms_segment_elements (SCM seg_scm)
       return std_vector_to_scm_vector (elmv);
       }
 
+SCM ms_qrect_get (SCM qrect_scm)
+      {
+      void *qrect_ptr = scm_to_pointer(qrect_scm);
+      QRectF *qrect = (QRectF *) qrect_ptr;
+      qreal x, y, w, h;
+      qrect->getRect(&x, &y, &w, &h);
+      SCM v = scm_c_make_vector(4, SCM_EOL);
+      SCM_SIMPLE_VECTOR_SET(v, 0, scm_from_double(x));
+      SCM_SIMPLE_VECTOR_SET(v, 1, scm_from_double(y));
+      SCM_SIMPLE_VECTOR_SET(v, 2, scm_from_double(w));
+      SCM_SIMPLE_VECTOR_SET(v, 3, scm_from_double(h));
+      return v;
+      }
+
+SCM qpoint_to_scm (QPointF *qp)
+      {
+      qreal x = qp->x(), y = qp->y();
+      SCM v = scm_c_make_vector(2, SCM_EOL);
+      SCM_SIMPLE_VECTOR_SET(v, 0, scm_from_double(x));
+      SCM_SIMPLE_VECTOR_SET(v, 1, scm_from_double(y));
+      return v;
+      }
+
+SCM ms_element_pagePos (SCM elm_scm)
+      {
+      void *elm_ptr = scm_to_pointer(elm_scm);
+      Element* elm = (Element*) elm_ptr;
+      QPointF qp = elm->pagePos();
+      return qpoint_to_scm(&qp);
+      }
+
+SCM ms_element_canvasPos (SCM elm_scm)
+      {
+      void *elm_ptr = scm_to_pointer(elm_scm);
+      Element* elm = (Element*) elm_ptr;
+      QPointF qp = elm->canvasPos();
+      return qpoint_to_scm(&qp);
+      }
+
 SCM ms_qlist_size (SCM ql_scm)
       {
       void *ql_ptr = scm_to_pointer(ql_scm);
@@ -203,6 +242,21 @@ SCM ms_qlist_at (SCM ql_scm, SCM idx_scm)
       int idx = scm_to_int(idx_scm);
       QList<void*> *ql = (QList<void*> *) ql_ptr;
       return scm_from_pointer(ql->at(idx), NULL);
+      }
+
+SCM ms_stdvec_size (SCM sv_scm)
+      {
+      void *sv_ptr = scm_to_pointer(sv_scm);
+      std::vector<void*> *sv = (std::vector<void*> *) sv_ptr;
+      return scm_from_int(sv->size());
+      }
+
+SCM ms_stdvec_at (SCM sv_scm, SCM idx_scm)
+      {
+      void *sv_ptr = scm_to_pointer(sv_scm);
+      int idx = scm_to_int(idx_scm);
+      std::vector<void*> *sv = (std::vector<void*> *) sv_ptr;
+      return scm_from_pointer(sv->at(idx), NULL);
       }
 
 SCM
@@ -232,8 +286,14 @@ void init_guile_shim ()
       scm_c_define_gsubr ("ms-score-cmd", 2, 0, 0, (void *)ms_score_cmd);
       scm_c_define_gsubr ("ms-segment-elements", 1, 0, 0, (void *)ms_segment_elements);
       scm_c_define_gsubr ("ms-measure-elements", 1, 0, 0, (void *)ms_measure_elements);
+      scm_c_define_gsubr ("ms-qrect-get", 1, 0, 0, (void *)ms_qrect_get);
+      scm_c_define_gsubr ("ms-element-pagePos", 1, 0, 0, (void *)ms_element_pagePos);
+      scm_c_define_gsubr ("ms-element-canvasPos", 1, 0, 0, (void *)ms_element_canvasPos);
+
       scm_c_define_gsubr ("ms-qlist-size", 1, 0, 0, (void *)ms_qlist_size);
       scm_c_define_gsubr ("ms-qlist-at", 2, 0, 0, (void *)ms_qlist_at);
+      scm_c_define_gsubr ("ms-stdvec-size", 1, 0, 0, (void *)ms_stdvec_size);
+      scm_c_define_gsubr ("ms-stdvec-at", 2, 0, 0, (void *)ms_stdvec_at);
       scm_c_export ("ms-score-read-file", NULL);
       scm_c_export ("ms-score-read-string", NULL);
       scm_c_export ("ms-score-write-string", NULL);
@@ -241,8 +301,13 @@ void init_guile_shim ()
       scm_c_export ("ms-score-cmd", NULL);
       scm_c_export ("ms-segment-elements", NULL);
       scm_c_export ("ms-measure-elements", NULL);
+      scm_c_export ("ms-element-pagePos", NULL);
+      scm_c_export ("ms-element-canvasPos", NULL);
+      scm_c_export ("ms-qrect-get", NULL);
       scm_c_export ("ms-qlist-size", NULL);
       scm_c_export ("ms-qlist-at", NULL);
+      scm_c_export ("ms-stdvec-size", NULL);
+      scm_c_export ("ms-stdvec-at", NULL);
 
       }
 
