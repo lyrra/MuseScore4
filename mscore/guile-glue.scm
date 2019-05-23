@@ -279,14 +279,12 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
        Part *part = staff->part();
        int ninst = part->instruments()->size();
        SCM partname = scm_from_locale_string(qPrintable(part->partName()));
-       double volume = part->volume();
-       SCM v = scm_c_make_vector(6, SCM_EOL);
+       SCM v = scm_c_make_vector(5, SCM_EOL);
        SCM_SIMPLE_VECTOR_SET(v, 0, scm_from_int(staffIdx));
        SCM_SIMPLE_VECTOR_SET(v, 1, scm_from_int(startTrack));
        SCM_SIMPLE_VECTOR_SET(v, 2, scm_from_int(endTrack));
        SCM_SIMPLE_VECTOR_SET(v, 3, scm_from_int(ninst));
        SCM_SIMPLE_VECTOR_SET(v, 4, partname);
-       SCM_SIMPLE_VECTOR_SET(v, 5, scm_from_double(volume));
        return v;~%"))
 
 (scm/c-fun "ms-score-segment-last" ("SCM score_obj")
@@ -322,6 +320,7 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
      ("Segment*" m"first()" c r)))
   (f "return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg);~%"))
 
+
 (let-syntax
   ((def
     (syntax-rules ()
@@ -332,9 +331,20 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
             '(("void*" scm-ref c r) ("Measure*")
               ("int" m meth c)))
            (f "return scm_from_int(x);~%"))))))
-  (def "ms-measure-ticks" "ticks()" '("measure length in ticks"))
-  (def "ms-measure-tick" "tick()" '("measure position in ticks"))
   (def "ms-measure-no" "no()" '("measure ordinal number")))
+
+(let-syntax
+  ((def
+    (syntax-rules ()
+      ((def cname meth descr)
+         (scm/c-fun cname ("SCM measure_obj")
+           descr
+           (var-transfer-expand 6 "measure_obj" "x"
+            '(("void*" scm-ref c r) ("Measure*")
+              ("Fraction" m meth c)))
+           (f "return scm_from_int(x.ticks());~%"))))))
+  (def "ms-measure-ticks" "ticks()" '("measure length in ticks"))
+  (def "ms-measure-tick" "tick()" '("measure position in ticks")))
 
 (scm/c-fun "ms-measure-first-type" ("SCM measure_obj" "SCM stype")
   '("first segment in measures segmentlist of type")
@@ -347,10 +357,11 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
 (scm/c-fun "ms-measure-find-segment" ("SCM measure_obj" "SCM stype_obj" "SCM tick_obj")
   '("find segment of type, and between ticks")
   (f "SegmentType st = (SegmentType) scm_to_int(stype_obj);
-      int tick       =  scm_to_int(tick_obj);~%")
+      int tick       =  scm_to_int(tick_obj);
+      Fraction frac  =  Fraction(tick, 0);~%")
   (var-transfer-expand 6 "measure_obj" "seg"
    '(("void*" scm-ref c r) ("Measure*")
-     ("Segment*" m"findSegment(st, tick)" c r)))
+     ("Segment*" m"findSegment(st, frac)" c r)))
   (f "return scm_make_foreign_object_1 ((SCM)ms_obj_segment_type, (SCM) seg);~%"))
 
 ; no information is kept in SegmentList
@@ -432,7 +443,8 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
   '("returns segment tick")
   (var-transfer-expand 6 "segment_obj" "seg"
    '(("void*" scm-ref c) ("Segment*")))
-  (f "return scm_from_int(seg->tick());~%"))
+  (f "Fraction f = seg->ticks();
+      return scm_from_int(f.ticks());~%"))
 
 (scm/c-fun "ms-element-part" ("SCM element_obj")
   '("returns element part")
@@ -456,7 +468,16 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
          (f "return scm_from_int(num);~%"))))))
   (def "ms-element-track" "track()" '("returns element track"))
   (def "ms-element-staffIdx" "staffIdx()" '("returns element staffIdx"))
-  (def "ms-element-voice" "voice()" '("returns element voice"))
+  (def "ms-element-voice" "voice()" '("returns element voice")))
+
+(let-syntax
+  ((def
+    (syntax-rules ()
+      ((def name meth descr)
+       (scm/c-fun name ("SCM element_obj") descr
+         (var-transfer-expand 6 "element_obj" "f"
+          '(("void*" scm-ref c) ("Element*") ("Fraction" m meth c)))
+         (f "return scm_from_int(f.ticks());~%"))))))
   (def "ms-element-tick" "tick()" '("returns element tick")))
 
 (scm/c-fun "ms-element-color" ("SCM element_obj")
@@ -504,8 +525,21 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
       ~a r = cr->~a();
       return scm_from_~a(r);~%" typ kod typ))))))
   ;     scheme-name     type   rest-method
-  (emit "ms-element-dots"  "int"  "actualDots")
-  (emit "ms-element-ticks" "int"  "durationTypeTicks"))
+  (emit "ms-element-dots"  "int"  "actualDots"))
+
+(let-syntax
+  ((emit
+    (syntax-rules ()
+      ((emit name kod)
+       (scm/c-fun name ("SCM element_obj") '()
+         (var-transfer-expand 6 "element_obj" "elm"
+          '(("void*" scm-ref c) ("Element*")))
+         (f "if (! elm->isRest()) { return SCM_BOOL_F; }
+      ChordRest *cr = (ChordRest *) elm;
+      Fraction f = cr->~a();
+      return scm_from_int(f.ticks());~%" kod))))))
+  ;     scheme-name        rest-method
+  (emit "ms-element-ticks" "durationTypeTicks"))
 
 (scm/c-fun "ms-element-info" ("SCM element_obj")
   '("returns type of element")
@@ -548,12 +582,13 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
           return SCM_BOOL_F;
       }
       FiguredBass* fb = static_cast<FiguredBass*>(elm);
-      int ticks = fb->ticks();
+      Fraction ticks = fb->ticks();
       int numitems = fb->numOfItems();
       std::vector<FiguredBassItem*> items = fb->getItems();
-      SCM v = scm_c_make_vector(numitems * 5 + 1, SCM_EOL);
-      SCM_SIMPLE_VECTOR_SET(v, 0, scm_from_int(ticks));
-      int n = 1;
+      SCM v = scm_c_make_vector(numitems * 5 + 2, SCM_EOL);
+      SCM_SIMPLE_VECTOR_SET(v, 0, scm_from_int(ticks.numerator()));
+      SCM_SIMPLE_VECTOR_SET(v, 1, scm_from_int(ticks.denominator()));
+      int n = 2;
       for (FiguredBassItem* fbi : items) {
           FiguredBassItem::Modifier pre = fbi->prefix();
           FiguredBassItem::Modifier suf = fbi->suffix();

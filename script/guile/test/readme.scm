@@ -16,30 +16,30 @@
 
 ; Score-information.
 ; Staff-info is a bit cryptic. It is a list of:
-; (staffIdx startTrack endTrack numInstruments partname volume)
+; (staffIdx startTrack endTrack numInstruments partname)
 (define *score-information*
         '((name "Fugue_1"
                 measures 29
                 total-segments 505
                 total-elements 1217
                 staves 4
-                staff-info (#(0  0  4 1 "Violin I"    100.0)
-                            #(1  4  8 1 "Violin II"   100.0)
-                            #(2  8 12 1 "Viola"       100.0)
-                            #(3 12 16 1 "Violoncello" 100.0)))
+                staff-info (#(0  0  4 1 "Violin I"   )
+                            #(1  4  8 1 "Violin II"  )
+                            #(2  8 12 1 "Viola"      )
+                            #(3 12 16 1 "Violoncello")))
           (name "Unclaimed_Gift"
                 measures 40
-                total-segments 230
-                total-elements 225
+                total-segments 231
+                total-elements 226
                 staves 1
-                staff-info (#(0 0 4 1 "Piano" 100.0)))
+                staff-info (#(0 0 4 1 "Piano")))
           (name "Reunion"
                 measures 23
                 total-segments 207
                 total-elements 360
                 staves 2
-                staff-info (#(0 0 4 1 "Piano" 100.0)
-                            #(1 4 8 1 "Piano" 100.0)))))
+                staff-info (#(0 0 4 1 "Piano")
+                            #(1 4 8 1 "Piano")))))
 
 ; Begin testing by looking at the scheme examples and run them.
 ; Some examples can be reused in testing, make a list of those:
@@ -57,6 +57,7 @@
 (define-syntax-rule (assert expr msg ...)
   (if (not expr)
     (begin
+      (format #t "ERROR: ")
       (format #t msg ...)
       (format #t "~%")
       (error msg ...))))
@@ -135,7 +136,8 @@
 (let ((lst (scores-segments)))
   (assert (list? lst) "scores-segments returned non-list type")
   (for-each (lambda (prop measures)
-              (let ((num-measures (cadr (memq 'measures prop)))
+              (let ((name (cadr (memq 'name prop)))
+                    (num-measures (cadr (memq 'measures prop)))
                     (total-segments (cadr (memq 'total-segments prop))))
                 (format #t "score has num-measures: ~s~%" (length measures))
                 (let ((tot-segments 0))
@@ -143,7 +145,7 @@
                          (set! tot-segments (+ tot-segments (length measure))))
                        measures)
                   (assert (= tot-segments total-segments)
-                    "scores-staves returned wrong number of segments (sum of all segments in all measures): ~a != ~a." tot-segments total-segments))))
+                    "in score ~a, scores-segments returned wrong number of segments (sum of all segments in all measures): ~a != ~a." name tot-segments total-segments))))
             *score-information* lst)
   "scores-segments test succeeded")
 
@@ -151,9 +153,10 @@
   (assert (list? lst) "scores-elements returned non-list type")
   (for-each (lambda (prop measures)
               (let ((num-measures (cadr (memq 'measures prop)))
+                    (name (cadr (memq 'name prop)))
                     (total-elements (cadr (memq 'total-elements prop))))
                 (assert (list? measures)
-                  "scores-elements, measures list is not a list")
+                  "in score ~a, scores-elements, measures list is not a list" name)
                 (let ((tot-elements 0))
                   (map (lambda (segments)
                          (map (lambda (elements)
@@ -161,7 +164,7 @@
                               segments))
                        measures)
                   (assert (= tot-elements total-elements)
-                    "scores-staves returned wrong number of elements (summary): ~a != ~a." tot-elements total-elements))))
+                    "in score ~a, scores-staves returned wrong number of elements (summary): ~a != ~a." name tot-elements total-elements))))
             *score-information* lst)
   "scores-elements test succeeded")
 

@@ -10,6 +10,7 @@
 (define-syntax-rule (assert expr msg ...)
   (if (not expr)
     (begin
+      (format #t "ERROR: ")
       (format #t msg ...)
       (format #t "~%")
       (error msg ...))))
