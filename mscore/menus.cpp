@@ -365,6 +365,7 @@ Palette* MuseScore::newRepeatsPalette()
 
             Marker* mk = new Marker(gscore);
             mk->setMarkerType(markerTypeTable[i].type);
+            mk->styleChanged();
             sp->append(mk, qApp->translate("markerType", markerTypeTable[i].name.toUtf8().constData()));
             }
 
@@ -381,6 +382,7 @@ Palette* MuseScore::newRepeatsPalette()
             switch (bti->type) {
                   case BarLineType::START_REPEAT:
                   case BarLineType::END_REPEAT:
+                  case BarLineType::END_START_REPEAT:
                         break;
                   default:
                         continue;
@@ -813,7 +815,7 @@ Palette* MuseScore::newBreathPalette()
 Palette* MuseScore::newArpeggioPalette()
       {
       Palette* sp = new Palette();
-      sp->setName(QT_TRANSLATE_NOOP("Palette", "Arpeggios && Glissandos"));
+      sp->setName(QT_TRANSLATE_NOOP("Palette", "Arpeggios && Glissandi"));
       sp->setGrid(27, 50);
       sp->setDrawGrid(true);
 
@@ -1171,7 +1173,7 @@ void MuseScore::showPalette(bool visible)
             updateIcons();
             }
       if (paletteBox)   // read failed?
-            paletteBox->setVisible(visible);
+            reDisplayDockWidget(paletteBox, visible);
       a->setChecked(visible);
       }
 
@@ -1385,52 +1387,73 @@ Palette* MuseScore::newFretboardDiagramPalette()
       sp->setDrawGrid(true);
 
       FretDiagram* fret = FretDiagram::fromString(gscore, "X32O1O");
+      fret->setHarmony("C");
       sp->append(fret, "C");
       fret = FretDiagram::fromString(gscore, "X-554-");
+      fret->setHarmony("Cm");
       sp->append(fret, "Cm");
       fret = FretDiagram::fromString(gscore, "X3231O");
+      fret->setHarmony("C7");
       sp->append(fret, "C7");
 
       fret = FretDiagram::fromString(gscore, "XXO232");
+      fret->setHarmony("D");
       sp->append(fret, "D");
       fret = FretDiagram::fromString(gscore, "XXO231");
+      fret->setHarmony("Dm");
       sp->append(fret, "Dm");
       fret = FretDiagram::fromString(gscore, "XXO212");
+      fret->setHarmony("D7");
       sp->append(fret, "D7");
 
       fret = FretDiagram::fromString(gscore, "O221OO");
+      fret->setHarmony("E");
       sp->append(fret, "E");
       fret = FretDiagram::fromString(gscore, "O22OOO");
+      fret->setHarmony("Em");
       sp->append(fret, "Em");
       fret = FretDiagram::fromString(gscore, "O2O1OO");
+      fret->setHarmony("E7");
       sp->append(fret, "E7");
 
       fret = FretDiagram::fromString(gscore, "-332--");
+      fret->setHarmony("F");
       sp->append(fret, "F");
       fret = FretDiagram::fromString(gscore, "-33---");
+      fret->setHarmony("Fm");
       sp->append(fret, "Fm");
       fret = FretDiagram::fromString(gscore, "-3-2--");
+      fret->setHarmony("F7");
       sp->append(fret, "F7");
 
       fret = FretDiagram::fromString(gscore, "32OOO3");
+      fret->setHarmony("G");
       sp->append(fret, "G");
       fret = FretDiagram::fromString(gscore, "-55---");
+      fret->setHarmony("Gm");
       sp->append(fret, "Gm");
       fret = FretDiagram::fromString(gscore, "32OOO1");
+      fret->setHarmony("G7");
       sp->append(fret, "G7");
 
       fret = FretDiagram::fromString(gscore, "XO222O");
+      fret->setHarmony("A");
       sp->append(fret, "A");
       fret = FretDiagram::fromString(gscore, "XO221O");
+      fret->setHarmony("Am");
       sp->append(fret, "Am");
       fret = FretDiagram::fromString(gscore, "XO2O2O");
+      fret->setHarmony("A7");
       sp->append(fret, "A7");
 
       fret = FretDiagram::fromString(gscore, "X-444-");
+      fret->setHarmony("B");
       sp->append(fret, "B");
       fret = FretDiagram::fromString(gscore, "X-443-");
+      fret->setHarmony("Bm");
       sp->append(fret, "Bm");
       fret = FretDiagram::fromString(gscore, "X212O2");
+      fret->setHarmony("B7");
       sp->append(fret, "B7");
 
       return sp;
@@ -1532,6 +1555,17 @@ void MuseScore::addTempo()
       cs->undoAddElement(tt);
       cs->select(tt, SelectType::SINGLE, 0);
       cs->endCmd();
+      Measure* m = tt->findMeasure();
+      if (m && m->hasMMRest() && tt->links()) {
+            Measure* mmRest = m->mmRest();
+            for (ScoreElement* se1 : *tt->links()) {
+                  TempoText* tt1 = toTempoText(se1);
+                  if (tt != tt1 && tt1->findMeasure() == mmRest) {
+                        tt = tt1;
+                        break;
+                        }
+                  }
+            }
       cv->startEditMode(tt);
       }
 

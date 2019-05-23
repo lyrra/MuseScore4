@@ -48,8 +48,20 @@ static const ElementStyle hairpinStyle {
       { Sid::hairpinHeight,                      Pid::HAIRPIN_HEIGHT             },
       { Sid::hairpinContHeight,                  Pid::HAIRPIN_CONT_HEIGHT        },
       { Sid::hairpinPlacement,                   Pid::PLACEMENT                  },
-      { Sid::hairpinPosAbove,                    Pid::OFFSET                     },
+      { Sid::hairpinPosBelow,                    Pid::OFFSET                     },
       { Sid::hairpinLineStyle,                   Pid::LINE_STYLE                 },
+      };
+
+//---------------------------------------------------------
+//   changeMethodTable
+//---------------------------------------------------------
+
+const std::vector<Hairpin::VeloMethodItem> Hairpin::veloChangeMethodTable {
+      { VeloChangeMethod::NORMAL,           "normal"      },
+      { VeloChangeMethod::EASE_IN,          "ease-in"     },
+      { VeloChangeMethod::EASE_OUT,         "ease-out"    },
+      { VeloChangeMethod::EASE_IN_OUT,      "ease-in-out" },
+      { VeloChangeMethod::EXPONENTIAL,      "exponential" },
       };
 
 //---------------------------------------------------------
@@ -89,18 +101,19 @@ void HairpinSegment::layout()
       const int _trck = track();
       Dynamic* sd = nullptr;
       Dynamic* ed = nullptr;
-      qreal dymax = 0.0;
+      qreal dymax = hairpin()->placeBelow() ? -10000.0 : 10000.0;
       if (autoplace() && !score()->isPalette()) {
             // Try to fit between adjacent dynamics
+            qreal minDynamicsDistance = score()->styleP(Sid::autoplaceHairpinDynamicsDistance) * staff()->mag(tick());
             const System* sys = system();
             if (isSingleType() || isBeginType()) {
                   Segment* start = hairpin()->startSegment();
                   if (start && start->system() == sys)
                         sd = toDynamic(start->findAnnotation(ElementType::DYNAMIC, _trck, _trck));
-                  if (sd && sd->visible() && sd->autoplace()) {
+                  if (sd && sd->addToSkyline() && sd->placement() == hairpin()->placement()) {
                         const qreal sdRight = sd->bbox().right() + sd->pos().x()
                                               + sd->segment()->pos().x() + sd->measure()->pos().x();
-                        const qreal dist    = sdRight - pos().x() + score()->styleP(Sid::autoplaceHairpinDynamicsDistance);
+                        const qreal dist    = qMax(sdRight - pos().x() + minDynamicsDistance, 0.0);
                         rxpos()  += dist;
                         rxpos2() -= dist;
                         // prepare to align vertically
@@ -110,15 +123,15 @@ void HairpinSegment::layout()
             if (isSingleType() || isEndType()) {
                   Segment* end = hairpin()->endSegment();
                   if (end && end->tick() < sys->endTick()) {
-                        // checking ticks rather than systems since latter
+                        // checking ticks rather than systems
                         // systems may be unknown at layout stage.
                         ed = toDynamic(end->findAnnotation(ElementType::DYNAMIC, _trck, _trck));
                         }
-                  if (ed && ed->visible() && ed->autoplace()) {
+                  if (ed && ed->addToSkyline() && ed->placement() == hairpin()->placement()) {
                         const qreal edLeft  = ed->bbox().left() + ed->pos().x()
                                               + ed->segment()->pos().x() + ed->measure()->pos().x();
-                        const qreal dist    = edLeft - pos2().x() - pos().x() - score()->styleP(Sid::autoplaceHairpinDynamicsDistance);
-                        if (dist < 0.0 || dist >= 3.0 * spatium())
+                        const qreal dist    = edLeft - pos2().x() - pos().x() - minDynamicsDistance;
+                        if (dist < 0.0 || (dist >= 3.0 * _spatium && minDynamicsDistance > 0.0))
                               rxpos2() += dist;
                         // prepare to align vertically
                         if (hairpin()->placeBelow())
@@ -148,8 +161,8 @@ void HairpinSegment::layout()
                   x1 = _text->width() + _spatium * .5;
 
             QTransform t;
-            qreal h1 = hairpin()->hairpinHeight().val()     * spatium() * .5;
-            qreal h2 = hairpin()->hairpinContHeight().val() * spatium() * .5;
+            qreal h1 = hairpin()->hairpinHeight().val()     * _spatium * .5;
+            qreal h2 = hairpin()->hairpinContHeight().val() * _spatium * .5;
 
             qreal len;
             qreal x = pos2().x();
@@ -225,7 +238,7 @@ void HairpinSegment::layout()
                   r |= _text->bbox();
             if (!_endText->empty())
                   r |= _endText->bbox().translated(x + _endText->bbox().width(), 0.0);
-            qreal w  = score()->styleP(Sid::hairpinLineWidth);
+            qreal w  = point(score()->styleS(Sid::hairpinLineWidth));
             setbbox(r.adjusted(-w*.5, -w*.5, w, w));
             }
       if (!parent()) {
@@ -236,32 +249,52 @@ void HairpinSegment::layout()
 
       if (isStyled(Pid::OFFSET))
             roffset() = hairpin()->propertyDefault(Pid::OFFSET).toPointF();
+
+      // rebase vertical offset on drag
+      qreal rebase = 0.0;
+      if (offsetChanged() != OffsetChange::NONE)
+            rebase = rebaseOffset();
+
       if (autoplace()) {
-            qreal minDistance = spatium() * .7;
             qreal ymax = pos().y();
             qreal d;
-            qreal ddiff = spatium() * 0.5;
+            qreal ddiff = hairpin()->isLineType() ? 0.0 : _spatium * 0.5;
+
+            qreal sp = spatium();
+            qreal md = minDistance().val() * sp;
 
             SkylineLine sl(!hairpin()->placeAbove());
-            sl.add(shape().translated(pos()));
+            Shape sh = shape();
+            sl.add(sh.translated(pos()));
             if (hairpin()->placeAbove()) {
                   d  = system()->topDistance(staffIdx(), sl);
-                  if (d > -minDistance)
-                        ymax -= d + minDistance;
+                  if (d > -md)
+                        ymax -= d + md;
                   // align hairpin with dynamics
-                  ymax = qMin(ymax, dymax - ddiff);
+                  if (!hairpin()->diagonal())
+                        ymax = qMin(ymax, dymax - ddiff);
                   }
             else {
                   d  = system()->bottomDistance(staffIdx(), sl);
-                  if (d > -minDistance)
-                        ymax += d + minDistance;
+                  if (d > -md)
+                        ymax += d + md;
                   // align hairpin with dynamics
                   if (!hairpin()->diagonal())
                         ymax = qMax(ymax, dymax - ddiff);
                   }
-            rypos() += ymax - pos().y();
+            qreal yd = ymax - pos().y();
+            if (yd != 0.0) {
+                  if (offsetChanged() != OffsetChange::NONE) {
+                        // user moved element within the skyline
+                        // we may need to adjust minDistance, yd, and/or offset
+                        qreal adj = pos().y() + rebase;
+                        bool inStaff = spanner()->placeAbove() ? sh.bottom() + adj > 0.0 : sh.top() + adj < staff()->height();
+                        rebaseMinDistance(md, yd, sp, rebase, inStaff);
+                        }
+                  rypos() += yd;
+                  }
 
-            if (hairpin()->visible() && !hairpin()->diagonal()) {
+            if (hairpin()->addToSkyline() && !hairpin()->diagonal()) {
                   // align dynamics with hairpin
                   if (sd && sd->autoplace() && sd->placement() == hairpin()->placement()) {
                         qreal ny = y() + ddiff - sd->offset().y();
@@ -271,15 +304,17 @@ void HairpinSegment::layout()
                               ny = qMax(ny, sd->ipos().y());
                         if (sd->ipos().y() != ny) {
                               sd->rypos() = ny;
-                              Segment* s = sd->segment();
-                              Measure* m = s->measure();
-                              QRectF r = sd->bbox().translated(sd->pos());
-                              s->staffShape(sd->staffIdx()).add(r);
-                              r = sd->bbox().translated(sd->pos() + s->pos() + m->pos());
-                              m->system()->staff(sd->staffIdx())->skyline().add(r);
+                              if (sd->addToSkyline()) {
+                                    Segment* s = sd->segment();
+                                    Measure* m = s->measure();
+                                    QRectF r = sd->bbox().translated(sd->pos());
+                                    s->staffShape(sd->staffIdx()).add(r);
+                                    r = sd->bbox().translated(sd->pos() + s->pos() + m->pos());
+                                    m->system()->staff(sd->staffIdx())->skyline().add(r);
+                                    }
                               }
                         }
-                  if (ed && ed->autoplace() && visible() && ed->placement() == hairpin()->placement()) {
+                  if (ed && ed->autoplace() && ed->placement() == hairpin()->placement()) {
                         qreal ny = y() + ddiff - ed->offset().y();
                         if (ed->placeAbove())
                               ny = qMin(ny, ed->ipos().y());
@@ -287,16 +322,19 @@ void HairpinSegment::layout()
                               ny = qMax(ny, ed->ipos().y());
                         if (ed->ipos().y() != ny) {
                               ed->rypos() = ny;
-                              Segment* s = ed->segment();
-                              Measure* m = s->measure();
-                              QRectF r = ed->bbox().translated(ed->pos());
-                              s->staffShape(ed->staffIdx()).add(r);
-                              r = ed->bbox().translated(ed->pos() + s->pos() + m->pos());
-                              m->system()->staff(ed->staffIdx())->skyline().add(r);
+                              if (ed->addToSkyline()) {
+                                    Segment* s = ed->segment();
+                                    Measure* m = s->measure();
+                                    QRectF r = ed->bbox().translated(ed->pos());
+                                    s->staffShape(ed->staffIdx()).add(r);
+                                    r = ed->bbox().translated(ed->pos() + s->pos() + m->pos());
+                                    m->system()->staff(ed->staffIdx())->skyline().add(r);
+                                    }
                               }
                         }
                   }
             }
+      setOffsetChanged(false);
       }
 
 //---------------------------------------------------------
@@ -413,7 +451,10 @@ void HairpinSegment::draw(QPainter* painter) const
             color = hairpin()->lineColor();
 #endif
       QColor color = curColor(hairpin()->visible(), hairpin()->lineColor());
-      QPen pen(color, hairpin()->lineWidth(), hairpin()->lineStyle());
+      qreal w = hairpin()->lineWidth();
+      if (staff())
+            w *= staff()->mag(hairpin()->tick());
+      QPen pen(color, w, hairpin()->lineStyle());
       painter->setPen(pen);
 
       if (drawCircledTip) {
@@ -430,6 +471,8 @@ Element* HairpinSegment::propertyDelegate(Pid pid)
       {
       if (pid == Pid::HAIRPIN_TYPE
          || pid == Pid::VELO_CHANGE
+         || pid == Pid::VELO_CHANGE_METHOD
+         || pid == Pid::SINGLE_NOTE_DYNAMICS
          || pid == Pid::HAIRPIN_CIRCLEDTIP
          || pid == Pid::HAIRPIN_HEIGHT
          || pid == Pid::HAIRPIN_CONT_HEIGHT
@@ -531,6 +574,8 @@ Hairpin::Hairpin(Score* s)
       _hairpinCircledTip     = false;
       _veloChange            = 0;
       _dynRange              = Dynamic::Range::PART;
+      _singleNoteDynamics    = true;
+      _veloChangeMethod      = VeloChangeMethod::NORMAL;
       }
 
 //---------------------------------------------------------
@@ -584,6 +629,7 @@ void Hairpin::layout()
 
 static const ElementStyle hairpinSegmentStyle {
       { Sid::hairpinPosBelow, Pid::OFFSET },
+      { Sid::hairpinMinDistance, Pid::MIN_DISTANCE },
       };
 
 LineSegment* Hairpin::createLineSegment()
@@ -592,6 +638,33 @@ LineSegment* Hairpin::createLineSegment()
       h->setTrack(track());
       h->initElementStyle(&hairpinSegmentStyle);
       return h;
+      }
+
+//---------------------------------------------------------
+//   veloChangeMethodToName
+//---------------------------------------------------------
+
+QString Hairpin::veloChangeMethodToName(VeloChangeMethod method)
+      {
+      for (auto i : Hairpin::veloChangeMethodTable) {
+            if (i.method == method)
+                  return i.name;
+            }
+      qFatal("Unrecognised velo change method!");
+      return "none"; // silence a compiler warning
+      }
+
+//---------------------------------------------------------
+//   nameToVeloChangeMethod
+//---------------------------------------------------------
+
+VeloChangeMethod Hairpin::nameToVeloChangeMethod(QString name)
+      {
+      for (auto i : Hairpin::veloChangeMethodTable) {
+            if (i.name == name)
+                  return i.method;
+            }
+      return VeloChangeMethod::NORMAL;   // default
       }
 
 //---------------------------------------------------------
@@ -611,6 +684,8 @@ void Hairpin::write(XmlWriter& xml) const
       writeProperty(xml, Pid::END_TEXT);
 //      writeProperty(xml, Pid::CONTINUE_TEXT);
       writeProperty(xml, Pid::LINE_VISIBLE);
+      writeProperty(xml, Pid::SINGLE_NOTE_DYNAMICS);
+      writeProperty(xml, Pid::VELO_CHANGE_METHOD);
 
       for (const StyledProperty& spp : *styledProperties()) {
             if (!isStyled(spp.pid))
@@ -647,6 +722,10 @@ void Hairpin::read(XmlReader& e)
                   else if (hairpinType() == HairpinType::DECRESC_HAIRPIN)
                         setHairpinType(HairpinType::DECRESC_LINE);
                   }
+            else if (tag == "singleNoteDynamics")
+                  _singleNoteDynamics = e.readBool();
+            else if (tag == "veloChangeMethod")
+                  _veloChangeMethod = nameToVeloChangeMethod(e.readElementText());
             else if (!TextLineBase::readProperties(e))
                   e.unknown();
             }
@@ -672,6 +751,10 @@ QVariant Hairpin::getProperty(Pid id) const
                   return _hairpinHeight;
             case Pid::HAIRPIN_CONT_HEIGHT:
                   return _hairpinContHeight;
+            case Pid::SINGLE_NOTE_DYNAMICS:
+                  return _singleNoteDynamics;
+            case Pid::VELO_CHANGE_METHOD:
+                  return int(_veloChangeMethod);
             default:
                   return TextLineBase::getProperty(id);
             }
@@ -701,6 +784,12 @@ bool Hairpin::setProperty(Pid id, const QVariant& v)
                   break;
             case Pid::HAIRPIN_CONT_HEIGHT:
                   _hairpinContHeight = v.value<Spatium>();
+                  break;
+            case Pid::SINGLE_NOTE_DYNAMICS:
+                  _singleNoteDynamics = v.toBool();
+                  break;
+            case Pid::VELO_CHANGE_METHOD:
+                  _veloChangeMethod = VeloChangeMethod(v.toInt());
                   break;
             default:
                   return TextLineBase::setProperty(id, v);
@@ -768,9 +857,29 @@ QVariant Hairpin::propertyDefault(Pid id) const
             case Pid::HAIRPIN_TYPE:
                   return int(HairpinType::CRESC_HAIRPIN);
 
+            case Pid::SINGLE_NOTE_DYNAMICS:
+                  return true;
+
+            case Pid::VELO_CHANGE_METHOD:
+                  return int(VeloChangeMethod::NORMAL);
+
+            case Pid::PLACEMENT:
+                  return score()->styleV(Sid::hairpinPlacement);
+
             default:
                   return TextLineBase::propertyDefault(id);
             }
+      }
+
+//---------------------------------------------------------
+//   Hairpin::propertyId
+//---------------------------------------------------------
+
+Pid Hairpin::propertyId(const QStringRef& name) const
+      {
+      if (name == "subtype")
+            return Pid::HAIRPIN_TYPE;
+      return TextLineBase::propertyId(name);
       }
 
 //---------------------------------------------------------

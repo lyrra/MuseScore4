@@ -44,7 +44,7 @@ static const char* labels[] = {
       QT_TRANSLATE_NOOP("selectionfilter", "Pedal Lines"),
       QT_TRANSLATE_NOOP("selectionfilter", "Other Lines"),
       QT_TRANSLATE_NOOP("selectionfilter", "Arpeggios"),
-      QT_TRANSLATE_NOOP("selectionfilter", "Glissandos"),
+      QT_TRANSLATE_NOOP("selectionfilter", "Glissandi"),
       QT_TRANSLATE_NOOP("selectionfilter", "Fretboard Diagrams"),
       QT_TRANSLATE_NOOP("selectionfilter", "Breath Marks"),
       QT_TRANSLATE_NOOP("selectionfilter", "Tremolo"),
@@ -178,7 +178,7 @@ void SelectionWindow::changeCheckbox(QListWidgetItem* item)
 //   showSelectionWindow
 //---------------------------------------------------------
 
-void MuseScore::showSelectionWindow(bool val)
+void MuseScore::showSelectionWindow(bool visible)
       {
       QAction* a = getAction("toggle-selection-window");
       if (selectionWindow == 0) {
@@ -189,8 +189,8 @@ void MuseScore::showSelectionWindow(bool val)
                   tabifyDockWidget(paletteBox, selectionWindow);
                   }
             }
-      selectionWindow->setVisible(val);
-      if (val) {
+      reDisplayDockWidget(selectionWindow, visible);
+      if (visible) {
             selectionWindow->raise();
             }
       }

@@ -41,7 +41,7 @@
 
 namespace Ms {
 
-extern void layoutTies(Chord* ch, System* system, int stick);
+extern void layoutTies(Chord* ch, System* system, const Fraction& stick);
 extern void layoutDrumsetChord(Chord* c, const Drumset* drumset, const StaffType* st, qreal spatium);
 
 //---------------------------------------------------------
@@ -74,11 +74,10 @@ static void processLines(System* system, std::vector<Spanner*> lines, bool align
 //    which contains one system
 //---------------------------------------------------------
 
-void Score::resetSystems(bool /*layoutAll*/, LayoutContext& lc)
+void Score::resetSystems(bool layoutAll, LayoutContext& lc)
       {
-// if (layoutAll) {
       Page* page = 0;
-      if (true) {
+      if (layoutAll) {
             for (System* s : _systems) {
                   for (SpannerSegment* ss : s->spannerSegments())
                         ss->setParent(0);
@@ -110,7 +109,8 @@ void Score::resetSystems(bool /*layoutAll*/, LayoutContext& lc)
             if (pages().isEmpty())
                   return;
             page = pages().front();
-            // system = systems().front();
+            System* system = systems().front();
+            system->clear();
             }
       lc.page = page;
       }
@@ -129,11 +129,12 @@ void Score::resetSystems(bool /*layoutAll*/, LayoutContext& lc)
       resetTempo();
 
       QPointF pos;
-      bool firstMeasure = true;
+      bool firstMeasure = true;     //lc.startTick.isZero();
 
       //set first measure to lc.nextMeasures for following
       //utilizing in getNextMeasure()
       lc.nextMeasure = _measures.first();
+      lc.tick = Fraction(0, 1);
       getNextMeasure(lc);
 
       while (lc.curMeasure) {
@@ -146,13 +147,13 @@ void Score::resetSystems(bool /*layoutAll*/, LayoutContext& lc)
             system->appendMeasure(lc.curMeasure);
             if (lc.curMeasure->isMeasure()) {
                   Measure* m = toMeasure(lc.curMeasure);
-                        if (m->mmRest()) {
-                              m->mmRest()->setSystem(nullptr);
-                              }
+                  if (m->mmRest()) {
+                        m->mmRest()->setSystem(nullptr);
+                        }
                   if (firstMeasure) {
                         system->layoutSystem(0.0);
                         if (m->repeatStart()) {
-                              Segment* s = m->findSegmentR(SegmentType::StartRepeatBarLine, 0);
+                              Segment* s = m->findSegmentR(SegmentType::StartRepeatBarLine, Fraction(0,1));
                               if (!s->enabled())
                                     s->setEnabled(true);
                               }
@@ -162,10 +163,37 @@ void Score::resetSystems(bool /*layoutAll*/, LayoutContext& lc)
                         }
                   else if (m->header())
                         m->removeSystemHeader();
-                  m->createEndBarLines(true);
-                  m->computeMinWidth();
-                  ww = m->width();
-                  m->stretchMeasure(ww);
+                  if (m->trailer())
+                        m->removeSystemTrailer();
+                  if (m->tick() >= lc.startTick && m->tick() <= lc.endTick) {
+                        // for measures in range, do full layout
+                        m->createEndBarLines(true);
+                        m->computeMinWidth();
+                        ww = m->width();
+                        m->stretchMeasure(ww);
+                        }
+                  else {
+                        // for measures not in range, use existing layout
+                        ww = m->width();
+                        if (m->pos() != pos) {
+                              // fix beam positions
+                              // other elements with system as parent are processed in layoutSystemElements()
+                              // but full beam processing is expensive and not needed if we adjust position here
+                              QPointF p = pos - m->pos();
+                              for (const Segment& s : m->segments()) {
+                                    if (!s.isChordRestType())
+                                          continue;
+                                    for (int track = 0; track < ntracks(); ++track) {
+                                          Element* e = s.element(track);
+                                          if (e) {
+                                                ChordRest* cr = toChordRest(e);
+                                                if (cr->beam() && cr->beam()->elements().front() == cr)
+                                                      cr->beam()->rpos() += p;
+                                                }
+                                          }
+                                    }
+                              }
+                        }
                   m->setPos(pos);
                   m->layoutStaffLines();
                   }
@@ -445,11 +473,22 @@ void LayoutContext::layoutLinear()
                         if (!e)
                               continue;
                         if (e->isChordRest()) {
+                              if (m->tick() < startTick || m->tick() > endTick)
+                                    continue;
                               if (!score->staff(track2staff(track))->show())
                                     continue;
                               ChordRest* cr = toChordRest(e);
                               if (notTopBeam(cr))                   // layout cross staff beams
                                     cr->beam()->layout();
+                              if (notTopTuplet(cr)) {
+                                    // fix layout of tuplets
+                                    DurationElement* de = cr;
+                                    while (de->tuplet() && de->tuplet()->elements().front() == de) {
+                                          Tuplet* t = de->tuplet();
+                                          t->layout();
+                                          de = de->tuplet();
+                                          }
+                                    }
 
                               if (cr->isChord()) {
                                     Chord* c = toChord(cr);
@@ -475,6 +514,13 @@ void LayoutContext::layoutLinear()
                                                 tie->layout();
                                           for (Spanner* sp : n->spannerFor())
                                                 sp->layout();
+                                          }
+                                    if (c->tremolo()) {
+                                          Tremolo* t = c->tremolo();
+                                          Chord* c1 = t->chord1();
+                                          Chord* c2 = t->chord2();
+                                          if (t->twoNotes() && c1 && c2 && (c1->staffMove() || c2->staffMove()))
+                                                t->layout();
                                           }
                                     }
                               }
@@ -536,7 +582,7 @@ void LayoutContext::layoutMeasureLinear(MeasureBase* mb)
                         KeySig* ks = toKeySig(segment.element(staffIdx * VOICES));
                         if (!ks)
                               continue;
-                        int t = segment.tick();
+                        Fraction t = segment.tick();
                         as.init(staff->keySigEvent(t), staff->clef(t));
                         ks->layout();
                         }
@@ -615,7 +661,7 @@ void LayoutContext::layoutMeasureLinear(MeasureBase* mb)
       for (Segment& segment : measure->segments()) {
             if (segment.isBreathType()) {
                   qreal length = 0.0;
-                  int t = segment.tick();
+                  Fraction t = segment.tick();
                   // find longest pause
                   for (int i = 0, n = score->ntracks(); i < n; ++i) {
                         Element* e = segment.element(i);
@@ -657,11 +703,11 @@ void LayoutContext::layoutMeasureLinear(MeasureBase* mb)
                               stretch = qMax(stretch, toFermata(e)->timeStretch());
                         }
                   if (stretch != 0.0 && stretch != 1.0) {
-                        qreal otempo = score->tempomap()->tempo(segment.tick());
+                        qreal otempo = score->tempomap()->tempo(segment.tick().ticks());
                         qreal ntempo = otempo / stretch;
                         score->setTempo(segment.tick(), ntempo);
-                        int etick = segment.tick() + segment.ticks() - 1;
-                        auto e = score->tempomap()->find(etick);
+                        Fraction etick = segment.tick() + segment.ticks() - Fraction(1, 480*4);
+                        auto e = score->tempomap()->find(etick.ticks());
                         if (e == score->tempomap()->end())
                               score->setTempo(etick, otempo);
                         }
@@ -680,21 +726,21 @@ void LayoutContext::layoutMeasureLinear(MeasureBase* mb)
       // even if they are equivalent 4/4 vs 2/2
       // also check if nominal time signature has changed
 
-      if (score->isMaster() && ((!measure->len().identical(sig) && measure->len() != sig * measure->mmRestCount())
+      if (score->isMaster() && ((!measure->ticks().identical(sig) && measure->ticks() != sig * measure->mmRestCount())
          || (prevMeasure && prevMeasure->isMeasure()
          && !measure->timesig().identical(toMeasure(prevMeasure)->timesig()))))
             {
             if (measure->isMMRest())
-                  sig = measure->mmRestFirst()->len();
+                  sig = measure->mmRestFirst()->ticks();
             else
-                  sig = measure->len();
-            score->sigmap()->add(tick, SigEvent(sig, measure->timesig(), measure->no()));
+                  sig = measure->ticks();
+            score->sigmap()->add(tick.ticks(), SigEvent(sig, measure->timesig(), measure->no()));
             }
 
-      Segment* seg = measure->findSegmentR(SegmentType::StartRepeatBarLine, 0);
+      Segment* seg = measure->findSegmentR(SegmentType::StartRepeatBarLine, Fraction(0,1));
       if (measure->repeatStart()) {
             if (!seg)
-                  seg = measure->getSegmentR(SegmentType::StartRepeatBarLine, 0);
+                  seg = measure->getSegmentR(SegmentType::StartRepeatBarLine, Fraction(0,1));
             measure->barLinesSetSpan(seg);      // this also creates necessary barlines
             for (int staffIdx = 0; staffIdx < score->nstaves(); ++staffIdx) {
                   BarLine* b = toBarLine(seg->element(staffIdx * VOICES));

@@ -139,6 +139,7 @@ qDebug("ResolveDegreeList: not found in table");
 
 const ElementStyle chordSymbolStyle {
       { Sid::harmonyPlacement, Pid::PLACEMENT  },
+      { Sid::minHarmonyDistance, Pid::MIN_DISTANCE },
       };
 
 //---------------------------------------------------------
@@ -209,7 +210,7 @@ void Harmony::write(XmlWriter& xml) const
             if (staff()) {
                   // parent can be a fret diagram
                   Segment* segment = parent()->isSegment() ? toSegment(parent()) : toSegment(parent()->parent());
-                  int tick = segment ? segment->tick() : -1;
+                  Fraction tick = segment ? segment->tick() : Fraction(-1,1);
                   const Interval& interval = part()->instrument(tick)->transpose();
                   if (xml.clipboardmode() && !score()->styleB(Sid::concertPitch) && interval.chromatic) {
                         rRootTpc = transposeTpc(_rootTpc, interval, true);
@@ -706,12 +707,17 @@ const ChordDescription* Harmony::parseHarmony(const QString& ss, int* root, int*
 void Harmony::startEdit(EditData& ed)
       {
       if (!textList.empty()) {
+            // convert chord symbol to plain text
             setXmlText(harmonyName());
-            // force layout, but restore original position
-            QPointF p = ipos();
-            layout();
-            setPos(p);
+            // clear rendering
+            for (const TextSegment* t : textList)
+                  delete t;
+            textList.clear();
             }
+
+      // layout as text, without position reset
+      TextBase::layout1();
+      triggerLayout();
 
       TextBase::startEdit(ed);
       }
@@ -724,20 +730,21 @@ bool Harmony::edit(EditData& ed)
       {
       if (ed.key == Qt::Key_Return)
             return true; // Harmony only single line
+
       bool rv = TextBase::edit(ed);
-      setHarmony(plainText());
 
-      // force layout, but restore original position
-      QPointF p = ipos();
-      layout();
-      setPos(p);
+      // layout as text, without position reset
+      TextBase::layout1();
+      triggerLayout();
 
-      int root, base;
+      // check spelling
+      int root = TPC_INVALID;
+      int base = TPC_INVALID;
       QString str = xmlText();
-      showSpell = !str.isEmpty() && !parseHarmony(str, &root, &base, true);
-
+      showSpell = !str.isEmpty() && !parseHarmony(str, &root, &base, true) && root == TPC_INVALID;
       if (showSpell)
             qDebug("bad spell");
+
       return rv;
       }
 
@@ -747,8 +754,12 @@ bool Harmony::edit(EditData& ed)
 
 void Harmony::endEdit(EditData& ed)
       {
+      // render to layout as chord symbol
+      setHarmony(plainText());
+      // disable spell check
       showSpell = false;
-      TextBase::endEdit(ed);
+
+      TextBase::endEdit(ed);  // layout happens here
 
       if (links()) {
             for (ScoreElement* e : *links()) {
@@ -762,7 +773,7 @@ void Harmony::endEdit(EditData& ed)
                   if (score()->styleB(Sid::concertPitch) != h->score()->styleB(Sid::concertPitch)) {
                         Part* partDest = h->part();
                         Segment* segment = toSegment(parent());
-                        int tick = segment ? segment->tick() : -1;
+                        Fraction tick = segment ? segment->tick() : Fraction(-1,1);
                         Interval interval = partDest->instrument(tick)->transpose();
                         if (!interval.isZero()) {
                               if (!h->score()->styleB(Sid::concertPitch))
@@ -774,6 +785,7 @@ void Harmony::endEdit(EditData& ed)
                               h->setBaseTpc(baseTpc);
                               h->setXmlText(h->harmonyName());
                               h->setHarmony(h->plainText());
+                              h->triggerLayout();
                               }
                         }
                   }
@@ -1007,25 +1019,29 @@ const ChordDescription* Harmony::generateDescription()
 
 void Harmony::layout()
       {
-      if (isLayoutInvalid())
-            createLayout();
-      if (textBlockList().empty())
-            textBlockList().append(TextBlock());
-      calculateBoundingRect();    // for normal symbols this is called in layout: computeMinWidth()
-
       if (!parent()) {
             setPos(0.0, 0.0);
             setOffset(0.0, 0.0);
+            layout1();
             return;
             }
       //if (isStyled(Pid::OFFSET))
       //      setOffset(propertyDefault(Pid::OFFSET).toPointF());
 
-      qreal yy = 0.0;
+      if (placeBelow())
+            rypos() = staff() ? staff()->height() : 0.0;
+      else
+            rypos() = 0.0;
+      layout1();
+
+      qreal yy = ipos().y();
       qreal xx = 0.0;
 
-      if (parent()->isFretDiagram())
+      if (parent()->isFretDiagram()) {
+            if (isStyled(Pid::ALIGN))
+                  setAlign(Align::HCENTER | Align::BASELINE);
             yy = -score()->styleP(Sid::harmonyFretDist);
+            }
 
       qreal hb = lineHeight() - TextBase::baseLine();
       if (align() & Align::BOTTOM)
@@ -1046,15 +1062,35 @@ void Harmony::layout()
             xx += cw;
             xx -= width();
             }
-      else if ((align() & Align::HCENTER) || parent()->isFretDiagram()) {
-            xx += (cw * .5);
-            xx -= (width() * .5);
+      else if (align() & Align::HCENTER) {
+            if (parent()->isFretDiagram()) {
+                  FretDiagram* fd = toFretDiagram(parent());
+                  xx += fd->centerX();
+                  xx -= width() * .5;
+                  }
+            else {
+                  xx += (cw * .5);
+                  xx -= (width() * .5);
+                  }
             }
 
       setPos(xx, yy);
+      }
 
+//---------------------------------------------------------
+//   layout1
+//---------------------------------------------------------
+
+void Harmony::layout1()
+      {
+      if (isLayoutInvalid())
+            createLayout();
+      if (textBlockList().empty())
+            textBlockList().append(TextBlock());
+      calculateBoundingRect();    // for normal symbols this is called in layout: computeMinWidth()
       if (hasFrame())
             layoutFrame();
+      score()->addRefresh(canvasBoundingRect());
       }
 
 //---------------------------------------------------------
@@ -1648,6 +1684,12 @@ QVariant Harmony::propertyDefault(Pid id) const
             case Pid::SUB_STYLE:
                   v = int(Tid::HARMONY_A);
                   break;
+            case Pid::OFFSET:
+                  if (parent() && parent()->isFretDiagram()) {
+                        v = QVariant(QPointF(0.0, 0.0));
+                        break;
+                        }
+                  // fall-through
             default:
                   v = TextBase::propertyDefault(id);
                   break;
@@ -1662,7 +1704,9 @@ QVariant Harmony::propertyDefault(Pid id) const
 Sid Harmony::getPropertyStyle(Pid pid) const
       {
       if (pid == Pid::OFFSET) {
-            if (tid() == Tid::HARMONY_A)
+            if (parent() && parent()->isFretDiagram())
+                  return Sid::NOSTYLE;
+            else if (tid() == Tid::HARMONY_A)
                   return placeAbove() ? Sid::chordSymbolAPosAbove : Sid::chordSymbolAPosBelow;
             else
                   return placeAbove() ? Sid::chordSymbolBPosAbove : Sid::chordSymbolBPosBelow;

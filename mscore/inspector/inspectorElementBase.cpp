@@ -12,6 +12,7 @@
 
 #include "inspector.h"
 #include "libmscore/element.h"
+#include "libmscore/score.h"
 #include "inspectorElementBase.h"
 
 namespace Ms {
@@ -31,6 +32,7 @@ InspectorElementBase::InspectorElementBase(QWidget* parent)
             { Pid::COLOR,     0, e.color,      e.resetColor     },
             { Pid::OFFSET,    0, e.offset,     e.resetOffset    },
             { Pid::AUTOPLACE, 0, e.autoplace,  e.resetAutoplace },
+            { Pid::MIN_DISTANCE, 0, e.minDistance, e.resetMinDistance },
             };
       pList = { { e.title, e.panel } };
       }
@@ -46,6 +48,13 @@ void InspectorElementBase::setElement()
             e.offset->setSuffix("sp");
       else
             e.offset->setSuffix("mm");
+      if (inspector->element()->score()->styleB(Sid::autoplaceEnabled)) {
+            e.autoplace->setEnabled(true);
+            }
+      else {
+            e.autoplace->setEnabled(false);
+            e.resetAutoplace->setEnabled(false);
+            }
       }
 
 } // namespace Ms

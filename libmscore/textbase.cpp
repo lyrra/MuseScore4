@@ -107,10 +107,10 @@ void TextCursor::updateCursorFormat()
       TextBlock* block = &_text->_layout[_row];
       int col = hasSelection() ? selectColumn() : column();
       const CharFormat* format = block->formatAt(col);
-      if (format)
-            setFormat(*format);
-      else
+      if (!format || format->fontFamily() == "ScoreText")
             init();
+      else
+            setFormat(*format);
       }
 
 //---------------------------------------------------------
@@ -358,8 +358,8 @@ bool TextCursor::set(const QPointF& p, QTextCursor::MoveMode mode)
                   clearSelection();
             if (hasSelection())
                   QApplication::clipboard()->setText(selectedText(), QClipboard::Selection);
-            updateCursorFormat();
             }
+      updateCursorFormat();
       return true;
       }
 
@@ -1696,6 +1696,7 @@ static constexpr std::array<Pid, 18> pids { {
       Pid::FONT_FACE,
       Pid::FONT_SIZE,
       Pid::FONT_STYLE,
+      Pid::COLOR,
       Pid::FRAME_TYPE,
       Pid::FRAME_WIDTH,
       Pid::FRAME_PADDING,
@@ -1875,6 +1876,9 @@ void TextBase::layoutEdit()
 
 bool TextBase::acceptDrop(EditData& data) const
       {
+      // do not accept the drop if this text element is not being edited
+      if (!data.getData(this))
+            return false;
       ElementType type = data.dropElement->type();
       return type == ElementType::SYMBOL || type == ElementType::FSYMBOL;
       }

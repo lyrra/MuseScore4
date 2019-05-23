@@ -22,14 +22,15 @@ namespace Ms {
 //---------------------------------------------------------
 //   @@ LayoutBreak
 ///    symbols for line break, page break etc.
-//
-//   @P layoutBreakType  enum (LayoutBreak.PAGE, LayoutBreak.LINE, LayoutBreak.SECTION)
 //---------------------------------------------------------
 
 class LayoutBreak final : public Element {
+      Q_GADGET
    public:
       enum Type {
+            ///.\{
             PAGE, LINE, SECTION, NOBREAK
+            ///\}
             };
    private:
       Q_ENUM(Type)
@@ -77,6 +78,7 @@ class LayoutBreak final : public Element {
       virtual QVariant getProperty(Pid propertyId) const override;
       virtual bool setProperty(Pid propertyId, const QVariant&) override;
       virtual QVariant propertyDefault(Pid) const override;
+      virtual Pid propertyId(const QStringRef& xmlName) const override;
       };
 
 

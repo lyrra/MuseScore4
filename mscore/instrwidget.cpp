@@ -246,7 +246,7 @@ void StaffListItem::staffTypeChanged(int idx)
       PartListItem* pli = static_cast<PartListItem*>(QTreeWidgetItem::parent());
       pli->updateClefs();
 
-      if (_staff && _staff->staffType(0)->name() != stfType->name()) {
+      if (_staff && _staff->staffType(Fraction(0,1))->name() != stfType->name()) {
             if (_op != ListItemOp::I_DELETE && _op != ListItemOp::ADD)
                   _op = ListItemOp::UPDATE;
             }
@@ -395,16 +395,18 @@ InstrumentsWidget::InstrumentsWidget(QWidget* parent)
 
 void populateGenreCombo(QComboBox* combo)
       {
+      combo->blockSignals(true);
       combo->clear();
       combo->addItem(qApp->translate("InstrumentsDialog", "All instruments"), "all");
       int i = 1;
       int defaultIndex = 0;
-      foreach (InstrumentGenre *ig, instrumentGenres) {
+      for (InstrumentGenre *ig : instrumentGenres) {
             combo->addItem(ig->name, ig->id);
             if (ig->id == "common")
                   defaultIndex = i;
             ++i;
             }
+      combo->blockSignals(false);
       combo->setCurrentIndex(defaultIndex);
       }
 
@@ -416,7 +418,7 @@ void populateInstrumentList(QTreeWidget* instrumentList)
       {
       instrumentList->clear();
       // TODO: memory leak?
-      foreach(InstrumentGroup* g, instrumentGroups) {
+      for (InstrumentGroup* g : instrumentGroups) {
             InstrumentTemplateListItem* group = new InstrumentTemplateListItem(g->name, instrumentList);
             // provide feedback to blind users that they have selected a group rather than an instrument
             group->setData(0, Qt::AccessibleTextRole, QVariant(QObject::tr("%1 category").arg(g->name))); // spoken by screen readers
@@ -449,13 +451,13 @@ void InstrumentsWidget::genPartList(Score* cs)
       {
       partiturList->clear();
 
-      foreach (Part* p, cs->parts()) {
+      for (Part* p : cs->parts()) {
             PartListItem* pli = new PartListItem(p, partiturList);
             pli->setVisible(p->show());
             for (Staff* s : *p->staves()) {
                   StaffListItem* sli = new StaffListItem(pli);
                   sli->setStaff(s);
-                  sli->setClefType(s->clefType(0));
+                  sli->setClefType(s->clefType(Fraction(0,1)));
                   sli->setDefaultClefType(s->defaultClefType());
                   sli->setPartIdx(s->rstaff());
                   const LinkedElements* ls = s->links();
@@ -470,7 +472,7 @@ void InstrumentsWidget::genPartList(Score* cs)
                               }
                         }
                   sli->setLinked(bLinked);
-                  sli->setStaffType(s->staffType(0));    // TODO
+                  sli->setStaffType(s->staffType(Fraction(0,1)));    // TODO
                   }
             pli->updateClefs();
             partiturList->setItemExpanded(pli, true);
@@ -557,7 +559,7 @@ void InstrumentsWidget::on_instrumentList_itemActivated(QTreeWidgetItem* item, i
 
 void InstrumentsWidget::on_addButton_clicked()
       {
-      foreach(QTreeWidgetItem* i, instrumentList->selectedItems()) {
+      for (QTreeWidgetItem* i : instrumentList->selectedItems()) {
             InstrumentTemplateListItem* item = static_cast<InstrumentTemplateListItem*>(i);
             const InstrumentTemplate* it     = item->instrumentTemplate();
             if (it == 0)
@@ -924,6 +926,11 @@ void InstrumentsWidget::on_instrumentSearch_textChanged(const QString&)
 
 void InstrumentsWidget::on_instrumentGenreFilter_currentIndexChanged(int index)
       {
+      QSettings settings;
+      settings.beginGroup("selectInstrument");  // hard coded, since this is also used in selinstrument
+      settings.setValue("selectedGenre", instrumentGenreFilter->currentText());
+      settings.endGroup();
+
       QString id = instrumentGenreFilter->itemData(index).toString();
       // Redisplay tree, only showing items from the selected genre
       filterInstrumentsByGenre(instrumentList, id);
@@ -1056,6 +1063,16 @@ void InstrumentsWidget::init()
       downButton->setEnabled(false);
       addLinkedStaffButton->setEnabled(false);
       addStaffButton->setEnabled(false);
+
+      // get last saved, user-selected instrument genre and set filter to it
+      QSettings settings;
+      settings.beginGroup("selectInstrument");
+      if (!settings.value("selectedGenre").isNull()){
+            QString selectedGenre = settings.value("selectedGenre").value<QString>();
+            instrumentGenreFilter->setCurrentText(selectedGenre);
+            }
+      settings.endGroup();
+
       emit completeChanged(false);
       }
 

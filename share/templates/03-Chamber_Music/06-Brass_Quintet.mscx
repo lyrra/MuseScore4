@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+
 <museScore version="3.01">
   <programVersion>3.0.0</programVersion>
   <programRevision>3543170</programRevision>
@@ -115,6 +115,18 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>120</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>

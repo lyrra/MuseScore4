@@ -62,6 +62,19 @@ if (MSVC)
    set (MINGW false)
 endif (MSVC)
 
+# We need this early, before FindQt5
+option(BUILD_WEBENGINE "Built in webengine support" ON)
+
+if (BUILD_WEBENGINE)
+   if (MINGW)
+      SET (USE_WEBENGINE 0)
+   else (MINGW)
+      SET (USE_WEBENGINE 1)
+   endif(MINGW)
+else (BUILD_WEBENGINE)
+   SET (USE_WEBENGINE 0)
+endif (BUILD_WEBENGINE)
+
 set(SCRIPT_INTERFACE  TRUE)
 #  Look for Qt5
 if (SCRIPT_INTERFACE)
@@ -117,6 +130,7 @@ option(SOUNDFONT3    "Ogg Vorbis compressed fonts" ON)         # Enable Ogg Vorb
 option(HAS_AUDIOFILE "Enable audio export" ON)                 # Requires libsndfile
 option(USE_SYSTEM_QTSINGLEAPPLICATION "Use system QtSingleApplication" OFF)
 option(USE_SYSTEM_FREETYPE "Use system FreeType" OFF)          # requires freetype >= 2.5.2, does not work on win
+option(USE_SYSTEM_POPPLER  "Use system Poppler for OMR" OFF)
 option(BUILD_LAME    "Enable MP3 export" ON)                   # Requires libmp3lame, call CMake with -DBUILD_LAME="OFF" to disable
 option(DOWNLOAD_SOUNDFONT "Download the latest soundfont version as part of the build process" ON)
 
@@ -130,12 +144,13 @@ option(BUILD_PULSEAUDIO "Build with support for PulseAudio audio backend." ON)
 option(BUILD_ALSA "Build with support for ALSA audio backend." ON)
 option(BUILD_PORTAUDIO "Build with support for PortAudio audio backend." ON)
 option(BUILD_PORTMIDI "Build with support for PortAudio's MIDI features." ${BUILD_PORTAUDIO}) # PortAudio required
-option(BUILD_WEBENGINE "Built in webengine support" ON)
 option(BUILD_PCH "Build using precompiled headers." ON)
 option(BUILD_FOR_WINSTORE "Build for the Windows Store." OFF)
 option(COVERAGE "Build with instrumentation to record code coverage." OFF)
 option(BUILD_64 "Build 64 bit version of editor" ON)
 option(BUILD_AUTOUPDATE "Build with autoupdate support" OFF)
+option(BUILD_CRASH_REPORTER "Build with crash reporter" OFF)
+set(CRASH_REPORT_URL "http://127.0.0.1:1127/post" CACHE STRING "URL where to send crash reports (valid if BUILD_CRASH_REPORTER is set to ON)")
 
 # Scripting
 option(BUILD_GUILE "Build with GNU Guile SCHEME support" ON) # GNU Guile SCHEME support
@@ -197,7 +212,8 @@ if (BUILD_AUTOUPDATE STREQUAL "ON")
                    add_library(winsparkledll SHARED IMPORTED)
                    set_target_properties(winsparkledll PROPERTIES IMPORTED_IMPLIB ${WINSPARKLE_LIBRARY})
                    set(WIN_SPARKLE_ENABLED 1)
-                   set(WIN_SPARKLE_APPCAST_URL "https://sparkle.musescore.org/${MSCORE_RELEASE_CHANNEL}/3/win/appcast.xml")
+                   set(WIN_SPARKLE_APPCAST_URL "https://sparkle.musescore.org/${MSCORE_RELEASE_CHANNEL}/3/win/appcast${ARCH_TYPE}.xml")
+                   message("Win Sparkle Url: " ${WIN_SPARKLE_APPCAST_URL})
              endif (NOT MSCORE_UNSTABLE)
       else (APPLE)
              message("Sparkle is not supported on your system.")
@@ -224,6 +240,7 @@ if (APPLE)
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -stdlib=libc++ -Wno-inconsistent-missing-override")
    # This is necessary for genManual to be executed during the build phase,
    # it needs to be able to get the Qt libs.
+   # TODO: is it still needed? genManual is removed.
    SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
    SET(CMAKE_INSTALL_RPATH "${QT_INSTALL_LIBS}")
 else (APPLE)
@@ -234,13 +251,18 @@ else (APPLE)
    # Set compiler options for VS2017 toolchain.
    # Note: /D_CRT_SECURE_NO WARNINGS disables warnings when using "non-secure" library functions like sscanf...
       set(CMAKE_CXX_FLAGS                "/MP /DWIN32 /D_WINDOWS /GR /EHsc /D_UNICODE /DUNICODE /D_CRT_SECURE_NO_WARNINGS /execution-charset:utf-8 /source-charset:utf-8")
+      set(CMAKE_C_FLAGS                  "/MP /DWIN32 /D_WINDOWS /D_CRT_SECURE_NO_WARNINGS")
       if (USE_SSE)
          # If USE_SSE is set, enable use of SSE instructions to compiler.
          set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /arch:SSE")
+         set(CMAKE_C_FLAGS    "${CMAKE_C_FLAGS} /arch:SSE")
       endif (USE_SSE)
       set(CMAKE_CXX_FLAGS_DEBUG          "/MT /permissive- /std:c++14 /W4 /Zi /Ob0 /Od /RTC1")
       set(CMAKE_CXX_FLAGS_RELEASE        "/MT /permissive- /std:c++14 /W4 /O2 /Ob2 /DNDEBUG /DQT_NO_DEBUG /DQT_NO_DEBUG_OUTPUT")
-      set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MT /permissive- /std:c++14 /W4 /Zi /O2 /Ob1 /DNDEBUG /DQT_NO_DEBUG")
+      set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MT /permissive- /std:c++14 /W4 /Zi /O2 /Ob1 /DNDEBUG /DQT_NO_DEBUG /DQT_NO_DEBUG_OUTPUT")
+      set(CMAKE_C_FLAGS_DEBUG            "/MT /W4 /Zi /Ob0 /Od /RTC1")
+      set(CMAKE_C_FLAGS_RELEASE          "/MT /W4 /O2 /Ob2 /DNDEBUG")
+      set(CMAKE_C_FLAGS_RELWITHDEBINFO   "/MT /W4 /Zi /O2 /Ob1 /DNDEBUG")
       set(CMAKE_EXE_LINKER_FLAGS         "/DYNAMICBASE:NO")
    else (MSVC)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
@@ -265,24 +287,15 @@ set(CMAKE_SKIP_RULE_DEPENDENCY TRUE)
 # The MuseScore version number.
 SET(MUSESCORE_NAME "MuseScore")
 SET(MUSESCORE_VERSION_MAJOR  "3")
-SET(MUSESCORE_VERSION_MINOR  "0")
-SET(MUSESCORE_VERSION_PATCH  "2")
+SET(MUSESCORE_VERSION_MINOR  "1")
+SET(MUSESCORE_VERSION_PATCH  "0")
+SET(MUSESCORE_VERSION_LABEL  "")
 SET(MUSESCORE_VERSION       "${MUSESCORE_VERSION_MAJOR}.${MUSESCORE_VERSION_MINOR}")
 SET(MUSESCORE_NAME_VERSION "${MUSESCORE_NAME} ${MUSESCORE_VERSION_MAJOR}")
 #
 # Version schema x.x.x is hardcoded in source
 #
 SET(MUSESCORE_VERSION_FULL  "${MUSESCORE_VERSION}.${MUSESCORE_VERSION_PATCH}")
-
-if (BUILD_WEBENGINE)
-   if (MINGW)
-      SET (USE_WEBENGINE 0)
-   else (MINGW)
-      SET (USE_WEBENGINE 1)
-   endif(MINGW)
-else (BUILD_WEBENGINE)
-   SET (USE_WEBENGINE 0)
-endif (BUILD_WEBENGINE)
 
 if (MUSESCORE_LABEL)
   SET (MUSESCORE_NAME_VERSION "${MUSESCORE_NAME_VERSION} ${MUSESCORE_LABEL}")
@@ -331,16 +344,18 @@ if (DOWNLOAD_SOUNDFONT)
       # delete soundfont and download new version
       ## TODO check STATUS of downloads
       file (REMOVE ${SOUND_DIRECTORY}/MuseScore_General.sf3
-                   ${SOUND_DIRECTORY}/MuseScore_General-License.md
-                   ${SOUND_DIRECTORY}/MuseScore_General-changelog.txt)
+                   ${SOUND_DIRECTORY}/MuseScore_General_License.md
+                   ${SOUND_DIRECTORY}/MuseScore_General_Changelog.md
+                   ${SOUND_DIRECTORY}/MuseScore_General_Readme.md)
       file(DOWNLOAD ${DOWNLOAD_URL_ROOT}/MuseScore_General.sf3 ${SOUND_DIRECTORY}/MuseScore_General.sf3 SHOW_PROGRESS STATUS SF_DL_STATUS)
       list(GET SF_DL_STATUS 0 HTTP_STATUS)
       if (NOT HTTP_STATUS EQUAL 0)
         list(GET SF_DL_STATUS 1 HTTP_STATUS_TEXT)
         message(FATAL_ERROR "Cannot download new soundfont. Error: ${HTTP_STATUS_TEXT}")
       endif()
-      file(DOWNLOAD ${DOWNLOAD_URL_ROOT}/MuseScore_General-License.md ${SOUND_DIRECTORY}/MuseScore_General-License.md)
-      file(DOWNLOAD ${DOWNLOAD_URL_ROOT}/MuseScore_General-changelog.txt ${SOUND_DIRECTORY}/MuseScore_General-changelog.txt)
+      file(DOWNLOAD ${DOWNLOAD_URL_ROOT}/MuseScore_General_License.md ${SOUND_DIRECTORY}/MuseScore_General_License.md)
+      file(DOWNLOAD ${DOWNLOAD_URL_ROOT}/MuseScore_General_Changelog.md ${SOUND_DIRECTORY}/MuseScore_General_Changelog.txt)
+      file(DOWNLOAD ${DOWNLOAD_URL_ROOT}/MuseScore_General_Readme.md ${SOUND_DIRECTORY}/MuseScore_General_Readme.md)
       # replace VERSION file (in any case, delete VERSION file)
       file (COPY ${SF_VERSION_REMOTE_FILE} DESTINATION ${SOUND_DIRECTORY})
       file (REMOVE ${SF_VERSION_REMOTE_FILE})
@@ -496,11 +511,9 @@ ENDIF(BUILD_JACK)
 if (BUILD_PORTAUDIO)
     if (MINGW OR MSVC)
         set ( USE_PORTAUDIO 1 )
-        if (MSVC)
-           include(FindPortAudio)
-           add_library(portaudiodll SHARED IMPORTED)
-           set_target_properties(portaudiodll PROPERTIES IMPORTED_IMPLIB ${PORTAUDIO_LIBRARY})
-        endif(MSVC)
+        include(FindPortAudio)
+        add_library(portaudiodll SHARED IMPORTED)
+        set_target_properties(portaudiodll PROPERTIES IMPORTED_IMPLIB ${PORTAUDIO_LIBRARY})
     else (MINGW OR MSVC)
         PKGCONFIG1 (portaudio-2.0 19 PORTAUDIO_INCDIR PORTAUDIO_LIBDIR PORTAUDIO_LIB PORTAUDIO_CPP)
         if (PORTAUDIO_INCDIR)
@@ -568,23 +581,21 @@ if (APPLE)
 else(APPLE)
    if (MINGW OR MSVC)
       set(SNDFILE_LIB sndfile-1)
-      if (MSVC)
-         include(FindVorbis)
-         add_library(vorbisdll SHARED IMPORTED)
-         set_target_properties(vorbisdll PROPERTIES IMPORTED_IMPLIB ${VORBIS_LIBRARY})
+      include(FindVorbis)
+      add_library(vorbisdll SHARED IMPORTED)
+      set_target_properties(vorbisdll PROPERTIES IMPORTED_IMPLIB ${VORBIS_LIBRARY})
 
-         include(FindSndFile)
-         add_library(sndfiledll SHARED IMPORTED)
-         set_target_properties(sndfiledll PROPERTIES IMPORTED_IMPLIB ${SNDFILE_LIBRARY})
+      include(FindSndFile)
+      add_library(sndfiledll SHARED IMPORTED)
+      set_target_properties(sndfiledll PROPERTIES IMPORTED_IMPLIB ${SNDFILE_LIBRARY})
 
-         include(FindVorbisfile)
-         add_library(vorbisfiledll SHARED IMPORTED)
-         set_target_properties(vorbisfiledll PROPERTIES IMPORTED_IMPLIB ${VORBISFILE_LIBRARY})
+      include(FindVorbisfile)
+      add_library(vorbisfiledll SHARED IMPORTED)
+      set_target_properties(vorbisfiledll PROPERTIES IMPORTED_IMPLIB ${VORBISFILE_LIBRARY})
 
-         include(FindOgg)
-         add_library(oggdll SHARED IMPORTED)
-         set_target_properties(oggdll PROPERTIES IMPORTED_IMPLIB ${OGG_LIBRARY})
-      endif(MSVC)
+      include(FindOgg)
+      add_library(oggdll SHARED IMPORTED)
+      set_target_properties(oggdll PROPERTIES IMPORTED_IMPLIB ${OGG_LIBRARY})
    else (MINGW OR MSVC)
       set(SNDFILE_LIB sndfile)
    endif (MINGW OR MSVC)
@@ -621,14 +632,6 @@ else(USE_SYSTEM_QTSINGLEAPPLICATION)
       set(QTSINGLEAPPLICATION_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/singleapp/src)
       set(QTSINGLEAPPLICATION_LIBRARIES qtsingleapp)
 endif(USE_SYSTEM_QTSINGLEAPPLICATION)
-
-##
-## produce config.h file
-##
-configure_file (
-      ${PROJECT_SOURCE_DIR}/build/config.h.in
-      ${PROJECT_BINARY_DIR}/config.h
-      )
 
 if (NOT MINGW AND NOT MSVC AND NOT APPLE)
     #### PACKAGING for Linux and BSD based systems (more in mscore/CMakeLists.txt) ####
@@ -667,8 +670,8 @@ if (NOT MINGW AND NOT MSVC AND NOT APPLE)
     configure_file(build/Linux+BSD/mscore.desktop.in mscore${MSCORE_INSTALL_SUFFIX}.desktop)
     install( FILES ${PROJECT_BINARY_DIR}/mscore${MSCORE_INSTALL_SUFFIX}.desktop DESTINATION share/applications)
     # Install appdata file (perform variable substitution first)
-    configure_file(build/Linux+BSD/mscore.appdata.xml.in mscore${MSCORE_INSTALL_SUFFIX}.appdata.xml)
-    install( FILES ${PROJECT_BINARY_DIR}/mscore${MSCORE_INSTALL_SUFFIX}.appdata.xml DESTINATION share/appdata)
+    configure_file(build/Linux+BSD/org.musescore.MuseScore.appdata.xml.in org.musescore.MuseScore${MSCORE_INSTALL_SUFFIX}.appdata.xml)
+    install( FILES ${PROJECT_BINARY_DIR}/org.musescore.MuseScore${MSCORE_INSTALL_SUFFIX}.appdata.xml DESTINATION share/metainfo)
     # Substitute variables within man pages
     set(MAN_NAME mscore)
     set(MAN_ALIAS musescore)
@@ -756,10 +759,15 @@ endif (NOT MSVC)
 ## Add subdirs
 ##
 subdirs(
-      mscore awl bww2mxml share midi audiofile fluid libmscore synthesizer
+      awl bww2mxml share midi audiofile fluid libmscore synthesizer
       effects thirdparty/rtf2html thirdparty/beatroot
       thirdparty/qzip thirdparty/kQOAuth
       )
+
+if (BUILD_CRASH_REPORTER)
+      set(ENABLE_CRASH_REPORTER OFF CACHE BOOL "Disable libcrashreporter-qt GUI component")
+      add_subdirectory(thirdparty/libcrashreporter-qt)
+endif (BUILD_CRASH_REPORTER)
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE)
 if (APPLE AND CMAKE_BUILD_TYPE MATCHES "DEBUG")
@@ -788,7 +796,10 @@ if (ZERBERUS)
 endif (ZERBERUS)
 
 if (OMR)
-      subdirs (omr thirdparty/poppler)
+      subdirs (omr)
+      if (NOT USE_SYSTEM_POPPLER)
+            subdirs (thirdparty/poppler)
+      endif (NOT USE_SYSTEM_POPPLER)
 endif (OMR)
 
 if (OSC)
@@ -831,9 +842,32 @@ else (USE_SYSTEM_FREETYPE)
 endif (USE_SYSTEM_FREETYPE)
 
 if (OMR)
+ if (NOT USE_SYSTEM_POPPLER)
    include_directories(${PROJECT_SOURCE_DIR}/thirdparty/poppler)
    include_directories(${PROJECT_SOURCE_DIR}/thirdparty/poppler/poppler)
+ else (NOT USE_SYSTEM_POPPLER)
+   include_directories(/usr/include/poppler)
+   include_directories(/usr/include/poppler/qt5)
+ endif (NOT USE_SYSTEM_POPPLER)
 endif (OMR)
+
+add_subdirectory(mscore)
+
+if (BUILD_CRASH_REPORTER)
+      set (CRASHREPORTER_EXECUTABLE_NAME "${MSCORE_EXECUTABLE_NAME}-crash-reporter")
+      add_subdirectory(crashreporter)
+      add_dependencies(mscore mscore-crash-reporter)
+      set (CRASHREPORTER_EXECUTABLE "${CRASHREPORTER_EXECUTABLE_NAME}${CMAKE_EXECUTABLE_SUFFIX}")
+      set (MSCORE_EXECUTABLE "${MSCORE_EXECUTABLE_NAME}${CMAKE_EXECUTABLE_SUFFIX}")
+endif (BUILD_CRASH_REPORTER)
+
+##
+## produce config.h file
+##
+configure_file (
+      ${PROJECT_SOURCE_DIR}/build/config.h.in
+      ${PROJECT_BINARY_DIR}/config.h
+      )
 
 ##
 ##  Include packaging
@@ -880,14 +914,7 @@ add_custom_target(lrelease
    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
 )
 
-##
-##  Create and install the plugin framework manual
-##
-
-add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/plugins
-   COMMAND genManual ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR}
-   DEPENDS genManual
-   )
+add_dependencies(mscore pluginDocumentation)
 
 
 ##

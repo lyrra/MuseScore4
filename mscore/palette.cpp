@@ -45,6 +45,9 @@
 #include "paletteBoxButton.h"
 #include "palettebox.h"
 #include "shortcut.h"
+#include "tourhandler.h"
+#include "script/recorderwidget.h"
+#include "libmscore/fret.h"
 
 namespace Ms {
 
@@ -289,9 +292,9 @@ void Palette::contextMenuEvent(QContextMenuEvent* event)
             emit displayMore(_name);
 
       bool sizeChanged = false;
-      for (int i = 0; i < cells.size(); ++i) {
-            if (!cellAt(i)) {
-                  cells.removeAt(i);
+      for (int j = 0; j < cells.size(); ++j) {
+            if (!cellAt(j)) {
+                  cells.removeAt(j);
                   sizeChanged = true;
                   }
             }
@@ -389,10 +392,9 @@ void Palette::mouseMoveEvent(QMouseEvent* ev)
                   drag->setMimeData(mimeData);
 
                   drag->setPixmap(pixmap(currentIdx));
-                  QRect r = idxRect(currentIdx);
 
-                  QPoint o(dragStartPosition - r.topLeft());
-                  drag->setHotSpot(o);
+                  QPoint hotsp(drag->pixmap().rect().bottomRight());
+                  drag->setHotSpot(hotsp);
 
                   Qt::DropActions da;
                   if (!(_readOnly || filterActive) && (ev->modifiers() & Qt::ShiftModifier)) {
@@ -443,7 +445,7 @@ static void applyDrop(Score* score, ScoreView* viewer, Element* target, Element*
             dropData.dropElement->styleChanged();   // update to local style
 
             Element* el = target->drop(dropData);
-            if (el)
+            if (el && !viewer->noteEntryMode())
                   score->select(el, SelectType::SINGLE, 0);
             dropData.dropElement = 0;
             }
@@ -467,6 +469,16 @@ void Palette::applyPaletteElement(PaletteCell* cell, Qt::KeyboardModifiers modif
             element = cell->element;
       if (element == 0)
             return;
+      
+      if (element->isSpanner())
+            TourHandler::startTour("spanner-drop-apply");
+
+#ifdef MSCORE_UNSTABLE
+      if (ScriptRecorder* rec = mscore->getScriptRecorder()) {
+            if (modifiers == 0)
+                  rec->recordPaletteElement(element);
+            }
+#endif
 
       ScoreView* viewer = mscore->currentScoreView();
       if (viewer->mscoreState() != STATE_EDIT
@@ -547,6 +559,7 @@ void Palette::applyPaletteElement(PaletteCell* cell, Qt::KeyboardModifiers modif
                 || element->type() == ElementType::TBOX
                 || element->type() == ElementType::MEASURE
                 || element->type() == ElementType::BRACKET
+                || element->type() == ElementType::STAFFTYPE_CHANGE
                 || (element->type() == ElementType::ICON
                     && (toIcon(element)->iconType() == IconType::VFRAME
                         || toIcon(element)->iconType() == IconType::HFRAME
@@ -570,7 +583,7 @@ void Palette::applyPaletteElement(PaletteCell* cell, Qt::KeyboardModifiers modif
             else if (element->isClef() || element->isKeySig() || element->isTimeSig()) {
                   Measure* m1 = sel.startSegment()->measure();
                   Measure* m2 = sel.endSegment() ? sel.endSegment()->measure() : nullptr;
-                  if (m2 == m1 && sel.startSegment()->rtick() == 0)
+                  if (m2 == m1 && sel.startSegment()->rtick().isZero())
                         m2 = nullptr;     // don't restore original if one full measure selected
                   else if (m2)
                         m2 = m2->nextMeasureMM();
@@ -584,7 +597,7 @@ void Palette::applyPaletteElement(PaletteCell* cell, Qt::KeyboardModifiers modif
                         Element* e2 = nullptr;
                         // use mid-measure clef changes as appropriate
                         if (element->type() == ElementType::CLEF) {
-                              if (sel.startSegment()->segmentType() == SegmentType::ChordRest && sel.startSegment()->rtick() != 0) {
+                              if (sel.startSegment()->isChordRestType() && sel.startSegment()->rtick().isNotZero()) {
                                     ChordRest* cr = static_cast<ChordRest*>(sel.startSegment()->nextChordRest(i * VOICES));
                                     if (cr && cr->isChord())
                                           e1 = static_cast<Chord*>(cr)->upNote();
@@ -602,7 +615,7 @@ void Palette::applyPaletteElement(PaletteCell* cell, Qt::KeyboardModifiers modif
                         if (m2 || e2) {
                               // restore original clef/keysig/timesig
                               Staff* staff = score->staff(i);
-                              int tick1 = sel.startSegment()->tick();
+                              Fraction tick1 = sel.startSegment()->tick();
                               Element* oelement = nullptr;
                               switch (element->type()) {
                                     case ElementType::CLEF:
@@ -671,6 +684,7 @@ void Palette::applyPaletteElement(PaletteCell* cell, Qt::KeyboardModifiers modif
                   for (int i = sel.staffStart(); i < endStaff; ++i) {
                         Spanner* spanner = static_cast<Spanner*>(element->clone());
                         spanner->setScore(score);
+                        spanner->styleChanged();
                         score->cmdAddSpanner(spanner, i, startSegment, endSegment);
                         }
                   }
@@ -740,8 +754,8 @@ void PaletteScrollArea::keyPressEvent(QKeyEvent* event)
                   // Set widget name to name of selected key signature. We could
                   // set the description, but some screen readers ignore it.
                   setAccessibleName(qApp->translate("Palette", p->cellAt(idx)->name.toUtf8()));
-                  QAccessibleEvent event(this, QAccessible::NameChanged);
-                  QAccessible::updateAccessibility(&event);
+                  QAccessibleEvent aev(this, QAccessible::NameChanged);
+                  QAccessible::updateAccessibility(&aev);
                   p->update();
                   break;
                   }
@@ -1894,6 +1908,11 @@ void Palette::dropEvent(QDropEvent* event)
             event->ignore();
             return;
             }
+      
+      if (e->isFretDiagram()) {
+            name = toFretDiagram(e)->harmonyText();
+            }
+
       e->setSelected(false);
       int i = idx(event->pos());
       if (i == -1 || cells[i])
