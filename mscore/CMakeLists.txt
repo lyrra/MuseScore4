@@ -302,9 +302,9 @@ set(GUILE_FILES)
 if (USE_GUILE)
    set(GUILE_FILES guile.h guile.cpp guile-glue.h guile-glue.cpp)
    # Preprocessor/generated source files
-   set(GUILE_LOAD_PATH "${PROJECT_SOURCE_DIR}script/guile")
+   set(GUILE_LOAD_PATH "${PROJECT_SOURCE_DIR}/script/guile")
    add_custom_command(OUTPUT guile-glue.cpp
-                      COMMAND guile --no-auto-compile ${PROJECT_SOURCE_DIR}/mscore/guile-glue.scm > guile-glue.cpp
+                      COMMAND guile --no-auto-compile -L ${GUILE_LOAD_PATH} ${PROJECT_SOURCE_DIR}/mscore/guile-glue.scm > guile-glue.cpp
                       MAIN_DEPENDENCY guile-glue.scm)
    set_source_files_properties(guile-glue.cpp PROPERTIES GENERATED true)
 endif (USE_GUILE)
