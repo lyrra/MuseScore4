@@ -1,0 +1,27 @@
+
+(deftest (version-semantic)
+  (let ((ver (ms-version))
+        (maj (ms-version-major))
+        (min (ms-version-minor))
+        (upd (ms-version-update)))
+    (format #t "MuseScore major-version: ~a/~a/~a/~a~%" ver maj min upd)
+    (assert (and ver maj min upd) "Can't get musescore version")
+    (assert (ms-version-check ver) "musescore-version self-version fail")
+    (for-each
+      (lambda (args)
+        (apply (lambda (ma mi up tf) ; destructuring-bind
+                 (let ((vercmp (format #f "~a.~a.~a" ma mi up)))
+                   (if tf (assert (ms-version-check vercmp)
+                                  "musescore version fail: ~a -> ~a" vercmp tf)
+                          (assert (not (ms-version-check vercmp))
+                                  "musescore version fail: ~a -> ~a" vercmp tf))))
+               args))
+      (list (list maj min upd #t)
+            (list (+ maj 1) min upd #f)
+            (list (- maj 1) min upd #t)
+            (list maj (+ min 1) upd #f)
+            (list maj (- min 1) upd #t)
+            (list maj min (+ upd 1) #f)
+            (list maj min (- upd 1) #t)
+            (list (+ maj 1) 0 0 #f) ; silly but important
+            (list (- maj 1) 99 99 #t)))))

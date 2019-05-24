@@ -303,6 +303,17 @@ else (NOT MSVC)
    set(_all_h_file "${PROJECT_SOURCE_DIR}/all.h")
 endif (NOT MSVC)
 
+set(GUILE_FILES)
+if (USE_GUILE)
+   set(GUILE_FILES guile.h guile.cpp guile-glue.h guile-glue.cpp)
+   # Preprocessor/generated source files
+   set(GUILE_LOAD_PATH "${PROJECT_SOURCE_DIR}/script/guile")
+   add_custom_command(OUTPUT guile-glue.cpp
+                      COMMAND guile --no-auto-compile -L ${GUILE_LOAD_PATH} ${PROJECT_SOURCE_DIR}/mscore/guile-glue.scm > guile-glue.cpp
+                      MAIN_DEPENDENCY guile-glue.scm)
+   set_source_files_properties(guile-glue.cpp PROPERTIES GENERATED true)
+endif (USE_GUILE)
+
 add_executable ( ${ExecutableName}
       ${qrc_files}
       ${ui_headers}
@@ -472,6 +483,7 @@ add_executable ( ${ExecutableName}
       extension.cpp extension.h
       tourhandler.cpp
       script/script.cpp script/scriptentry.cpp script/testscript.cpp script/recorderwidget.cpp
+      ${GUILE_FILES}
 
       ${WIDGETS_SOURCE_FILES}
       ${COCOABRIDGE}
@@ -751,6 +763,18 @@ else (MINGW)
        if (USE_PULSEAUDIO)
          target_link_libraries(mscore ${PULSEAUDIO_LIBRARY})
        endif (USE_PULSEAUDIO)
+
+       if (USE_GUILE)
+         message(STATUS "GUILE_COMPILE: ${GUILE_COMPILE}")
+         target_link_libraries(mscore ${GUILE_LINK})
+         #add_compile_options(${GUILE_COMPILE})
+         string(REPLACE " " ";" GUILE_COMPILE_LIST ${GUILE_COMPILE})
+         set_target_properties (mscore
+                                PROPERTIES
+                                COMPILE_OPTIONS "${GUILE_COMPILE_LIST}"
+         )
+         message(STATUS "Guile compile flags: ${COMPILE_FLAGS}")
+       endif (USE_GUILE)
 
       set_target_properties (
          mscore
