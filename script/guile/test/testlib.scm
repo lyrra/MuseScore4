@@ -1,6 +1,13 @@
 
 (use-modules (ice-9 textual-ports)) ; get-string-all
 (use-modules (sxml simple))
+(use-modules (rnrs bytevectors))
+
+(define (tick2fraction tick)
+  ; FIX: 20190524, is 256 bytes enough?
+  (let ((bv (bytevector->pointer (make-bytevector 256))))
+    (ms-fraction-con bv tick 1)
+    bv))
 
 (define (test-sxml-to-xml sxml)
   (with-output-to-string
@@ -82,8 +89,8 @@
                 (elmfun elm)))))))))
 
 (define (walk-score meafun segfun elmfun score)
-  (let ((firstseg (ms-score-tick2segment score 0))
-        (firstMMseg (ms-score-tick2segmentMM score 0))
+  (let ((firstseg (ms-score-tick2segment score (tick2fraction 0)))
+        (firstMMseg (ms-score-tick2segmentMM score (tick2fraction 0)))
         (lastseg #f)
         (oldmea 0))
     (walk-segments firstseg ms-segment-next1 meafun segfun elmfun)

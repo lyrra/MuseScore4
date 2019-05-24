@@ -10,6 +10,8 @@
    (append (list c++prefix)
     (map (lambda (name)
            (match name
+             ('c1 "C1") ; complete object constructor (no memory allocation)
+             ('c2 "C2") ; base object constructor (no memory allocation, no virtual classes)
              ('c "K") ; const
              ('E "E") ; const
              ('v "v") ; void argument (takes no arguments)
@@ -108,6 +110,11 @@
 
 ) ; eval-when
 
+;;; class fraction
+
+; Fraction(int, int) complete object constructor
+(def-ffi-c ms-fraction-con (p i i) p
+           (Ms Fraction c1 E i i))
 
 ;;; class system
 
@@ -121,8 +128,8 @@
 (def-ffi-c ms-measure-no       (p) i
         (c Ms MeasureBase no E v))
 
-(def-ffi-c ms-measure-findSegmentR (p i i) p
-        (c Ms Measure findSegmentR E "NS_" SegmentType E i))
+(def-ffi-c ms-measure-findSegmentR (p i p) p
+        (c Ms Measure findSegmentR "ENS_" SegmentType "ERKNS_" Fraction E))
 (def-ffi-c ms-measure-mmrest? (p) b
         (c Ms Measure isMMRest E v))
 
@@ -159,8 +166,8 @@
 (def-ffi-c ms-selection-updateSelectedElements (p) v
           (Ms Selection updateSelectedElements E v))
 ; sel tick1 tick2 staffstart staffend = > void
-(def-ffi-c ms-selection-setRangeTicks (p i i i i) v
-          (Ms Selection setRangeTicks E "iiii"))
+(def-ffi-c ms-selection-setRangeTicks (p p p i i) v
+          (Ms Selection setRangeTicks "ERKNS_" Fraction "ES3_" "ii"))
 
 ; These are not exported as symbols!
 ; (def ms-selection-setStaffStart int "???") ;  setStaffStart(int v)
@@ -243,14 +250,14 @@
   (def ms-score-pos     (score) (int '(*))
     (  Ms Score pos E v))
 
-  (def ms-score-tick2measure   (score tick) ('* (list '* int))
-    (c Ms Score tick2measure E i))
-  (def ms-score-tick2segment   (score tick) ('* (list '* int))
-    (c Ms Score tick2segment E i))
-  (def ms-score-tick2measureMM (score tick) ('* (list '* int))
-    (c Ms Score tick2measureMM E i))
-  (def ms-score-tick2segmentMM (score tick) ('* (list '* int))
-    (c Ms Score tick2segmentMM E i))
+  (def ms-score-tick2measure   (score tick) ('* (list '* '*))
+    (c Ms Score tick2measure "ERKNS_" Fraction E))
+  (def ms-score-tick2segment   (score tick) ('* (list '* '*))
+    (c Ms Score tick2segment "ERKNS_" Fraction E))
+  (def ms-score-tick2measureMM (score tick) ('* (list '* '*))
+    (c Ms Score tick2measureMM "ERKNS_" Fraction E))
+  (def ms-score-tick2segmentMM (score tick) ('* (list '* '*))
+    (c Ms Score tick2segmentMM "ERKNS_" Fraction E))
 
   (def ms-score-doLayout (score) (void '(*))
     (  Ms Score doLayout E v))
