@@ -63,3 +63,7 @@
     (cond
       ((not (equal? res 123))
        (format #t "  TEST-FAIL, result: ~s~%" res)))))
+
+(define-syntax-rule (assert expr msg ...)
+  (if (not expr)
+    (error msg ...)))

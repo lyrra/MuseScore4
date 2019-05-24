@@ -154,6 +154,12 @@ set(CRASH_REPORT_URL "http://127.0.0.1:1127/post" CACHE STRING "URL where to sen
 
 # Scripting
 option(BUILD_GUILE "Build with GNU Guile SCHEME support" ON) # GNU Guile SCHEME support
+set (BUILD_SHARED $ENV{BUILD_SHARED}) # Build libmusescore shared library
+set (GUILE $ENV{GUILE}) # Build test environment for Scheme test script
+
+if(BUILD_SHARED)
+  set(LIBMUSESCORE_SHARED 1)
+endif(BUILD_SHARED)
 
 if (APPLE)
       set (CMAKE_CXX_COMPILER   clang++)
@@ -369,6 +375,12 @@ endif(DOWNLOAD_SOUNDFONT)
 if (BUILD_FOR_WINSTORE)
   set(FOR_WINSTORE 1)
 endif(BUILD_FOR_WINSTORE)
+
+if (GUILE)
+  # Guile needs libmusescore as a shared library
+  set(LIBMUSESCORE_SHARED 1)
+  find_program(GUILE_BIN "guile") # Path to Guile/Scheme interpreter
+endif (GUILE)
 
 ##
 ## freetype2 >= 2.5.2
