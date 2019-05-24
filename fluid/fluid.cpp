@@ -611,6 +611,19 @@ QStringList Fluid::soundFonts() const
       }
 
 //---------------------------------------------------------
+//   soundFontsInfo
+//---------------------------------------------------------
+
+std::vector<SoundFontInfo> Fluid::soundFontsInfo() const
+      {
+      std::vector<SoundFontInfo> sl;
+      sl.reserve(sfonts.size());
+      for (SFont* f : sfonts)
+            sl.emplace_back(QFileInfo(f->get_name()).fileName(), f->fontName());
+      return sl;
+      }
+
+//---------------------------------------------------------
 //   loadSoundFont
 //    return false on error
 //---------------------------------------------------------
@@ -685,6 +698,9 @@ bool Fluid::removeSoundFont(const QString& s)
       for(Voice* v : activeVoices)
             v->off();
       SFont* sf = get_sfont_by_name(s);
+      if (!sf)
+            return false;
+      
       sfunload(sf->id());
       return true;
       }

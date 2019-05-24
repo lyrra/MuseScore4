@@ -36,6 +36,7 @@ class XmlWriter;
 enum class SymId;
 enum class Pid;
 enum class OffsetType : char;
+class StaffType;
 
 //---------------------------------------------------------
 //   Grip
@@ -48,6 +49,16 @@ enum class Grip {
       /*START, END , */
           BEZIER1 = 2, SHOULDER = 3, BEZIER2 = 4, DRAG = 5, // Slur
       GRIPS = 6                     // number of grips for slur
+      };
+
+//---------------------------------------------------------
+//   OffsetChange
+//---------------------------------------------------------
+
+enum class OffsetChange {
+      RELATIVE_OFFSET   = -1,
+      NONE              =  0,
+      ABSOLUTE_OFFSET   =  1
       };
 
 //---------------------------------------------------------
@@ -152,8 +163,11 @@ class Element : public ScoreElement {
       Element* _parent { 0 };
       mutable QRectF _bbox;       ///< Bounding box relative to _pos + _offset
       qreal _mag;                 ///< standard magnification (derived value)
-      QPointF _pos;               ///< Reference position, relative to _parent.
+      QPointF _pos;               ///< Reference position, relative to _parent, set by autoplace
       QPointF _offset;            ///< offset from reference position, set by autoplace or user
+      OffsetChange  _offsetChanged; ///< set by user actions that change offset, used by autoplace
+      QPointF _changedPos;        ///< position set when changing offset
+      Spatium _minDistance;       ///< autoplace min distance
       int _track;                 ///< staffIdx * VOICES + voice
       mutable ElementFlags _flags;
                                   ///< valid after call to layout()
@@ -205,9 +219,12 @@ class Element : public ScoreElement {
       bool generated() const                  { return flag(ElementFlag::GENERATED);  }
       void setGenerated(bool val)             { setFlag(ElementFlag::GENERATED, val);   }
 
-      //TODO: rename to pos()
+      Spatium minDistance() const             { return _minDistance;    }
+      void setMinDistance(Spatium v)          { _minDistance = v;       }
+      OffsetChange offsetChanged() const      { return _offsetChanged;  }
+      void setOffsetChanged(bool v, bool absolute = true, const QPointF& diff = QPointF());
+
       const QPointF& ipos() const             { return _pos;                    }
-      //TODO: rename to posWithUserOffset()
       virtual const QPointF pos() const       { return _pos + _offset;          }
       virtual qreal x() const                 { return _pos.x() + _offset.x(); }
       virtual qreal y() const                 { return _pos.y() + _offset.y(); }
@@ -223,12 +240,15 @@ class Element : public ScoreElement {
       qreal pageX() const;
       qreal canvasX() const;
 
-      const QPointF& offset() const            { return _offset;  }
-      virtual void setOffset(const QPointF& o) { _offset = o;     }
-      void setOffset(qreal x, qreal y) { _offset.rx() = x, _offset.ry() = y; }
-      QPointF& roffset()                       { return _offset; }
-      qreal& rxoffset()                        { return _offset.rx(); }
-      qreal& ryoffset()                        { return _offset.ry(); }
+      const QPointF& offset() const               { return _offset;  }
+      virtual void setOffset(const QPointF& o)    { _offset = o;     }
+      void setOffset(qreal x, qreal y)            { _offset.rx() = x, _offset.ry() = y; }
+      QPointF& roffset()                          { return _offset; }
+      qreal& rxoffset()                           { return _offset.rx(); }
+      qreal& ryoffset()                           { return _offset.ry(); }
+
+      virtual Fraction tick() const;
+      virtual Fraction rtick() const;
 
       bool isNudged() const                       { return !_offset.isNull(); }
 
@@ -296,6 +316,7 @@ class Element : public ScoreElement {
       int voice() const                       { return _track & 3;         }
       void setVoice(int v)                    { _track = (_track / VOICES) * VOICES + v; }
       Staff* staff() const;
+      StaffType* staffType() const;
       Part* part() const;
 
       virtual void add(Element*);
@@ -324,7 +345,7 @@ class Element : public ScoreElement {
 
       static ElementType readType(XmlReader& node, QPointF*, Fraction*);
 
-      QByteArray mimeData(const QPointF&) const;
+      virtual QByteArray mimeData(const QPointF&) const;
 /**
  Return true if this element accepts a drop at canvas relative \a pos
  of given element \a type and \a subtype.
@@ -364,11 +385,6 @@ class Element : public ScoreElement {
       bool isPrintable() const;
       qreal point(const Spatium sp) const { return sp.val() * spatium(); }
 
-      virtual int tick() const;       // utility, searches for segment / segment parent
-      virtual int rtick() const;      // utility, searches for segment / segment parent
-      virtual Fraction rfrac() const; // utility, searches for segment / segment parent
-      virtual Fraction afrac() const; // utility, searches for segment / segment parent
-
       //
       // check element for consistency; return false if element
       // is not valid
@@ -404,8 +420,9 @@ class Element : public ScoreElement {
       uint tag() const                 { return _tag;                      }
       void setTag(uint val)            { _tag = val;                       }
 
-      bool autoplace() const           { return !flag(ElementFlag::NO_AUTOPLACE); }
-      void setAutoplace(bool v)        { setFlag(ElementFlag::NO_AUTOPLACE, !v); }
+      bool autoplace() const;
+      virtual void setAutoplace(bool v)   { setFlag(ElementFlag::NO_AUTOPLACE, !v); }
+      bool addToSkyline() const           { return !(_flags & (ElementFlag::INVISIBLE|ElementFlag::NO_AUTOPLACE)); }
 
       virtual QVariant getProperty(Pid) const override;
       virtual bool setProperty(Pid, const QVariant&) override;
@@ -455,8 +472,12 @@ class Element : public ScoreElement {
       virtual void triggerLayout() const;
       virtual void drawEditMode(QPainter*, EditData&);
 
-      void autoplaceSegmentElement(qreal minDistance);      // helper function
-      void autoplaceMeasureElement(qreal minDistance);
+      void autoplaceSegmentElement(bool add = true);        // helper functions
+      void autoplaceMeasureElement(bool add = true);
+      void autoplaceCalculateOffset(QRectF& r, qreal minDistance);
+      qreal rebaseOffset(bool nox = true);
+      bool rebaseMinDistance(qreal& md, qreal& yd, qreal sp, qreal rebase, bool fix);
+
       qreal styleP(Sid idx) const;
       };
 

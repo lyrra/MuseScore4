@@ -190,9 +190,9 @@ class ScoreView : public QWidget, public MuseScoreView {
       void harmonyEndEdit();
       void harmonyTab(bool back);
       void harmonyBeatsTab(bool noterest, bool back);
-      void harmonyTicksTab(int ticks);
+      void harmonyTicksTab(const Fraction& ticks);
       void figuredBassTab(bool meas, bool back);
-      void figuredBassTicksTab(int ticks);
+      void figuredBassTicksTab(const Fraction& ticks);
       void figuredBassEndEdit();
       void realtimeAdvance(bool allowRests);
       void cmdAddFret(int fret);
@@ -219,7 +219,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       void paintPageBorder(QPainter& p, Page* page);
       bool dropCanvas(Element*);
       void editCmd(const QString&);
-      void setLoopCursor(PositionCursor* curLoop, int tick, bool isInPos);
+      void setLoopCursor(PositionCursor* curLoop, const Fraction& tick, bool isInPos);
       void cmdMoveCR(bool left);
       void cmdGotoElement(Element*);
       bool checkCopyOrCut();
@@ -267,14 +267,14 @@ class ScoreView : public QWidget, public MuseScoreView {
       void normalCut();
       void normalCopy();
       void fotoModeCopy();
-      bool normalPaste();
+      bool normalPaste(Fraction scale = Fraction(1, 1));
       void normalSwap();
 
       void cloneElement(Element* e);
       void doFotoDragEdit(QMouseEvent* ev);
 
       void updateContinuousPanel();
-      void ticksTab(int ticks);     // helper function
+      void ticksTab(const Fraction& ticks);     // helper function
 
    signals:
       void viewRectChanged();
@@ -291,8 +291,8 @@ class ScoreView : public QWidget, public MuseScoreView {
       virtual void startEdit(Element*, Grip) override;
       virtual void startEditMode(Element*) override;
 
-      void moveCursor(int tick);
-      int cursorTick() const;
+      void moveCursor(const Fraction& tick);
+      Fraction cursorTick() const;
       void setCursorOn(bool);
       void setBackground(QPixmap*);
       void setBackground(const QColor&);
@@ -322,7 +322,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       bool fotoEditElementDragTransition(QMouseEvent* ev);
       void addSlur();
       virtual void cmdAddSlur(ChordRest*, ChordRest*) override;
-      virtual void cmdAddHairpin(HairpinType) override;
+      virtual void cmdAddHairpin(HairpinType);
       void cmdAddNoteLine();
 
       bool noteEntryMode() const { return state == ViewState::NOTE_ENTRY; }
@@ -397,6 +397,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       void onElementDestruction(Element*) override;
 
       virtual Element* elementNear(QPointF);
+      QList<Element*> elementsNear(QPointF);
 //      void editFretDiagram(FretDiagram*);
       void editBendProperties(Bend*);
       void editTremoloBarProperties(TremoloBar*);

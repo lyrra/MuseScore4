@@ -57,6 +57,15 @@ InstrumentsDialog::InstrumentsDialog(QWidget* parent)
       }
 
 //---------------------------------------------------------
+//   init
+//---------------------------------------------------------
+
+void InstrumentsDialog::init()
+      {
+      instrumentsWidget->init();
+      }
+
+//---------------------------------------------------------
 //   accept
 //---------------------------------------------------------
 
@@ -203,6 +212,7 @@ void MuseScore::editInstrList()
             instrList->done(0);
             return;
             }
+      instrList->init();
       MasterScore* masterScore = cs->masterScore();
       instrList->genPartList(masterScore);
       masterScore->startCmd();
@@ -226,7 +236,7 @@ void MuseScore::editInstrList()
       Staff* firstStaff = 0;
       for (Staff* s : masterScore->staves()) {
             KeyList* km = s->keyList();
-            if (!s->isDrumStaff(0)) {     // TODO
+            if (!s->isDrumStaff(Fraction(0,1))) {     // TODO
                   tmpKeymap.insert(km->begin(), km->end());
                   firstStaff = s;
                   break;
@@ -293,6 +303,8 @@ void MuseScore::editInstrList()
 
                         staff->init(t, sli->staffType(), cidx);
                         staff->setDefaultClefType(sli->defaultClefType());
+                        if (staffIdx > 0)
+                              staff->setBarLineSpan(masterScore->staff(staffIdx - 1)->barLineSpan());
 
                         masterScore->undoInsertStaff(staff, cidx);
                         ++staffIdx;
@@ -327,14 +339,16 @@ void MuseScore::editInstrList()
                               staff->initFromStaffType(sli->staffType());
                               sli->setStaff(staff);
                               staff->setDefaultClefType(sli->defaultClefType());
+                              if (staffIdx > 0)
+                                    staff->setBarLineSpan(masterScore->staff(staffIdx - 1)->barLineSpan());
 
                               KeySigEvent ke;
                               if (part->staves()->empty())
                                     ke.setKey(Key::C);
                               else
-                                    ke = part->staff(0)->keySigEvent(0);
+                                    ke = part->staff(0)->keySigEvent(Fraction(0,1));
 
-                              staff->setKey(0, ke);
+                              staff->setKey(Fraction(0,1), ke);
 
                               Staff* linkedStaff = 0;
                               if (sli->linked()) {
@@ -375,7 +389,7 @@ void MuseScore::editInstrList()
                               const StaffType* stfType = sli->staffType();
 
                               // use selected staff type
-                              if (stfType->name() != staff->staffType(0)->name())
+                              if (stfType->name() != staff->staffType(Fraction(0,1))->name())
                                     masterScore->undo(new ChangeStaffType(staff, *stfType));
                               }
                         else {
@@ -522,7 +536,7 @@ void MuseScore::editInstrList()
 
       masterScore->setLayoutAll();
       masterScore->endCmd();
-      masterScore->rebuildMidiMapping();
+      masterScore->rebuildAndUpdateExpressive(MuseScore::synthesizer("Fluid"));
       seq->initInstruments();
       }
 

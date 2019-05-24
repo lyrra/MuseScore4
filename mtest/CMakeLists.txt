@@ -16,9 +16,14 @@ enable_testing()
 include_directories(
       ${PROJECT_BINARY_DIR}
       ${PROJECT_SOURCE_DIR}
-      ${PROJECT_SOURCE_DIR}/thirdparty/freetype/include
       )
 link_directories(${CMAKE_SOURCE_DIR}/lib)
+
+if (USE_SYSTEM_FREETYPE)
+      include_directories(${FREETYPE_INCLUDE_DIRS})
+else (USE_SYSTEM_FREETYPE)
+      include_directories(${PROJECT_SOURCE_DIR}/thirdparty/freetype/include)
+endif (USE_SYSTEM_FREETYPE)
 
 if (OMR)
 set(OMR_SRC ${PROJECT_SOURCE_DIR}/omr/importpdf.cpp)
@@ -101,6 +106,9 @@ set (SOURCE_LIB
       ${PROJECT_SOURCE_DIR}/mscore/plugin/api/scoreelement.cpp
       ${PROJECT_SOURCE_DIR}/mscore/plugin/api/elements.cpp
       ${PROJECT_SOURCE_DIR}/mscore/plugin/api/score.cpp
+      ${PROJECT_SOURCE_DIR}/mscore/plugin/api/part.h
+      ${PROJECT_SOURCE_DIR}/mscore/plugin/api/excerpt.cpp
+      ${PROJECT_SOURCE_DIR}/mscore/plugin/api/util.cpp
       ${PROJECT_SOURCE_DIR}/mscore/preferences.cpp
       ${PROJECT_SOURCE_DIR}/mscore/shortcut.cpp
       ${PROJECT_SOURCE_DIR}/mscore/stringutils.cpp
@@ -170,8 +178,13 @@ endif (GUILE)
 target_link_libraries(
       mtest
       ${QT_LIBRARIES}
-      mscore_freetype
       )
+
+if (USE_SYSTEM_FREETYPE)
+      target_link_libraries(mtest freetype)
+else (USE_SYSTEM_FREETYPE)
+      target_link_libraries(mtest mscore_freetype)
+endif (USE_SYSTEM_FREETYPE)
 
 set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
 
@@ -249,6 +262,7 @@ subdirs (
         libmscore/rhythmicGrouping
         libmscore/selectionfilter
         libmscore/selectionrangedelete
+        libmscore/unrollrepeats
         libmscore/spanners
         libmscore/split
         libmscore/splitstaff
@@ -263,7 +277,7 @@ subdirs (
         biab
         musicxml
         guitarpro
-        scripting
+#        scripting            # ws:disabled during fraction integration
         stringutils
 #        testoves
         zerberus/comments

@@ -72,6 +72,14 @@ void Cursor::setScore(Score* s)
 
 //---------------------------------------------------------
 //   rewind
+///   Rewind cursor to a certain position.
+///   \param mode Determines the position where to move
+///   this cursor. See Cursor::RewindMode to see the list of
+///   avaliable rewind modes.
+///   \note In MuseScore 2.X, this function took an integer
+///   value (0, 1 or 2) as its parameter. For compatibility
+///   reasons, the old values are still working, but it is
+///   recommended to use RewindMode enumerators instead.
 //---------------------------------------------------------
 
 void Cursor::rewind(RewindMode mode)
@@ -112,8 +120,9 @@ void Cursor::rewind(RewindMode mode)
 
 //---------------------------------------------------------
 //   next
-//    go to next segment
-//    return false if end of score is reached
+///   Move the cursor to the next segment.
+///   \return \p false if the end of the score is reached,
+///   \p true otherwise.
 //---------------------------------------------------------
 
 bool Cursor::next()
@@ -129,8 +138,10 @@ bool Cursor::next()
 
 //---------------------------------------------------------
 //   nextMeasure
-//    go to first segment of next measure
-//    return false if end of score is reached
+///   Move the cursor to the first segment of the next
+///   measure.
+///   \return \p false if the end of the score is reached,
+///   \p true otherwise.
 //---------------------------------------------------------
 
 bool Cursor::nextMeasure()
@@ -149,6 +160,8 @@ bool Cursor::nextMeasure()
 
 //---------------------------------------------------------
 //   add
+///   Adds the given element to a score at this cursor's
+///   position.
 //---------------------------------------------------------
 
 void Cursor::add(Element* wrapped)
@@ -170,7 +183,7 @@ void Cursor::add(Element* wrapped)
             }
       else if (s->type() == ElementType::TIMESIG) {
             Ms::Measure* m = _segment->measure();
-            int tick = m->tick();
+            Fraction tick = m->tick();
             _score->cmdAddTimeSig(m, _track, toTimeSig(s), false);
             m = _score->tick2measure(tick);
             _segment = m->first(_filter);
@@ -189,6 +202,10 @@ void Cursor::add(Element* wrapped)
 
 //---------------------------------------------------------
 //   addNote
+///   \brief Adds a note to the current cursor position.
+///   \details The duration of the added note equals to
+///   what has been set by the previous setDuration() call.
+///   \param pitch MIDI pitch of the added note.
 //---------------------------------------------------------
 
 void Cursor::addNote(int pitch)
@@ -205,6 +222,11 @@ void Cursor::addNote(int pitch)
 
 //---------------------------------------------------------
 //   setDuration
+///   Set duration of the notes added by the cursor.
+///   \param z: numerator
+///   \param n: denominator. If n == 0, sets duration to
+///   a quarter.
+///   \see addNote()
 //---------------------------------------------------------
 
 void Cursor::setDuration(int z, int n)
@@ -221,7 +243,7 @@ void Cursor::setDuration(int z, int n)
 
 int Cursor::tick()
       {
-      return (_segment) ? _segment->tick() : 0;
+      return (_segment) ? _segment->tick().ticks() : 0;
       }
 
 //---------------------------------------------------------
@@ -239,7 +261,7 @@ double Cursor::time()
 
 qreal Cursor::tempo()
       {
-      return _score->tempo(tick());
+      return _score->tempo(Fraction::fromTicks(tick()));
       }
 
 //---------------------------------------------------------
@@ -354,8 +376,8 @@ void Cursor::nextInTrack()
 
 int Cursor::qmlKeySignature()
       {
-      Staff *staff = _score->staves()[staffIdx()];
-      return (int) staff->key(tick());
+      Staff* staff = _score->staves()[staffIdx()];
+      return (int) staff->key(Fraction::fromTicks(tick()));
       }
 }
 }

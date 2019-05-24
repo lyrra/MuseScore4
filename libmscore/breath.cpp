@@ -17,6 +17,7 @@
 #include "measure.h"
 #include "score.h"
 #include "xml.h"
+#include "staff.h"
 
 namespace Ms {
 
@@ -64,11 +65,11 @@ void Breath::layout()
       bool palette = (track() == -1);
       if (!palette) {
             if (isCaesura())
-                  setPos(x(), spatium());
+                  setPos(rxpos(), spatium());
             else if ((score()->styleSt(Sid::MusicalSymbolFont) == "Emmentaler") && (symId() == SymId::breathMarkComma))
-                  setPos(x(), 0.5 * spatium());
+                  setPos(rxpos(), 0.5 * spatium());
             else
-                  setPos(x(), -0.5 * spatium());
+                  setPos(rxpos(), -0.5 * spatium());
             }
       setbbox(symBbox(_symId));
       }
@@ -117,6 +118,15 @@ void Breath::read(XmlReader& e)
             else if (!Element::readProperties(e))
                   e.unknown();
             }
+      }
+
+//---------------------------------------------------------
+//   mag
+//---------------------------------------------------------
+
+qreal Breath::mag() const
+      {
+      return staff() ? staff()->mag(tick()) : 1.0;
       }
 
 //---------------------------------------------------------

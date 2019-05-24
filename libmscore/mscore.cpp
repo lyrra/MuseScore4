@@ -47,7 +47,6 @@
 #include "harmony.h"
 #include "stafftext.h"
 #include "mscoreview.h"
-#include "plugins.h"
 #include "chord.h"
 #include "hook.h"
 #include "stem.h"
@@ -73,7 +72,6 @@ bool MScore::showBoundingRect    = false;
 bool MScore::showSystemBoundingRect    = false;
 bool MScore::showCorruptedMeasures = true;
 bool MScore::useFallbackFont       = true;
-bool MScore::autoplaceSlurs        = true;
 // #endif
 
 bool  MScore::saveTemplateMode = false;
@@ -125,33 +123,31 @@ extern void initDrumset();
 extern void initScoreFonts();
 extern QString mscoreGlobalShare;
 
-#define TR(a) QT_TRANSLATE_NOOP("error", a)
 std::vector<MScoreError> MScore::errorList {
       { MS_NO_ERROR,                     0,    0                                                                           },
 
-      { NO_NOTE_SELECTED,                "s1", TR("No note selected:\nPlease select a note and retry\n")                   },
-      { NO_CHORD_REST_SELECTED,          "s2", TR("No chord/rest selected:\nPlease select a chord or rest and retry")      },
-      { NO_LYRICS_SELECTED,              "s3", TR("No note or lyrics selected:\nPlease select a note or lyrics and retry") },
-      { NO_NOTE_REST_SELECTED,           "s4", TR("No note or rest selected:\nPlease select a note or rest and retry")     },
-      { NO_NOTE_SLUR_SELECTED,           "s5", TR("No note or slur selected:\nPlease select a note or slur and retry")     },
-      { NO_STAFF_SELECTED,               "s6", TR("No staff selected:\nPlease select one or more staves and retry\n")      },
-      { NO_NOTE_FIGUREDBASS_SELECTED,    "s7", TR("No note or figured bass selected:\nPlease select a note or figured bass and retry") },
+      { NO_NOTE_SELECTED,                "s1", QT_TRANSLATE_NOOP("error", "No note selected:\nPlease select a note and retry\n")                   },
+      { NO_CHORD_REST_SELECTED,          "s2", QT_TRANSLATE_NOOP("error", "No chord/rest selected:\nPlease select a chord or rest and retry")      },
+      { NO_LYRICS_SELECTED,              "s3", QT_TRANSLATE_NOOP("error", "No note or lyrics selected:\nPlease select a note or lyrics and retry") },
+      { NO_NOTE_REST_SELECTED,           "s4", QT_TRANSLATE_NOOP("error", "No note or rest selected:\nPlease select a note or rest and retry")     },
+      { NO_NOTE_SLUR_SELECTED,           "s5", QT_TRANSLATE_NOOP("error", "No note or slur selected:\nPlease select a note or slur and retry")     },
+      { NO_STAFF_SELECTED,               "s6", QT_TRANSLATE_NOOP("error", "No staff selected:\nPlease select one or more staves and retry\n")      },
+      { NO_NOTE_FIGUREDBASS_SELECTED,    "s7", QT_TRANSLATE_NOOP("error", "No note or figured bass selected:\nPlease select a note or figured bass and retry") },
 
-      { CANNOT_INSERT_TUPLET,            "t1", TR("Cannot insert chord/rest in tuplet")                                    },
-      { CANNOT_SPLIT_TUPLET,             "t2", TR("Cannot split tuplet")                                                   },
-      { CANNOT_SPLIT_MEASURE_FIRST_BEAT, "m1", TR("Cannot split measure here:\n" "First beat of measure")                  },
-      { CANNOT_SPLIT_MEASURE_TUPLET,     "m2", TR("Cannot split measure here:\n" "Cannot split tuplet")                    },
+      { CANNOT_INSERT_TUPLET,            "t1", QT_TRANSLATE_NOOP("error", "Cannot insert chord/rest in tuplet")                                    },
+      { CANNOT_SPLIT_TUPLET,             "t2", QT_TRANSLATE_NOOP("error", "Cannot split tuplet")                                                   },
+      { CANNOT_SPLIT_MEASURE_FIRST_BEAT, "m1", QT_TRANSLATE_NOOP("error", "Cannot split measure here:\n" "First beat of measure")                  },
+      { CANNOT_SPLIT_MEASURE_TUPLET,     "m2", QT_TRANSLATE_NOOP("error", "Cannot split measure here:\n" "Cannot split tuplet")                    },
 
-      { NO_DEST,                         "p1", TR("No destination to paste")                                               },
-      { DEST_TUPLET,                     "p2", TR("Cannot paste into tuplet")                                              },
-      { TUPLET_CROSSES_BAR,              "p3", TR("Tuplet cannot cross barlines")                                          },
-      { DEST_LOCAL_TIME_SIGNATURE,       "p4", TR("Cannot paste in local time signature")                                  },
-      { DEST_TREMOLO,                    "p5", TR("Cannot paste in tremolo")                                               },
-      { NO_MIME,                         "p6", TR("Nothing to paste")                                                      },
-      { DEST_NO_CR,                      "p7", TR("Destination is not a chord or rest")                                    },
-      { CANNOT_CHANGE_LOCAL_TIMESIG,     "l1", TR("Cannot change local time signature:\nMeasure is not empty")             },
+      { NO_DEST,                         "p1", QT_TRANSLATE_NOOP("error", "No destination to paste")                                               },
+      { DEST_TUPLET,                     "p2", QT_TRANSLATE_NOOP("error", "Cannot paste into tuplet")                                              },
+      { TUPLET_CROSSES_BAR,              "p3", QT_TRANSLATE_NOOP("error", "Tuplet cannot cross barlines")                                          },
+      { DEST_LOCAL_TIME_SIGNATURE,       "p4", QT_TRANSLATE_NOOP("error", "Cannot paste in local time signature")                                  },
+      { DEST_TREMOLO,                    "p5", QT_TRANSLATE_NOOP("error", "Cannot paste in tremolo")                                               },
+      { NO_MIME,                         "p6", QT_TRANSLATE_NOOP("error", "Nothing to paste")                                                      },
+      { DEST_NO_CR,                      "p7", QT_TRANSLATE_NOOP("error", "Destination is not a chord or rest")                                    },
+      { CANNOT_CHANGE_LOCAL_TIMESIG,     "l1", QT_TRANSLATE_NOOP("error", "Cannot change local time signature:\nMeasure is not empty")             },
       };
-#undef TR
 
 MsError MScore::_error { MS_NO_ERROR };
 
@@ -193,15 +189,34 @@ const char* toString(Direction val)
       }
 
 //---------------------------------------------------------
+//   Direction::toUserString
+//---------------------------------------------------------
+
+QString toUserString(Direction val)
+      {
+      switch (val) {
+            case Direction::AUTO: return qApp->translate("Direction", "Auto");
+            case Direction::UP:   return qApp->translate("Direction", "Up");
+            case Direction::DOWN: return qApp->translate("Direction", "Down");
+            }
+#if (!defined (_MSCVER) && !defined (_MSC_VER))
+      __builtin_unreachable();
+#else
+      // The MSVC __assume() optimizer hint is similar, though not identical, to __builtin_unreachable()
+      __assume(0);
+#endif
+      }
+
+//---------------------------------------------------------
 //   fillComboBox
 //---------------------------------------------------------
 
 void fillComboBoxDirection(QComboBox* cb)
       {
       cb->clear();
-      cb->addItem(qApp->translate("Direction", "Auto"), QVariant::fromValue<Direction>(Direction::AUTO));
-      cb->addItem(qApp->translate("Direction", "Up"),   QVariant::fromValue<Direction>(Direction::UP));
-      cb->addItem(qApp->translate("Direction", "Down"), QVariant::fromValue<Direction>(Direction::DOWN));
+      cb->addItem(toUserString(Direction::AUTO), QVariant::fromValue<Direction>(Direction::AUTO));
+      cb->addItem(toUserString(Direction::UP),   QVariant::fromValue<Direction>(Direction::UP));
+      cb->addItem(toUserString(Direction::DOWN), QVariant::fromValue<Direction>(Direction::DOWN));
       }
 
 //---------------------------------------------------------

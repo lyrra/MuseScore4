@@ -15,12 +15,13 @@
 #include "elements.h"
 #include "fraction.h"
 #include "score.h"
+#include "part.h"
+#include "util.h"
 #ifndef TESTROOT
 #include "shortcut.h"
 #endif
 #include "libmscore/musescoreCore.h"
 #include "libmscore/score.h"
-#include "libmscore/plugins.h" // TODO: remove
 
 #include <QQmlEngine>
 
@@ -106,6 +107,14 @@ QQmlListProperty<Score> PluginAPI::scores()
 
 //---------------------------------------------------------
 //   writeScore
+///   Writes a score to a file.
+///   \param s The score which should be saved.
+///   \param name Path where to save the score, with or
+///   without the filename extension (the extension is
+///   determined by \p ext parameter).
+///   \param ext Filename extension \b without the dot,
+///   e.g. \p "mscz" or \p "pdf". Determines the file
+///   format to be used.
 //---------------------------------------------------------
 
 bool PluginAPI::writeScore(Score* s, const QString& name, const QString& ext)
@@ -117,15 +126,17 @@ bool PluginAPI::writeScore(Score* s, const QString& name, const QString& ext)
 
 //---------------------------------------------------------
 //   readScore
-//
-// noninteractive can be used to avoid a 'save changes'
-// dialog on closing a score that is either imported
-// or was created with an older version of MuseScore
+///   Reads the score from a file and opens it in a new tab
+///   \param name Path to the file to be opened.
+///   \param noninteractive Can be used to avoid a "save
+///   changes" dialog on closing a score that is either
+///   imported or was created with an older version of
+///   MuseScore.
 //---------------------------------------------------------
 
 Score* PluginAPI::readScore(const QString& name, bool noninteractive)
       {
-      Ms::Score* score = msc()->openScore(name, true);
+      Ms::Score* score = msc()->openScore(name, !noninteractive);
       if (score) {
             if (noninteractive)
                   score->setCreated(false);
@@ -144,6 +155,10 @@ void PluginAPI::closeScore(Ms::PluginAPI::Score* score)
 
 //---------------------------------------------------------
 //   newElement
+///   Creates a new element with the given type. The
+///   element can be then added to a score via Cursor::add.
+///   \param elementType Element type, should be the value
+///   from PluginAPI::PluginAPI::Element enumeration.
 //---------------------------------------------------------
 
 Element* PluginAPI::newElement(int elementType)
@@ -259,6 +274,7 @@ void PluginAPI::log2(const QString& txt, const QString& txt2)
 
 //---------------------------------------------------------
 //   newQProcess
+///   Not enabled currently (so excluded from plugin docs)
 //---------------------------------------------------------
 
 MsProcess* PluginAPI::newQProcess()
@@ -268,6 +284,8 @@ MsProcess* PluginAPI::newQProcess()
 
 //---------------------------------------------------------
 //   PluginAPI::fraction
+///  Creates a new fraction with the given numerator and
+///  denominator
 //---------------------------------------------------------
 
 FractionWrapper* PluginAPI::fraction(int num, int den) const
@@ -306,12 +324,13 @@ void PluginAPI::registerQmlTypes()
       qmlRegisterType<Note>();
       qmlRegisterType<Segment>();
       qmlRegisterType<Measure>();
+      qmlRegisterType<Part>();
+      qmlRegisterType<Excerpt>();
 #if 0
       qmlRegisterType<NoteHead>   ("MuseScore", 1, 0, "NoteHead");
       qmlRegisterType<Accidental> ("MuseScore", 1, 0, "Accidental");
       qmlRegisterType<Rest>       ("MuseScore", 1, 0, "Rest");
       qmlRegisterType<StaffText>  ("MuseScore", 1, 0, "StaffText");
-      qmlRegisterType<Part>       ("MuseScore", 1, 0, "Part");
       qmlRegisterType<Staff>      ("MuseScore", 1, 0, "Staff");
       qmlRegisterType<Harmony>    ("MuseScore", 1, 0, "Harmony");
       qmlRegisterType<TimeSig>    ("MuseScore", 1, 0, "TimeSig");
@@ -328,7 +347,6 @@ void PluginAPI::registerQmlTypes()
       qmlRegisterType<Stem>       ("MuseScore", 1, 0, "Stem");
       qmlRegisterType<StemSlash>  ("MuseScore", 1, 0, "StemSlash");
       qmlRegisterType<Beam>       ("MuseScore", 1, 0, "Beam");
-      qmlRegisterType<Excerpt>    ("MuseScore", 1, 0, "Excerpt");
       qmlRegisterType<BarLine>    ("MuseScore", 1, 0, "BarLine");
 
 

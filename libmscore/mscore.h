@@ -228,6 +228,7 @@ enum class BarLineType {
       END_REPEAT       = 8,
       BROKEN           = 0x10,
       END              = 0x20,
+      END_START_REPEAT = 0x40,
       DOTTED           = 0x80
       };
 
@@ -277,6 +278,7 @@ enum MsError {
       CANNOT_CHANGE_LOCAL_TIMESIG,
       };
 
+/// \cond PLUGIN_API \private \endcond
 struct MScoreError {
       MsError no;
       const char* group;
@@ -285,6 +287,7 @@ struct MScoreError {
 
 //---------------------------------------------------------
 //   MPaintDevice
+///   \cond PLUGIN_API \private \endcond
 //---------------------------------------------------------
 
 class MPaintDevice : public QPaintDevice {
@@ -316,8 +319,8 @@ class MScore {
       static MPaintDevice* _paintDevice;
 
    public:
-      enum class DirectionH : char { AUTO, LEFT, RIGHT };
-      enum class OrnamentStyle : char { DEFAULT, BAROQUE};
+      enum class DirectionH : char { /**.\{*/ AUTO, LEFT, RIGHT /**\}*/ };
+      enum class OrnamentStyle : char { /**.\{*/ DEFAULT, BAROQUE /**\}*/ };
       Q_ENUM(DirectionH)
       Q_ENUM(OrnamentStyle)
 
@@ -372,7 +375,6 @@ class MScore {
       static bool showSystemBoundingRect;
       static bool showCorruptedMeasures;
       static bool useFallbackFont;
-      static bool autoplaceSlurs;
 // #endif
       static bool debugMode;
       static bool testMode;

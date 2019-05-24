@@ -166,13 +166,13 @@ bool Score::read(XmlReader& e)
                   else {
                         e.tracks().clear();     // ???
                         MasterScore* m = masterScore();
-                        Score* s       = new Score(m, false);
+                        Score* s       = new Score(m, MScore::baseStyle());
                         Excerpt* ex    = new Excerpt(m);
 
                         ex->setPartScore(s);
-                        ex->setTracks(e.tracks());
                         e.setLastMeasure(nullptr);
                         s->read(e);
+                        ex->setTracks(e.tracks());
                         m->addExcerpt(ex);
                         }
                   }

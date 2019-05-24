@@ -57,6 +57,7 @@ enum class Sid {
       lyricsPosBelow,
       lyricsMinTopDistance,
       lyricsMinBottomDistance,
+      lyricsMinDistance,
       lyricsLineHeight,
       lyricsDashMinLength,
       lyricsDashMaxLength,
@@ -135,6 +136,7 @@ enum class Sid {
       timesigLeftMargin,
       timesigScale,
 
+      midClefKeyRightMargin,
       clefKeyRightMargin,
       clefKeyDistance,
       clefTimesigDistance,
@@ -281,8 +283,10 @@ enum class Sid {
       fretPlacement,
       fretStrings,
       fretFrets,
-      fretOffset,
-      fretBarre,
+      fretNut,
+      fretDotSize,
+      fretStringSpacing,
+      fretFretSpacing,
 
       showPageNumber,
       showPageNumberOne,
@@ -1062,6 +1066,7 @@ enum class Sid {
       letRingFrameRound,
       letRingFrameFgColor,
       letRingFrameBgColor,
+      letRingEndHookType,
 
       palmMuteFontFace,
       palmMuteFontSize,
@@ -1083,10 +1088,29 @@ enum class Sid {
       palmMuteFrameRound,
       palmMuteFrameFgColor,
       palmMuteFrameBgColor,
+      palmMuteEndHookType,
 
       fermataPosAbove,
       fermataPosBelow,
       fermataMinDistance,
+
+      fingeringPlacement,
+
+      articulationMinDistance,
+      fingeringMinDistance,
+      hairpinMinDistance,
+      letRingMinDistance,
+      ottavaMinDistance,
+      palmMuteMinDistance,
+      pedalMinDistance,
+      repeatMinDistance,
+      textLineMinDistance,
+      trillMinDistance,
+      vibratoMinDistance,
+      voltaMinDistance,
+      figuredBassMinDistance,
+
+      autoplaceEnabled,
 
       STYLES
       };
@@ -1118,8 +1142,9 @@ class MStyle {
       ChordList* chordList()  { return &_chordList; }
       void setChordList(ChordList*, bool custom = true);    // Style gets ownership of ChordList
       void setCustomChordList(bool t) { _customChordList = t; }
+      void checkChordList();
 
-      bool load(QFile* qf);
+      bool load(QFile* qf, bool ignore = false);
       void load(XmlReader& e);
       void save(XmlWriter& xml, bool optimize);
       bool readProperties(XmlReader&);

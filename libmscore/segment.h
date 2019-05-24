@@ -73,7 +73,7 @@ class Segment final : public Element {
 
    public:
       Segment(Measure* m = 0);
-      Segment(Measure*, SegmentType, int tick);
+      Segment(Measure*, SegmentType, const Fraction&);
       Segment(const Segment&);
       ~Segment();
 
@@ -84,11 +84,13 @@ class Segment final : public Element {
 
       Segment* next() const               { return _next;   }
       Segment* next(SegmentType) const;
+      Segment* nextActive() const;
       Segment* nextEnabled() const;
       void setNext(Segment* e)            { _next = e;      }
 
       Segment* prev() const               { return _prev;   }
       Segment* prev(SegmentType) const;
+      Segment* prevActive() const;
       Segment* prevEnabled() const;
       void setPrev(Segment* e)            { _prev = e;      }
 
@@ -154,14 +156,12 @@ class Segment final : public Element {
       qreal stretch() const                      { return _stretch; }
       void setStretch(qreal v)                   { _stretch = v;    }
 
-      void setTick(int t);
-      virtual int tick() const override;
-      virtual int rtick() const override;
-      Fraction rfrac() const;
-      Fraction afrac() const;
-      void setRtick(int val);
-      int ticks() const;
-      void setTicks(int val);
+      virtual Fraction rtick() const override    { return _tick;    }
+      void setRtick(const Fraction& v)           { Q_ASSERT(v >= Fraction(0,1));  _tick = v;       }
+      virtual Fraction tick() const override;
+
+      Fraction ticks() const                     { return _ticks;   }
+      void setTicks(const Fraction& v)           { _ticks = v;      }
 
       bool splitsTuplet() const;
 
@@ -191,7 +191,6 @@ class Segment final : public Element {
       bool operator>(const Segment&) const;
 
       virtual QString accessibleExtraInfo() const override;
-
 
       Element* firstInNextSegments(int activeStaff); //<
       Element* lastInPrevSegments(int activeStaff);   //<
@@ -244,14 +243,38 @@ class Segment final : public Element {
       };
 
 //---------------------------------------------------------
+//   nextActive
+//---------------------------------------------------------
+
+inline Segment* Segment::nextActive() const
+      {
+      Segment* ns = next();
+      while (ns && !(ns->enabled() && ns->visible()))
+            ns = ns->next();
+      return ns;
+      }
+
+//---------------------------------------------------------
 //   nextEnabled
 //---------------------------------------------------------
 
 inline Segment* Segment::nextEnabled() const
       {
-      Segment* ps = next();
-      while (ps && !ps->enabled())
-            ps = ps->next();
+      Segment* ns = next();
+      while (ns && !ns->enabled())
+            ns = ns->next();
+      return ns;
+      }
+
+//---------------------------------------------------------
+//   prevActive
+//---------------------------------------------------------
+
+inline Segment* Segment::prevActive() const
+      {
+      Segment* ps = prev();
+      while (ps && !(ps->enabled() && ps->visible()))
+            ps = ps->prev();
       return ps;
       }
 

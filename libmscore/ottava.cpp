@@ -59,7 +59,7 @@ static const ElementStyle ottavaStyle {
 void OttavaSegment::layout()
       {
       TextLineBaseSegment::layout();
-      autoplaceSpannerSegment(spatium() * .7);
+      autoplaceSpannerSegment();
       }
 
 //---------------------------------------------------------
@@ -237,6 +237,7 @@ int Ottava::pitchShift() const
 
 static const ElementStyle ottavaSegmentStyle {
       { Sid::ottavaPosAbove, Pid::OFFSET },
+      { Sid::ottavaMinDistance, Pid::MIN_DISTANCE },
       };
 
 LineSegment* Ottava::createLineSegment()
@@ -256,8 +257,9 @@ void Ottava::write(XmlWriter& xml) const
       if (!xml.canWrite(this))
             return;
       xml.stag(this);
-      xml.tag("subtype", ottavaDefault[int(ottavaType())].name);
+      writeProperty(xml, Pid::OTTAVA_TYPE);
       writeProperty(xml, Pid::PLACEMENT);
+      writeProperty(xml, Pid::NUMBERS_ONLY);
 //      for (const StyledProperty& spp : *styledProperties())
 //            writeProperty(xml, spp.pid);
       TextLineBase::writeProperties(xml);
@@ -357,12 +359,12 @@ bool Ottava::setProperty(Pid propertyId, const QVariant& val)
                   break;
 
             case Pid::SPANNER_TICKS:
-                  setTicks(val.toInt());
+                  setTicks(val.value<Fraction>());
                   staff()->updateOttava();
                   break;
 
             case Pid::SPANNER_TICK:
-                  setTick(val.toInt());
+                  setTick(val.value<Fraction>());
                   staff()->updateOttava();
                   break;
 
@@ -411,12 +413,32 @@ QVariant Ottava::propertyDefault(Pid pid) const
       }
 
 //---------------------------------------------------------
+//   Ottava::propertyId
+//---------------------------------------------------------
+
+Pid Ottava::propertyId(const QStringRef& name) const
+      {
+      if (name == propertyName(Pid::OTTAVA_TYPE))
+            return Pid::OTTAVA_TYPE;
+      return TextLineBase::propertyId(name);
+      }
+
+//---------------------------------------------------------
 //   accessibleInfo
 //---------------------------------------------------------
 
 QString Ottava::accessibleInfo() const
       {
       return QString("%1: %2").arg(Element::accessibleInfo()).arg(ottavaDefault[static_cast<int>(ottavaType())].name);
+      }
+
+//---------------------------------------------------------
+//   ottavaTypeName
+//---------------------------------------------------------
+
+const char* Ottava::ottavaTypeName(OttavaType type)
+      {
+      return ottavaDefault[int(type)].name;
       }
 
 }

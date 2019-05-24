@@ -10,10 +10,6 @@
 #  the file LICENSE.GPL
 #=============================================================================
 
-#if (SCRIPT_INTERFACE)
-      set (LIB_SCRIPT_FILES plugins.cpp)
-#endif (SCRIPT_INTERFACE)
-
 # MSVC does not depend on copying all.h to the binary directory
 if (NOT MSVC)
    add_custom_command(
@@ -49,7 +45,7 @@ set (SOURCE_FILES
      harmony.h hook.h icon.h image.h imageStore.h iname.h input.h instrchange.h instrtemplate.h instrument.h interval.h
      jump.h key.h keylist.h keysig.h lasso.h layout.h layoutbreak.h ledgerline.h letring.h line.h location.h
      lyrics.h marker.h mcursor.h measure.h measurebase.h mscore.h mscoreview.h musescoreCore.h navigate.h note.h notedot.h
-     noteevent.h noteline.h ossia.h ottava.h page.h palmmute.h part.h pedal.h pitch.h pitchspelling.h pitchvalue.h plugins.h
+     noteevent.h noteline.h ossia.h ottava.h page.h palmmute.h part.h pedal.h pitch.h pitchspelling.h pitchvalue.h
      pos.h property.h range.h read206.h rehearsalmark.h repeat.h repeatlist.h rest.h revisions.h score.h scoreElement.h segment.h
      segmentlist.h select.h sequencer.h shadownote.h shape.h sig.h slur.h slurtie.h spacer.h spanner.h spannermap.h spatium.h
      staff.h stafflines.h staffstate.h stafftext.h stafftextbase.h stafftype.h stafftypechange.h stafftypelist.h stem.h
@@ -80,7 +76,7 @@ set (SOURCE_FILES
      utils.cpp velo.cpp volta.cpp xmlreader.cpp xmlwriter.cpp mscore.cpp
      undo.cpp cmd.cpp scorefile.cpp revisions.cpp
      check.cpp input.cpp icon.cpp ossia.cpp
-     tempo.cpp sig.cpp pos.cpp fraction.cpp duration.cpp
+     tempo.cpp sig.cpp pos.cpp duration.cpp
      figuredbass.cpp rehearsalmark.cpp transpose.cpp
      property.cpp range.cpp elementmap.cpp notedot.cpp imageStore.cpp
      audio.cpp splitMeasure.cpp joinMeasure.cpp
@@ -98,6 +94,7 @@ set (SOURCE_FILES
      layoutlinear.cpp
      connector.cpp location.cpp skyline.cpp
      scorediff.cpp
+     unrollrepeats.cpp
     )
 
 if (LIBMUSESCORE_SHARED)

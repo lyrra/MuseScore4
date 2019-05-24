@@ -30,6 +30,7 @@ namespace Ms {
 //---------------------------------------------------------
 
 static const ElementStyle articulationStyle {
+      { Sid::articulationMinDistance, Pid::MIN_DISTANCE },
 //      { Sid::articulationOffset, Pid::OFFSET },
       };
 
@@ -162,6 +163,8 @@ void Articulation::write(XmlWriter& xml) const
       xml.tag("subtype", Sym::id2name(_symId));
       writeProperty(xml, Pid::PLAY);
       writeProperty(xml, Pid::ORNAMENT_STYLE);
+      for (const StyledProperty& spp : *styledProperties())
+            writeProperty(xml, spp.pid);
       Element::writeProperties(xml);
       writeProperty(xml, Pid::ARTICULATION_ANCHOR);
       xml.etag();
@@ -284,6 +287,7 @@ QLineF Articulation::dragAnchor() const
 QVariant Articulation::getProperty(Pid propertyId) const
       {
       switch (propertyId) {
+            case Pid::SYMBOL:              return QVariant::fromValue(_symId);
             case Pid::DIRECTION:           return QVariant::fromValue<Direction>(direction());
             case Pid::ARTICULATION_ANCHOR: return int(anchor());
             case Pid::ORNAMENT_STYLE:      return int(ornamentStyle());
@@ -300,6 +304,9 @@ QVariant Articulation::getProperty(Pid propertyId) const
 bool Articulation::setProperty(Pid propertyId, const QVariant& v)
       {
       switch (propertyId) {
+            case Pid::SYMBOL:
+                  setSymId(v.value<SymId>());
+                  break;
             case Pid::DIRECTION:
                   setDirection(v.value<Direction>());
                   break;
@@ -422,11 +429,11 @@ const char* Articulation::symId2ArticulationName(SymId symId)
             case SymId::articStaccatoAbove:
             case SymId::articStaccatoBelow:
                   return "staccato";
-                  
+
             case SymId::articAccentStaccatoAbove:
             case SymId::articAccentStaccatoBelow:
                   return "sforzatoStaccato";
-                  
+
             case SymId::articMarcatoStaccatoAbove:
             case SymId::articMarcatoStaccatoBelow:
                   return "marcatoStaccato";
@@ -438,7 +445,7 @@ const char* Articulation::symId2ArticulationName(SymId symId)
             case SymId::articMarcatoTenutoAbove:
             case SymId::articMarcatoTenutoBelow:
                   return "marcatoTenuto";
-                  
+
             case SymId::articTenutoAbove:
             case SymId::articTenutoBelow:
                   return "tenuto";
@@ -469,6 +476,17 @@ const char* Articulation::symId2ArticulationName(SymId symId)
       }
 
 //---------------------------------------------------------
+//   propertyId
+//---------------------------------------------------------
+
+Pid Articulation::propertyId(const QStringRef& xmlName) const
+      {
+      if (xmlName == "subtype")
+            return Pid::SYMBOL;
+      return Element::propertyId(xmlName);
+      }
+
+//---------------------------------------------------------
 //   articulationName
 //---------------------------------------------------------
 
@@ -481,9 +499,14 @@ const char* Articulation::articulationName() const
 //   getPropertyStyle
 //---------------------------------------------------------
 
-Sid Articulation::getPropertyStyle(Pid /*id*/) const
+Sid Articulation::getPropertyStyle(Pid id) const
       {
-      return Sid::NOSTYLE;
+      switch (id) {
+            case Pid::MIN_DISTANCE:
+                  return Element::getPropertyStyle(id);
+            default:
+                  return Sid::NOSTYLE;
+            }
       }
 
 //---------------------------------------------------------
@@ -513,7 +536,7 @@ void Articulation::resetProperty(Pid id)
 
 qreal Articulation::mag() const
       {
-      return parent() ? parent()->mag() * score()->styleD(Sid::articulationMag): 1.0;
+      return parent() ? parent()->mag() * score()->styleD(Sid::articulationMag) : 1.0;
       }
 
 bool Articulation::isTenuto() const
@@ -576,11 +599,18 @@ QString Articulation::accessibleInfo() const
 
 void Articulation::doAutoplace()
       {
-      qreal minDistance = score()->styleP(Sid::dynamicsMinDistance);
-      if (autoplace() && visible() && parent()) {
+      // rebase vertical offset on drag
+      qreal rebase = 0.0;
+      if (offsetChanged() != OffsetChange::NONE)
+            rebase = rebaseOffset();
+
+      if (autoplace() && parent()) {
             Segment* s = segment();
             Measure* m = measure();
             int si     = staffIdx();
+
+            qreal sp = score()->spatium();
+            qreal md = minDistance().val() * sp;
 
             SysStaff* ss = m->system()->staff(si);
             QRectF r = bbox().translated(chordRest()->pos() + m->pos() + s->pos() + pos());
@@ -597,14 +627,22 @@ void Articulation::doAutoplace()
                   d = ss->skyline().south().minDistance(sk);
                   }
 
-            if (d > -minDistance) {
-                  qreal yd = d + minDistance;
+            if (d > -md) {
+                  qreal yd = d + md;
                   if (above)
                         yd *= -1.0;
+                  if (offsetChanged() != OffsetChange::NONE) {
+                        // user moved element within the skyline
+                        // we may need to adjust minDistance, yd, and/or offset
+                        //bool inStaff = placeAbove() ? r.bottom() + rebase > 0.0 : r.top() + rebase < staff()->height();
+                        if (rebaseMinDistance(md, yd, sp, rebase, true))
+                              r.translate(0.0, rebase);
+                        }
                   rypos() += yd;
                   r.translate(QPointF(0.0, yd));
                   }
             }
+      setOffsetChanged(false);
       }
 
 }

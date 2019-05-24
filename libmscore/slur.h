@@ -25,7 +25,8 @@ namespace Ms {
 class SlurSegment final : public SlurTieSegment {
 
    protected:
-      virtual void changeAnchor(EditData&, Element*);
+      qreal _extraHeight = 0.0;
+      virtual void changeAnchor(EditData&, Element*) override;
 
    public:
       SlurSegment(Score* s) : SlurTieSegment(s) {}
@@ -40,10 +41,12 @@ class SlurSegment final : public SlurTieSegment {
       void layoutSegment(const QPointF& p1, const QPointF& p2);
 
       bool isEdited() const;
+      virtual void startEdit(EditData&) override;
       virtual bool edit(EditData&) override;
+      virtual void endEdit(EditData&) override;
       virtual void updateGrips(EditData&) const override;
 
-      Slur* slur() const { return (Slur*)spanner(); }
+      Slur* slur() const { return toSlur(spanner()); }
 
       virtual void computeBezier(QPointF so = QPointF());
       };

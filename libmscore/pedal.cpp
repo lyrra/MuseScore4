@@ -51,7 +51,9 @@ static const ElementStyle pedalStyle {
 void PedalSegment::layout()
       {
       TextLineBaseSegment::layout();
-      autoplaceSpannerSegment(spatium() * .7);
+      if (isStyled(Pid::OFFSET))
+            roffset() = pedal()->propertyDefault(Pid::OFFSET).toPointF();
+      autoplaceSpannerSegment();
       }
 
 //---------------------------------------------------------
@@ -141,6 +143,7 @@ void Pedal::write(XmlWriter& xml) const
 
 static const ElementStyle pedalSegmentStyle {
       { Sid::pedalPosBelow, Pid::OFFSET },
+      { Sid::pedalMinDistance, Pid::MIN_DISTANCE },
       };
 
 LineSegment* Pedal::createLineSegment()
@@ -180,6 +183,9 @@ QVariant Pedal::propertyDefault(Pid propertyId) const
 
             case Pid::LINE_VISIBLE:
                   return true;
+
+            case Pid::PLACEMENT:
+                  return score()->styleV(Sid::pedalPlacement);
 
             default:
                   return TextLineBase::propertyDefault(propertyId);
@@ -235,6 +241,14 @@ QPointF Pedal::linePos(Grip grip, System** sys) const
                                           break;
                                     }
                               else if (seg->segmentType() == SegmentType::EndBarLine) {
+                                    if (!seg->enabled()) {
+                                          // disabled barline layout is not reliable
+                                          // use width of measure instead
+                                          Measure* m = seg->measure();
+                                          s = seg->system();
+                                          x = m->width() + m->pos().x() - nhw * 2;
+                                          seg = nullptr;
+                                          }
                                     break;
                                     }
                               }
@@ -251,7 +265,7 @@ QPointF Pedal::linePos(Grip grip, System** sys) const
                         x -= c->x();
                   }
             if (!s) {
-                  int t = tick2();
+                  Fraction t = tick2();
                   Measure* m = score()->tick2measure(t);
                   s = m->system();
                   x = m->tick2pos(t);

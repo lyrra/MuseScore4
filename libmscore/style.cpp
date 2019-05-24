@@ -20,6 +20,7 @@
 #include "page.h"
 #include "mscore.h"
 #include "clef.h"
+#include "textlinebase.h"
 #include "tuplet.h"
 #include "layout.h"
 #include "property.h"
@@ -81,6 +82,7 @@ static const StyleType styleTypes[] {
       { Sid::lyricsPosBelow,          "lyricsPosBelow",          QPointF(.0, 3.0) },
       { Sid::lyricsMinTopDistance,    "lyricsMinTopDistance",    Spatium(1.0)  },
       { Sid::lyricsMinBottomDistance, "lyricsMinBottomDistance", Spatium(2.0)  },
+      { Sid::lyricsMinDistance,       "lyricsMinDistance",       Spatium(0.0)  },
       { Sid::lyricsLineHeight,        "lyricsLineHeight",        1.0 },
       { Sid::lyricsDashMinLength,     "lyricsDashMinLength",     Spatium(0.4) },
       { Sid::lyricsDashMaxLength,     "lyricsDashMaxLegth",      Spatium(0.8) },
@@ -161,6 +163,7 @@ static const StyleType styleTypes[] {
 
       { Sid::timesigLeftMargin,       "timesigLeftMargin",       Spatium(0.5) },
       { Sid::timesigScale,            "timesigScale",            QVariant(QSizeF(1.0, 1.0)) },
+      { Sid::midClefKeyRightMargin,   "midClefKeyRightMargin",   Spatium(1.0) },
       { Sid::clefKeyRightMargin,      "clefKeyRightMargin",      Spatium(0.8) },
       { Sid::clefKeyDistance,         "clefKeyDistance",         Spatium(1.0) },   // gould: 1 - 1.25
       { Sid::clefTimesigDistance,     "clefTimesigDistance",     Spatium(1.0) },
@@ -210,7 +213,7 @@ static const StyleType styleTypes[] {
       { Sid::hairpinPosAbove,         "hairpinPosAbove",         QPointF(0.0, -3.5) },
       { Sid::hairpinPosBelow,         "hairpinPosBelow",         QPointF(.0, 3.5) },
       { Sid::hairpinLinePosAbove,     "hairpinLinePosAbove",     QPointF(0.0, -3.0) },
-      { Sid::hairpinLinePosBelow,     "hairpinLinePosBelow",     QPointF(.0, 3.0) },
+      { Sid::hairpinLinePosBelow,     "hairpinLinePosBelow",     QPointF(.0, 4.0) },
       { Sid::hairpinHeight,           "hairpinHeight",           Spatium(1.2) },
       { Sid::hairpinContHeight,       "hairpinContHeight",       Spatium(0.5) },
       { Sid::hairpinLineWidth,        "hairpinWidth",            Spatium(0.13) },
@@ -262,7 +265,7 @@ static const StyleType styleTypes[] {
       { Sid::vibratoPosAbove,         "vibratoPosAbove",         QPointF(.0, -1) },
       { Sid::vibratoPosBelow,         "vibratoPosBelow",         QPointF(.0, 1) },
 
-      { Sid::harmonyFretDist,          "harmonyFretDist",        Spatium(0.5) },
+      { Sid::harmonyFretDist,          "harmonyFretDist",        Spatium(1.0) },
       { Sid::minHarmonyDistance,       "minHarmonyDistance",     Spatium(0.5) },
       { Sid::maxHarmonyBarDistance,    "maxHarmonyBarDistance",  Spatium(3.0) },
       { Sid::harmonyPlacement,         "harmonyPlacement",       int(Placement::ABOVE) },
@@ -308,8 +311,10 @@ static const StyleType styleTypes[] {
       { Sid::fretPlacement,           "fretPlacement",           int(Placement::ABOVE) },
       { Sid::fretStrings,             "fretStrings",             6 },
       { Sid::fretFrets,               "fretFrets",               5 },
-      { Sid::fretOffset,              "fretOffset",              0 },
-      { Sid::fretBarre,               "fretBarre",               0 },
+      { Sid::fretNut,                 "fretNut",                 QVariant(true) },
+      { Sid::fretDotSize,             "fretDotSize",             QVariant(1.0) },
+      { Sid::fretStringSpacing,       "fretStringSpacing",       Spatium(0.7) },
+      { Sid::fretFretSpacing,         "fretFretSpacing",         Spatium(0.8) },
 
       { Sid::showPageNumber,          "showPageNumber",          QVariant(true) },
       { Sid::showPageNumberOne,       "showPageNumberOne",       QVariant(false) },
@@ -506,8 +511,8 @@ static const StyleType styleTypes[] {
       { Sid::autoplaceVerticalAlignRange, "autoplaceVerticalAlignRange",     int(VerticalAlignRange::SYSTEM) },
 
       { Sid::textLinePlacement,         "textLinePlacement",         int(Placement::ABOVE)  },
-      { Sid::textLinePosAbove,          "textLinePosAbove",          QPointF(.0, -3.5) },
-      { Sid::textLinePosBelow,          "textLinePosBelow",          QPointF(.0, 3.5) },
+      { Sid::textLinePosAbove,          "textLinePosAbove",          QPointF(.0, -1.0) },
+      { Sid::textLinePosBelow,          "textLinePosBelow",          QPointF(.0, 1.0) },
       { Sid::textLineFrameType,         "textLineFrameType",          int(FrameType::NO_FRAME) },
       { Sid::textLineFramePadding,      "textLineFramePadding",       0.2 },
       { Sid::textLineFrameWidth,        "textLineFrameWidth",         0.1 },
@@ -650,7 +655,7 @@ static const StyleType styleTypes[] {
       { Sid::stringNumberFrameRound,        "stringNumberFrameRound",        0 },
       { Sid::stringNumberFrameFgColor,      "stringNumberFrameFgColor",      QColor(0, 0, 0, 255) },
       { Sid::stringNumberFrameBgColor,      "stringNumberFrameBgColor",      QColor(255, 255, 255, 0) },
-      { Sid::stringNumberOffset,            "stringNumberOffset",            QPointF(0.0, -2.0) },
+      { Sid::stringNumberOffset,            "stringNumberOffset",            QPointF(0.0, 0.0) },
 
       { Sid::longInstrumentFontFace,        "longInstrumentFontFace",       "FreeSerif" },
       { Sid::longInstrumentFontSize,        "longInstrumentFontSize",       12.0 },
@@ -938,7 +943,7 @@ static const StyleType styleTypes[] {
       { Sid::footerFontStyle,               "footerFontStyle",              int(FontStyle::Normal) },
       { Sid::footerColor,                   "footerColor",                  QColor(0, 0, 0, 255) },
       { Sid::footerAlign,                   "footerAlign",                  QVariant::fromValue(Align::LEFT) },
-      { Sid::footerOffset,                  "footerOffset",                 QPointF() },
+      { Sid::footerOffset,                  "footerOffset",                 QPointF(0.0, 5.0) },
       { Sid::footerFrameType,               "footerFrameType",              int(FrameType::NO_FRAME) },
       { Sid::footerFramePadding,            "footerFramePadding",           0.2 },
       { Sid::footerFrameWidth,              "footerFrameWidth",             0.1 },
@@ -1074,18 +1079,19 @@ static const StyleType styleTypes[] {
       { Sid::letRingTextAlign,              "letRingTextAlign",             QVariant::fromValue(Align::LEFT | Align::VCENTER) },
       { Sid::letRingHookHeight,             "letRingHookHeight",            Spatium(0.6) },
       { Sid::letRingPlacement,              "letRingPlacement",             int(Placement::BELOW)  },
-      { Sid::letRingPosAbove,               "letRingPosAbove",              QPointF(.0, -4.0) },
-      { Sid::letRingPosBelow,               "letRingPosBelow",              QPointF(.0, 4.0)  },
+      { Sid::letRingPosAbove,               "letRingPosAbove",              QPointF(.0, 0.0) },
+      { Sid::letRingPosBelow,               "letRingPosBelow",              QPointF(.0, 0.0)  },
       { Sid::letRingLineWidth,              "letRingLineWidth",             Spatium(0.15) },
       { Sid::letRingLineStyle,              "letRingLineStyle",             QVariant(int(Qt::DashLine)) },
       { Sid::letRingBeginTextOffset,        "letRingBeginTextOffset",       QPointF(0.0, 0.15) },
       { Sid::letRingText,                   "letRingText",                  "let ring" },
-      { Sid::letRingFrameType,              "letRingFrameType",          int(FrameType::NO_FRAME) },
-      { Sid::letRingFramePadding,           "letRingFramePadding",       0.2 },
-      { Sid::letRingFrameWidth,             "letRingFrameWidth",         0.1 },
-      { Sid::letRingFrameRound,             "letRingFrameRound",         0 },
-      { Sid::letRingFrameFgColor,           "letRingFrameFgColor",       QColor(0, 0, 0, 255) },
-      { Sid::letRingFrameBgColor,           "letRingFrameBgColor",       QColor(255, 255, 255, 0) },
+      { Sid::letRingFrameType,              "letRingFrameType",             int(FrameType::NO_FRAME) },
+      { Sid::letRingFramePadding,           "letRingFramePadding",          0.2 },
+      { Sid::letRingFrameWidth,             "letRingFrameWidth",            0.1 },
+      { Sid::letRingFrameRound,             "letRingFrameRound",            0 },
+      { Sid::letRingFrameFgColor,           "letRingFrameFgColor",          QColor(0, 0, 0, 255) },
+      { Sid::letRingFrameBgColor,           "letRingFrameBgColor",          QColor(255, 255, 255, 0) },
+      { Sid::letRingEndHookType,            "letRingEndHookType",           int(HookType::HOOK_90T) },
 
       { Sid::palmMuteFontFace,              "palmMuteFontFace",              "FreeSerif" },
       { Sid::palmMuteFontSize,              "palmMuteFontSize",              10.0 },
@@ -1107,10 +1113,30 @@ static const StyleType styleTypes[] {
       { Sid::palmMuteFrameRound,            "palmMuteFrameRound",            0 },
       { Sid::palmMuteFrameFgColor,          "palmMuteFrameFgColor",          QColor(0, 0, 0, 255) },
       { Sid::palmMuteFrameBgColor,          "palmMuteFrameBgColor",          QColor(255, 255, 255, 0) },
+      { Sid::palmMuteEndHookType,           "palmMuteEndHookType",           int(HookType::HOOK_90T) },
 
       { Sid::fermataPosAbove,               "fermataPosAbove",               QPointF(.0, -1.0) },
       { Sid::fermataPosBelow,               "fermataPosBelow",               QPointF(.0, 1.0)  },
       { Sid::fermataMinDistance,            "fermataMinDistance",            Spatium(0.4)  },
+
+      { Sid::fingeringPlacement,            "fingeringPlacement",            int(Placement::ABOVE) },
+
+      { Sid::articulationMinDistance,       "articulationMinDistance",       Spatium(0.5)  },
+      { Sid::fingeringMinDistance,          "fingeringMinDistance",          Spatium(0.5)  },
+      { Sid::hairpinMinDistance,            "hairpinMinDistance",            Spatium(0.7)  },
+      { Sid::letRingMinDistance,            "letRingMinDistance",            Spatium(0.7)  },
+      { Sid::ottavaMinDistance,             "ottavaMinDistance",             Spatium(0.7)  },
+      { Sid::palmMuteMinDistance,           "palmMuteMinDistance",           Spatium(0.7)  },
+      { Sid::pedalMinDistance,              "pedalMinDistance",              Spatium(0.7)  },
+      { Sid::repeatMinDistance,             "repeatMinDistance",             Spatium(0.5)  },
+      { Sid::textLineMinDistance,           "textLineMinDistance",           Spatium(0.7)  },
+      { Sid::trillMinDistance,              "trillMinDistance",              Spatium(1.0)  },
+      { Sid::vibratoMinDistance,            "vibratoMinDistance",            Spatium(1.0)  },
+      { Sid::voltaMinDistance,              "voltaMinDistance",              Spatium(1.0)  },
+      { Sid::figuredBassMinDistance,        "figuredBassMinDistance",        Spatium(0.5)  },
+
+      { Sid::autoplaceEnabled,              "autoplaceEnabled",              true },
+
       };
 
 MStyle  MScore::_baseStyle;
@@ -1734,8 +1760,8 @@ const TextStyle headerTextStyle {{
       { Sid::headerFontSpatiumDependent,         Pid::SIZE_SPATIUM_DEPENDENT },
       { Sid::headerFontStyle,                    Pid::FONT_STYLE             },
       { Sid::headerColor,                        Pid::COLOR                  },
-      { Sid::headerAlign,                        Pid::BEGIN_TEXT_ALIGN       },
-      { Sid::headerOffset,                       Pid::BEGIN_TEXT_OFFSET      },
+      { Sid::headerAlign,                        Pid::ALIGN                  },
+      { Sid::headerOffset,                       Pid::OFFSET                 },
       { Sid::headerFrameType,                    Pid::FRAME_TYPE             },
       { Sid::headerFramePadding,                 Pid::FRAME_PADDING          },
       { Sid::headerFrameWidth,                   Pid::FRAME_WIDTH            },
@@ -1750,8 +1776,8 @@ const TextStyle footerTextStyle {{
       { Sid::footerFontSpatiumDependent,         Pid::SIZE_SPATIUM_DEPENDENT },
       { Sid::footerFontStyle,                    Pid::FONT_STYLE             },
       { Sid::footerColor,                        Pid::COLOR                  },
-      { Sid::footerAlign,                        Pid::BEGIN_TEXT_ALIGN       },
-      { Sid::footerOffset,                       Pid::BEGIN_TEXT_OFFSET      },
+      { Sid::footerAlign,                        Pid::ALIGN                  },
+      { Sid::footerOffset,                       Pid::OFFSET                 },
       { Sid::footerFrameType,                    Pid::FRAME_TYPE             },
       { Sid::footerFramePadding,                 Pid::FRAME_PADDING          },
       { Sid::footerFrameWidth,                   Pid::FRAME_WIDTH            },
@@ -2152,6 +2178,20 @@ const ChordDescription* MStyle::chordDescription(int id) const
       }
 
 //---------------------------------------------------------
+//   checkChordList
+//---------------------------------------------------------
+
+void MStyle::checkChordList()
+      {
+      // make sure we have a chordlist
+      if (!_chordList.loaded()) {
+            if (value(Sid::chordsXmlFile).toBool())
+                  _chordList.read("chords.xml");
+            _chordList.read(value(Sid::chordDescriptionFile).toString());
+            }
+      }
+
+//---------------------------------------------------------
 //   setChordList
 //---------------------------------------------------------
 
@@ -2340,7 +2380,7 @@ bool MStyle::readTextStyleValCompat(XmlReader& e)
 //   load
 //---------------------------------------------------------
 
-bool MStyle::load(QFile* qf)
+bool MStyle::load(QFile* qf, bool ignore)
       {
       XmlReader e(qf);
       while (e.readNextStartElement()) {
@@ -2348,7 +2388,7 @@ bool MStyle::load(QFile* qf)
                   QString version = e.attribute("version");
                   QStringList sl  = version.split('.');
                   int mscVersion  = sl[0].toInt() * 100 + sl[1].toInt();
-                  if (mscVersion != MSCVERSION)
+                  if (mscVersion != MSCVERSION && !ignore)
                         return false;
                   while (e.readNextStartElement()) {
                         if (e.name() == "Style")
@@ -2415,12 +2455,8 @@ void MStyle::load(XmlReader& e)
             _chordList.unload();
             }
 
-      // make sure we have a chordlist
-      if (!_chordList.loaded() && !chordListTag) {
-            if (value(Sid::chordsXmlFile).toBool())
-                  _chordList.read("chords.xml");
-            _chordList.read(newChordDescriptionFile);
-            }
+      if (!chordListTag)
+            checkChordList();
       }
 
 //---------------------------------------------------------

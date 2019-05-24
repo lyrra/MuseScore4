@@ -47,6 +47,7 @@ int trillTableSize() {
 
 static const ElementStyle trillStyle {
       { Sid::trillPlacement, Pid::PLACEMENT },
+      { Sid::trillPosAbove,  Pid::OFFSET    },
       };
 
 //---------------------------------------------------------
@@ -117,9 +118,9 @@ void TrillSegment::symbolLine(SymId start, SymId fill, SymId end)
 
       _symbols.clear();
       _symbols.push_back(start);
-      qreal w1 = f->bbox(start, mag).width();
-      qreal w2 = f->width(fill, mag);
-      qreal w3 = f->width(end, mag);
+      qreal w1 = f->advance(start, mag);
+      qreal w2 = f->advance(fill, mag);
+      qreal w3 = f->advance(end, mag);
       int n    = lrint((w - w1 - w3) / w2);
       for (int i = 0; i < n; ++i)
            _symbols.push_back(fill);
@@ -136,6 +137,9 @@ void TrillSegment::layout()
       {
       if (staff())
             setMag(staff()->mag(tick()));
+      if (spanner()->placeBelow())
+            rypos() = staff() ? staff()->height() : 0.0;
+
       if (isSingleType() || isBeginType()) {
             Accidental* a = trill()->accidental();
             if (a) {
@@ -164,8 +168,10 @@ void TrillSegment::layout()
             }
       else
             symbolLine(SymId::wiggleTrill, SymId::wiggleTrill);
+      if (isStyled(Pid::OFFSET))
+            roffset() = trill()->propertyDefault(Pid::OFFSET).toPointF();
 
-      autoplaceSpannerSegment(spatium() * 1.0);
+      autoplaceSpannerSegment();
       }
 
 //---------------------------------------------------------
@@ -264,7 +270,6 @@ Trill::Trill(Score* s)
       _ornamentStyle = MScore::OrnamentStyle::DEFAULT;
       setPlayArticulation(true);
       initElementStyle(&trillStyle);
-      resetProperty(Pid::OFFSET);
       }
 
 Trill::~Trill()
@@ -320,6 +325,7 @@ void Trill::layout()
 
 static const ElementStyle trillSegmentStyle {
       { Sid::trillPosAbove, Pid::OFFSET },
+      { Sid::trillMinDistance, Pid::MIN_DISTANCE },
       };
 
 LineSegment* Trill::createLineSegment()

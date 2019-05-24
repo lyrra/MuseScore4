@@ -31,7 +31,7 @@ class ZInstrument;
 enum class Trigger : char;
 
 static const int MAX_VOICES  = 512;
-static const int MAX_CHANNEL = 64;
+static const int MAX_CHANNEL = 256;
 static const int MAX_TRIGGER = 512;
 
 //---------------------------------------------------------
@@ -130,7 +130,8 @@ class Zerberus : public Ms::Synthesizer {
       virtual bool removeSoundFont(const QString&);
       virtual bool loadSoundFonts(const QStringList&);
       virtual bool removeSoundFonts(const QStringList& fileNames);
-      virtual QStringList soundFonts() const;
+      QStringList soundFonts() const;
+      std::vector<Ms::SoundFontInfo> soundFontsInfo() const override;
 
       virtual const QList<Ms::MidiPatch*>& getPatchInfo() const override { return patches; }
       

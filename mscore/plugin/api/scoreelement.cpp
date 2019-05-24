@@ -40,6 +40,13 @@ int ScoreElement::type() const
       return int(e->type());
       }
 
+//---------------------------------------------------------
+//   ScoreElement::userName
+///   \brief Human-readable element type name
+///   \returns Name of the element type, translated
+///   according to the current MuseScore locale settings.
+//---------------------------------------------------------
+
 QString ScoreElement::userName() const
       {
       return e->userName();
@@ -91,6 +98,9 @@ void ScoreElement::set(Ms::Pid pid, QVariant val)
 
 //---------------------------------------------------------
 //   wrap
+///   \cond PLUGIN_API \private \endcond
+///   Wraps Ms::ScoreElement choosing the correct wrapper
+///   type at runtime based on the actual element type.
 //---------------------------------------------------------
 
 ScoreElement* wrap(Ms::ScoreElement* se, Ownership own)
@@ -102,6 +112,8 @@ ScoreElement* wrap(Ms::ScoreElement* se, Ownership own)
       switch(se->type()) {
             case ElementType::SCORE:
                   return wrap<Score>(toScore(se), own);
+            case ElementType::PART:
+                  return wrap<Part>(toPart(se), own);
             default:
                   break;
             }

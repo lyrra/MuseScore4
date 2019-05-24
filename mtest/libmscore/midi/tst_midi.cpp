@@ -64,11 +64,12 @@ class TestMidi : public QObject, public MTest
             }
       void midiVolta()
           {
-          midiExportTestRef("testVoltaTemp"); // test changing temp in prima and seconda volta 
-          midiExportTestRef("testVoltaDynamic"); // test changing Dynamic in prima and seconda volta 
-          midiExportTestRef("testVoltaStaffText"); // test changing StaffText in prima and seconda volta 
+          midiExportTestRef("testVoltaTemp"); // test changing temp in prima and seconda volta
+          midiExportTestRef("testVoltaDynamic"); // test changing Dynamic in prima and seconda volta
+          midiExportTestRef("testVoltaStaffText"); // test changing StaffText in prima and seconda volta
           }
       void midiTimeStretchFermata();
+      void midiSingleNoteDynamics();
       };
 
 //---------------------------------------------------------
@@ -170,9 +171,9 @@ bool compareElements(Element* e1, Element* e2)
       else if (e1->type() == ElementType::CHORD) {
             Ms::Chord* c1 = static_cast<Ms::Chord*>(e1);
             Ms::Chord* c2 = static_cast<Ms::Chord*>(e2);
-            if (c1->duration() != c2->duration()) {
-                  Fraction f1 = c1->duration();
-                  Fraction f2 = c2->duration();
+            if (c1->ticks() != c2->ticks()) {
+                  Fraction f1 = c1->ticks();
+                  Fraction f2 = c2->ticks();
                   qDebug("      chord duration %d/%d  !=  %d/%d",
                      f1.numerator(), f1.denominator(),
                      f2.numerator(), f2.denominator()
@@ -255,7 +256,7 @@ void TestMidi::midi01()
       c.setTimeSig(Fraction(4,4));
       c.createScore("test1a");
       c.addPart("voice");
-      c.move(0, 0);     // move to track 0 tick 0
+      c.move(0, Fraction(0,1));     // move to track 0 tick 0
 
       c.addKeySig(Key(1));
       c.addTimeSig(Fraction(4,4));
@@ -296,7 +297,7 @@ void TestMidi::midi02()
       c.setTimeSig(Fraction(3,4));
       c.createScore("test2a");
       c.addPart("voice");
-      c.move(0, 0);     // move to track 0 tick 0
+      c.move(0, Fraction(0,1));     // move to track 0 tick 0
 
       c.addKeySig(Key(2));
       c.addTimeSig(Fraction(3,4));
@@ -337,7 +338,7 @@ void TestMidi::midi03()
       c.setTimeSig(Fraction(4,4));
       c.createScore("test3a");
       c.addPart("voice");
-      c.move(0, 0);     // move to track 0 tick 0
+      c.move(0, Fraction(0,1));     // move to track 0 tick 0
 
       c.addKeySig(Key(1));
       c.addTimeSig(Fraction(4,4));
@@ -382,12 +383,30 @@ void TestMidi::midiTimeStretchFermata()
       testMidiExport(score, writeFile.arg(1), reference);
 
       const Fraction frac1 = 2 * Fraction(4, 4) + Fraction(2, 4); // 3rd measure, 3rd beat
-      score->doLayoutRange(frac1.ticks(), frac1.ticks());
+      score->doLayoutRange(frac1, frac1);
       testMidiExport(score, writeFile.arg(2), reference);
 
       const Fraction frac2 = 6 * Fraction(4, 4); // 7th measure
-      score->doLayoutRange(frac2.ticks(), frac2.ticks());
+      score->doLayoutRange(frac2, frac2);
       testMidiExport(score, writeFile.arg(3), reference);
+
+      delete score;
+      }
+
+//---------------------------------------------------------
+//   midiTimeStretchFermata
+//---------------------------------------------------------
+
+void TestMidi::midiSingleNoteDynamics()
+      {
+      const QString file("testSingleNoteDynamics");
+      QString readFile(DIR   + file + ".mscx");
+      QString writeFile(file + "-test.mid");
+      QString reference(DIR + file + "-ref.mid");
+
+      MasterScore* score = readScore(readFile);
+      score->doLayout();
+      testMidiExport(score, writeFile, reference);
 
       delete score;
       }
@@ -406,7 +425,9 @@ void TestMidi::events()
 
       MasterScore* score = readScore(readFile);
       EventMap events;
-      score->renderMidi(&events);
+      // a temporary, unitialized synth state so we can render the midi - should fall back correctly
+      SynthesizerState ss;
+      score->renderMidi(&events, ss);
       qDebug() << "Opened score " << readFile;
       QFile filehandler(writeFile);
       filehandler.open(QIODevice::WriteOnly | QIODevice::Text);

@@ -142,6 +142,11 @@ static QString createDefaultFileName(QString fn)
       return fn;
       }
 
+QString MuseScore::saveFilename(QString fn)
+      {
+      return createDefaultFileName(fn);
+      }
+
 //---------------------------------------------------------
 //   readScoreError
 //    if "ask" is true, ask to ignore; returns true if
@@ -312,8 +317,11 @@ Score* MuseScore::openScore(const QString& fn, bool switchTab)
       QFileInfo fi(fn);
       QString path = fi.canonicalFilePath();
       for (Score* s : scoreList) {
-            if (s->masterScore()->fileInfo()->canonicalFilePath() == path)
+            if (s->masterScore()->fileInfo()->canonicalFilePath() == path) {
+                  if (switchTab)
+                        setCurrentScoreView(scoreList.indexOf(s->masterScore()));
                   return 0;
+                  }
             }
 
       MasterScore* score = readScore(fn);
@@ -336,7 +344,7 @@ MasterScore* MuseScore::readScore(const QString& name)
       if (name.isEmpty())
             return 0;
 
-      MasterScore* score = new MasterScore(MScore::defaultStyle());
+      MasterScore* score = new MasterScore(MScore::baseStyle());
       setMidiReopenInProgress(name);
       Score::FileError rv = Ms::readScore(score, name, false);
       if (rv == Score::FileError::FILE_TOO_OLD || rv == Score::FileError::FILE_TOO_NEW || rv == Score::FileError::FILE_CORRUPTED) {
@@ -347,7 +355,7 @@ MasterScore* MuseScore::readScore(const QString& name)
                         delete score;
                         score = new MasterScore();
                         score->setMovements(new Movements());
-                        score->setStyle(MScore::defaultStyle());
+                        score->setStyle(MScore::baseStyle());
                         rv = Ms::readScore(score, name, true);
                         }
                   else
@@ -404,8 +412,8 @@ bool MuseScore::saveFile(MasterScore* score)
             if (t)
                   fn = t->plainText();
             QString name = createDefaultFileName(fn);
-            QString f1 = tr("MuseScore File") + " (*.mscz)";
-            QString f2 = tr("Uncompressed MuseScore File") + " (*.mscx)";
+            QString f1 = tr("MuseScore 3 File") + " (*.mscz)";
+            QString f2 = tr("Uncompressed MuseScore 3 File") + " (*.mscx)";     // for debugging purposes
 
             QSettings set;
             if (mscore->lastSaveDirectory.isEmpty())
@@ -494,7 +502,7 @@ MasterScore* MuseScore::getNewFile()
       {
       if (!newWizard)
             newWizard = new NewWizard(this);
-	  else {
+      else {
             newWizard->updateValues();
             newWizard->restart();
             }
@@ -580,44 +588,40 @@ MasterScore* MuseScore::getNewFile()
       score->setCreated(true);
       score->fileInfo()->setFile(createDefaultName());
 
-      if (!score->style().chordList()->loaded()) {
-            if (score->styleB(Sid::chordsXmlFile))
-                  score->style().chordList()->read("chords.xml");
-            score->style().chordList()->read(score->styleSt(Sid::chordDescriptionFile));
-            }
+      score->style().checkChordList();
       if (!newWizard->title().isEmpty())
             score->fileInfo()->setFile(newWizard->title());
 
       score->sigmap()->add(0, timesig);
 
-      int firstMeasureTicks = pickupMeasure ? Fraction(pickupTimesigZ, pickupTimesigN).ticks() : timesig.ticks();
+      Fraction firstMeasureTicks = pickupMeasure ? Fraction(pickupTimesigZ, pickupTimesigN) : timesig;
 
       for (int i = 0; i < measures; ++i) {
-            int tick = firstMeasureTicks + timesig.ticks() * (i - 1);
+            Fraction tick = firstMeasureTicks + timesig * (i - 1);
             if (i == 0)
-                  tick = 0;
+                  tick = Fraction(0,1);
             QList<Rest*> puRests;
             for (Score* _score : score->scoreList()) {
                   Rest* rest = 0;
                   Measure* measure = new Measure(_score);
                   measure->setTimesig(timesig);
-                  measure->setLen(timesig);
+                  measure->setTicks(timesig);
                   measure->setTick(tick);
 
-                  if (pickupMeasure && tick == 0) {
+                  if (pickupMeasure && tick.isZero()) {
                         measure->setIrregular(true);        // don’t count pickup measure
-                        measure->setLen(Fraction(pickupTimesigZ, pickupTimesigN));
+                        measure->setTicks(Fraction(pickupTimesigZ, pickupTimesigN));
                         }
                   _score->measures()->add(measure);
 
                   for (Staff* staff : _score->staves()) {
                         int staffIdx = staff->idx();
-                        if (tick == 0) {
+                        if (tick.isZero()) {
                               TimeSig* ts = new TimeSig(_score);
                               ts->setTrack(staffIdx * VOICES);
                               ts->setSig(timesig, timesigType);
                               Measure* m = _score->firstMeasure();
-                              Segment* s = m->getSegment(SegmentType::TimeSig, 0);
+                              Segment* s = m->getSegment(SegmentType::TimeSig, Fraction(0,1));
                               s->add(ts);
                               Part* part = staff->part();
                               if (!part->instrument()->useDrumset()) {
@@ -631,11 +635,11 @@ MasterScore* MuseScore::getNewFile()
                                           }
                                     // do not create empty keysig unless custom or atonal
                                     if (nKey.custom() || nKey.isAtonal() || nKey.key() != Key::C) {
-                                          staff->setKey(0, nKey);
+                                          staff->setKey(Fraction(0,1), nKey);
                                           KeySig* keysig = new KeySig(score);
                                           keysig->setTrack(staffIdx * VOICES);
                                           keysig->setKeySigEvent(nKey);
-                                          Segment* ss = measure->getSegment(SegmentType::KeySig, 0);
+                                          Segment* ss = measure->getSegment(SegmentType::KeySig, Fraction(0,1));
                                           ss->add(keysig);
                                           }
                                     }
@@ -643,12 +647,12 @@ MasterScore* MuseScore::getNewFile()
 
                         // determined if this staff is linked to previous so we can reuse rests
                         bool linkedToPrevious = staffIdx && staff->isLinked(_score->staff(staffIdx - 1));
-                        if (measure->timesig() != measure->len()) {
+                        if (measure->timesig() != measure->ticks()) {
                               if (!linkedToPrevious)
                                     puRests.clear();
-                              std::vector<TDuration> dList = toDurationList(measure->len(), false);
+                              std::vector<TDuration> dList = toDurationList(measure->ticks(), false);
                               if (!dList.empty()) {
-                                    int ltick = tick;
+                                    Fraction ltick = tick;
                                     int k = 0;
                                     foreach (TDuration d, dList) {
                                           if (k < puRests.count())
@@ -658,7 +662,7 @@ MasterScore* MuseScore::getNewFile()
                                                 puRests.append(rest);
                                                 }
                                           rest->setScore(_score);
-                                          rest->setDuration(d.fraction());
+                                          rest->setTicks(d.fraction());
                                           rest->setTrack(staffIdx * VOICES);
                                           Segment* seg = measure->getSegment(SegmentType::ChordRest, ltick);
                                           seg->add(rest);
@@ -673,7 +677,7 @@ MasterScore* MuseScore::getNewFile()
                               else
                                     rest = new Rest(score, TDuration(TDuration::DurationType::V_MEASURE));
                               rest->setScore(_score);
-                              rest->setDuration(measure->len());
+                              rest->setTicks(measure->ticks());
                               rest->setTrack(staffIdx * VOICES);
                               Segment* seg = measure->getSegment(SegmentType::ChordRest, tick);
                               seg->add(rest);
@@ -706,7 +710,7 @@ MasterScore* MuseScore::getNewFile()
             MeasureBase* measure = score->measures()->first();
             if (measure->type() != ElementType::VBOX) {
                   MeasureBase* nm = nvb ? nvb : new VBox(score);
-                  nm->setTick(0);
+                  nm->setTick(Fraction(0,1));
                   nm->setNext(measure);
                   score->measures()->add(nm);
                   measure = nm;
@@ -754,12 +758,16 @@ MasterScore* MuseScore::getNewFile()
             tt->setTrack(0);
             Segment* seg = score->firstMeasure()->first(SegmentType::ChordRest);
             seg->add(tt);
-            score->setTempo(0, tempo);
+            score->setTempo(seg, tempo);
             }
       if (!copyright.isEmpty())
             score->setMetaTag("copyright", copyright);
 
-      score->rebuildMidiMapping();
+      if (synti)
+            score->setSynthesizerState(synti->state());
+
+      // Call this even if synti doesn't exist - we need to rebuild either way
+      score->rebuildAndUpdateExpressive(MuseScore::synthesizer("Fluid"));
 
       {
             ScoreLoad sl;
@@ -1679,7 +1687,7 @@ void MuseScore::exportFile()
       fl.append(tr("Standard MIDI File") + " (*.mid)");
       fl.append(tr("Compressed MusicXML File") + " (*.mxl)");
       fl.append(tr("Uncompressed MusicXML File") + " (*.musicxml)");
-      fl.append(tr("Uncompressed MuseScore File") + " (*.mscx)");
+      fl.append(tr("Uncompressed MuseScore 3 File") + " (*.mscx)");     // for debugging purposes
 
       QString saveDialogTitle = tr("Export");
 
@@ -1758,8 +1766,8 @@ bool MuseScore::exportParts()
       fl.append(tr("Standard MIDI File") + " (*.mid)");
       fl.append(tr("Compressed MusicXML File") + " (*.mxl)");
       fl.append(tr("Uncompressed MusicXML File") + " (*.musicxml)");
-      fl.append(tr("MuseScore File") + " (*.mscz)");
-      fl.append(tr("Uncompressed MuseScore File") + " (*.mscx)");
+      fl.append(tr("MuseScore 3 File") + " (*.mscz)");
+      fl.append(tr("Uncompressed MuseScore 3 File") + " (*.mscx)");     // for debugging purposes
 
       QString saveDialogTitle = tr("Export Parts");
 
@@ -2022,13 +2030,13 @@ bool MuseScore::saveAs(Score* cs_, bool saveCopy, const QString& path, const QSt
 bool MuseScore::saveMidi(Score* score, const QString& name)
       {
       ExportMidi em(score);
-      return em.write(name, preferences.getBool(PREF_IO_MIDI_EXPANDREPEATS), preferences.getBool(PREF_IO_MIDI_EXPORTRPNS));
+      return em.write(name, preferences.getBool(PREF_IO_MIDI_EXPANDREPEATS), preferences.getBool(PREF_IO_MIDI_EXPORTRPNS), synthesizerState());
       }
 
 bool MuseScore::saveMidi(Score* score, QIODevice* device)
       {
       ExportMidi em(score);
-      return em.write(device, preferences.getBool(PREF_IO_MIDI_EXPANDREPEATS), preferences.getBool(PREF_IO_MIDI_EXPORTRPNS));
+      return em.write(device, preferences.getBool(PREF_IO_MIDI_EXPANDREPEATS), preferences.getBool(PREF_IO_MIDI_EXPORTRPNS), synthesizerState());
       }
 
 //---------------------------------------------------------
@@ -2121,7 +2129,6 @@ bool MuseScore::savePdf(QList<Score*> cs_, const QString& saveName)
       QPageSize ps(QPageSize::id(size, QPageSize::Inch));
       pdfWriter.setPageSize(ps);
       pdfWriter.setPageOrientation(size.width() > size.height() ? QPageLayout::Landscape : QPageLayout::Portrait);
-
       pdfWriter.setCreator("MuseScore Version: " VERSION);
       if (!pdfWriter.setPageMargins(QMarginsF()))
             qDebug("unable to clear printer margins");
@@ -2139,13 +2146,7 @@ bool MuseScore::savePdf(QList<Score*> cs_, const QString& saveName)
       p.setRenderHint(QPainter::Antialiasing, true);
       p.setRenderHint(QPainter::TextAntialiasing, true);
 
-      p.setViewport(QRect(0.0, 0.0, size.width() * pdfWriter.logicalDpiX(),
-         size.height() * pdfWriter.logicalDpiY()));
-      p.setWindow(QRect(0.0, 0.0, size.width() * DPI, size.height() * DPI));
-
       double pr = MScore::pixelRatio;
-      MScore::pixelRatio = DPI / pdfWriter.logicalDpiX();
-      MScore::pdfPrinting = true;
 
       bool firstPage = true;
       for (Score* s : cs_) {
@@ -2155,8 +2156,20 @@ bool MuseScore::savePdf(QList<Score*> cs_, const QString& saveName)
             //      s->doLayout();
                   }
             s->doLayout();
-            s->setPrinting(true);
 
+            // done in Score::print() also, but do it here as well to be safe
+            s->setPrinting(true);
+            MScore::pdfPrinting = true;
+
+            QSizeF size1(s->styleD(Sid::pageWidth), s->styleD(Sid::pageHeight));
+            QPageSize ps1(QPageSize::id(size1, QPageSize::Inch));
+            pdfWriter.setPageSize(ps1);
+            pdfWriter.setPageOrientation(size1.width() > size1.height() ? QPageLayout::Landscape : QPageLayout::Portrait);
+            p.setViewport(QRect(0.0, 0.0, size1.width() * pdfWriter.logicalDpiX(),
+               size1.height() * pdfWriter.logicalDpiY()));
+            p.setWindow(QRect(0.0, 0.0, size1.width() * DPI, size1.height() * DPI));
+
+            MScore::pixelRatio = DPI / pdfWriter.logicalDpiX();
             const QList<Page*> pl = s->pages();
             int pages    = pl.size();
             for (int n = 0; n < pages; ++n) {
@@ -2165,8 +2178,11 @@ bool MuseScore::savePdf(QList<Score*> cs_, const QString& saveName)
                   firstPage = false;
                   s->print(&p, n);
                   }
+            MScore::pixelRatio = pr;
+
             //reset score
             s->setPrinting(false);
+            MScore::pdfPrinting = false;
 
             if (layoutMode != s->layoutMode()) {
                   s->setLayoutMode(layoutMode);
@@ -2174,8 +2190,6 @@ bool MuseScore::savePdf(QList<Score*> cs_, const QString& saveName)
                   }
             }
       p.end();
-      MScore::pdfPrinting = false;
-      MScore::pixelRatio = pr;
       return true;
       }
 
@@ -2240,6 +2254,10 @@ Score::FileError readScore(MasterScore* score, QString name, bool ignoreVersionE
       score->setName(info.completeBaseName());
       score->setImportedFilePath(name);
 
+      // Set the default synthesizer state before we read
+      if (synti)
+            score->setSynthesizerState(synti->state());
+
       if (suffix == "mscz" || suffix == "mscx") {
             Score::FileError rv = score->loadMsc(name, ignoreVersionError);
             if (score && score->masterScore()->fileInfo()->path().startsWith(":/"))
@@ -2296,9 +2314,7 @@ Score::FileError readScore(MasterScore* score, QString name, bool ignoreVersionE
                         score->style().load(&f);
                   }
             else {
-                  if (score->styleB(Sid::chordsXmlFile))
-                        score->style().chordList()->read("chords.xml");
-                  score->style().chordList()->read(score->styleSt(Sid::chordDescriptionFile));
+                  score->style().checkChordList();
                   }
             bool found = false;
             for (auto i : imports) {
@@ -2327,6 +2343,7 @@ Score::FileError readScore(MasterScore* score, QString name, bool ignoreVersionE
             s->setLayoutAll();
             }
       score->updateChannel();
+      score->updateExpressive(MuseScore::synthesizer("Fluid"));
       score->setSaved(false);
       score->update();
 
@@ -2351,8 +2368,8 @@ Score::FileError readScore(MasterScore* score, QString name, bool ignoreVersionE
 bool MuseScore::saveAs(Score* cs_, bool saveCopy)
       {
       QStringList fl;
-      fl.append(tr("MuseScore File") + " (*.mscz)");
-      fl.append(tr("Uncompressed MuseScore File") + " (*.mscx)");     // for debugging purposes
+      fl.append(tr("MuseScore 3 File") + " (*.mscz)");
+      fl.append(tr("Uncompressed MuseScore 3 File") + " (*.mscx)");     // for debugging purposes
       QString saveDialogTitle = saveCopy ? tr("Save a Copy") :
                                            tr("Save As");
 
@@ -2422,7 +2439,8 @@ bool MuseScore::saveSelection(Score* cs_)
             return false;
             }
       QStringList fl;
-      fl.append(tr("MuseScore File") + " (*.mscz)");
+      fl.append(tr("MuseScore 3 File") + " (*.mscz)");
+      fl.append(tr("Uncompressed MuseScore 3 File") + " (*.mscx)");     // for debugging purposes
       QString saveDialogTitle = tr("Save Selection");
 
       QString saveDirectory;
@@ -2998,6 +3016,30 @@ bool MuseScore::saveMetadataJSON(Score* score, const QString& name)
       return true;
       }
 
+//---------------------------------------------------------
+//   findTextByType
+//    @data must contain std::pair<Tid, QStringList*>*
+//          Tid specifies text style
+//          QStringList* specifies the container to keep found text
+//
+//    For usage with Score::scanElements().
+//    Finds all text elements with specified style.
+//---------------------------------------------------------
+static void findTextByType(void* data, Element* element)
+      {
+      if (!element->isTextBase())
+            return;
+      TextBase* text = toTextBase(element);
+      auto* typeStringsData = static_cast<std::pair<Tid, QStringList*>*>(data);
+      if (text->tid() == typeStringsData->first) {
+            // or if score->getTextStyleUserName().contains("Title") ???
+            // That is bad since it may be localized
+            QStringList* titleStrings = typeStringsData->second;
+            Q_ASSERT(titleStrings);
+            titleStrings->append(text->plainText());
+            }
+      }
+
 QJsonObject MuseScore::saveMetadataJSON(Score* score)
       {
       auto boolToString = [](bool b) { return b ? "true" : "false"; };
@@ -3116,6 +3158,25 @@ QJsonObject MuseScore::saveMetadataJSON(Score* score)
       jsonPageformat.insert("twosided", boolToString(score->styleB(Sid::pageTwosided)));
       json.insert("pageFormat", jsonPageformat);
 
+      //text frames metadata
+      QJsonObject jsonTypeData;
+      static std::vector<std::pair<QString, Tid>> namesTypesList {
+            {"titles", Tid::TITLE},
+            {"subtitles", Tid::SUBTITLE},
+            {"composers", Tid::COMPOSER},
+            {"poets", Tid::POET}
+            };
+      for (auto nameType : namesTypesList) {
+            QJsonArray typeData;
+            QStringList typeTextStrings;
+            std::pair<Tid, QStringList*> extendedTitleData = std::make_pair(nameType.second, &typeTextStrings);
+            score->scanElements(&extendedTitleData, findTextByType);
+            for (auto typeStr : typeTextStrings)
+                  typeData.append(typeStr);
+            jsonTypeData.insert(nameType.first, typeData);
+            }
+      json.insert("textFramesData", jsonTypeData);
+
       return json;
       }
 
@@ -3128,20 +3189,20 @@ public:
       jsonFormatFile.open(QIODevice::WriteOnly);
       jsonFormatFile.write("{\n");
       }
-      
+
       ~CustomJsonWriter()
       {
       jsonFormatFile.write("\n}\n");
       jsonFormatFile.close();
       }
-      
+
       void addKey(const char* arrayName)
       {
       jsonFormatFile.write("\"");
       jsonFormatFile.write(arrayName);
       jsonFormatFile.write("\": ");
       }
-      
+
       void addValue(const QByteArray& data, bool lastJsonElement = false, bool isJson = false)
       {
       if (!isJson)
@@ -3152,12 +3213,12 @@ public:
       if (!lastJsonElement)
             jsonFormatFile.write(",\n");
       }
-      
+
       void openArray()
       {
       jsonFormatFile.write(" [");
       }
-      
+
       void closeArray(bool lastJsonElement = false)
       {
       jsonFormatFile.write("]");
@@ -3165,11 +3226,11 @@ public:
             jsonFormatFile.write(",");
       jsonFormatFile.write("\n");
       }
-      
+
 private:
       QFile jsonFormatFile;
 };
-      
+
 //---------------------------------------------------------
 //   exportMp3AsJSON
 //---------------------------------------------------------
@@ -3246,7 +3307,7 @@ bool MuseScore::exportAllMediaFiles(const QString& inFilePath, const QString& ou
             jsonWriter.addValue(pngData.toBase64(), lastArrayValue);
             }
       jsonWriter.closeArray();
-      
+
       jsonWriter.addKey("svgs");
       jsonWriter.openArray();
       for (int i = 0; i < score->pages().size(); ++i) {
@@ -3269,14 +3330,14 @@ bool MuseScore::exportAllMediaFiles(const QString& inFilePath, const QString& ou
       jsonWriter.addValue(partDataPos.toBase64());
       partPosDevice.close();
       partDataPos.clear();
-      
+
       //export score .mpos
       partPosDevice.open(QIODevice::ReadWrite);
       savePositions(score.get(), &partPosDevice, false);
       jsonWriter.addKey("mposXML");
       jsonWriter.addValue(partDataPos.toBase64());
       }
-      
+
       //export score pdf
       jsonWriter.addKey("pdf");
       jsonWriter.addValue(exportPdfAsJSON(score.get()));
@@ -3290,7 +3351,7 @@ bool MuseScore::exportAllMediaFiles(const QString& inFilePath, const QString& ou
       jsonWriter.addKey("midi");
       jsonWriter.addValue(midiData.toBase64());
       }
-      
+
       {
       //export musicxml
       QByteArray mxmlData;
@@ -3300,7 +3361,7 @@ bool MuseScore::exportAllMediaFiles(const QString& inFilePath, const QString& ou
       jsonWriter.addKey("mxml");
       jsonWriter.addValue(mxmlData.toBase64());
       }
-      
+
       //export metadata
       QJsonDocument doc(mscore->saveMetadataJSON(score.get()));
       jsonWriter.addKey("metadata");
