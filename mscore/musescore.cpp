@@ -77,6 +77,7 @@
 #include "omrpanel.h"
 #endif
 #include "shortcut.h"
+#include "guile-glue.h"
 #ifdef SCRIPT_INTERFACE
 #include "plugin/pluginCreator.h"
 #include "plugin/pluginManager.h"
@@ -3631,7 +3632,7 @@ static bool doProcessJob(QString jsonFile)
 //   processNonGui
 //---------------------------------------------------------
 
-static bool processNonGui(const QStringList& argv)
+static bool processNonGui(const QStringList& argv, bool scriptMode)
       {
       if (exportScoreMedia)
             return mscore->exportAllMediaFiles(argv[0]);
@@ -3704,7 +3705,10 @@ static bool processNonGui(const QStringList& argv)
 
       if (scriptTestMode)
             return mscore->runTestScripts(argv);
-
+      if (scriptMode) {
+            loadScores(argv);
+            return false;
+            }
       return true;
       }
 
@@ -7058,6 +7062,48 @@ void MuseScore::updateUiStyleAndTheme()
 
 using namespace Ms;
 
+// Handle Guile/Scheme Scripting
+void run_guile_script(char *script_scheme_file)
+      {
+      ScriptGuile::start(script_scheme_file);
+      }
+
+int main_nongui(int cargc, char **cargv,
+                QStringList argv,
+                bool script_scheme_shell,
+                char *script_scheme_file)
+      {
+      bool scriptMode = false;
+      if (script_scheme_file || script_scheme_shell) {
+            scriptMode = true;
+            }
+      std::cerr << "non-gui script_scheme_shell: " << script_scheme_shell << std::endl;
+      std::cerr << "non-gui script_scheme_file:  " << (script_scheme_file ? script_scheme_file : "") << std::endl;
+      std::cerr << "Process non-gui requests." << std::endl;
+      if (processNonGui(argv, scriptMode) == true) {
+            exit(EXIT_FAILURE);
+            }
+
+      if (script_scheme_file) {
+            std::cerr << "Running Guile/Scheme script." << std::endl;
+            run_guile_script(script_scheme_file);
+            }
+
+      if (script_scheme_shell) {
+            std::cerr << "Launching Guile/Scheme shell." << std::endl;
+            // Start Guile/Scheme script shell
+            ScriptGuile::start_shell(cargc, cargv);
+            std::cerr << "Exited  Guile/Scheme shell." << std::endl;
+            }
+      return 0;
+      }
+
+void * main_gui (void *)
+{
+      long ret = (long) qApp->exec();
+      return (void *) ret;
+      }
+
 //---------------------------------------------------------
 //   main
 //---------------------------------------------------------
@@ -7155,6 +7201,8 @@ int main(int argc, char* av[])
       parser.addOption(QCommandLineOption({"j", "job"}, "Process a conversion job", "file"));
       parser.addOption(QCommandLineOption({"e", "experimental"}, "Enable experimental features"));
       parser.addOption(QCommandLineOption({"c", "config-folder"}, "Override configuration and settings folder", "dir"));
+      parser.addOption(QCommandLineOption("script-scheme-shell", "Start GNU/Guile Scheme scripting interpreter REPL."));
+      parser.addOption(QCommandLineOption("script-scheme", "Run GNU/Guile Scheme file.", "file"));
       parser.addOption(QCommandLineOption({"t", "test-mode"}, "Set test mode flag for all files")); // this includes --template-mode
       parser.addOption(QCommandLineOption("run-test-script", "Run script tests listed in the command line arguments"));
       parser.addOption(QCommandLineOption({"M", "midi-operations"}, "Specify MIDI import operations file", "file"));
@@ -7167,6 +7215,7 @@ int main(int argc, char* av[])
       parser.addOption(QCommandLineOption("score-media", "Export all media (excepting mp3) for a given score in a single JSON file and print it to std out"));
       parser.addOption(QCommandLineOption("score-mp3", "Generates mp3 for the given score and export the data to a single JSON file, print it to std out"));
       parser.addOption(QCommandLineOption("score-parts-pdf", "Generates parts data for the given score and export the data to a single JSON file, print it to std out"));
+      parser.addOption(QCommandLineOption("no-gui", "Disable GUI (for batch jobs, etc)"));
       parser.addOption(QCommandLineOption("raw-diff", "Print a raw diff for the given scores"));
       parser.addOption(QCommandLineOption("diff", "Print a diff for the given scores"));
 
@@ -7338,6 +7387,9 @@ int main(int argc, char* av[])
                   qFatal("incompatible options");
             MScore::noGui = true;
             scriptTestMode = true;
+            }
+      if (parser.isSet("no-gui")) {
+            MScore::noGui = true;
             }
 
       QStringList argv = parser.positionalArguments();
@@ -7589,12 +7641,33 @@ int main(int argc, char* av[])
       mscore->setRevision(revision);
       int files = 0;
       bool restoredSession = false;
+      bool script_scheme_shell = false;
+      char *script_scheme_file  = NULL;
+
+      if (parser.isSet("script-scheme-shell")) {
+            script_scheme_shell = true;
+            }
+
+      if (parser.isSet("script-scheme")) {
+            QString temp = parser.value("script-scheme");
+            if (temp.isEmpty())
+                  parser.showHelp(EXIT_FAILURE);
+            // due to scope issue, take a copy of the string
+            script_scheme_file = strdup(temp.toLocal8Bit().data());
+            std::cout << "Guile/Scheme script: " << script_scheme_file << std::endl;
+            }
+      // if Guile/Scheme is requested, initialize it
+      if (script_scheme_shell || script_scheme_file) {
+            ScriptGuile::guile_init();
+            }
+
       if (MScore::noGui) {
+            std::cout << "No GUI requested." << std::endl;
 #ifdef Q_OS_MAC
             // see issue #28706: Hangup in converter mode with MusicXML source
             qApp->processEvents();
 #endif
-            exit(processNonGui(argv) ? 0 : EXIT_FAILURE);
+            return main_nongui(0, nullptr, argv, script_scheme_shell, script_scheme_file);
             }
       else {
             mscore->readSettings();
@@ -7686,7 +7759,21 @@ int main(int argc, char* av[])
       if (settings.value("synthControlVisible", false).toBool())
             mscore->showSynthControl(true);
 
-      return qApp->exec();
+      /* runs any Guile/Scheme script files, before running app */
+      if (script_scheme_file) {
+            run_guile_script(script_scheme_file);
+            }
+
+      if (script_scheme_shell) {
+            /* Starts a Guile/Scheme script shell thread on console */
+            ScriptGuile::start();
+            /* Runs MuseScore App inside a Guile/Scheme environment, giving it access to Guile/Scheme procedures */
+            return (int) ScriptGuile::start_func(main_gui);
+            }
+      else {
+            long x = (long) main_gui(nullptr);
+            return (int) x;
+            }
       }
 
 //---------------------------------------------------------

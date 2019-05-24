@@ -1390,6 +1390,8 @@ inline const Movements* Score::movements() const       { return _masterScore->mo
 extern MasterScore* gscore;
 extern void fixTicks();
 
+MasterScore* readScoreCString(char *);
+
 Q_DECLARE_OPERATORS_FOR_FLAGS(LayoutFlags);
 
 }     // namespace Ms
