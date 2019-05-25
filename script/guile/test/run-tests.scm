@@ -29,7 +29,8 @@
                         (cddr (file-system-tree "script/guile/test/t")))
                    string<)))
   (for-each (lambda (file)
-              (load-from-path (format #f "test/t/~a" file)))
+              (if (eqv? (string-contains-ci file "t_") 0)
+                (load-from-path (format #f "test/t/~a" file))))
             files))
 
 (format #t "Testing has finished.~%")
