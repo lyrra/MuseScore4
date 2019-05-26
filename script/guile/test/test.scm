@@ -1,9 +1,13 @@
 ;;;; test tools
 ;;;; probably replace this with some test framework
 
-; Load an scheme module that makes output print formatting nicer
-(use-modules (ice-9 format)) ; easier and nicer formatting
-(use-modules (ice-9 match)) ; match (a more expressive cond)
+(define-module (test test)
+               #:use-module (ice-9 format) ; easier and nicer formatting
+               #:use-module (ice-9 match)  ; match (a more expressive cond)
+               #:export (assert
+                         deftest
+                         *tests-num-pass*
+                         *tests-num-total*))
 
 ; define a simple assert macro that lets out quit when
 ; an error has occured. Check that the unix-return-code is 0.
@@ -27,13 +31,6 @@
 (define (test-pass)
   (set! *tests-num-pass* (+ *tests-num-pass* 1))
   123)
-
-(define-syntax-rule (deftest (name) exp ...)
-  (run-top-test 'name
-                (lambda ()
-                  (test-begin 'name)
-                  exp ...
-                  (test-pass))))
 
 ; Catch any errors, needed if this script is loaded from STDIN, where guile will put us in debugger and continue taking forms
 (define (run-test name func)
@@ -64,6 +61,9 @@
       ((not (equal? res 123))
        (format #t "  TEST-FAIL, result: ~s~%" res)))))
 
-(define-syntax-rule (assert expr msg ...)
-  (if (not expr)
-    (error msg ...)))
+(define-syntax-rule (deftest (name) exp ...)
+  (run-top-test 'name
+                (lambda ()
+                  (test-begin 'name)
+                  exp ...
+                  (test-pass))))

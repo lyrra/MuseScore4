@@ -1,4 +1,11 @@
 ;;;; FFI libmusescore functions interface
+(define-module (test ffi)
+               #:use-module (system foreign)
+               #:use-module (ice-9 match)
+               #:use-module (musescore-c)
+               ; No exports are done, see each macro were we export during macro expansion
+               )
+
 (eval-when (expand load eval)
 
 (define c++prefix "_ZN")
@@ -100,13 +107,15 @@
   (lambda (stx)
     (syntax-case stx ()
       ((def-ffi-c name parms ret mangle-directive . keyargs)
-       #`(define name
+       #`(begin
+          (export name)
+          (define name
                  #,(make-ffi-function stx
                     (syntax->datum #'name)
                     (syntax->datum #'parms)
                     (syntax->datum #'ret)
                     (syntax->datum #'mangle-directive)
-                    (syntax->datum #'keyargs)))))))
+                    (syntax->datum #'keyargs))))))))
 
 ) ; eval-when
 
@@ -236,13 +245,15 @@
         ((def name (score args ...) (c-ret c-args ...)
               mangle-directive)
          (let ((mangled (c++mangle (syntax->datum #'mangle-directive))))
-           #`(define (name score args ...)
+           #`(begin
+              (export name) ; kind of kludgy
+              (define (name score args ...)
                (let ((cfun (pointer->procedure c-ret
                             (dynamic-func #,mangled
                                           (dynamic-link))
                             c-args ...))
                      (ptr (get-score-ptr score)))
-                 (cfun ptr args ...)))))))))
+                 (cfun ptr args ...))))))))))
   (def ms-score-nstaves (score) (int '(*))
     (c Ms Score nstaves E v))
   (def ms-score-ntracks (score) (int '(*))

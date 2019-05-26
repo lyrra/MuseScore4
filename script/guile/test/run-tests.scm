@@ -4,10 +4,11 @@
                #:use-module (lib musescore)
                #:use-module (lib common)
                #:use-module (srfi srfi-43) ; vector library
+               #:use-module (test test) ; test framework
+               #:use-module (test common) ; test helper function/macros
                )
 
-(load-from-path "test/test.scm") ; Load testing framework
-(load-from-path "test/test-musescore.scm") ; Load tools used for testing musescore
+; test files
 
 (load-from-path "test/readme.scm")
 
@@ -24,10 +25,7 @@
            "test/slush.scm"
            "test/read-score-sxml.scm"))
 
-(use-modules (ice-9 ftw))
-(let ((files (sort (map car
-                        (cddr (file-system-tree "script/guile/test/t")))
-                   string<)))
+(let ((files (get-test-files "script/guile/test/t")))
   (for-each (lambda (file)
               (if (eqv? (string-contains-ci file "t_") 0)
                 (load-from-path (format #f "test/t/~a" file))))
