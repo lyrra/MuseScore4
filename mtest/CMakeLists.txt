@@ -17,6 +17,7 @@ include_directories(
       ${PROJECT_BINARY_DIR}
       ${PROJECT_SOURCE_DIR}
       )
+link_directories(${CMAKE_SOURCE_DIR}/lib)
 
 if (USE_SYSTEM_FREETYPE)
       include_directories(${FREETYPE_INCLUDE_DIRS})
@@ -143,6 +144,37 @@ add_executable(
       mtest.cpp
       )
 
+if (GUILE)
+      execute_process(COMMAND guile-config compile OUTPUT_VARIABLE GUILE_COMPILE OUTPUT_STRIP_TRAILING_WHITESPACE)
+      execute_process(COMMAND guile-config link OUTPUT_VARIABLE GUILE_LINK OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+      add_executable(
+            mtest-guile
+            mtest-guile.cpp
+            ${ui_headers}
+            )
+      target_link_libraries(
+            mtest-guile
+            ${QT_LIBRARIES}
+            "-L${PROJECT_BINARY_DIR}/libmscore -lmusescore -Wl,-rpath -Wl,${PROJECT_BINARY_DIR}/libmscore"
+            mscore_freetype
+            testutils
+            testResources
+            synthesizer
+            midi
+            qzip
+            z
+            )
+
+      target_link_libraries(mtest-guile ${GUILE_LINK})
+
+      set_target_properties (
+            mtest-guile
+            PROPERTIES
+            COMPILE_FLAGS "${GUILE_COMPILE}"
+            )
+endif (GUILE)
+
 target_link_libraries(
       mtest
       ${QT_LIBRARIES}
@@ -258,6 +290,10 @@ subdirs (
         testscript
         )
 
+configure_file(run-guile.sh
+               ${PROJECT_BINARY_DIR}/mtest
+               COPYONLY
+               )
 
 install(FILES
       ../share/styles/chords_std.xml
