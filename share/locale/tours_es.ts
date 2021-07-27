@@ -1,4 +1,6 @@
-<?xml version="1.0" ?><!DOCTYPE TS><TS language="es" version="2.1">
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
+<TS version="2.1" language="es">
 <context>
     <name>TourXML</name>
     <message>
@@ -321,7 +323,7 @@ y luego eligiendo uno de las opciones &quot;Seleccionar&quot; del menú desplega
         <comment>spanner-drop-apply</comment>
         <translation>La mayoría de los elementos en las lineas de la paleta tienen una gama de un elemento initial hasta un elemento final.
 
-Para editar su gama, doble clic the linea (que automaticatente selecionna su ... ) and:
+Para editar su gama, doble clic the linea (que automaticatente selecionna su … ) and:
 
  pulse Mayus-Derecha para mover este handle forward. 
 
@@ -338,8 +340,8 @@ Pulse Mayus-Izquierda para mover este handler backward. </translation>
     If you have multiple scores open, you can switch between them using tabs at the top of your score view.</source>
         <comment>welcome</comment>
         <translation>Esta es la vista de partituras, donde puede ver y editar sus partituras.
-     Use la rueda del mouse o el panel táctil para desplazarse (con &quot;Shift&quot; para desplazarse horizontalmente).
-     Si tiene varias partituras abiertas, puede cambiar entre ellas usando las pestañas en la parte superior de su vista de partituras.</translation>
+&#xa0;&#xa0;&#xa0;&#xa0; Use la rueda del mouse o el panel táctil para desplazarse (con &quot;Shift&quot; para desplazarse horizontalmente).
+&#xa0;&#xa0;&#xa0;&#xa0; Si tiene varias partituras abiertas, puede cambiar entre ellas usando las pestañas en la parte superior de su vista de partituras.</translation>
     </message>
     <message>
         <source>The File Operations toolbar allows you to create/save/open/print files and undo/redo changes.
@@ -358,7 +360,7 @@ Pulse Mayus-Izquierda para mover este handler backward. </translation>
    Adicionalmente, muchos comandos puede ser accedidos desde atajos de teclado o haciendo clic derecho (macOS: &quot;Ctrl&quot;+clic), en la vista de partitura.</translation>
     </message>
     <message>
-        <source>That's the end of this tour!
+        <source>That&apos;s the end of this tour!
     As you use MuseScore, more tours will pop up to further explain functionality.
     To disable these, deselect &quot;Continue showing tours&quot; before closing this window.
     You can also enable/disable and reset tours in Help &gt; Tours.</source>

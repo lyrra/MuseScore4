@@ -1,4 +1,6 @@
-<?xml version="1.0" ?><!DOCTYPE TS><TS language="fil" version="2.1">
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
+<TS version="2.1" language="fil">
 <context>
     <name>TourXML</name>
     <message>
@@ -9,12 +11,12 @@
     <message>
         <source>The Playback Controls toolbar allows you to play/pause your score and control various aspects of playback.</source>
         <comment>welcome</comment>
-        <translation>Pinapagkaloob sa iyo ng Playback Controls toolbar na mapatugtog/sandaling mapatigil ang iyong iskor at makontrol ang iba&apos;t ibang aspekto ng playback.</translation>
+        <translation>Pinagkakaloob sa iyo ng Playback Controls toolbar na mapatugtog/sandaling mapatigil ang iyong iskor at makontrol ang iba&apos;t ibang aspekto ng playback.</translation>
     </message>
     <message>
         <source>The Note Input toolbar allows you to enter notes and rests into your score.</source>
         <comment>welcome</comment>
-        <translation>Pinapagkaloob sa iyo ng Note Input toolbar na makapaglagay ng mga nota at pahinga sa iyong iskor.</translation>
+        <translation>Pinagkakaloob sa iyo ng Note Input toolbar na makapaglagay ng mga nota at pahinga sa iyong iskor.</translation>
     </message>
     <message>
         <source>The Palettes allow you to add most other notation elements to your score.</source>
@@ -39,7 +41,7 @@
         <comment>note-input</comment>
         <translation>Upang makapaglagay ng mga nota na may iba-ibang indayog sa iisang sukat, gumamit ng maraming boses.
     May hanggang apat na boses sa bawat limguhit.
-    Ang boses 1 ang ikukusa, at iyon ang dapat unahing gamitin sa bawat limguhit.
+    Ang boses 1 ang kusa, at iyon ang dapat unahing gamitin sa bawat limguhit.
     Upang makapaglagay ng mga nota sa ibang boses, magklik ng isa sa mga icon dito.</translation>
     </message>
     <message>
@@ -105,13 +107,13 @@ Upang ma-toggle muli ang tinatakdang ito, pindutin ang shortcut &quot;M&quot;.</
         <source>MuseScore provides many ways to navigate through your score.
     Click &quot;Next&quot; to learn more.</source>
         <comment>navigate-tour</comment>
-        <translation>Nagbibigay ng maraming paraan ang MuseScore upang makapalipat-lipat sa iyong iskor.
+        <translation>Nagbibigay ng maraming paraan ang MuseScore upang makalibot-libot sa iyong iskor.
     Iklik ang &quot;Susunod&quot; upang matuto pa.</translation>
     </message>
     <message>
         <source>Additional navigation tools include the Timeline and Navigator, both found in the View menu.</source>
         <comment>navigate-tour</comment>
-        <translation>Kabilang sa mga karagdagang kagamitan sa pagpalipat-lipat ang Hanay-panahon at Pampalipat-lipat, na kapwa matatagpuan sa &apos;Tingnan&apos; na menu.</translation>
+        <translation>Kabilang sa mga karagdagang kagamitan sa paglibot-libot ang Hanay-panahon at Panglibot, na kapwa matatagpuan sa &apos;Tingnan&apos; na menu.</translation>
     </message>
     <message>
         <source>Welcome to the Inspector, where you can change individual properties for selected elements.
@@ -144,33 +146,33 @@ Upang ma-toggle muli ang tinatakdang ito, pindutin ang shortcut &quot;M&quot;.</
     You can also manually adjust the position of autoplaced elements, or disable autoplace for selected elements.
     Click &quot;Next&quot; to learn more.</source>
         <comment>autoplace-tour</comment>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Autoplace positions most elements according to standard music engraving practice,
     such as by moving tempo markings above other text or by shortening hairpins to avoid dynamics.
     In many cases, this means that no further adjustments will be required at all.</source>
         <comment>autoplace-tour</comment>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>If necessary, you can fine-tune the position of elements by dragging, by using the cursor keys while in Edit mode (double-click),
     or by using the &quot;Offset&quot; fields in the Inspector.
     This allows you to make adjustments while leaving autoplace enabled to continue avoiding collisions.</source>
         <comment>autoplace-tour</comment>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>For larger adjustments, it may be more convenient to disable autoplace for selected elements using the Inspector.
     This will remove them from collision detection and allow you to place them more freely.</source>
         <comment>autoplace-tour</comment>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Welcome to the Timeline, where you can view a high-level reduction of the score for easier navigation.
     Click &quot;Next&quot; to learn more.</source>
         <comment>timeline-tour</comment>
-        <translation>Maligayang pagdating sa Hanay-panahon, na kung saan matitingnan mo ang isang mataas-na-antas na reduksyon ng iskor para sa lalong madaling pagpalipat-lipat.
+        <translation>Maligayang pagdating sa Hanay-panahon, na kung saan matitingnan mo ang isang mataas-na-antas na reduksyon ng iskor para sa lalong madaling paglibot-libot.
     Iklik ang &quot;Susunod&quot; upang matuto pa.</translation>
     </message>
     <message>
@@ -186,7 +188,7 @@ Upang ma-toggle muli ang tinatakdang ito, pindutin ang shortcut &quot;M&quot;.</
     If the box is highlighted, then there are notes in that measure.
     Boxes with a thin blue outline represent measures that are currently in view.</source>
         <comment>timeline-tour</comment>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>MuseScore supports different types of selections: single, list, and range.
@@ -198,34 +200,34 @@ Upang ma-toggle muli ang tinatakdang ito, pindutin ang shortcut &quot;M&quot;.</
     <message>
         <source>Finally, the Selection Filter (found in the View menu) allows you to exclude elements of a given type from a range selection.</source>
         <comment>select-tour</comment>
-        <translation>Bilang pangwakas, pinapagkaloob sa iyo ng Pangsala ng Seleksyon (matatagpuan sa &apos;Tingnan&apos; na menu) na ibukod ang mga elementong kabilang sa binigay na uri mula sa saklawang seleksyon.</translation>
+        <translation>Bilang pangwakas, pinagkakaloob sa iyo ng Salaan ng Seleksyon (matatagpuan sa &apos;Tingnan&apos; na menu) na ibukod ang mga elementong kabilang sa binigay na uri mula sa saklawang seleksyon.</translation>
     </message>
     <message>
         <source>If you have modified a value, you can click the &quot;Reset&quot; button to reset it to the default.
     If the value is controlled by a style setting, you can click the &quot;Set as style&quot; button to set the current value as the new default for the style.
     You can also set style defaults using Format &gt; Style….</source>
         <comment>inspector-tour</comment>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>The quickest way to scroll up and down is to use your mouse wheel or equivalent touch gesture (for example, two-finger swipe).
     To scroll horizontally, hold &quot;Shift&quot; while using the mouse wheel or touch gesture.</source>
         <comment>navigate-tour</comment>
-        <translation>Ang pinakamabilis na paraan ng pag-scroll pataas at pababa ay ang gamitin ang iyong gulong ng mouse o katumbas na touch gesture (halimbawa, ang dalawang-daliring pag-swipe).
-    Upang mag-scroll pahalang, panatilihin ang &quot;Shift&quot; habang ginagamit ang gulong ng mouse o ang touch gesture.</translation>
+        <translation>Ang pinakamabilis na paraan ng pag-scroll pataas at pababa ay gamitin ang iyong gulong ng mouse o katumbas na touch gesture (halimbawa, ang dalawang-daliring pag-swipe).
+    Upang mag-scroll pahalang, tagalan ang &quot;Shift&quot; habang ginagamit ang gulong ng mouse o ang touch gesture.</translation>
     </message>
     <message>
         <source>The navigation keys on your keyboard such as &quot;PgUp&quot;, &quot;PgDn&quot;, &quot;Home&quot;, and &quot;End&quot; function as in other applications
     to move between pages.
     Keyboards that lack these keys often provide equivalents such as &quot;Fn+Up/Down/Left/Right&quot;.</source>
         <comment>navigate-tour</comment>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>You can move the score short distances by clicking an empty area of the page and dragging.
     By the way, you can also select regions by holding &quot;Shift&quot; while dragging.</source>
         <comment>navigate-tour</comment>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>To enter a note of the selected duration, type its letter name or click on the staff.
@@ -257,7 +259,7 @@ Upang ma-toggle muli ang tinatakdang ito, pindutin ang shortcut &quot;M&quot;.</
     Tip: if you press the &quot;Alt&quot; key (&quot;Option&quot; on macOS) along with the cursor keys you can move through other elements too,
     and also move up and down from staff to staff.</source>
         <comment>select-tour</comment>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>A list selection is a combination of single selections.
@@ -265,7 +267,7 @@ Upang ma-toggle muli ang tinatakdang ito, pindutin ang shortcut &quot;M&quot;.</
     You can also quickly select similar elements by right-clicking (macOS: &quot;Ctrl&quot;+clicking) one
     and then choosing one of the &quot;Select&quot; options from the resulting popup menu.</source>
         <comment>select-tour</comment>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>A range selection includes everything from one point in time to another across one or more staves.
@@ -273,14 +275,16 @@ Upang ma-toggle muli ang tinatakdang ito, pindutin ang shortcut &quot;M&quot;.</
     To make a range selection, click the first note, rest, or measure you want to select, then &quot;Shift&quot;+click the last.
     You can also extend range selections by holding the &quot;Shift&quot; key while moving the cursor.</source>
         <comment>select-tour</comment>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Another way to make selections is to hold &quot;Shift&quot; while dragging.
     If your selection includes notes, it will automatically be made as a range selection;
     otherwise it will be made as a list selection.</source>
         <comment>select-tour</comment>
-        <translation type="unfinished"/>
+        <translation>Ang isa pang paraan ng pagseseleksyon ay panatilihin ang &quot;Shift&quot; habang naghihila.
+    Kung may nota sa iyong seleksyon, kusa iyong magiging saklawang seleksyon;
+    Kung hindi, magiging listahang seleksyon iyon.</translation>
     </message>
     <message>
         <source>Most elements on the lines palette span a range from a start element to an end element.
@@ -291,12 +295,12 @@ Upang ma-toggle muli ang tinatakdang ito, pindutin ang shortcut &quot;M&quot;.</
 
     - Press &quot;Shift+Left&quot; to move that handle backward.</source>
         <comment>spanner-drop-apply</comment>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Alternatively, first selecting a range of elements in the score and then double-clicking a line element in the palette will add that new element across the selected range.</source>
         <comment>spanner-drop-apply</comment>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>This is the score view, where you can view and edit your score.
@@ -312,7 +316,7 @@ Upang ma-toggle muli ang tinatakdang ito, pindutin ang shortcut &quot;M&quot;.</
     You can also save to your musescore.com account if you go to File &gt; Save Online.
     The controls at the right of this toolbar control the display of your score.</source>
         <comment>welcome</comment>
-        <translation>Pinapagkaloob sa iyo ng File Operations toolbar na maglikla/magtabi/magbukas/maglimbag ng mga file at ipawalang-bisa/isagawa-muli ang mga pagbabago.
+        <translation>Pinagkakaloob sa iyo ng File Operations toolbar na maglikha/magtabi/magbukas/maglimbag ng mga file at ipawalang-bisa/isagawa-muli ang mga pagbabago.
     Maaari ka ring magtabi sa iyong musescore.com account kung tutungo ka sa &apos;File&apos; &gt; Itabi Online.
     Kinokontrol ng mga kontrol sa kanan ng toolbar na ito ang pagpapakita ng iyong iskor.</translation>
     </message>
@@ -324,7 +328,7 @@ Upang ma-toggle muli ang tinatakdang ito, pindutin ang shortcut &quot;M&quot;.</
     Idagdag pa rito na maaakses ang mararaming utos mula sa mga shortcut sa tipahan o sa pagdadalawang-klik (macOS: &quot;Ctrl&quot;+pagklik) sa loob ng tanawin ng iskor.</translation>
     </message>
     <message>
-        <source>That's the end of this tour!
+        <source>That&apos;s the end of this tour!
     As you use MuseScore, more tours will pop up to further explain functionality.
     To disable these, deselect &quot;Continue showing tours&quot; before closing this window.
     You can also enable/disable and reset tours in Help &gt; Tours.</source>
