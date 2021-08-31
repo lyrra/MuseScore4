@@ -2314,6 +2314,7 @@ void Score::renderMidi(EventMap* events, bool metronome, bool expandRepeats, con
       ctx.metronome = metronome;
       ctx.renderHarmony = true;
       MidiRenderer(this).renderScore(events, ctx);
+      masterScore()->setExpandRepeats(MScore::playRepeats);
       }
 
 void MidiRenderer::renderScore(EventMap* events, const Context& ctx)
