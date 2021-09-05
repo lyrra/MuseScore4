@@ -15,6 +15,8 @@
  render score into event list
 */
 
+#include <stdlib.h>     /* rand */
+
 #include <set>
 
 #include "rendermidi.h"
@@ -1216,6 +1218,38 @@ void Score::swingAdjustParams(Chord* chord, int& gateTime, int& ontime, int swin
             }
       }
 
+//--------------------------------------------------------
+//   swingRandomAdjustParams
+//--------------------------------------------------------
+
+void Score::swingRandomAdjustParams(Chord* chord, int& gateTime, int& ontime)
+      {
+      Fraction tick = chord->rtick();
+      // adjust for anacrusis, cant use Measure::isAnacrusis() yet?
+      Measure* cm     = chord->measure();
+      MeasureBase* pm = cm->prev();
+      ElementType pt  = pm ? pm->type() : ElementType::INVALID;
+      boolean anacrusis = true;
+      if (!pm || pm->lineBreak() || pm->pageBreak() || pm->sectionBreak()
+         || pt == ElementType::VBOX || pt == ElementType::HBOX
+         || pt == ElementType::FBOX || pt == ElementType::TBOX) {
+            anacrusis = false;
+            }
+
+      // ticks is a random number of length chord-ticks
+      qreal ticks =  (qreal)(rand() % chord->actualTicks().ticks());
+      // take 10% of chords-ticks, which should be parameterizable
+      qreal ticksDuration     = (qreal)ticks * 0.5/*paramSwingRandom*/;
+
+      // if down-beat, reduce randomness further, also parameterizable
+      if (! anacrusis) {
+            ticksDuration *= 0.5/*paramSwingRandomDownbeat*/;
+            }
+
+      ontime = ontime + ticksDuration;
+      gateTime = gateTime + (ticksDuration/10);
+      }
+
 //---------------------------------------------------------
 //   isSubdivided
 //   Check for subdivided beat
@@ -2201,6 +2235,11 @@ void Score::createPlayEvents(Chord* chord)
       if (unit && !chord->tuplet()) {
             swingAdjustParams(chord, gateTime, ontime, unit, ratio);
             }
+      // randomly swing
+      fprintf(stderr, "Score::createPlayEvents(Chord) > maybe swingRandomAdjustParams\n");
+      if (! chord->tuplet()) {
+            swingRandomAdjustParams(chord, gateTime, ontime);
+            }
       //
       //    render normal (and articulated) chords
       //
@@ -2327,6 +2366,7 @@ void MidiRenderer::renderScore(EventMap* events, const Context& ctx)
 
 void MidiRenderer::renderChunk(const Chunk& chunk, EventMap* events, const Context& ctx)
       {
+      fprintf(stderr, "MidiRenderer::renderChunk(Chunk, EventMap, Context)\n");
       // TODO: avoid doing it multiple times for the same measures
       score->createPlayEvents(chunk.startMeasure(), chunk.endMeasure());
 
