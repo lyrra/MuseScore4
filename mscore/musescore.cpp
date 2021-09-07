@@ -209,6 +209,8 @@ bool exportScoreMeta = false;
 bool exportScoreMp3 = false;
 bool exportScorePartsPdf = false;
 bool needUpdateSource = false;
+static bool doSwingRandom = false;
+static qreal swingRandomAmount = 0.1;
 static bool exportTransposedScore = false;
 static QString transposeExportOptions;
 static QString highlightConfigPath;
@@ -2672,6 +2674,10 @@ void MuseScore::setCurrentScoreView(ScoreView* view)
                   }
             cs = cv->score();
             cv->setFocusRect();
+            if (doSwingRandom) { // wrong place for this block, but works..
+                  cv->score()->masterScore()->doSwingRandom = doSwingRandom;
+                  cv->score()->masterScore()->swingRandomAmount = swingRandomAmount;
+                  }
             }
       else
             cs = 0;
@@ -7598,6 +7604,7 @@ MuseScoreApplication::CommandLineParseResult MuseScoreApplication::parseCommandL
       parser.addOption(QCommandLineOption(      "source-update", "Update the source in the given score"));
       parser.addOption(QCommandLineOption(      "raw-diff", "Print a raw diff for the given scores"));
       parser.addOption(QCommandLineOption(      "diff", "Print a diff for the given scores"));
+      parser.addOption(QCommandLineOption(      "swing-random-amount", "Play notes with imperfect timing (affects Playback and Export-mp3).", "amount"));
 
       parser.addPositionalArgument("scorefiles", "The files to open", "[scorefile...]");
 
@@ -7781,6 +7788,19 @@ MuseScoreApplication::CommandLineParseResult MuseScoreApplication::parseCommandL
             transposeExportOptions = parser.value("score-transpose");
             MScore::noGui = true;
             converterMode = true;
+            }
+
+      if (parser.isSet("swing-random-amount")) {
+            doSwingRandom = true;
+            QString temp = parser.value("swing-random-amount");
+            if (temp.isEmpty()) {
+                  parser.showHelp(EXIT_FAILURE);
+                  }
+            bool ok = false;
+            swingRandomAmount = temp.toDouble(&ok);
+            if (!ok) {
+                  qFatal("swingRandomAmount value syntax-error: '%s'\n", qPrintable(temp));
+                  }
             }
 
       if (parser.isSet("source-update")) {

@@ -1224,12 +1224,13 @@ void Score::swingAdjustParams(Chord* chord, int& gateTime, int& ontime, int swin
 
 void Score::swingRandomAdjustParams(Chord* chord, int& gateTime, int& ontime)
       {
+      qreal amount = masterScore()->swingRandomAmount;
       Fraction tick = chord->rtick();
       // adjust for anacrusis, cant use Measure::isAnacrusis() yet?
       Measure* cm     = chord->measure();
       MeasureBase* pm = cm->prev();
       ElementType pt  = pm ? pm->type() : ElementType::INVALID;
-      boolean anacrusis = true;
+      bool anacrusis = true;
       if (!pm || pm->lineBreak() || pm->pageBreak() || pm->sectionBreak()
          || pt == ElementType::VBOX || pt == ElementType::HBOX
          || pt == ElementType::FBOX || pt == ElementType::TBOX) {
@@ -1239,11 +1240,11 @@ void Score::swingRandomAdjustParams(Chord* chord, int& gateTime, int& ontime)
       // ticks is a random number of length chord-ticks
       qreal ticks =  (qreal)(rand() % chord->actualTicks().ticks());
       // take 10% of chords-ticks, which should be parameterizable
-      qreal ticksDuration     = (qreal)ticks * 0.5/*paramSwingRandom*/;
+      qreal ticksDuration     = (qreal)ticks * amount;
 
       // if down-beat, reduce randomness further, also parameterizable
       if (! anacrusis) {
-            ticksDuration *= 0.5/*paramSwingRandomDownbeat*/;
+            ticksDuration *= 0.6 /*paramSwingRandomDownbeat*/;
             }
 
       ontime = ontime + ticksDuration;
@@ -2236,8 +2237,8 @@ void Score::createPlayEvents(Chord* chord)
             swingAdjustParams(chord, gateTime, ontime, unit, ratio);
             }
       // randomly swing
-      fprintf(stderr, "Score::createPlayEvents(Chord) > maybe swingRandomAdjustParams\n");
-      if (! chord->tuplet()) {
+      if (masterScore()->doSwingRandom &&
+          (! chord->tuplet())) {
             swingRandomAdjustParams(chord, gateTime, ontime);
             }
       //

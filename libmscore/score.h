@@ -1444,6 +1444,8 @@ class MasterScore : public Score {
 
       virtual MStyle& style() override                   { return movements()->style();       }
       virtual const MStyle& style() const override       { return movements()->style();       }
+      bool doSwingRandom;
+      qreal swingRandomAmount;
       };
 
 //---------------------------------------------------------
