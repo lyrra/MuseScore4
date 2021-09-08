@@ -1221,11 +1221,13 @@ void Score::swingAdjustParams(Chord* chord, int& gateTime, int& ontime, int swin
 //--------------------------------------------------------
 //   swingRandomAdjustParams
 //--------------------------------------------------------
-
+  
 void Score::swingRandomAdjustParams(Chord* chord, int& gateTime, int& ontime)
       {
       qreal amount = masterScore()->swingRandomAmount;
       Fraction tick = chord->rtick();
+      qreal tempo = chord->score()->tempo(tick);
+      int ticksPerSecond = tempo * MScore::division;
       // adjust for anacrusis, cant use Measure::isAnacrusis() yet?
       Measure* cm     = chord->measure();
       MeasureBase* pm = cm->prev();
@@ -1236,19 +1238,32 @@ void Score::swingRandomAdjustParams(Chord* chord, int& gateTime, int& ontime)
          || pt == ElementType::FBOX || pt == ElementType::TBOX) {
             anacrusis = false;
             }
+      int actualTicks = chord->actualTicks().ticks();
+      // restriction on displacement, relative to note-value, and maximum-millisecond
+      qreal t_maxNoteLen = (qreal) actualTicks / 4L;
+      qreal t_maxMilli = (((qreal)ticksPerSecond) * 25L / 1000L);
+      // use the lowest amount, ie dont displace note more than a quarter of its note-value,
+      // nor displace note more than 25ms
+      qreal randLen = (t_maxNoteLen < t_maxMilli ? t_maxNoteLen : t_maxMilli);
+      qreal randTicks = (qreal) (rand() % (1 + (int) randLen));
 
-      // ticks is a random number of length chord-ticks
-      qreal ticks =  (qreal)(rand() % chord->actualTicks().ticks());
-      // take 10% of chords-ticks, which should be parameterizable
-      qreal ticksDuration     = (qreal)ticks * amount;
+      fprintf(stderr, "m:%lx c:%lx, gateTime=%d onTime=%d tick=%d/%d note-len(ticks):%d(%d) note-dis(ms):%f (%f, %f)\n",
+              cm, chord,
+              gateTime, ontime,
+              tick.numerator(), tick.denominator(),
+              tick.ticks(), actualTicks,
+              randTicks / (qreal) ticksPerSecond,
+              t_maxNoteLen, t_maxMilli);
+      // 'amount' comes from command-line, a number between 0-1
+      qreal ticksDisplace = randTicks * amount;
 
-      // if down-beat, reduce randomness further, also parameterizable
+      // if down-beat, reduce randomness
       if (! anacrusis) {
-            ticksDuration *= 0.6 /*paramSwingRandomDownbeat*/;
+            ticksDisplace *= 0.6 /* FIX: hard coded paramSwingRandomDownbeat*/;
             }
 
-      ontime = ontime + ticksDuration;
-      gateTime = gateTime + (ticksDuration/10);
+      ontime = ontime + ticksDisplace;
+      gateTime = gateTime + (ticksDisplace/10);
       }
 
 //---------------------------------------------------------
