@@ -415,7 +415,8 @@ int JackAudio::processAudio(jack_nframes_t frames, void* p)
          std::vector<float> vBuffer(frames * 2);
          float* buffer = vBuffer.data();
 #endif
-            audio->seq->process((unsigned)frames, buffer);
+      mux_process_bufferStereo((unsigned int)frames, buffer);
+      if (l && r) {
             float* sp = buffer;
             for (unsigned i = 0; i < frames; ++i) {
                   *l++ = *sp++;
