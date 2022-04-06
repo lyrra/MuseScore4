@@ -733,13 +733,22 @@ void Seq::addCountInClicks()
  *
  */
 
+#define MUX_CHAN 2
+#define MUX_RINGSIZE (8192*2)
+#define MUX_CHUNKSIZE (2048*2)
+#define MUX_READER_USLEEP 10
+#define MUX_WRITER_USLEEP 100
 
-int g_do_work = 0;
-unsigned int g_numFrames;
 unsigned int g_ringBufferWriterStart = 0;
 unsigned int g_ringBufferReaderStart = 0;
-float g_ringBufferStereo[8192*2];
-float g_chunkBufferStereo[1024*2];
+float g_ringBufferStereo[MUX_RINGSIZE];
+// minimal amount of work considered feasible (performance-wise)
+float g_chunkBufferStereo[MUX_CHUNKSIZE];
+
+unsigned int g_readerCycle = 0;
+unsigned int g_writerCycle = 0;
+unsigned int g_readerPause = 0;
+unsigned int g_writerPause = 0;
 
 int mux_is_score_open () {
     return seq->score() ? 1 : 0;
@@ -752,50 +761,94 @@ void mux_send_event (Event e) {
 // this function is called by the realtime-context,
 // and is reading from the ring-buffer
 void mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
-    g_numFrames = numFrames;
-    g_do_work = 1;
-    while(g_do_work); // yes, spin-loop because we are in realtime-context
-    // memcpy(bufferStereo, g_ringBufferStereo, sizeof(float) * 2 * numFrames);
-    for (int i = 0; i < numFrames * 2; i++) {
-        bufferStereo[i] =
-         g_ringBufferStereo[(i + g_ringBufferReaderStart) % (8192*2)];
+    // we're in realtime-context, and shouldn't do any syscalls,
+    // or sleep because there is no maximum sleep-amount guarantees,
+    // if paranoid, just spin-loop
+    while (1) {
+        unsigned int newReaderPos = (g_ringBufferReaderStart + numFrames * MUX_CHAN) % MUX_RINGSIZE;
+        // ensure we dont read into writers buffer part
+        if (// if reader wraps around and goes beyond writer
+            (g_ringBufferReaderStart > newReaderPos &&
+             newReaderPos > g_ringBufferWriterStart) ||
+            // no wrap, writer is at right side of reader, but new reader goes beyond writer
+            (g_ringBufferWriterStart > g_ringBufferReaderStart &&
+             newReaderPos > g_ringBufferWriterStart)) {
+            g_readerPause++;
+            std::this_thread::sleep_for(std::chrono::microseconds(MUX_READER_USLEEP));
+        } else { // there is enough room in reader-part of ring-buffer to use
+            for (unsigned int i = 0; i < numFrames * MUX_CHAN; i++) {
+                bufferStereo[i] =
+                 g_ringBufferStereo[(i + g_ringBufferReaderStart) % MUX_RINGSIZE];
+            }
+            if (newReaderPos < g_ringBufferReaderStart) {
+                g_readerCycle++;
+            }
+            /*
+            std::cout << "reader: [" << g_ringBufferReaderStart << " - " << newReaderPos << "]"
+                      << "r/w: [" << g_ringBufferReaderStart << " - " << g_ringBufferWriterStart << "]"
+                      << " c:[" << g_readerCycle << ", " << g_writerCycle << "] "
+                      << " p:[" << g_readerPause << ", " << g_writerPause << "]\n";
+            */
+            g_ringBufferReaderStart = newReaderPos;
+            break;
+        }
     }
 }
+
 
 // this is the non-realtime part, and is requested to do work
 // by the realtime-part, and then buffering its work-content
 // and is writing to the ring-buffer
-void mux_audio_process_work() {
-    // process number of g_numFrames, in chunks of 1024 frames (2048 floats in stereo)
-    unsigned int lenWork = g_numFrames;
-    while (lenWork > 0) {
-        unsigned int len = 1024; // suggest doing this amount of work
-        if (len > lenWork ) { // less than 1024 frames left to process
-            len = lenWork;
-        }
-        // reset the chunk we're going to use
-        memset(g_chunkBufferStereo, 0, sizeof(float) * 2 * len);
-        // fill the chunk with audio content
-        seq->process(len, g_chunkBufferStereo);
-        // copy over the chunk to the ringbuffer
-        for (int i = 0; i < len * 2; i++) {
-            g_ringBufferStereo[(i + g_ringBufferWriterStart) % (8192*2)] =
-             g_chunkBufferStereo[i];
-        }
-        lenWork -= len;
+int mux_audio_process_work() {
+    unsigned int newWriterPos = (g_ringBufferWriterStart + MUX_CHUNKSIZE) % MUX_RINGSIZE;
+
+    // ensure we dont overwrite part of buffer that is being read by reader
+    // if writer wraps around and goes beyond reader
+    if (g_ringBufferReaderStart < g_ringBufferWriterStart &&
+        g_ringBufferWriterStart > newWriterPos &&
+        newWriterPos >= g_ringBufferReaderStart) {
+        return 0;
+    // wraps around, but goes beyond reader
+    } else if (g_ringBufferWriterStart < g_ringBufferReaderStart &&
+               newWriterPos < g_ringBufferWriterStart) {
+        return 0;
+    // no wrap, reader is at right side of writer, but new writer goes beyond reader
+    } else if (g_ringBufferWriterStart < g_ringBufferReaderStart &&
+               newWriterPos >= g_ringBufferReaderStart) {
+        return 0;
     }
+
+    // process a MUX_CHUNKSIZE number of Frames
+    memset(g_chunkBufferStereo, 0, sizeof(float) * MUX_CHUNKSIZE);
+    // fill the chunk with audio content
+    seq->process(MUX_CHUNKSIZE >> 1, g_chunkBufferStereo);
+    // copy over the chunk to the ringbuffer
+    for (unsigned int i = 0; i < MUX_CHUNKSIZE; i++) {
+        g_ringBufferStereo[(i + g_ringBufferWriterStart) % (MUX_RINGSIZE)] =
+         g_chunkBufferStereo[i];
+    }
+    if (newWriterPos < g_ringBufferWriterStart) {
+        g_writerCycle++;
+    }
+    /*
+
+    std::cout << "writer: [" << g_ringBufferWriterStart << " - " << newWriterPos << "] "
+              << "r/w: [" << g_ringBufferReaderStart << " - " << g_ringBufferWriterStart << "]"
+              << " c:[" << g_readerCycle << ", " << g_writerCycle << "] "
+              << " p:[" << g_readerPause << ", " << g_writerPause << "]\n";
+    */
+    g_ringBufferWriterStart = newWriterPos;
+    return 1;
 }
 
 void mux_audio_process() {
     int n;
-    int slept = 10;
+    int slept = MUX_WRITER_USLEEP; // we cant sleep longer than the jack-audio-period = (numFrames / SampleRate) seconds
     while (mux_audio_process_run) {
-        if (g_do_work) {
-            mux_audio_process_work();
-            g_do_work = 0;
+        if (! mux_audio_process_work()) { // no work was done, sleep
+            g_writerPause++;
+            std::this_thread::sleep_for(std::chrono::microseconds(slept));
         }
-        //std::cout << "MUX audio-process.\n";
-        std::this_thread::sleep_for(std::chrono::milliseconds(slept));
     }
     std::cout << "MUX audio-process terminated.\n";
 }
