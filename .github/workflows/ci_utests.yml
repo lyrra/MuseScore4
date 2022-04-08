@@ -3,7 +3,16 @@ name: CI_utests
 on:
   pull_request:
     branches:
+    - 3.x
     - master-to-3.x
+  schedule:
+    - cron: '0 4 */1 * *' # At 04:00 on every day-of-month
+  workflow_dispatch:
+    inputs:
+      build_mode:
+        description: 'Test mode: all, modules'
+        required: true
+        default: 'all'
 
 jobs:
   run_tests:
