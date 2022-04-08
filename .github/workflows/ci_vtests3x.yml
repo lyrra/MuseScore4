@@ -12,6 +12,10 @@ on:
         description: 'Test mode: all, modules'
         required: true
         default: 'all'
+      compare_commit:
+        description: 'git-commit to compare vtests against'
+        required: false
+        default: ''
 
 jobs:
   run_vtests:
@@ -22,9 +26,13 @@ jobs:
       with:
         fetch-depth: 0
     - name: Retrieve base commit for PR
-      if: github.event_name == 'pull_request'
       run: |
+        export found=1
+        if [ -n "${{ github.event.inputs.compare_commit }}" ]; then
+        export BASEREF=${{ github.event.inputs.compare_commit }}
+        elif [ -n "${{ github.event.pull_request.base.sha }}" ]; then
         export BASEREF=${{ github.event.pull_request.base.sha }}
+        fi
         if [ -z "$BASEREF" ]; then
         export found=0
         else
