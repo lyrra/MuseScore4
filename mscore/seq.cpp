@@ -876,6 +876,68 @@ void mux_stop_threads()
     seqThreads[0].join();
 }
 
+static unsigned int jack_position_frame;
+static unsigned int jack_position_valid;
+static unsigned int jack_position_beats_per_minute;
+static unsigned int jack_position_BBT;
+
+void mux_set_jack_position(unsigned int frame,
+                           unsigned int valid,
+                           unsigned int beats_per_minute,
+                           unsigned int bbt)
+{
+    // writer-reader race-condition exists
+    jack_position_frame = frame;
+    jack_position_valid = valid;
+    jack_position_beats_per_minute = beats_per_minute;
+    jack_position_BBT = bbt;
+}
+//---------------------------------------------------------
+//   checkTransportSeek
+//   The opposite of Timebase master:
+//   check JACK Transport for a new position or tempo.
+//---------------------------------------------------------
+
+static void checkTransportSeek(int cur_frame, int nframes, bool inCountIn)
+      {
+      if (!seq || !seq->score() || inCountIn)
+            return;
+
+      if (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT)) {
+            if (mscore->playPanelInterface() && mscore->playPanelInterface()->isSpeedSliderPressed())
+                  return;
+            int cur_utick = seq->score()->utime2utick((qreal)cur_frame / MScore::sampleRate);
+            int utick     = seq->score()->utime2utick((qreal)jack_position_frame / MScore::sampleRate);
+
+            // Conversion is not precise, should check frames and uticks
+            if (labs((long int)cur_frame - (long int)jack_position_frame)>nframes + 1 && abs(utick - cur_utick)> seq->score()->utime2utick((qreal)nframes / MScore::sampleRate) + 1) {
+                  if (MScore::debugMode)
+                        qDebug()<<"JACK Transport position changed, cur_frame: "<<cur_frame<<",pos.frame: "<<jack_position_frame<<", frame diff: "<<labs((long int)cur_frame - (long int)jack_position_frame)<<"cur utick:"<<cur_utick<<",seek to utick: "<<utick<<", tick diff: "<<abs(utick - cur_utick);
+                  seq->seekRT(utick);
+                  }
+            }
+
+      // Tempo
+      if (!preferences.getBool(PREF_IO_JACK_TIMEBASEMASTER)  && (jack_position_valid & jack_position_BBT)) {
+            if (!seq->score()->tempomap())
+                  return;
+
+            if (int(jack_position_beats_per_minute) != int(60 * seq->curTempo() * seq->score()->tempomap()->relTempo())) {
+                  if (MScore::debugMode)
+                        qDebug()<<"JACK Transport tempo changed! JACK bpm: "<<(int)jack_position_beats_per_minute<<", current bpm: "<<int(60 * seq->curTempo() * seq->score()->tempomap()->relTempo());
+                  if (60 * seq->curTempo() == 0.0)
+                        return;
+                  qreal newRelTempo = jack_position_beats_per_minute / (60* seq->curTempo());
+                  seq->setRelTempo(newRelTempo);
+                  // Update UI
+                  if (mscore->getPlayPanel()) {
+                        mscore->playPanelInterface()->setSpeed(newRelTempo);
+                        mscore->playPanelInterface()->setTempo(seq->curTempo() * newRelTempo);
+                        }
+                  }
+            }
+      }
+
 //-------------------------------------------------------------------
 //   process
 //    This function is called in a realtime context. This
@@ -888,7 +950,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
       unsigned framesRemain = framesPerPeriod; // the number of frames remaining to be processed by this call to Seq::process
       Transport driverState = _driver->getState();
       // Checking for the reposition from JACK Transport
-      _driver->checkTransportSeek(playFrame, framesRemain, inCountIn);
+      checkTransportSeek(playFrame, framesRemain, inCountIn);
 
       if (driverState != state) {
             // Got a message from JACK Transport panel: Play

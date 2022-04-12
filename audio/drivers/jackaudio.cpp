@@ -43,6 +43,8 @@
 
 namespace Ms {
 
+jack_client_t* g_client; // used by static member function needing jack-client access
+
 //---------------------------------------------------------
 //   JackAudio
 //---------------------------------------------------------
@@ -415,6 +417,11 @@ int JackAudio::processAudio(jack_nframes_t frames, void* p)
          std::vector<float> vBuffer(frames * 2);
          float* buffer = vBuffer.data();
 #endif
+      {
+          jack_position_t pos;
+          jack_transport_query(g_client, &pos);
+          mux_set_jack_position(pos.frame, pos.valid, pos.beats_per_minute, JackPositionBBT);
+      }
       mux_process_bufferStereo((unsigned int)frames, buffer);
       if (l && r) {
             float* sp = buffer;
@@ -476,7 +483,7 @@ bool JackAudio::init(bool hot)
 
       jack_options_t options = (jack_options_t)0;
       jack_status_t status;
-      client = jack_client_open(_jackName, options, &status);
+      g_client = client = jack_client_open(_jackName, options, &status);
 
       if (client == 0) {
             qDebug("JackAudio()::init(): failed, status 0x%0x", status);
@@ -679,55 +686,6 @@ void JackAudio::handleTimeSigTempoChanged()
       timeSigTempoChanged = true;
       }
 
-//---------------------------------------------------------
-//   checkTransportSeek
-//   The opposite of Timebase master:
-//   check JACK Transport for a new position or tempo.
-//---------------------------------------------------------
-
-void JackAudio::checkTransportSeek(int cur_frame, int nframes, bool inCountIn)
-      {
-      if (!seq || !seq->score() || inCountIn)
-            return;
-
-      // Obtaining the current JACK Transport position
-      jack_position_t pos;
-      jack_transport_query(client, &pos);
-
-      if (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT)) {
-            if (mscore->playPanelInterface() && mscore->playPanelInterface()->isSpeedSliderPressed())
-                  return;
-            int cur_utick = seq->score()->utime2utick((qreal)cur_frame / MScore::sampleRate);
-            int utick     = seq->score()->utime2utick((qreal)pos.frame / MScore::sampleRate);
-
-            // Conversion is not precise, should check frames and uticks
-            if (labs((long int)cur_frame - (long int)pos.frame)>nframes + 1 && abs(utick - cur_utick)> seq->score()->utime2utick((qreal)nframes / MScore::sampleRate) + 1) {
-                  if (MScore::debugMode)
-                        qDebug()<<"JACK Transport position changed, cur_frame: "<<cur_frame<<",pos.frame: "<<pos.frame<<", frame diff: "<<labs((long int)cur_frame - (long int)pos.frame)<<"cur utick:"<<cur_utick<<",seek to utick: "<<utick<<", tick diff: "<<abs(utick - cur_utick);
-                  seq->seekRT(utick);
-                  }
-            }
-
-      // Tempo
-      if (!preferences.getBool(PREF_IO_JACK_TIMEBASEMASTER)  && (pos.valid & JackPositionBBT)) {
-            if (!seq->score()->tempomap())
-                  return;
-
-            if (int(pos.beats_per_minute) != int(60 * seq->curTempo() * seq->score()->tempomap()->relTempo())) {
-                  if (MScore::debugMode)
-                        qDebug()<<"JACK Transport tempo changed! JACK bpm: "<<(int)pos.beats_per_minute<<", current bpm: "<<int(60 * seq->curTempo() * seq->score()->tempomap()->relTempo());
-                  if (60 * seq->curTempo() == 0.0)
-                        return;
-                  qreal newRelTempo = pos.beats_per_minute / (60* seq->curTempo());
-                  seq->setRelTempo(newRelTempo);
-                  // Update UI
-                  if (mscore->getPlayPanel()) {
-                        mscore->playPanelInterface()->setSpeed(newRelTempo);
-                        mscore->playPanelInterface()->setTempo(seq->curTempo() * newRelTempo);
-                        }
-                  }
-            }
-      }
 
 //---------------------------------------------------------
 //   seekTransport
