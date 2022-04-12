@@ -82,7 +82,6 @@ class JackAudio : public Driver {
       virtual void registerPort(const QString& name, bool input, bool midi);
       virtual void unregisterPort(jack_port_t*);
       virtual void handleTimeSigTempoChanged();
-      virtual void checkTransportSeek(int, int, bool);
       virtual int bufferSize() {return _segmentSize;}
       void setBufferSize(int nframes) { _segmentSize = nframes;}
       void updateOutPortCount(int);
