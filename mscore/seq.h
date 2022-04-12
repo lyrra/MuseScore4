@@ -42,6 +42,7 @@ void mux_set_jack_position(unsigned int frame,
                            unsigned int valid,
                            unsigned int beats_per_minute,
                            unsigned int bbt);
+void mux_set_jack_transport(Transport transport);
 /****************************/
 
 class Note;

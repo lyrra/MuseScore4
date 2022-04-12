@@ -26,9 +26,12 @@
 
 namespace Ms {
 
+Transport getStateRT();
+
 class Synth;
 class Seq;
 class MidiDriver;
+
 
 //---------------------------------------------------------
 //   JackAudio

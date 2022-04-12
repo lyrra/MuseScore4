@@ -44,6 +44,7 @@
 namespace Ms {
 
 jack_client_t* g_client; // used by static member function needing jack-client access
+Transport g_fakeState;
 
 //---------------------------------------------------------
 //   JackAudio
@@ -417,6 +418,7 @@ int JackAudio::processAudio(jack_nframes_t frames, void* p)
          std::vector<float> vBuffer(frames * 2);
          float* buffer = vBuffer.data();
 #endif
+      mux_set_jack_transport(getStateRT());
       {
           jack_position_t pos;
           jack_transport_query(g_client, &pos);
@@ -479,6 +481,7 @@ bool JackAudio::init(bool hot)
       client = 0;
       timeSigTempoChanged = false;
       fakeState = Transport::STOP;
+      g_fakeState = Transport::STOP;
       strcpy(_jackName, "mscore");
 
       jack_options_t options = (jack_options_t)0;
@@ -526,7 +529,7 @@ void JackAudio::startTransport()
       if (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT))
             jack_transport_start(client);
       else
-            fakeState = Transport::PLAY;
+            g_fakeState = fakeState = Transport::PLAY;
       }
 
 //---------------------------------------------------------
@@ -538,18 +541,22 @@ void JackAudio::stopTransport()
       if (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT))
             jack_transport_stop(client);
       else
-            fakeState = Transport::STOP;
+            g_fakeState = fakeState = Transport::STOP;
       }
 
 //---------------------------------------------------------
 //   getState
 //---------------------------------------------------------
-
 Transport JackAudio::getState()
       {
+      return fakeState;
+      }
+
+Transport getStateRT()
+      {
       if (!preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT))
-            return fakeState;
-      int transportState = jack_transport_query(client, NULL);
+            return g_fakeState;
+      int transportState = jack_transport_query(g_client, NULL);
       switch (transportState) {
             case JackTransportStopped:  return Transport::STOP;
             case JackTransportLooping:
