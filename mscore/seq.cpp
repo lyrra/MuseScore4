@@ -67,6 +67,7 @@ void mux_start_threads();
 void mux_stop_threads();
 static int mux_audio_process_run = 0;
 static std::vector<std::thread> seqThreads;
+static Transport jack_transport;
 
 Seq* seq;
 
@@ -391,8 +392,9 @@ void Seq::start()
 
 void Seq::stop()
       {
+      std::cout << "---- Seq::stop ----------------------\n";
       const bool seqStopped = (state == Transport::STOP);
-      const bool driverStopped = !_driver || _driver->getState() == Transport::STOP;
+      const bool driverStopped = !_driver || jack_transport == Transport::STOP;
       if (seqStopped && driverStopped)
             return;
 
@@ -403,7 +405,7 @@ void Seq::stop()
             }
       if (!_driver)
             return;
-      if (!preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) || (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) && _driver->getState() == Transport::PLAY))
+      if (!preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) || (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) && jack_transport == Transport::PLAY))
             stopTransport();
       if (cv)
             cv->setCursorOn(false);
@@ -892,6 +894,11 @@ void mux_set_jack_position(unsigned int frame,
     jack_position_beats_per_minute = beats_per_minute;
     jack_position_BBT = bbt;
 }
+
+void mux_set_jack_transport(Transport transport) {
+    jack_transport = transport;
+}
+
 //---------------------------------------------------------
 //   checkTransportSeek
 //   The opposite of Timebase master:
@@ -948,7 +955,7 @@ static void checkTransportSeek(int cur_frame, int nframes, bool inCountIn)
 void Seq::process(unsigned framesPerPeriod, float* buffer)
       {
       unsigned framesRemain = framesPerPeriod; // the number of frames remaining to be processed by this call to Seq::process
-      Transport driverState = _driver->getState();
+      Transport driverState = jack_transport;
       // Checking for the reposition from JACK Transport
       checkTransportSeek(playFrame, framesRemain, inCountIn);
 
