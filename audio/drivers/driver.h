@@ -49,7 +49,6 @@ class Driver {
       virtual void putEvent(const NPlayEvent&, unsigned /*framePos*/) {}
       virtual void midiRead() {}
       virtual void handleTimeSigTempoChanged() {}
-      virtual void checkTransportSeek(int, int, bool) {}
       virtual int bufferSize() {return 0;}
       virtual void updateOutPortCount(int) {}
       };
