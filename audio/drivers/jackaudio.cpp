@@ -36,6 +36,7 @@
 #include "mscore/musescore.h"
 #include "mscore/preferences.h"
 #include "mscore/seq.h"
+#include "mscore/mux.h"
 #include "mscore/iplaypanel.h"
 
 // Prevent killing sequencer with wrong data
@@ -521,7 +522,7 @@ void JackAudio::startTransport()
       }
 
 //---------------------------------------------------------
-//   stopTrasnport
+//   stopTransport
 //---------------------------------------------------------
 
 void JackAudio::stopTransport()
