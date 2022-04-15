@@ -51,8 +51,12 @@ struct Msg {
 };
 
 int mux_mq_from_audio_writer_put (struct Msg msg);
+int mux_mq_to_audio_writer_put (struct Msg msg);
+int mux_mq_to_audio_visit();
 
 void mux_set_jack_position(struct JackTransportPosition jackTransportPosition);
+void mux_audio_jack_transport_start();
+void mux_audio_jack_transport_stop();
 
 } // namespace Ms
 #endif

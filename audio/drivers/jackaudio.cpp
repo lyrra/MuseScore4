@@ -44,6 +44,7 @@
 
 namespace Ms {
 
+JackAudio *g_jackaudio;
 jack_client_t* g_client; // used by static member function needing jack-client access
 Transport g_fakeState;
 
@@ -59,6 +60,14 @@ void mux_send_event (Event e) {
     msg.type = MsgTypeEventToGui;
     memcpy(&msg.payload.sparseEvent, &se, sizeof(struct SparseEvent));
     mux_mq_from_audio_writer_put(msg);
+}
+
+void mux_audio_jack_transport_start() {
+    g_jackaudio->startTransport();
+}
+
+void mux_audio_jack_transport_stop() {
+    g_jackaudio->stopTransport();
 }
 
 //---------------------------------------------------------
@@ -445,6 +454,9 @@ int JackAudio::processAudio(jack_nframes_t frames, void* p)
           msg.payload.jackTransportPosition.bbt = JackPositionBBT;
           mux_mq_from_audio_writer_put(msg);
       }
+      // check messages from audio-thread
+      mux_mq_to_audio_visit();
+      // get audiochunk from mux/mscore-thread
       mux_process_bufferStereo((unsigned int)frames, buffer);
       if (l && r) {
             float* sp = buffer;
@@ -493,6 +505,7 @@ static void noJackError(const char*  s )
 
 bool JackAudio::init(bool hot)
       {
+      g_jackaudio = this;
       if (hot) {
             hotPlug();
             return true;
