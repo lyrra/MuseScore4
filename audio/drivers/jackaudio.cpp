@@ -589,7 +589,7 @@ Transport getStateRT()
             case JackTransportStopped:  return Transport::STOP;
             case JackTransportLooping:
             case JackTransportRolling:  return Transport::PLAY;
-            case JackTransportStarting: return seq->isPlaying()?Transport::PLAY:Transport::STOP;// Keep current state
+            case JackTransportStarting: return Transport::PLAY;
             default:
                   return Transport::STOP;
             }
