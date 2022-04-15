@@ -47,6 +47,20 @@ namespace Ms {
 jack_client_t* g_client; // used by static member function needing jack-client access
 Transport g_fakeState;
 
+void mux_send_event (Event e) {
+    struct SparseEvent se;
+    se.type    = e.type();
+    se.channel = e.channel();
+    se.pitch   = e.pitch();
+    se.velo    = e.velo();
+    se.cont    = e.controller();
+    se.val     = e.value();
+    struct Msg msg;
+    msg.type = MsgTypeEventToGui;
+    memcpy(&msg.payload.sparseEvent, &se, sizeof(struct SparseEvent));
+    mux_mq_from_audio_writer_put(msg);
+}
+
 //---------------------------------------------------------
 //   JackAudio
 //---------------------------------------------------------
