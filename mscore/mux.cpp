@@ -80,12 +80,20 @@ int g_msg_to_audio_writer = 0;
 int g_msg_from_audio_reader = 0;
 int g_msg_from_audio_writer = 0;
 
-// FIX: no need to check if type is zero to avoid race-condition
-// as soon as the writer is done writing down the payload it will advance the ringbuffer
+// audio-thread uses this function to send messages to mux/mscore
 int mux_mq_from_audio_writer_put (struct Msg msg) {
     memcpy(&g_msg_from_audio[g_msg_from_audio_writer].payload, &msg.payload, sizeof(msg.payload));
     // setting the type will signal to the reader that this slot is filled
     g_msg_from_audio[g_msg_from_audio_writer].type = msg.type;
+    g_msg_from_audio_writer = (g_msg_from_audio_writer + 1) % (MAILBOX_SIZE - 1);
+    return 1;
+}
+
+// mux/mscore thread uses this function to send messages to audio-thread
+int mux_mq_to_audio_writer_put (struct Msg msg) {
+    memcpy(&g_msg_to_audio[g_msg_to_audio_writer].payload, &msg.payload, sizeof(msg.payload));
+    // setting the type will signal to the reader that this slot is filled
+    g_msg_to_audio[g_msg_to_audio_writer].type = msg.type;
     g_msg_to_audio_writer = (g_msg_to_audio_writer + 1) % (MAILBOX_SIZE - 1);
     return 1;
 }
@@ -110,6 +118,30 @@ int mux_mq_from_audio_reader_visit () {
     }
     msg.type = MsgTypeInit; // mark this as free, FIX: not needed
     g_msg_from_audio_reader = (g_msg_from_audio_reader + 1) % (MAILBOX_SIZE - 1);
+    return 1;
+}
+
+int mux_mq_to_audio_visit() {
+    if (g_msg_to_audio_reader == g_msg_to_audio_writer) {
+        return 0;
+    }
+    Msg msg = g_msg_to_audio[g_msg_to_audio_reader];
+    switch (msg.type) {
+        case MsgTypeTransportStart:
+            mux_audio_jack_transport_start();
+        break;
+        case MsgTypeTransportStop:
+            mux_audio_jack_transport_stop();
+        break;
+        default: // this should not happen
+            qFatal("MUX got unknown message from audio: %u", msg.type);
+            // skip this message
+            g_msg_to_audio_reader = (g_msg_to_audio_reader + 1) % (MAILBOX_SIZE - 1);
+        return 0;
+    }
+    msg.type = MsgTypeInit; // mark this as free, FIX: not needed
+    g_msg_to_audio_reader = (g_msg_to_audio_reader + 1) % (MAILBOX_SIZE - 1);
+    //std::cout << "mux_to_audio new r:" << g_msg_to_audio_reader << "\n";
     return 1;
 }
 

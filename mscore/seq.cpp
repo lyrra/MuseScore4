@@ -264,7 +264,9 @@ void Seq::CachedPreferences::update()
 void Seq::startTransport()
       {
       cachedPrefs.update();
-      _driver->startTransport();
+      struct Msg msg;
+      msg.type = MsgTypeTransportStart;
+      mux_mq_to_audio_writer_put(msg);
       }
 
 //---------------------------------------------------------
@@ -273,7 +275,9 @@ void Seq::startTransport()
 
 void Seq::stopTransport()
       {
-      _driver->stopTransport();
+      struct Msg msg;
+      msg.type = MsgTypeTransportStop;
+      mux_mq_to_audio_writer_put(msg);
       }
 
 //---------------------------------------------------------
