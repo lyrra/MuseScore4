@@ -826,6 +826,7 @@ static void checkTransportSeek(int cur_frame, int nframes, bool inCountIn)
 void Seq::process(unsigned framesPerPeriod, float* buffer)
       {
       unsigned framesRemain = framesPerPeriod; // the number of frames remaining to be processed by this call to Seq::process
+      //Transport driverState = seq->isPlaying() ? jack_transport : Transport::STOP;
       Transport driverState = jack_transport;
       // Checking for the reposition from JACK Transport
       checkTransportSeek(playFrame, framesRemain, inCountIn);
