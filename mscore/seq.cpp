@@ -747,16 +747,12 @@ static unsigned int jack_position_valid;
 static unsigned int jack_position_beats_per_minute;
 static unsigned int jack_position_BBT;
 
-void mux_set_jack_position(unsigned int frame,
-                           unsigned int valid,
-                           unsigned int beats_per_minute,
-                           unsigned int bbt)
+void mux_set_jack_position(struct JackTransportPosition jackTransportPosition)
 {
-    // writer-reader race-condition exists
-    jack_position_frame = frame;
-    jack_position_valid = valid;
-    jack_position_beats_per_minute = beats_per_minute;
-    jack_position_BBT = bbt;
+    jack_position_frame = jackTransportPosition.frame;
+    jack_position_valid = jackTransportPosition.valid;
+    jack_position_beats_per_minute = jackTransportPosition.beats_per_minute;
+    jack_position_BBT = jackTransportPosition.bbt;
 }
 
 void mux_set_jack_transport(Transport transport) {

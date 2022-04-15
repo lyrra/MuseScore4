@@ -423,7 +423,13 @@ int JackAudio::processAudio(jack_nframes_t frames, void* p)
       {
           jack_position_t pos;
           jack_transport_query(g_client, &pos);
-          mux_set_jack_position(pos.frame, pos.valid, pos.beats_per_minute, JackPositionBBT);
+          struct Msg msg;
+          msg.type = MsgTypeJackTransportPosition;
+          msg.payload.jackTransportPosition.frame = pos.frame;
+          msg.payload.jackTransportPosition.valid = pos.valid;
+          msg.payload.jackTransportPosition.beats_per_minute = pos.beats_per_minute;
+          msg.payload.jackTransportPosition.bbt = JackPositionBBT;
+          mux_mq_from_audio_writer_put(msg);
       }
       mux_process_bufferStereo((unsigned int)frames, buffer);
       if (l && r) {
