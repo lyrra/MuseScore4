@@ -16,5 +16,23 @@ void mux_set_jack_position(unsigned int frame,
 void mux_set_jack_transport(Transport transport);
 /****************************/
 
+/*
+ * message queue, between audio and mux
+ */
+
+enum MsgType {
+    MsgTransportStart,
+    MsgTransportStop,
+    MsgInit
+};
+
+struct Msg {
+    int init;
+    MsgType type;
+    union {
+        int i;
+    } Payload;
+};
+
 } // namespace Ms
 #endif
