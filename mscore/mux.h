@@ -21,18 +21,20 @@ void mux_set_jack_transport(Transport transport);
  */
 
 enum MsgType {
-    MsgTransportStart,
-    MsgTransportStop,
-    MsgInit
+    MsgTypeInit = 0,
+    MsgTypeTransportStart,
+    MsgTypeTransportStop,
+    MsgTypeNoop
 };
 
 struct Msg {
-    int init;
     MsgType type;
-    union {
+    union Payload {
         int i;
-    } Payload;
+    } payload;
 };
+
+int mux_mq_from_audio_writer_put (struct Msg msg);
 
 } // namespace Ms
 #endif

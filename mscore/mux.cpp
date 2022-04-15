@@ -1,3 +1,55 @@
+/*
+ 
+    audio: the real-time thread that is governed by JACK
+    mux: a thread that sits between musescore and JACK
+    mscore: musescore main thread
+
+    audio <--> mux <---> mscore
+
+    The mux-thread will work ahead of the audio-thread
+    to process score-events into actual audiobuffers.
+
+               +---------------------------+
+    audio <--- | g_ringBufferStereo        |
+               |   g_ringBufferReaderStart | reader is audio-thread
+               |   g_ringBufferWriterStart | writer is mux-thread
+               +---------------------------+
+                 <--- mux
+                      g_chunkBufferStereo (intermediate audiobuffer)
+                      <--- mscore
+        1) mux calls into mscore synthesizers (Seq::process), to
+           fill the audiobuffer in g_chunkBufferStereo.
+           This is synchronous and needs to ringBuffer synchronization.
+        2) mux will synchronize with the ringbuffer and write
+           the g_chunkBufferStereo audiobuffer into it.
+        3) the audio thread detects that the ringbuffer-writer has
+           advanced and can read out audio into it own buffers.
+    The writer will look at the ringbuffer, if enough free room is
+    available to fill the size of a chunk (g_chunkBufferStereo),
+    it will call mscore-synthesizers to process a chunck.
+    Statistics about the ringbuffer activity is kept in four variables:
+      - g_readerCycle  -- everytime the reader wraps around the buffer
+      - g_writerCycle  -- everytime the writer wraps around the buffer
+      - g_readerPause  -- reader has no audio to read, it will sleep
+      - g_writerPause  -- writer has no audio to write, it will sleep
+
+    Aside from feeding jack with audiobuffers, audio and mux thread
+    need to signal information, for example transport play/stop.
+    This is done by a simple message-queue also in form of a ringbuffer.
+
+               +-------------------------+
+    audio <--- | g_msg_to_audio          | <--- mux
+               |   g_msg_to_audio_reader |
+               |   g_msg_to_audio_writer |
+               +-------------------------+
+
+               +---------------------------+
+    audio ---> | g_msg_from_audio          | ---> mux
+               |   g_msg_from_audio_reader |
+               |   g_msg_from_audio_writer |
+               +---------------------------+
+*/
+
 
 #include "config.h"
 #include "seq.h"
@@ -26,11 +78,27 @@ int g_msg_to_audio_writer = 0;
 int g_msg_from_audio_reader = 0;
 int g_msg_from_audio_writer = 0;
 
-int mux_mq_audio_reader_visit() {
-    if (g_msg_to_audio_reader == g_msg_to_audio_writer) {
+// FIX: no need to check if type is zero to avoid race-condition
+// as soon as the writer is done writing down the payload it will advance the ringbuffer
+int mux_mq_from_audio_writer_put (struct Msg msg) {
+    memcpy(&g_msg_from_audio[g_msg_from_audio_writer].payload, &msg.payload, sizeof(msg.payload));
+    // setting the type will signal to the reader that this slot is filled
+    g_msg_from_audio[g_msg_from_audio_writer].type = msg.type;
+    g_msg_to_audio_writer = (g_msg_to_audio_writer + 1) % (MAILBOX_SIZE - 1);
+    return 1;
+}
+
+int mux_mq_from_audio_reader_visit () {
+    if (g_msg_from_audio_reader == g_msg_from_audio_writer) {
         return 0;
     }
-    g_msg_to_audio_reader = (g_msg_to_audio_reader + 1) % (MAILBOX_SIZE - 1);
+    Msg msg = g_msg_from_audio[g_msg_from_audio_reader];
+    if (msg.type == MsgTypeInit){ // this should not happen
+        return 0;
+    }
+    msg.type = MsgTypeInit; // mark this as free, FIX: not needed
+    //FIX: process the message
+    g_msg_from_audio_reader = (g_msg_from_audio_reader + 1) % (MAILBOX_SIZE - 1);
     return 1;
 }
 
@@ -142,7 +210,7 @@ void mux_audio_process() {
     int slept = MUX_WRITER_USLEEP; // we cant sleep longer than the jack-audio-period = (numFrames / SampleRate) seconds
     while (mux_audio_process_run) {
         if ((! mux_audio_process_work()) && // no audio work was done,
-            (! mux_mq_audio_reader_visit())) { // and message-queue is empty
+            (! mux_mq_from_audio_reader_visit())) { // and message-queue is empty
             g_writerPause++;
             std::this_thread::sleep_for(std::chrono::microseconds(slept));
         }
