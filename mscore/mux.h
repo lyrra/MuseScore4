@@ -21,6 +21,7 @@ enum MsgType {
     MsgTypeTransportStart,
     MsgTypeTransportStop,
     MsgTypeJackTransportPosition,
+    MsgTypeEventToGui,
     MsgTypeNoop
 };
 
@@ -31,10 +32,20 @@ struct JackTransportPosition {
     unsigned int bbt;
 };
 
+struct SparseEvent {
+    uchar type;
+    uchar channel;
+    int pitch;
+    int velo;
+    int cont;
+    int val;
+};
+
 struct Msg {
     MsgType type;
     union Payload {
         int i;
+        SparseEvent sparseEvent;
         struct JackTransportPosition jackTransportPosition;
     } payload;
 };
