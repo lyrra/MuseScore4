@@ -345,7 +345,12 @@ static int graph_callback(void*)
 
 void JackAudio::timebase(jack_transport_state_t state, jack_nframes_t /*nframes*/, jack_position_t *pos, int /*new_pos*/, void *arg)
       {
+/*
       JackAudio* audio = (JackAudio*)arg;
+
+
+
+
       if (!audio->seq->score()) {
             if (state==JackTransportLooping || state==JackTransportRolling)
                   audio->stopTransport();
@@ -374,6 +379,7 @@ void JackAudio::timebase(jack_transport_state_t state, jack_nframes_t /*nframes*
                   }
             }
       // TODO: Handle new_pos
+*/
       }
 //---------------------------------------------------------
 //   processAudio
