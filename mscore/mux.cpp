@@ -93,11 +93,17 @@ int mux_mq_from_audio_reader_visit () {
         return 0;
     }
     Msg msg = g_msg_from_audio[g_msg_from_audio_reader];
-    if (msg.type == MsgTypeInit){ // this should not happen
+    switch (msg.type) {
+        case MsgTypeJackTransportPosition:
+            mux_set_jack_position(msg.payload.jackTransportPosition);
+        break;
+        default: // this should not happen
+            qFatal("MUX got unknown message from audio: %u", msg.type);
+            // skip this message
+            g_msg_from_audio_reader = (g_msg_from_audio_reader + 1) % (MAILBOX_SIZE - 1);
         return 0;
     }
     msg.type = MsgTypeInit; // mark this as free, FIX: not needed
-    //FIX: process the message
     g_msg_from_audio_reader = (g_msg_from_audio_reader + 1) % (MAILBOX_SIZE - 1);
     return 1;
 }
