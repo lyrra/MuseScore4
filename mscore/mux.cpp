@@ -13,6 +13,30 @@ extern Seq* seq;
 static std::vector<std::thread> seqThreads;
 static int mux_audio_process_run = 0;
 
+
+/*
+ * message queue, between audio and mux
+ */ 
+
+#define MAILBOX_SIZE 256
+struct Msg g_msg_to_audio[MAILBOX_SIZE];
+struct Msg g_msg_from_audio[MAILBOX_SIZE];
+int g_msg_to_audio_reader = 0;
+int g_msg_to_audio_writer = 0;
+int g_msg_from_audio_reader = 0;
+int g_msg_from_audio_writer = 0;
+
+int mux_mq_audio_reader_visit() {
+    if (g_msg_to_audio_reader == g_msg_to_audio_writer) {
+        return 0;
+    }
+    g_msg_to_audio_reader = (g_msg_to_audio_reader + 1) % (MAILBOX_SIZE - 1);
+    return 1;
+}
+
+/*
+ * Audio ringbuffer from mux to audio
+ */
 #define MUX_CHAN 2
 #define MUX_RINGSIZE (8192*2)
 #define MUX_CHUNKSIZE (2048*2)
@@ -117,7 +141,8 @@ int mux_audio_process_work() {
 void mux_audio_process() {
     int slept = MUX_WRITER_USLEEP; // we cant sleep longer than the jack-audio-period = (numFrames / SampleRate) seconds
     while (mux_audio_process_run) {
-        if (! mux_audio_process_work()) { // no work was done, sleep
+        if ((! mux_audio_process_work()) && // no audio work was done,
+            (! mux_mq_audio_reader_visit())) { // and message-queue is empty
             g_writerPause++;
             std::this_thread::sleep_for(std::chrono::microseconds(slept));
         }
