@@ -737,10 +737,17 @@ int mux_is_score_open () {
     return seq->score() ? 1 : 0;
 }
 
-void mux_send_event (Event e) {
+void mux_send_event_to_gui(struct SparseEvent se)
+{
+    Event e;
+    e.setType(se.type);
+    e.setChannel(se.channel);
+    e.setPitch(se.pitch);
+    e.setVelo(se.velo);
+    e.setController(se.cont);
+    e.setValue(se.val);
     seq->eventToGui(e);
 }
-
 
 static unsigned int jack_position_frame;
 static unsigned int jack_position_valid;
