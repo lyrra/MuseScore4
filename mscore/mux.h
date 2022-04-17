@@ -5,6 +5,14 @@
 
 namespace Ms {
 
+// this are also the jack audio transport states:
+enum class Transport : char {
+      STOP=0,
+      PLAY=1,
+      STARTING=3,
+      NET_STARTING=4
+      };
+
 /*** MUX public interface ***/
 int mux_is_score_open ();
 void mux_send_event (Event e);
