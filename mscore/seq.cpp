@@ -1680,8 +1680,12 @@ void Seq::putEvent(const NPlayEvent& event, unsigned framePos)
       _synti->play(event, syntiIdx);
 
       // midi
-      if (_driver != 0 && (cachedPrefs.useJackMidi || cachedPrefs.useAlsaAudio || cachedPrefs.usePortAudio))
-            _driver->putEvent(event, framePos);
+      if (_driver != 0 && (cachedPrefs.useJackMidi || cachedPrefs.useAlsaAudio || cachedPrefs.usePortAudio)) {
+
+            int portIdx = score()->midiPort(event.channel());
+            int channel = score()->midiChannel(event.channel());
+            _driver->putEvent(event, framePos, portIdx, channel);
+            }
       }
 
 //---------------------------------------------------------
