@@ -62,6 +62,7 @@ namespace Ms {
 
 
 void mux_send_event_to_gui(struct SparseEvent se);
+void mux_audio_send_event_to_midi(struct Msg msg);
 extern Seq* seq;
 
 static std::vector<std::thread> seqThreads;
@@ -132,6 +133,9 @@ int mux_mq_to_audio_visit() {
         break;
         case MsgTypeTransportStop:
             mux_audio_jack_transport_stop();
+        break;
+        case MsgTypeEventToMidi:
+            mux_audio_send_event_to_midi(msg);
         break;
         default: // this should not happen
             qFatal("MUX got unknown message from audio: %u", msg.type);

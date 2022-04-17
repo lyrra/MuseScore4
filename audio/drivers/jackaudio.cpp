@@ -44,9 +44,9 @@
 
 namespace Ms {
 
-JackAudio *g_jackaudio;
-jack_client_t* g_client; // used by static member function needing jack-client access
-Transport g_fakeState;
+static JackAudio *g_jackaudio;
+static jack_client_t* g_client; // used by static member function needing jack-client access
+static Transport g_fakeState;
 
 void mux_send_event (Event e) {
     struct SparseEvent se;
@@ -68,6 +68,16 @@ void mux_audio_jack_transport_start() {
 
 void mux_audio_jack_transport_stop() {
     g_jackaudio->stopTransport();
+}
+
+void mux_audio_send_event_to_midi(struct Msg msg) {
+    NPlayEvent event;
+    event.setType(msg.payload.sparseMidiEvent.type);
+    event.setDataA(msg.payload.sparseMidiEvent.dataA);
+    event.setDataB(msg.payload.sparseMidiEvent.dataB);
+    g_jackaudio->putEvent(event, msg.payload.sparseMidiEvent.framepos,
+                                 msg.payload.sparseMidiEvent.portIdx,
+                                 msg.payload.sparseMidiEvent.channel);
 }
 
 //---------------------------------------------------------
