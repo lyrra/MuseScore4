@@ -31,6 +31,7 @@
 #include "pm.h"
 #include "mscore/preferences.h"
 #include "mscore/musescore.h"
+#include "mscore/mux.h"
 #include "mscore/seq.h"
 
 namespace Ms {

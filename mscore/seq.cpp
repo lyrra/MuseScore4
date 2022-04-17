@@ -19,7 +19,6 @@
 
 #include "config.h"
 #include "seq.h"
-#include "mux.h"
 #include "musescore.h"
 
 #include "audio/midi/msynthesizer.h"
@@ -61,6 +60,9 @@
 
 
 namespace Ms {
+
+qreal g_utime;
+qreal g_utick;
         
 void mux_start_threads();
 void mux_stop_threads();
@@ -925,7 +927,8 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
             while (*pPlayPos != pEventsEnd) {
                   int playPosUTick = (*pPlayPos)->first;
                   int n; // current frame (relative to start of playback) that is being synthesized
-
+                  g_utick = playPosUTick; // FIX: leaked to real-time thread, used to locate jack to utick
+                  g_utime = score()->utick2utime(playPosUTick); // FIX: leaked to real-time thread
                   if (inCountIn) {
                         qreal beatsPerSecond = curTempo() * cs->tempomap()->relTempo(); // relTempo needed here to ensure that bps changes as we slide the tempo bar
                         qreal ticksPerSecond = beatsPerSecond * MScore::division;
