@@ -46,7 +46,7 @@ class Driver {
       virtual Transport getState() = 0;
       virtual void seekTransport(int) {}
       virtual int sampleRate() const = 0;
-      virtual void putEvent(const NPlayEvent&, unsigned /*framePos*/) {}
+      virtual void putEvent(const NPlayEvent&, unsigned /*framePos*/, int portIdx, int channel) {}
       virtual void midiRead() {}
       virtual void handleTimeSigTempoChanged() {}
       virtual int bufferSize() {return 0;}
