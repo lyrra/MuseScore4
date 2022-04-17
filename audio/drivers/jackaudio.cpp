@@ -599,7 +599,7 @@ Transport getStateRT()
 //   putEvent
 //---------------------------------------------------------
 
-void JackAudio::putEvent(const NPlayEvent& e, unsigned framePos, int portIdx, int channel)
+void JackAudio::putEvent(const NPlayEvent& event, unsigned framePos, int portIdx, int channel)
       {
       if (!preferences.getBool(PREF_IO_JACK_USEJACKMIDI))
             return;
@@ -613,9 +613,9 @@ void JackAudio::putEvent(const NPlayEvent& e, unsigned framePos, int portIdx, in
       jack_port_t* port = midiOutputPorts[portIdx];
       if (midiOutputTrace) {
             const char* portName = jack_port_name(port);
-            int a     = e.dataA();
-            int b     = e.dataB();
-            qDebug("MidiOut<%s>: jackMidi: %02x %02x %02x, channel: %i", portName, e.type(), a, b, channel);
+            int a     = event.dataA();
+            int b     = event.dataB();
+            qDebug("MidiOut<%s>: jackMidi: %02x %02x %02x, channel: %i", portName, event.type(), a, b, channel);
             // e.dump();
             }
       void* pb = jack_port_get_buffer(port, _segmentSize);
@@ -630,13 +630,13 @@ void JackAudio::putEvent(const NPlayEvent& e, unsigned framePos, int portIdx, in
                   framePos = _segmentSize - 1;
             }
 
-      switch(e.type()) {
+      switch(event.type()) {
             case ME_NOTEON:
             case ME_NOTEOFF:
             case ME_POLYAFTER:
             case ME_CONTROLLER:
                   // Catch CTRL_PROGRAM and let other ME_CONTROLLER events to go
-                  if (e.dataA() == CTRL_PROGRAM) {
+                  if (event.dataA() == CTRL_PROGRAM) {
                         // Convert CTRL_PROGRAM event to ME_PROGRAM
                         unsigned char* p = jack_midi_event_reserve(pb, framePos, 2);
                         if (p == 0) {
@@ -644,7 +644,7 @@ void JackAudio::putEvent(const NPlayEvent& e, unsigned framePos, int portIdx, in
                               return;
                               }
                         p[0] = ME_PROGRAM | channel;
-                        p[1] = less128(e.dataB());
+                        p[1] = less128(event.dataB());
                         break;
                         }
                   //fall through
@@ -655,9 +655,9 @@ void JackAudio::putEvent(const NPlayEvent& e, unsigned framePos, int portIdx, in
                         qDebug("JackMidi: buffer overflow, event lost");
                         return;
                         }
-                  p[0] = e.type() | channel;
-                  p[1] = less128(e.dataA());
-                  p[2] = less128(e.dataB());
+                  p[0] = event.type() | channel;
+                  p[1] = less128(event.dataA());
+                  p[2] = less128(event.dataB());
                   }
                   break;
 
@@ -669,8 +669,8 @@ void JackAudio::putEvent(const NPlayEvent& e, unsigned framePos, int portIdx, in
                         qDebug("JackMidi: buffer overflow, event lost");
                         return;
                         }
-                  p[0] = e.type() | channel;
-                  p[1] = less128(e.dataA());
+                  p[0] = event.type() | channel;
+                  p[1] = less128(event.dataA());
                   }
                   break;
           // Do we really need to handle ME_SYSEX?
@@ -693,7 +693,7 @@ void JackAudio::putEvent(const NPlayEvent& e, unsigned framePos, int portIdx, in
             case ME_START:
             case ME_CONTINUE:
             case ME_STOP:
-                  qDebug("JackMidi: event type %x not supported", e.type());
+                  qDebug("JackMidi: event type %x not supported", event.type());
                   break;
             }
       }
