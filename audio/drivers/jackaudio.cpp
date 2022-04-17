@@ -29,15 +29,9 @@
 #include <jack/midiport.h>
 
 #include "libmscore/mscore.h"
-#include "libmscore/sig.h"
-#include "libmscore/score.h"
-#include "libmscore/repeatlist.h"
-
 #include "mscore/musescore.h"
 #include "mscore/preferences.h"
-#include "mscore/seq.h"
 #include "mscore/mux.h"
-#include "mscore/iplaypanel.h"
 
 // Prevent killing sequencer with wrong data
 #define less128(__less) ((__less >=0 && __less <= 127) ? __less : 0)
@@ -47,6 +41,8 @@ namespace Ms {
 static JackAudio *g_jackaudio;
 static jack_client_t* g_client; // used by static member function needing jack-client access
 static Transport g_fakeState;
+extern qreal g_utime;
+extern qreal g_utick;
 
 void mux_send_event (Event e) {
     struct SparseEvent se;
@@ -736,8 +732,8 @@ void JackAudio::handleTimeSigTempoChanged()
 void JackAudio::seekTransport(int utick)
       {
       if (MScore::debugMode)
-            qDebug()<<"jack locate to utick: "<<utick<<", frame: "<<int(seq->score()->utick2utime(utick) * MScore::sampleRate);
-      jack_transport_locate(client, seq->score()->utick2utime(utick) * MScore::sampleRate);
+            qDebug()<<"jack locate to utick: " << g_utick << ", frame: " << int(g_utime * MScore::sampleRate);
+      jack_transport_locate(client, int(g_utime * MScore::sampleRate));
       }
 
 //---------------------------------------------------------

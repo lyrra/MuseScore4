@@ -29,6 +29,7 @@
 #include "audio/midi/event.h"
 #include "audio/drivers/driver.h"
 
+#include "mscore/mux.h"
 
 class QTimer;
 
@@ -89,14 +90,6 @@ class SeqMsgFifo : public FifoBase {
       virtual ~SeqMsgFifo()     {}
       void enqueue(const SeqMsg&);        // put object on fifo
       SeqMsg dequeue();                   // remove object from fifo
-      };
-
-// this are also the jack audio transport states:
-enum class Transport : char {
-      STOP=0,
-      PLAY=1,
-      STARTING=3,
-      NET_STARTING=4
       };
 
 //---------------------------------------------------------
