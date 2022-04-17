@@ -1684,7 +1684,15 @@ void Seq::putEvent(const NPlayEvent& event, unsigned framePos)
 
             int portIdx = score()->midiPort(event.channel());
             int channel = score()->midiChannel(event.channel());
-            _driver->putEvent(event, framePos, portIdx, channel);
+            struct Msg msg;
+            msg.type = MsgTypeEventToMidi;
+            msg.payload.sparseMidiEvent.framepos = framePos;
+            msg.payload.sparseMidiEvent.portIdx  = portIdx;
+            msg.payload.sparseMidiEvent.channel  = channel;
+            msg.payload.sparseMidiEvent.type     = event.type();
+            msg.payload.sparseMidiEvent.dataA    = event.dataA();
+            msg.payload.sparseMidiEvent.dataB    = event.dataB();
+            mux_mq_to_audio_writer_put(msg);
             }
       }
 

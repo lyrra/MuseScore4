@@ -22,6 +22,7 @@ enum MsgType {
     MsgTypeTransportStop,
     MsgTypeJackTransportPosition,
     MsgTypeEventToGui,
+    MsgTypeEventToMidi,
     MsgTypeNoop
 };
 
@@ -41,11 +42,21 @@ struct SparseEvent {
     int val;
 };
 
+struct SparseMidiEvent {
+    unsigned int framepos;
+    int portIdx;
+    int channel;
+    uchar type;
+    int dataA;
+    int dataB;
+};
+
 struct Msg {
     MsgType type;
     union Payload {
         int i;
         SparseEvent sparseEvent;
+        SparseMidiEvent sparseMidiEvent;
         struct JackTransportPosition jackTransportPosition;
     } payload;
 };
