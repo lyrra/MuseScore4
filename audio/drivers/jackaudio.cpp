@@ -599,15 +599,12 @@ Transport getStateRT()
 //   putEvent
 //---------------------------------------------------------
 
-void JackAudio::putEvent(const NPlayEvent& e, unsigned framePos)
+void JackAudio::putEvent(const NPlayEvent& e, unsigned framePos, int portIdx, int channel)
       {
       if (!preferences.getBool(PREF_IO_JACK_USEJACKMIDI))
             return;
 
-      int portIdx = seq->score()->midiPort(e.channel());
-      int chan    = seq->score()->midiChannel(e.channel());
-
-// qDebug("JackAudio::putEvent %d:%d  pos %d(%d)", portIdx, chan, framePos, _segmentSize);
+// qDebug("JackAudio::putEvent %d:%d  pos %d(%d)", portIdx, channel, framePos, _segmentSize);
 
       if (portIdx < 0 || portIdx >= midiOutputPorts.size()) {
             qDebug("JackAudio::putEvent: invalid port %d", portIdx);
@@ -618,7 +615,7 @@ void JackAudio::putEvent(const NPlayEvent& e, unsigned framePos)
             const char* portName = jack_port_name(port);
             int a     = e.dataA();
             int b     = e.dataB();
-            qDebug("MidiOut<%s>: jackMidi: %02x %02x %02x, chan: %i", portName, e.type(), a, b, chan);
+            qDebug("MidiOut<%s>: jackMidi: %02x %02x %02x, channel: %i", portName, e.type(), a, b, channel);
             // e.dump();
             }
       void* pb = jack_port_get_buffer(port, _segmentSize);
@@ -646,7 +643,7 @@ void JackAudio::putEvent(const NPlayEvent& e, unsigned framePos)
                               qDebug("JackMidi: buffer overflow, event lost");
                               return;
                               }
-                        p[0] = ME_PROGRAM | chan;
+                        p[0] = ME_PROGRAM | channel;
                         p[1] = less128(e.dataB());
                         break;
                         }
@@ -658,7 +655,7 @@ void JackAudio::putEvent(const NPlayEvent& e, unsigned framePos)
                         qDebug("JackMidi: buffer overflow, event lost");
                         return;
                         }
-                  p[0] = e.type() | chan;
+                  p[0] = e.type() | channel;
                   p[1] = less128(e.dataA());
                   p[2] = less128(e.dataB());
                   }
@@ -672,7 +669,7 @@ void JackAudio::putEvent(const NPlayEvent& e, unsigned framePos)
                         qDebug("JackMidi: buffer overflow, event lost");
                         return;
                         }
-                  p[0] = e.type() | chan;
+                  p[0] = e.type() | channel;
                   p[1] = less128(e.dataA());
                   }
                   break;

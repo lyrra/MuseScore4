@@ -79,7 +79,7 @@ class JackAudio : public Driver {
       virtual Transport getState() override;
       virtual void seekTransport(int);
       virtual int sampleRate() const    { return jack_get_sample_rate(client); }
-      virtual void putEvent(const NPlayEvent&, unsigned framePos);
+      virtual void putEvent(const NPlayEvent&, unsigned framePos, int portIdx, int channel);
       virtual void midiRead();
 
       virtual void registerPort(const QString& name, bool input, bool midi);
