@@ -13,7 +13,8 @@
 #if (defined (_MSCVER) || defined (_MSC_VER))
 // Include stdint.h and #define _STDINT_H to prevent <systemdeps.h> from redefining types
 // #undef UNICODE to force LoadLibrary to use the char-based implementation instead of the wchar_t one.
-#include <stdint.h>
+#include <stdint.h> // ??? config.h should take care of this
+#include <thread>
 #define _STDINT_H 1  
 #endif
 
@@ -34,7 +35,10 @@
 #include "pa.h"
 #endif
 
+
 namespace Ms {
+
+void mux_control_start();
 
 #ifdef USE_PULSEAUDIO
 extern Driver* getPulseAudioDriver(Seq*);
@@ -140,6 +144,8 @@ Driver* driverFactory(Seq* seq, QString driverName)
 #endif
       if (driver == 0)
             qDebug("no audio driver found");
+
+      mux_control_start();
 
       return driver;
       }

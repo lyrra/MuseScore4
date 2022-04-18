@@ -25,6 +25,7 @@
 #endif
 
 #include "jackaudio.h"
+#include "control.h"
 
 #include <jack/midiport.h>
 
@@ -38,7 +39,7 @@
 
 namespace Ms {
 
-static JackAudio *g_jackaudio;
+extern Driver* g_driver;
 static jack_client_t* g_client; // used by static member function needing jack-client access
 static Transport g_fakeState;
 extern qreal g_utime;
@@ -59,11 +60,11 @@ void mux_send_event (Event e) {
 }
 
 void mux_audio_jack_transport_start() {
-    g_jackaudio->startTransport();
+    g_driver->startTransport();
 }
 
 void mux_audio_jack_transport_stop() {
-    g_jackaudio->stopTransport();
+    g_driver->stopTransport();
 }
 
 void mux_audio_send_event_to_midi(struct Msg msg) {
@@ -71,10 +72,11 @@ void mux_audio_send_event_to_midi(struct Msg msg) {
     event.setType(msg.payload.sparseMidiEvent.type);
     event.setDataA(msg.payload.sparseMidiEvent.dataA);
     event.setDataB(msg.payload.sparseMidiEvent.dataB);
-    g_jackaudio->putEvent(event, msg.payload.sparseMidiEvent.framepos,
-                                 msg.payload.sparseMidiEvent.portIdx,
-                                 msg.payload.sparseMidiEvent.channel);
+    g_driver->putEvent(event, msg.payload.sparseMidiEvent.framepos,
+                              msg.payload.sparseMidiEvent.portIdx,
+                              msg.payload.sparseMidiEvent.channel);
 }
+
 
 //---------------------------------------------------------
 //   JackAudio
@@ -258,6 +260,7 @@ bool JackAudio::start(bool hotPlug)
 
       if (jack_activate(client)) {
             qDebug("JACK: cannot activate client");
+            g_ctrl_audio_error = 1;
             return false;
             }
       /* connect the ports. Note: you can't do this before
@@ -505,7 +508,7 @@ static void noJackError(const char*  s )
 
 bool JackAudio::init(bool hot)
       {
-      g_jackaudio = this;
+      g_driver = this;
       if (hot) {
             hotPlug();
             return true;
