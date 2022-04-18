@@ -468,8 +468,6 @@ int JackAudio::processAudio(jack_nframes_t frames, void* p)
           msg.payload.jackTransportPosition.bbt = JackPositionBBT;
           mux_mq_from_audio_writer_put(msg);
       }
-      // check messages from audio-thread
-      mux_mq_to_audio_visit();
       // get audiochunk from mux/mscore-thread
       mux_process_bufferStereo((unsigned int)frames, buffer);
       if (l && r) {
