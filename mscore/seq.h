@@ -28,6 +28,7 @@
 
 #include "audio/midi/event.h"
 #include "audio/drivers/driver.h"
+#include "audio/drivers/control.h"
 
 #include "mscore/mux.h"
 

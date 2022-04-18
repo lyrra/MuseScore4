@@ -18,6 +18,7 @@
 //=============================================================================
 
 #include "config.h"
+#include <chrono>
 #include "seq.h"
 #include "musescore.h"
 
@@ -289,11 +290,16 @@ void Seq::stopTransport()
 
 bool Seq::init(bool hotPlug)
       {
-      if (!_driver || !_driver->start(hotPlug)) {
-            qDebug("Cannot start I/O");
-            running = false;
-            return false;
+      g_ctrl_hotPlug = hotPlug;
+      g_ctrl_work = 1; // tell audio-control to start
+      while (! g_ctrl_audio_running) {
+            std::this_thread::sleep_for(std::chrono::microseconds(10000));
+            if (g_ctrl_audio_error) {
+                  running = false;
+                  return false;
+                  }
             }
+
       cachedPrefs.update();
       running = true;
       mux_start_threads();
@@ -307,13 +313,7 @@ bool Seq::init(bool hotPlug)
 void Seq::exit()
       {
       mux_stop_threads();
-      if (_driver) {
-            if (MScore::debugMode)
-                  qDebug("Stop I/O");
-            stopWait();
-            delete _driver;
-            _driver = 0;
-            }
+      g_ctrl_work = -1; // tell audio-control to exit
       }
 
 //---------------------------------------------------------
