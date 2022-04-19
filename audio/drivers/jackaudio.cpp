@@ -67,6 +67,10 @@ void mux_audio_jack_transport_stop() {
     g_driver->stopTransport();
 }
 
+void mux_audio_jack_transport_seek(int utick) {
+    g_driver->seekTransport(utick);
+}
+
 void mux_audio_send_event_to_midi(struct Msg msg) {
     NPlayEvent event;
     event.setType(msg.payload.sparseMidiEvent.type);
