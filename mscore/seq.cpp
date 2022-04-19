@@ -608,6 +608,8 @@ void Seq::recomputeMaxMidiOutPort()
       maxMidiOutPort = max;
       }
 
+
+
 //---------------------------------------------------------
 //   processMessages
 //   from gui to process thread
@@ -627,9 +629,8 @@ void Seq::processMessages()
                         if (playFrame != 0) {
                               int utick = cs->utime2utick(qreal(playFrame) / qreal(MScore::sampleRate));
                               cs->tempomap()->setRelTempo(msg.realVal);
-                              playFrame = cs->utick2utime(utick) * MScore::sampleRate;
                               if (cachedPrefs.jackTimeBaseMaster && cachedPrefs.useJackTransport)
-                                    _driver->seekTransport(utick + 2 * cs->utime2utick(qreal((_driver->bufferSize()) + 1) / qreal(MScore::sampleRate)));
+                                    msgToAudioSeekTransport(utick); // + 2 * cs->utime2utick(qreal((_driver->bufferSize()) + 1) / qreal(MScore::sampleRate))
                               }
                         else
                               cs->tempomap()->setRelTempo(msg.realVal);
@@ -963,9 +964,9 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                                                             playPosUTick,      cs->loopInTick().ticks(),      cs->loopOutTick().ticks(),      getCurTick(),      loopOutUTick,    *pPlayFrame);
                                           if (cachedPrefs.useJackTransport) {
                                                 int loopInUTick = cs->repeatList().tick2utick(cs->loopInTick().ticks());
-                                                _driver->seekTransport(loopInUTick);
+                                                msgToAudioSeekTransport(loopInUTick);
                                                 if (loopInUTick != 0) {
-                                                      int seekto = loopInUTick - 2 * cs->utime2utick((qreal)_driver->bufferSize() / MScore::sampleRate);
+                                                      int seekto = loopInUTick; // - 2 * cs->utime2utick((qreal)_driver->bufferSize() / MScore::sampleRate);
                                                       seekRT((seekto > 0) ? seekto : 0 );
                                                       }
                                                 }
@@ -1347,7 +1348,7 @@ void Seq::seek(int utick)
       if (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT)) {
             if (utick > endUTick)
                   utick = 0;
-            _driver->seekTransport(utick);
+            msgToAudioSeekTransport(utick);
             if (utick != 0)
                   return;
             }

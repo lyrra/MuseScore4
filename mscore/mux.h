@@ -33,6 +33,7 @@ enum MsgType {
     MsgTypeInit = 0,
     MsgTypeTransportStart,
     MsgTypeTransportStop,
+    MsgTypeTransportSeek,
     MsgTypeJackTransportPosition,
     MsgTypeEventToGui,
     MsgTypeEventToMidi,
@@ -81,6 +82,7 @@ int mux_mq_to_audio_visit();
 void mux_set_jack_position(struct JackTransportPosition jackTransportPosition);
 void mux_audio_jack_transport_start();
 void mux_audio_jack_transport_stop();
+void mux_audio_jack_transport_seek(int utick);
 
 } // namespace Ms
 #endif

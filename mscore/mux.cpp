@@ -139,6 +139,9 @@ int mux_mq_to_audio_visit() {
         case MsgTypeTransportStop:
             mux_audio_jack_transport_stop();
         break;
+        case MsgTypeTransportSeek:
+            mux_audio_jack_transport_seek(msg.payload.i);
+        break;
         case MsgTypeEventToMidi:
             mux_audio_send_event_to_midi(msg);
         break;
