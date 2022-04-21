@@ -37,6 +37,7 @@ enum MsgType {
     MsgTypeJackTransportPosition,
     MsgTypeEventToGui,
     MsgTypeEventToMidi,
+    MsgTimeSigTempoChanged,
     MsgTypeNoop
 };
 
@@ -79,10 +80,13 @@ int mux_mq_from_audio_writer_put (struct Msg msg);
 int mux_mq_to_audio_writer_put (struct Msg msg);
 int mux_mq_to_audio_visit();
 
+void mux_msg_to_audio(MsgType typ, int val);
+
 void mux_set_jack_position(struct JackTransportPosition jackTransportPosition);
 void mux_audio_jack_transport_start();
 void mux_audio_jack_transport_stop();
 void mux_audio_jack_transport_seek(int utick);
+void mux_audio_handle_MsgTimeSigTempoChanged();
 
 } // namespace Ms
 #endif
