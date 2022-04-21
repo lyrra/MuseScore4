@@ -340,6 +340,7 @@ void Seq::loopStart()
 
 bool Seq::canStart()
       {
+      Q_ASSERT((!_driver) == (! g_driver_running));
       if (!_driver)
             return false;
       collectEvents(getPlayStartUtick());
@@ -353,6 +354,7 @@ bool Seq::canStart()
 
 void Seq::start()
       {
+      Q_ASSERT((!_driver) == (! g_driver_running));
       if (!_driver) {
             qDebug("No driver!");
             return;
@@ -394,6 +396,7 @@ void Seq::start()
 void Seq::stop()
       {
       std::cout << "---- Seq::stop ----------------------\n";
+      Q_ASSERT((!_driver) == (! g_driver_running));
       const bool seqStopped = (state == Transport::STOP);
       const bool driverStopped = !_driver || jack_transport == Transport::STOP;
       if (seqStopped && driverStopped)
@@ -522,6 +525,7 @@ void Seq::seqMessage(int msg, int arg)
             case '2':
                   guiStop();
 //                  heartBeatTimer->stop();
+                  Q_ASSERT((!_driver) == (! g_driver_running));
                   if (_driver && mscore->getSynthControl()) {
                         meterValue[0]     = .0f;
                         meterValue[1]     = .0f;
@@ -536,6 +540,7 @@ void Seq::seqMessage(int msg, int arg)
             case '0':         // STOP
                   guiStop();
 //                  heartBeatTimer->stop();
+                  Q_ASSERT((!_driver) == (! g_driver_running));
                   if (_driver && mscore->getSynthControl()) {
                         meterValue[0]     = .0f;
                         meterValue[1]     = .0f;
@@ -1117,6 +1122,7 @@ void Seq::initInstruments(bool realTime)
             if (maxMidiOutPort < scoreMaxMidiPort)
                   maxMidiOutPort = scoreMaxMidiPort;
             // if maxMidiOutPort is equal to existing ports number, it will do nothing
+            Q_ASSERT((!_driver) == (! g_driver_running));
             if (_driver)
                   mux_msg_to_audio(MsgTypeOutPortCount, maxMidiOutPort + 1);
             }
@@ -1154,6 +1160,7 @@ void Seq::initInstruments(bool realTime)
 
 void Seq::updateOutPortCount(const int portCount)
 {
+      Q_ASSERT((!_driver) == (! g_driver_running));
       if (seq->driver() && (preferences.getBool(PREF_IO_JACK_USEJACKMIDI) || preferences.getBool(PREF_IO_ALSA_USEALSAAUDIO)))
             mux_msg_to_audio(MsgTypeOutPortCount, portCount);
       }
@@ -1598,6 +1605,7 @@ void Seq::seekEnd()
 
 void Seq::guiToSeq(const SeqMsg& msg)
       {
+      Q_ASSERT((!_driver) == (! g_driver_running));
       if (!_driver || !running)
             return;
       toSeq.enqueue(msg);
@@ -1688,6 +1696,7 @@ void Seq::putEvent(const NPlayEvent& event, unsigned framePos)
       _synti->play(event, syntiIdx);
 
       // midi
+      Q_ASSERT((!_driver) == (! g_driver_running));
       if (_driver != 0 && (cachedPrefs.useJackMidi || cachedPrefs.useAlsaAudio || cachedPrefs.usePortAudio)) {
 
             int portIdx = score()->midiPort(event.channel());
@@ -1712,6 +1721,7 @@ void Seq::putEvent(const NPlayEvent& event, unsigned framePos)
 void Seq::heartBeatTimeout()
       {
       SynthControl* sc = mscore->getSynthControl();
+      Q_ASSERT((!_driver) == (! g_driver_running));
       if (sc && _driver) {
             if (++peakTimer[0] >= peakHold)
                   meterPeakValue[0] *= .7f;
