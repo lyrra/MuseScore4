@@ -31,6 +31,7 @@ void mux_set_jack_transport(Transport transport);
 
 enum MsgType {
     MsgTypeInit = 0,
+    MsgTypeAudioRunning,
     MsgTypeTransportStart,
     MsgTypeTransportStop,
     MsgTypeTransportSeek,
@@ -81,6 +82,7 @@ int mux_mq_from_audio_writer_put (struct Msg msg);
 int mux_mq_to_audio_writer_put (struct Msg msg);
 int mux_mq_to_audio_visit();
 
+void mux_msg_from_audio(MsgType typ, int val);
 void mux_msg_to_audio(MsgType typ, int val);
 
 void mux_set_jack_position(struct JackTransportPosition jackTransportPosition);

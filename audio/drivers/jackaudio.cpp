@@ -289,6 +289,7 @@ bool JackAudio::start(bool hotPlug)
 
       if (hotPlug)
             preferences.setPreference(PREF_IO_JACK_REMEMBERLASTCONNECTIONS, oldremember);
+      mux_msg_from_audio(MsgTypeAudioRunning, 1);
       return true;
       }
 
