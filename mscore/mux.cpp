@@ -148,6 +148,9 @@ int mux_mq_to_audio_visit() {
         case MsgTypeTimeSigTempoChanged:
             mux_audio_handle_MsgTimeSigTempoChanged();
         break;
+        case MsgTypeOutPortCount:
+            mux_audio_handle_updateOutPortCount(msg.payload.i);
+        break;
         default: // this should not happen
             qFatal("MUX got unknown message from audio: %u", msg.type);
             // skip this message
