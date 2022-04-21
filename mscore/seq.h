@@ -264,6 +264,7 @@ class Seq : public QObject, public Sequencer {
       MasterScore* score() const   { return cs; }
       ScoreView* viewer() const { return cv; }
       void initInstruments(bool realTime = false);
+      void updateOutPortCount(const int portCount);
 
       Driver* driver()                                 { return _driver; }
       void setDriver(Driver* d)                        { _driver = d;    }

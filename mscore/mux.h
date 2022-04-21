@@ -37,7 +37,8 @@ enum MsgType {
     MsgTypeJackTransportPosition,
     MsgTypeEventToGui,
     MsgTypeEventToMidi,
-    MsgTimeSigTempoChanged,
+    MsgTypeTimeSigTempoChanged,
+    MsgTypeOutPortCount,
     MsgTypeNoop
 };
 
@@ -87,6 +88,7 @@ void mux_audio_jack_transport_start();
 void mux_audio_jack_transport_stop();
 void mux_audio_jack_transport_seek(int utick);
 void mux_audio_handle_MsgTimeSigTempoChanged();
+void mux_audio_handle_updateOutPortCount(int portCount);
 
 } // namespace Ms
 #endif

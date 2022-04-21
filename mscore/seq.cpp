@@ -1116,7 +1116,7 @@ void Seq::initInstruments(bool realTime)
                   maxMidiOutPort = scoreMaxMidiPort;
             // if maxMidiOutPort is equal to existing ports number, it will do nothing
             if (_driver)
-                  _driver->updateOutPortCount(maxMidiOutPort + 1);
+                  mux_msg_to_audio(MsgTypeOutPortCount, maxMidiOutPort + 1);
             }
 
       for (const MidiMapping& mm : cs->midiMapping()) {
@@ -1148,6 +1148,12 @@ void Seq::initInstruments(bool realTime)
                         }
                   }
             }
+      }
+
+void Seq::updateOutPortCount(const int portCount)
+{
+      if (seq->driver() && (preferences.getBool(PREF_IO_JACK_USEJACKMIDI) || preferences.getBool(PREF_IO_ALSA_USEALSAAUDIO)))
+            mux_msg_to_audio(MsgTypeOutPortCount, portCount);
       }
 
 //---------------------------------------------------------
