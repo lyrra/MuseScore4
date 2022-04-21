@@ -145,7 +145,7 @@ int mux_mq_to_audio_visit() {
         case MsgTypeEventToMidi:
             mux_audio_send_event_to_midi(msg);
         break;
-        case MsgTimeSigTempoChanged:
+        case MsgTypeTimeSigTempoChanged:
             mux_audio_handle_MsgTimeSigTempoChanged();
         break;
         default: // this should not happen

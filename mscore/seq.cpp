@@ -1610,8 +1610,8 @@ void Seq::eventToGui(NPlayEvent e)
 
 void Seq::midiInputReady()
       {
-      if (_driver)
-            _driver->midiRead();
+      //if (_driver)
+      //      _driver->midiRead();
       }
 
 //---------------------------------------------------------
@@ -1915,7 +1915,7 @@ void Seq::setLoopSelection()
 
 void Seq::handleTimeSigTempoChanged()
       {
-      mux_msg_to_audio(MsgTimeSigTempoChanged, 0);
+      mux_msg_to_audio(MsgTypeTimeSigTempoChanged, 0);
       }
 
 //---------------------------------------------------------
