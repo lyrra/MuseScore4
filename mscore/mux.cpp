@@ -69,6 +69,7 @@ namespace Ms {
 void mux_send_event_to_gui(struct SparseEvent se);
 void mux_audio_send_event_to_midi(struct Msg msg);
 extern Seq* seq;
+extern int g_driver_running;
 
 static std::vector<std::thread> seqThreads;
 static int mux_audio_process_run = 0;
@@ -110,6 +111,10 @@ int mux_mq_from_audio_reader_visit () {
     }
     Msg msg = g_msg_from_audio[g_msg_from_audio_reader];
     switch (msg.type) {
+        case MsgTypeAudioRunning:
+            g_driver_running = msg.payload.i;
+            std::cout << "---- g_driver_running is running? " << msg.payload.i << "\n";
+        break;
         case MsgTypeJackTransportPosition:
             mux_set_jack_position(msg.payload.jackTransportPosition);
         break;
@@ -171,6 +176,14 @@ void mux_msg_to_audio(MsgType typ, int val)
     msg.type = typ;
     msg.payload.i = val;
     mux_mq_to_audio_writer_put(msg);
+}
+
+void mux_msg_from_audio(MsgType typ, int val)
+{
+    struct Msg msg;
+    msg.type = typ;
+    msg.payload.i = val;
+    mux_mq_from_audio_writer_put(msg);
 }
 
 /*

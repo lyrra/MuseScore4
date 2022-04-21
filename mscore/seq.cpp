@@ -62,6 +62,8 @@
 
 namespace Ms {
 
+int g_driver_running = 0;
+
 qreal g_utime;
 qreal g_utick;
         
