@@ -145,6 +145,9 @@ int mux_mq_to_audio_visit() {
         case MsgTypeEventToMidi:
             mux_audio_send_event_to_midi(msg);
         break;
+        case MsgTimeSigTempoChanged:
+            mux_audio_handle_MsgTimeSigTempoChanged();
+        break;
         default: // this should not happen
             qFatal("MUX got unknown message from audio: %u", msg.type);
             // skip this message
@@ -155,6 +158,16 @@ int mux_mq_to_audio_visit() {
     g_msg_to_audio_reader = (g_msg_to_audio_reader + 1) % (MAILBOX_SIZE - 1);
     //std::cout << "mux_to_audio new r:" << g_msg_to_audio_reader << "\n";
     return 1;
+}
+
+/* message to/from audio helpers
+ */
+void mux_msg_to_audio(MsgType typ, int val)
+{
+    struct Msg msg;
+    msg.type = typ;
+    msg.payload.i = val;
+    mux_mq_to_audio_writer_put(msg);
 }
 
 /*

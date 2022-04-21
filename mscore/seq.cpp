@@ -267,9 +267,7 @@ void Seq::CachedPreferences::update()
 void Seq::startTransport()
       {
       cachedPrefs.update();
-      struct Msg msg;
-      msg.type = MsgTypeTransportStart;
-      mux_mq_to_audio_writer_put(msg);
+      mux_msg_to_audio(MsgTypeTransportStart, 0);
       }
 
 //---------------------------------------------------------
@@ -278,9 +276,7 @@ void Seq::startTransport()
 
 void Seq::stopTransport()
       {
-      struct Msg msg;
-      msg.type = MsgTypeTransportStop;
-      mux_mq_to_audio_writer_put(msg);
+      mux_msg_to_audio(MsgTypeTransportStop, 0);
       }
 
 //---------------------------------------------------------
@@ -1919,7 +1915,7 @@ void Seq::setLoopSelection()
 
 void Seq::handleTimeSigTempoChanged()
       {
-      _driver->handleTimeSigTempoChanged();
+      mux_msg_to_audio(MsgTimeSigTempoChanged, 0);
       }
 
 //---------------------------------------------------------
