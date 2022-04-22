@@ -138,6 +138,15 @@ int mux_mq_to_audio_visit() {
     }
     Msg msg = g_msg_to_audio[g_msg_to_audio_reader];
     switch (msg.type) {
+        case MsgTypeAudioInit:
+            mux_audio_init(msg.payload.i);
+        break;
+        case MsgTypeAudioStart:
+            mux_audio_start(msg.payload.i);
+        break;
+        case MsgTypeAudioStop:
+            mux_audio_stop();
+        break;
         case MsgTypeTransportStart:
             mux_audio_jack_transport_start();
         break;

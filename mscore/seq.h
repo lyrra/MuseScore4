@@ -27,7 +27,6 @@
 #include "libmscore/tempo.h"
 
 #include "audio/midi/event.h"
-#include "audio/drivers/driver.h"
 #include "audio/drivers/control.h"
 
 #include "mscore/mux.h"
@@ -124,7 +123,6 @@ class Seq : public QObject, public Sequencer {
 
       SeqMsgFifo toSeq;
       SeqMsgFifo fromSeq;
-      Driver* _driver;
       MasterSynthesizer* _synti;
 
       double meterValue[2];
@@ -266,8 +264,6 @@ class Seq : public QObject, public Sequencer {
       void initInstruments(bool realTime = false);
       void updateOutPortCount(const int portCount);
 
-      Driver* driver()                                 { return _driver; }
-      void setDriver(Driver* d)                        { _driver = d;    }
       MasterSynthesizer* synti() const                 { return _synti;  }
       void setMasterSynthesizer(MasterSynthesizer* ms) { _synti = ms;    }
 

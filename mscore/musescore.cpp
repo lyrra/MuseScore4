@@ -3114,7 +3114,7 @@ void MuseScore::restartAudioEngine()
                         seq->synti()->setSampleRate(driver->sampleRate());
                         seq->synti()->init();
                         }
-                  seq->setDriver(driver);
+                  //seq->setDriver(driver);
                   }
             if (!seq->init())
                   qDebug("sequencer init failed");
@@ -4363,7 +4363,7 @@ void MuseScore::changeState(ScoreState val)
             else if (enable && (s->key() == "select-similar-range"))
                   a->setEnabled(cs && cs->selection().state() == SelState::RANGE);
             else if (enable && (s->key() == "synth-control" || s->key() == "toggle-mixer")) {
-                  Driver* driver = seq ? seq->driver() : 0;
+                  Driver* driver = 0; // seq ? seq->driver() : 0;
                   // a->setEnabled(driver && driver->getSynth());
                   if (MScore::debugMode)
                         qDebug("disable synth control");
@@ -8094,7 +8094,7 @@ void MuseScore::init(QStringList& argv)
                   showSplashMessage(sc, tr("Loading SoundFonts…"));
                   synti->init();
 
-                  seq->setDriver(driver);
+                  //seq->setDriver(driver);
                   }
             else {
                   // Do not delete the sequencer If we can't load driver.

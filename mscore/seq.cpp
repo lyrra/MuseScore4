@@ -170,7 +170,6 @@ Seq::Seq()
       endUTick  = 0;
       state    = Transport::STOP;
       oggInit  = false;
-      _driver  = 0;
       playPos  = events.cbegin();
       playFrame  = 0;
       metronomeVolume = 0.3;
@@ -211,7 +210,6 @@ Seq::Seq()
 
 Seq::~Seq()
       {
-      delete _driver;
       }
 
 //---------------------------------------------------------
@@ -288,9 +286,9 @@ void Seq::stopTransport()
 
 bool Seq::init(bool hotPlug)
       {
-      g_ctrl_hotPlug = hotPlug;
-      g_ctrl_work = 1; // tell audio-control to start
-      while (! g_ctrl_audio_running) {
+      mux_start_threads();
+      mux_msg_to_audio(MsgTypeAudioStart, hotPlug);
+      while (! g_driver_running /* g_ctrl_audio_running */) {
             std::this_thread::sleep_for(std::chrono::microseconds(10000));
             if (g_ctrl_audio_error) {
                   running = false;
@@ -300,7 +298,6 @@ bool Seq::init(bool hotPlug)
 
       cachedPrefs.update();
       running = true;
-      mux_start_threads();
       return true;
       }
 
@@ -311,7 +308,7 @@ bool Seq::init(bool hotPlug)
 void Seq::exit()
       {
       mux_stop_threads();
-      g_ctrl_work = -1; // tell audio-control to exit
+      mux_msg_to_audio(MsgTypeAudioStop, 0);
       }
 
 //---------------------------------------------------------
@@ -340,8 +337,7 @@ void Seq::loopStart()
 
 bool Seq::canStart()
       {
-      Q_ASSERT((!_driver) == (! g_driver_running));
-      if (!_driver)
+      if (! g_driver_running)
             return false;
       collectEvents(getPlayStartUtick());
       return (!events.empty() && endUTick != 0);
@@ -354,8 +350,7 @@ bool Seq::canStart()
 
 void Seq::start()
       {
-      Q_ASSERT((!_driver) == (! g_driver_running));
-      if (!_driver) {
+      if (! g_driver_running) {
             qDebug("No driver!");
             return;
             }
@@ -396,9 +391,8 @@ void Seq::start()
 void Seq::stop()
       {
       std::cout << "---- Seq::stop ----------------------\n";
-      Q_ASSERT((!_driver) == (! g_driver_running));
       const bool seqStopped = (state == Transport::STOP);
-      const bool driverStopped = !_driver || jack_transport == Transport::STOP;
+      const bool driverStopped = !g_driver_running || jack_transport == Transport::STOP;
       if (seqStopped && driverStopped)
             return;
 
@@ -407,7 +401,7 @@ void Seq::stop()
             ov_clear(&vf);
             oggInit = false;
             }
-      if (!_driver)
+      if (!g_driver_running)
             return;
       if (!preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) || (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) && jack_transport == Transport::PLAY))
             stopTransport();
@@ -525,8 +519,7 @@ void Seq::seqMessage(int msg, int arg)
             case '2':
                   guiStop();
 //                  heartBeatTimer->stop();
-                  Q_ASSERT((!_driver) == (! g_driver_running));
-                  if (_driver && mscore->getSynthControl()) {
+                  if (g_driver_running && mscore->getSynthControl()) {
                         meterValue[0]     = .0f;
                         meterValue[1]     = .0f;
                         meterPeakValue[0] = .0f;
@@ -540,8 +533,7 @@ void Seq::seqMessage(int msg, int arg)
             case '0':         // STOP
                   guiStop();
 //                  heartBeatTimer->stop();
-                  Q_ASSERT((!_driver) == (! g_driver_running));
-                  if (_driver && mscore->getSynthControl()) {
+                  if (g_driver_running && mscore->getSynthControl()) {
                         meterValue[0]     = .0f;
                         meterValue[1]     = .0f;
                         meterPeakValue[0] = .0f;
@@ -1122,8 +1114,7 @@ void Seq::initInstruments(bool realTime)
             if (maxMidiOutPort < scoreMaxMidiPort)
                   maxMidiOutPort = scoreMaxMidiPort;
             // if maxMidiOutPort is equal to existing ports number, it will do nothing
-            Q_ASSERT((!_driver) == (! g_driver_running));
-            if (_driver)
+            if (g_driver_running)
                   mux_msg_to_audio(MsgTypeOutPortCount, maxMidiOutPort + 1);
             }
 
@@ -1160,8 +1151,7 @@ void Seq::initInstruments(bool realTime)
 
 void Seq::updateOutPortCount(const int portCount)
 {
-      Q_ASSERT((!_driver) == (! g_driver_running));
-      if (seq->driver() && (preferences.getBool(PREF_IO_JACK_USEJACKMIDI) || preferences.getBool(PREF_IO_ALSA_USEALSAAUDIO)))
+      if (g_driver_running && (preferences.getBool(PREF_IO_JACK_USEJACKMIDI) || preferences.getBool(PREF_IO_ALSA_USEALSAAUDIO)))
             mux_msg_to_audio(MsgTypeOutPortCount, portCount);
       }
 
@@ -1605,8 +1595,7 @@ void Seq::seekEnd()
 
 void Seq::guiToSeq(const SeqMsg& msg)
       {
-      Q_ASSERT((!_driver) == (! g_driver_running));
-      if (!_driver || !running)
+      if (!g_driver_running || !running)
             return;
       toSeq.enqueue(msg);
       }
@@ -1626,8 +1615,8 @@ void Seq::eventToGui(NPlayEvent e)
 
 void Seq::midiInputReady()
       {
-      //if (_driver)
-      //      _driver->midiRead();
+      //if (g_driver_running)
+      //      mux_msg_to_audio(MsgTypeMidiInputReady, 0);
       }
 
 //---------------------------------------------------------
@@ -1696,8 +1685,7 @@ void Seq::putEvent(const NPlayEvent& event, unsigned framePos)
       _synti->play(event, syntiIdx);
 
       // midi
-      Q_ASSERT((!_driver) == (! g_driver_running));
-      if (_driver != 0 && (cachedPrefs.useJackMidi || cachedPrefs.useAlsaAudio || cachedPrefs.usePortAudio)) {
+      if (g_driver_running != 0 && (cachedPrefs.useJackMidi || cachedPrefs.useAlsaAudio || cachedPrefs.usePortAudio)) {
 
             int portIdx = score()->midiPort(event.channel());
             int channel = score()->midiChannel(event.channel());
@@ -1721,8 +1709,7 @@ void Seq::putEvent(const NPlayEvent& event, unsigned framePos)
 void Seq::heartBeatTimeout()
       {
       SynthControl* sc = mscore->getSynthControl();
-      Q_ASSERT((!_driver) == (! g_driver_running));
-      if (sc && _driver) {
+      if (sc && g_driver_running) {
             if (++peakTimer[0] >= peakHold)
                   meterPeakValue[0] *= .7f;
             if (++peakTimer[1] >= peakHold)
