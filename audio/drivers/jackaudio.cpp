@@ -59,6 +59,20 @@ void mux_send_event (Event e) {
     mux_mq_from_audio_writer_put(msg);
 }
 
+void mux_audio_init(int hot)
+{
+    g_driver->init(hot);
+}
+
+void mux_audio_start(int hotPlug)
+{
+    g_driver->start(hotPlug);
+}
+
+void mux_audio_stop()
+{
+}
+
 void mux_audio_jack_transport_start() {
     g_driver->startTransport();
 }
