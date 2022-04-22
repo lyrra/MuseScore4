@@ -22,8 +22,6 @@ static std::vector<std::thread> ctrlThreads;
 Driver* g_driver;
 int g_ctrl_audio_error = 0;
 int g_ctrl_audio_running = 0;
-int g_ctrl_work = 0;
-bool g_ctrl_hotPlug;
 
 /*
 void mux_teardown_driver (JackAudio *driver) {
@@ -35,36 +33,10 @@ void mux_teardown_driver (JackAudio *driver) {
 }
 */
 
-int mux_audio_control_work(Driver* driver)
-{
-    switch (g_ctrl_work) {
-        case 1: // hotPlug
-            std::cout << "mux_audio_ctrl call driver::start\n";
-            driver->start(g_ctrl_hotPlug);
-            g_ctrl_audio_running = 1;
-        break;
-        //case X: // close driver, but keep control running
-        //    mux_teardown_driver(driver);
-        case -1: // exit
-            return -1;
-        break;
-    }
-    return -1;
-}
-
 void mux_audio_control_thread_init(std::string _notused)
 {
     while (1) {
-        int work_done = 0;
-        if (g_ctrl_work) {
-            work_done = 1;
-            mux_audio_control_work(g_driver);
-            g_ctrl_work = 0;
-        }
-        if (mux_mq_to_audio_visit()) {
-            work_done = 1;
-        }
-        if (! work_done) {
+        if (! mux_mq_to_audio_visit()) {
             std::this_thread::sleep_for(std::chrono::microseconds(10000));
         }
     }
