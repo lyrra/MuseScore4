@@ -826,6 +826,7 @@ add_subdirectory(global)
 add_subdirectory(importexport)
 add_subdirectory(mscore)
 add_subdirectory(main)
+add_subdirectory(muxaudio)
 
 if (BUILD_CRASH_REPORTER)
       set (CRASHREPORTER_EXECUTABLE_NAME "${MSCORE_EXECUTABLE_NAME}-crash-reporter")
