@@ -10,11 +10,11 @@
     mscore: musescore main thread
     
                  muxaudio executable
-                +------------------+
-                |                  |
-    JACK <--->  | audio <--> mux <------> mscore
-                |                  |
-                +------------------+
+                +-----------------------------+
+                |                             |
+    JACK <--->  | audio  <--> ringbuffer <--->|<------ ZeroMQ ---> mscore
+                | thread      Zmq-recv-thread |
+                +-----------------------------+
 
     The mux-thread will work ahead of the audio-thread
     to process score-events into actual audiobuffers.
@@ -151,31 +151,31 @@ int mux_mq_to_audio_visit() {
     Msg msg = g_msg_to_audio[g_msg_to_audio_reader];
     switch (msg.type) {
         case MsgTypeAudioInit:
-//            mux_audio_init(msg.payload.i);
+            mux_audio_init(msg.payload.i);
         break;
         case MsgTypeAudioStart:
-//            mux_audio_start(msg.payload.i);
+            mux_audio_start(msg.payload.i);
         break;
         case MsgTypeAudioStop:
-//            mux_audio_stop();
+            mux_audio_stop();
         break;
         case MsgTypeTransportStart:
-//            mux_audio_jack_transport_start();
+            mux_audio_jack_transport_start();
         break;
         case MsgTypeTransportStop:
-//            mux_audio_jack_transport_stop();
+            mux_audio_jack_transport_stop();
         break;
         case MsgTypeTransportSeek:
-//            mux_audio_jack_transport_seek(msg.payload.i);
+            mux_audio_jack_transport_seek(msg.payload.i);
         break;
         case MsgTypeEventToMidi:
-//            mux_audio_send_event_to_midi(msg);
+            mux_audio_send_event_to_midi(msg);
         break;
         case MsgTypeTimeSigTempoChanged:
-//            mux_audio_handle_MsgTimeSigTempoChanged();
+            mux_audio_handle_MsgTimeSigTempoChanged();
         break;
         case MsgTypeOutPortCount:
-//            mux_audio_handle_updateOutPortCount(msg.payload.i);
+            mux_audio_handle_updateOutPortCount(msg.payload.i);
         break;
         default: // this should not happen
             std::cout << "MUX got unknown message from audio: " << msg.type << "\n";
@@ -372,7 +372,8 @@ void mux_network_mainloop()
             break;
         }
         fprintf(stderr, "Received Message, type=%i\n", msg.type);
-        std::this_thread::sleep_for(std::chrono::microseconds(10000));
+        mux_mq_to_audio_writer_put(msg);
+        //std::this_thread::sleep_for(std::chrono::microseconds(10000));
         //zmq_send(zmq_responder, "World", 5, 0);
     }
     fprintf(stderr, "mux_network_mainloop has exited\n");
