@@ -2,7 +2,7 @@
 
 include_directories(
       ${PROJECT_SOURCE_DIR}/global
-      ${PROJECT_SOURCE_DIR}/audio/drivers
+      ${PROJECT_SOURCE_DIR}/muxaudio/driver
       ${PROJECT_BINARY_DIR}
       ${QTSINGLEAPPLICATION_INCLUDE_DIRS}
       )
