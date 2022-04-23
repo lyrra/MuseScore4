@@ -36,8 +36,6 @@ void mux_teardown_driver (JackAudio *driver) {
 
 void mux_audio_control_thread_init(std::string _notused)
 {
-    // FIX: somewhere here, the driver should be initialized
-    //      Driver* driverFactory(std::string driverName)
     while (1) {
         if (! mux_mq_to_audio_visit()) {
             std::this_thread::sleep_for(std::chrono::microseconds(10000));
@@ -52,6 +50,8 @@ void mux_audio_zmq_thread_init(std::string _notused)
 
 void mux_threads_start()
 {
+    g_driver = driverFactory("");
+
     std::vector<std::thread> threadv;
     std::thread ctrlThread(mux_audio_control_thread_init, "notused");
     threadv.push_back(std::move(ctrlThread));
