@@ -66,8 +66,7 @@
 #include <string.h>
 #include <iostream>
 #include <vector>
-//#include "seq.h"
-//#include "musescore.h"
+#include <zmq.h>
 #include "muxaudio.h"
 #include <thread>
 #include <chrono>
@@ -344,6 +343,29 @@ void mux_stop_threads()
     std::cout << "MUX stop audio threads\n";
     mux_audio_process_run = 0;
     seqThreads[0].join();
+}
+
+
+void mux_network_server()
+{
+    std::cerr << "MUX ZeroMQ started at port tcp://*:7770\n";
+    //  Socket to talk to clients
+    void *context = zmq_ctx_new();
+    void *responder = zmq_socket(context, ZMQ_REP);
+    int rc = zmq_bind(responder, "tcp://*:7770");
+    if (rc) {
+        fprintf(stderr, "zmq-bind error: %s\n", strerror(errno));
+        exit(rc);
+    }
+
+    std::cerr << "MUX ZeroMQ entering main-loop\n";
+    while (1) {
+        char buffer [10];
+        zmq_recv(responder, buffer, 10, 0);
+        fprintf(stderr, "Received Hello\n");
+        std::this_thread::sleep_for(std::chrono::microseconds(100000));
+        zmq_send(responder, "World", 5, 0);
+    }
 }
 
 } // end of namespace MS

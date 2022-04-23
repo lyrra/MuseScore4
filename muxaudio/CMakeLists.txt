@@ -41,7 +41,7 @@ target_include_directories(muxaudio PRIVATE
       ${PROJECT_SOURCE_DIR}
       )
 
-#target_link_libraries(mscore mscoreapp global)
+target_link_libraries(muxaudio ${ZMQ_LIBRARY})
 
 
 if (MINGW)
