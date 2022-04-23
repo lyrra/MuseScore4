@@ -81,6 +81,8 @@ void mux_audio_send_event_to_midi(struct Msg msg);
 static std::vector<std::thread> seqThreads;
 static int mux_audio_process_run = 0;
 
+static void *zmq_context;
+static void *zmq_responder;
 
 /*
  * message queue, between audio and mux
@@ -346,26 +348,40 @@ void mux_stop_threads()
 }
 
 
-void mux_network_server()
+void mux_network_open()
 {
     std::cerr << "MUX ZeroMQ started at port tcp://*:7770\n";
     //  Socket to talk to clients
-    void *context = zmq_ctx_new();
-    void *responder = zmq_socket(context, ZMQ_REP);
-    int rc = zmq_bind(responder, "tcp://*:7770");
+    zmq_context = zmq_ctx_new();
+    zmq_responder = zmq_socket(zmq_context, ZMQ_PAIR);
+    int rc = zmq_bind(zmq_responder, "tcp://*:7770");
     if (rc) {
         fprintf(stderr, "zmq-bind error: %s\n", strerror(errno));
         exit(rc);
     }
+}
 
+void mux_network_mainloop()
+{
     std::cerr << "MUX ZeroMQ entering main-loop\n";
     while (1) {
-        char buffer [10];
-        zmq_recv(responder, buffer, 10, 0);
-        fprintf(stderr, "Received Hello\n");
-        std::this_thread::sleep_for(std::chrono::microseconds(100000));
-        zmq_send(responder, "World", 5, 0);
+        struct Msg msg;
+        qDebug("zmq-recv len %i", sizeof(struct Msg));
+        if (zmq_recv(zmq_responder, &msg, sizeof(struct Msg), 0) < 0) {
+            fprintf(stderr, "zmq-recv error: %s\n", strerror(errno));
+            break;
+        }
+        fprintf(stderr, "Received Message, type=%i\n", msg.type);
+        std::this_thread::sleep_for(std::chrono::microseconds(10000));
+        //zmq_send(zmq_responder, "World", 5, 0);
     }
+    fprintf(stderr, "mux_network_mainloop has exited\n");
+}
+
+void mux_network_server()
+{
+    mux_network_open();
+    mux_network_mainloop();
 }
 
 } // end of namespace MS

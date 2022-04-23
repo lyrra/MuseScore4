@@ -1421,7 +1421,6 @@ void PreferenceDialog::apply()
                               qDebug("sequencer driver is null");
                               restartAudioEngine();
                               }
-                        mux_msg_to_audio(MsgTypeAudioInit, 1);
                         if (!seq->init(true))
                               qDebug("sequencer init failed");
                         }

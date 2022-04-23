@@ -15,6 +15,8 @@
 
 namespace Ms {
 
+static bool g_threads_started = false;
+
 void mux_network_client();
 int mux_mq_to_audio_visit();
 
@@ -48,8 +50,10 @@ void mux_audio_zmq_thread_init(std::string _notused)
     mux_network_client();
 }
 
-void mux_control_start()
+void mux_threads_start()
 {
+    if (g_threads_started) return;
+    g_threads_started = true;
     std::vector<std::thread> threadv;
     std::thread ctrlThread(mux_audio_control_thread_init, "notused");
     threadv.push_back(std::move(ctrlThread));
