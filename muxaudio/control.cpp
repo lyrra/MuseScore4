@@ -15,9 +15,10 @@
 
 namespace Ms {
 
+void mux_network_server();
 int mux_mq_to_audio_visit();
 
-static std::vector<std::thread> ctrlThreads;
+static std::vector<std::thread> muxThreads;
 
 Driver* g_driver;
 int g_ctrl_audio_error = 0;
@@ -35,6 +36,8 @@ void mux_teardown_driver (JackAudio *driver) {
 
 void mux_audio_control_thread_init(std::string _notused)
 {
+    // FIX: somewhere here, the driver should be initialized
+    //      Driver* driverFactory(std::string driverName)
     while (1) {
         if (! mux_mq_to_audio_visit()) {
             std::this_thread::sleep_for(std::chrono::microseconds(10000));
@@ -42,18 +45,29 @@ void mux_audio_control_thread_init(std::string _notused)
     }
 }
 
-void mux_control_start()
+void mux_audio_zmq_thread_init(std::string _notused)
 {
-    std::vector<std::thread> threadv;
-    std::thread procThread(mux_audio_control_thread_init, "notused");
-    threadv.push_back(std::move(procThread));
-    ctrlThreads = std::move(threadv);
+    mux_network_server();
 }
 
+void mux_threads_start()
+{
+    std::vector<std::thread> threadv;
+    std::thread ctrlThread(mux_audio_control_thread_init, "notused");
+    threadv.push_back(std::move(ctrlThread));
+    std::thread zmqThread(mux_audio_zmq_thread_init, "notused");
+    threadv.push_back(std::move(zmqThread));
+    muxThreads = std::move(threadv);
 }
+
+} // end of Ms namespace
 
 int main(int argc, char **argv)
 {
+    Ms::mux_threads_start();
+    while(1){
+        std::this_thread::sleep_for(std::chrono::microseconds(100000));
+    }
     return 0;
 }
 

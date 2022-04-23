@@ -62,6 +62,7 @@
 #include "mux.h"
 #include <thread>
 #include <chrono>
+#include <zmq.h>
 
 namespace Ms {
 
@@ -332,6 +333,31 @@ void mux_stop_threads()
     std::cout << "MUX stop audio threads\n";
     mux_audio_process_run = 0;
     seqThreads[0].join();
+}
+
+void mux_network_client()
+{
+    fprintf(stderr, "ZMQ Connecting to hello world server\n");
+    void *context = zmq_ctx_new();
+    void *requester = zmq_socket(context, ZMQ_REQ);
+    int rc = zmq_connect(requester, "tcp://localhost:7770");
+    if (rc) {
+        fprintf(stderr, "zmq-connect error: %s\n", strerror(errno));
+        exit(rc);
+    }
+
+    int request_nbr;
+    qDebug("ZMQ client entering main-loop");
+    for (request_nbr = 0; ; request_nbr++) {
+        char buffer [10];
+        qDebug("Sending Hello %d\n", request_nbr);
+        zmq_send(requester, "Hello", 5, 0);
+        zmq_recv(requester, buffer, 10, 0);
+        qDebug("Received World %d", request_nbr);
+        std::this_thread::sleep_for(std::chrono::microseconds(1000));
+    }
+    zmq_close(requester);
+    zmq_ctx_destroy(context);
 }
 
 } // end of namespace MS

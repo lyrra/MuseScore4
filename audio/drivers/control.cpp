@@ -15,9 +15,10 @@
 
 namespace Ms {
 
+void mux_network_client();
 int mux_mq_to_audio_visit();
 
-static std::vector<std::thread> ctrlThreads;
+static std::vector<std::thread> muxThreads;
 
 Driver* g_driver;
 int g_ctrl_audio_error = 0;
@@ -42,12 +43,19 @@ void mux_audio_control_thread_init(std::string _notused)
     }
 }
 
+void mux_audio_zmq_thread_init(std::string _notused)
+{
+    mux_network_client();
+}
+
 void mux_control_start()
 {
     std::vector<std::thread> threadv;
-    std::thread procThread(mux_audio_control_thread_init, "notused");
-    threadv.push_back(std::move(procThread));
-    ctrlThreads = std::move(threadv);
+    std::thread ctrlThread(mux_audio_control_thread_init, "notused");
+    threadv.push_back(std::move(ctrlThread));
+    std::thread zmqThread(mux_audio_zmq_thread_init, "notused");
+    threadv.push_back(std::move(zmqThread));
+    muxThreads = std::move(threadv);
 }
 
 }

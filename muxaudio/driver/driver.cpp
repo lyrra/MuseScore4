@@ -48,8 +48,6 @@ struct {
       bool PREF_IO_PULSEAUDIO_USEPULSEAUDIO = false;
 } preferences;
 
-void mux_control_start();
-
 //#ifdef USE_PULSEAUDIO
 //extern Driver* getPulseAudioDriver();
 //#endif
@@ -156,8 +154,6 @@ Driver* driverFactory(std::string driverName)
 #endif
       if (driver == 0)
             qDebug("no audio driver found");
-
-      mux_control_start();
 
       return driver;
       }
