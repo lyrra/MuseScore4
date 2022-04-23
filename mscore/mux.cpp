@@ -67,7 +67,7 @@
 namespace Ms {
 
 
-void mux_zmq_send_to_audio(struct Msg msg);
+void mux_zmq_ctrl_send_to_audio(struct Msg msg);
 void mux_send_event_to_gui(struct SparseEvent se);
 void mux_audio_send_event_to_midi(struct Msg msg);
 extern Seq* seq;
@@ -76,8 +76,8 @@ extern int g_driver_running;
 static std::vector<std::thread> seqThreads;
 static int mux_audio_process_run = 0;
 
-static void *zmq_context;
-static void *zmq_requester;
+static void *zmq_context_ctrl;
+static void *zmq_requester_ctrl;
 
 /*
  * message queue, between audio and mux
@@ -191,7 +191,7 @@ void mux_msg_to_audio(MsgType typ, int val)
     msg.payload.i = val;
     mux_mq_to_audio_writer_put(msg);
     // also write message on network-MQ towards external audio-process(muxaudio)
-    mux_zmq_send_to_audio(msg);
+    mux_zmq_ctrl_send_to_audio(msg);
 }
 
 void mux_msg_from_audio(MsgType typ, int val)
@@ -341,33 +341,33 @@ void mux_stop_threads()
     seqThreads[0].join();
 }
 
-void mux_network_open()
+void mux_network_open_ctrl()
 {
-    qDebug("ZMQ Connecting to hello world server");
-    zmq_context = zmq_ctx_new();
-    zmq_requester = zmq_socket(zmq_context, ZMQ_PAIR);
-    int rc = zmq_connect(zmq_requester, "tcp://localhost:7770");
+    qDebug("ZMQ ctrl Connecting to muxaudio");
+    zmq_context_ctrl = zmq_ctx_new();
+    zmq_requester_ctrl = zmq_socket(zmq_context_ctrl, ZMQ_PAIR);
+    int rc = zmq_connect(zmq_requester_ctrl, "tcp://localhost:7770");
     if (rc) {
-        qDebug("zmq-connect error: %s", strerror(errno));
+        qDebug("zmq-connect ctrl error: %s", strerror(errno));
         exit(rc);
     }
 }
 
-void mux_zmq_send_to_audio(struct Msg msg)
+void mux_zmq_ctrl_send_to_audio(struct Msg msg)
 {
-    qDebug("zmq-send msg.type=%i (len %i)", msg.type, sizeof(struct Msg));
-    zmq_send(zmq_requester, &msg, sizeof(struct Msg), 0);
+    qDebug("zmq-send ctrl msg.type=%i (len %i)", msg.type, sizeof(struct Msg));
+    zmq_send(zmq_requester_ctrl, &msg, sizeof(struct Msg), 0);
 }
 
-void mux_network_close()
+void mux_network_close_ctrl()
 {
-    zmq_close(zmq_requester);
-    zmq_ctx_destroy(zmq_context);
+    zmq_close(zmq_requester_ctrl);
+    zmq_ctx_destroy(zmq_context_ctrl);
 }
 
 void mux_network_client()
 {
-    mux_network_open();
+    mux_network_open_ctrl();
 }
 
 } // end of namespace MS

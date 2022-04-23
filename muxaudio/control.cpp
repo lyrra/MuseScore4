@@ -15,7 +15,8 @@
 
 namespace Ms {
 
-void mux_network_server();
+void mux_network_server_ctrl();
+void mux_network_server_audio();
 int mux_mq_to_audio_visit();
 
 static std::vector<std::thread> muxThreads;
@@ -43,10 +44,16 @@ void mux_audio_control_thread_init(std::string _notused)
     }
 }
 
+void mux_ctrl_zmq_thread_init(std::string _notused)
+{
+    mux_network_server_ctrl();
+}
+
 void mux_audio_zmq_thread_init(std::string _notused)
 {
-    mux_network_server();
+    mux_network_server_audio();
 }
+
 
 void mux_threads_start()
 {
@@ -55,8 +62,10 @@ void mux_threads_start()
     std::vector<std::thread> threadv;
     std::thread ctrlThread(mux_audio_control_thread_init, "notused");
     threadv.push_back(std::move(ctrlThread));
-    std::thread zmqThread(mux_audio_zmq_thread_init, "notused");
-    threadv.push_back(std::move(zmqThread));
+    std::thread zmqCtrlThread(mux_ctrl_zmq_thread_init, "notused");
+    threadv.push_back(std::move(zmqCtrlThread));
+    std::thread zmqAudioThread(mux_audio_zmq_thread_init, "notused");
+    threadv.push_back(std::move(zmqAudioThread));
     muxThreads = std::move(threadv);
 }
 

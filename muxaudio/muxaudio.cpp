@@ -81,8 +81,11 @@ void mux_audio_send_event_to_midi(struct Msg msg);
 static std::vector<std::thread> seqThreads;
 static int mux_audio_process_run = 0;
 
-static void *zmq_context;
-static void *zmq_responder;
+static void *zmq_context_ctrl;
+static void *zmq_responder_ctrl;
+
+static void *zmq_context_audio;
+static void *zmq_responder_audio;
 
 /*
  * message queue, between audio and mux
@@ -234,6 +237,7 @@ void mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
     // we're in realtime-context, and shouldn't do any syscalls,
     // or sleep because there is no maximum sleep-amount guarantees,
     // if paranoid, just spin-loop
+    std::cout << "MUX audio-process-buffer\n";
     while (1) {
         unsigned int newReaderPos = (g_ringBufferReaderStart + numFrames * MUX_CHAN) % MUX_RINGSIZE;
         // ensure we dont read into writers buffer part
@@ -348,41 +352,78 @@ void mux_stop_threads()
 }
 
 
-void mux_network_open()
+void mux_network_open_ctrl()
 {
-    std::cerr << "MUX ZeroMQ started at port tcp://*:7770\n";
+    std::cerr << "MUX ZeroMQ started control at port tcp://*:7770\n";
     //  Socket to talk to clients
-    zmq_context = zmq_ctx_new();
-    zmq_responder = zmq_socket(zmq_context, ZMQ_PAIR);
-    int rc = zmq_bind(zmq_responder, "tcp://*:7770");
+    zmq_context_ctrl = zmq_ctx_new();
+    zmq_responder_ctrl = zmq_socket(zmq_context_ctrl, ZMQ_PAIR);
+    int rc = zmq_bind(zmq_responder_ctrl, "tcp://*:7770");
     if (rc) {
         fprintf(stderr, "zmq-bind error: %s\n", strerror(errno));
         exit(rc);
     }
 }
 
-void mux_network_mainloop()
+void mux_network_mainloop_ctrl()
 {
-    std::cerr << "MUX ZeroMQ entering main-loop\n";
+    std::cerr << "MUX ZeroMQ control entering main-loop\n";
     while (1) {
         struct Msg msg;
-        qDebug("zmq-recv len %i", sizeof(struct Msg));
-        if (zmq_recv(zmq_responder, &msg, sizeof(struct Msg), 0) < 0) {
-            fprintf(stderr, "zmq-recv error: %s\n", strerror(errno));
+        qDebug("zmq-recv control len %i", sizeof(struct Msg));
+        if (zmq_recv(zmq_responder_ctrl, &msg, sizeof(struct Msg), 0) < 0) {
+            fprintf(stderr, "zmq-recv control  error: %s\n", strerror(errno));
             break;
         }
-        fprintf(stderr, "Received Message, type=%i\n", msg.type);
+        fprintf(stderr, "Received Control Message, type=%i\n", msg.type);
         mux_mq_to_audio_writer_put(msg);
         //std::this_thread::sleep_for(std::chrono::microseconds(10000));
         //zmq_send(zmq_responder, "World", 5, 0);
     }
-    fprintf(stderr, "mux_network_mainloop has exited\n");
+    fprintf(stderr, "mux_network_mainloop control has exited\n");
 }
 
-void mux_network_server()
+void mux_network_open_audio()
 {
-    mux_network_open();
-    mux_network_mainloop();
+    std::cerr << "MUX ZeroMQ started audio at port tcp://*:7771\n";
+    //  Socket to talk to clients
+    zmq_context_audio = zmq_ctx_new();
+    zmq_responder_audio = zmq_socket(zmq_context_audio, ZMQ_PAIR);
+    int rc = zmq_bind(zmq_responder_audio, "tcp://*:7771");
+    if (rc) {
+        fprintf(stderr, "zmq-bind error: %s\n", strerror(errno));
+        exit(rc);
+    }
+}
+
+void mux_network_mainloop_audio()
+{
+    std::cerr << "MUX ZeroMQ audio entering main-loop\n";
+    while (1) {
+        struct Msg msg;
+        qDebug("zmq-recv audio len %i", sizeof(struct Msg));
+        if (zmq_recv(zmq_responder_audio, &msg, sizeof(struct Msg), 0) < 0) {
+            fprintf(stderr, "zmq-recv error: %s\n", strerror(errno));
+            break;
+        }
+        fprintf(stderr, "Received Audio Message, type=%i\n", msg.type);
+        mux_mq_to_audio_writer_put(msg);
+        //std::this_thread::sleep_for(std::chrono::microseconds(10000));
+        //zmq_send(zmq_responder, "World", 5, 0);
+    }
+    fprintf(stderr, "mux_network_mainloop audio has exited\n");
+}
+
+void mux_network_server_ctrl()
+{
+    mux_network_open_ctrl();
+    mux_network_mainloop_ctrl();
+}
+
+void mux_network_server_audio()
+{
+    mux_network_open_audio();
+    mux_network_mainloop_audio();
 }
 
 } // end of namespace MS
