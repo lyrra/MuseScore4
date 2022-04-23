@@ -38,7 +38,7 @@
 
 namespace Ms {
 
-void mux_control_start();
+void mux_threads_start();
 
 #ifdef USE_PULSEAUDIO
 extern Driver* getPulseAudioDriver(Seq*);
@@ -145,7 +145,7 @@ Driver* driverFactory(Seq* seq, QString driverName)
       if (driver == 0)
             qDebug("no audio driver found");
 
-      mux_control_start();
+      mux_threads_start();
 
       return driver;
       }

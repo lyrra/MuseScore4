@@ -67,6 +67,7 @@
 namespace Ms {
 
 
+void mux_zmq_send_to_audio(struct Msg msg);
 void mux_send_event_to_gui(struct SparseEvent se);
 void mux_audio_send_event_to_midi(struct Msg msg);
 extern Seq* seq;
@@ -75,6 +76,8 @@ extern int g_driver_running;
 static std::vector<std::thread> seqThreads;
 static int mux_audio_process_run = 0;
 
+static void *zmq_context;
+static void *zmq_requester;
 
 /*
  * message queue, between audio and mux
@@ -182,10 +185,13 @@ int mux_mq_to_audio_visit() {
  */
 void mux_msg_to_audio(MsgType typ, int val)
 {
+    // put message on MQ towards audio thread (second part of mux)
     struct Msg msg;
     msg.type = typ;
     msg.payload.i = val;
     mux_mq_to_audio_writer_put(msg);
+    // also write message on network-MQ towards external audio-process(muxaudio)
+    mux_zmq_send_to_audio(msg);
 }
 
 void mux_msg_from_audio(MsgType typ, int val)
@@ -335,29 +341,33 @@ void mux_stop_threads()
     seqThreads[0].join();
 }
 
-void mux_network_client()
+void mux_network_open()
 {
-    fprintf(stderr, "ZMQ Connecting to hello world server\n");
-    void *context = zmq_ctx_new();
-    void *requester = zmq_socket(context, ZMQ_REQ);
-    int rc = zmq_connect(requester, "tcp://localhost:7770");
+    qDebug("ZMQ Connecting to hello world server");
+    zmq_context = zmq_ctx_new();
+    zmq_requester = zmq_socket(zmq_context, ZMQ_PAIR);
+    int rc = zmq_connect(zmq_requester, "tcp://localhost:7770");
     if (rc) {
-        fprintf(stderr, "zmq-connect error: %s\n", strerror(errno));
+        qDebug("zmq-connect error: %s", strerror(errno));
         exit(rc);
     }
+}
 
-    int request_nbr;
-    qDebug("ZMQ client entering main-loop");
-    for (request_nbr = 0; ; request_nbr++) {
-        char buffer [10];
-        qDebug("Sending Hello %d\n", request_nbr);
-        zmq_send(requester, "Hello", 5, 0);
-        zmq_recv(requester, buffer, 10, 0);
-        qDebug("Received World %d", request_nbr);
-        std::this_thread::sleep_for(std::chrono::microseconds(1000));
-    }
-    zmq_close(requester);
-    zmq_ctx_destroy(context);
+void mux_zmq_send_to_audio(struct Msg msg)
+{
+    qDebug("zmq-send msg.type=%i (len %i)", msg.type, sizeof(struct Msg));
+    zmq_send(zmq_requester, &msg, sizeof(struct Msg), 0);
+}
+
+void mux_network_close()
+{
+    zmq_close(zmq_requester);
+    zmq_ctx_destroy(zmq_context);
+}
+
+void mux_network_client()
+{
+    mux_network_open();
 }
 
 } // end of namespace MS
