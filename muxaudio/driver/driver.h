@@ -22,9 +22,9 @@
 
 namespace Ms {
 
-class Seq;
 class NPlayEvent;
 enum class Transport : char;
+
 
 //---------------------------------------------------------
 //   Driver
@@ -51,6 +51,8 @@ class Driver {
       };
 
 extern bool alsaIsUsed, jackIsUsed, portAudioIsUsed, pulseAudioIsUsed;
+
+Driver* driverFactory(std::string driverName);
 
 } // namespace Ms
 #endif
