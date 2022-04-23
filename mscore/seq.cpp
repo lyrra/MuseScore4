@@ -286,6 +286,9 @@ void Seq::stopTransport()
 
 bool Seq::init(bool hotPlug)
       {
+      if (hotPlug) {
+            mux_msg_to_audio(MsgTypeAudioInit, hotPlug);
+            }
       mux_start_threads();
       mux_msg_to_audio(MsgTypeAudioStart, hotPlug);
       while (! g_driver_running /* g_ctrl_audio_running */) {
