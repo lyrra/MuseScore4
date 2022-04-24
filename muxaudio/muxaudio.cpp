@@ -73,19 +73,44 @@
 
 namespace Ms {
 
+const char* mux_msg_type_name(int type) {
+    switch (type) {
+        case MsgTypeAudioInit:
+            return "MsgTypeAudioInit";
+        case MsgTypeAudioStart:
+            return "MsgTypeAudioStart";
+        case MsgTypeAudioStop:
+            return "MsgTypeAudioStop";
+        case MsgTypeTransportStart:
+            return "MsgTypeTransportStart";
+        case MsgTypeTransportStop:
+            return "MsgTypeTransportStop";
+        case MsgTypeTransportSeek:
+            return "MsgTypeTransportSeek";
+        case MsgTypeEventToMidi:
+            return "MsgTypeEventToMidi";
+        case MsgTypeTimeSigTempoChanged:
+            return "MsgTypeTimeSigTempoChanged";
+        case MsgTypeOutPortCount:
+            return "MsgTypeOutPortCount";
+        default: // this should not happen
+            return "UNKNOWN";
+    }
+}
+
 
 void mux_send_event_to_gui(struct SparseEvent se);
 void mux_audio_send_event_to_midi(struct Msg msg);
 //extern int g_driver_running;
 
 static std::vector<std::thread> seqThreads;
-static int mux_audio_process_run = 0;
+int mux_audio_process_run = 0;
 
 static void *zmq_context_ctrl;
-static void *zmq_responder_ctrl;
+static void *zmq_socket_ctrl;
 
 static void *zmq_context_audio;
-static void *zmq_responder_audio;
+static void *zmq_socket_audio;
 
 /*
  * message queue, between audio and mux
@@ -237,7 +262,6 @@ void mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
     // we're in realtime-context, and shouldn't do any syscalls,
     // or sleep because there is no maximum sleep-amount guarantees,
     // if paranoid, just spin-loop
-    std::cout << "MUX audio-process-buffer\n";
     while (1) {
         unsigned int newReaderPos = (g_ringBufferReaderStart + numFrames * MUX_CHAN) % MUX_RINGSIZE;
         // ensure we dont read into writers buffer part
@@ -269,7 +293,6 @@ void mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
     }
 }
 
-
 // this is the non-realtime part, and is requested to do work
 // by the realtime-part, and then buffering its work-content
 // and is writing to the ring-buffer
@@ -293,10 +316,14 @@ int mux_audio_process_work() {
     }
 
     // process a MUX_CHUNKSIZE number of Frames
-    memset(g_chunkBufferStereo, 0, sizeof(float) * MUX_CHUNKSIZE);
-    // fill the chunk with audio content
-    // FIX: send a message to mux-seq to process
+    //memset(g_chunkBufferStereo, 0, sizeof(float) * MUX_CHUNKSIZE);
+    // Request a chunk over the network from mscore/seq
     //seq->process(MUX_CHUNKSIZE >> 1, g_chunkBufferStereo);
+    std::cout << "MUX tell (over zmq-network) mscore/seq to process an chunk\n";
+    zmq_send(zmq_socket_audio, "a", 1, 0);
+    zmq_recv(zmq_socket_audio, g_chunkBufferStereo, sizeof(float) * MUX_CHUNKSIZE, 0);
+    //zmq_recv(zmq_socket_audio, g_chunkBufferStereo, 1, 0);
+    std::cout << "MUX got (over zmq-network) chunk from mscore/seq\n";
     // copy over the chunk to the ringbuffer
     for (unsigned int i = 0; i < MUX_CHUNKSIZE; i++) {
         g_ringBufferStereo[(i + g_ringBufferWriterStart) % (MUX_RINGSIZE)] =
@@ -328,37 +355,13 @@ void mux_audio_process() {
     std::cout << "MUX audio-process terminated.\n";
 }
 
-void mux_thread_process_init(std::string msg)
-{
-    std::cout << "MUX audio-process thread initialized:" << msg << "\n";
-    mux_audio_process();
-}
-
-void mux_start_threads()
-{
-    std::cout << "MUX start audio threads\n";
-    mux_audio_process_run = 1;
-    std::vector<std::thread> threadv;
-    std::thread procThread(mux_thread_process_init, "hi there!");
-    threadv.push_back(std::move(procThread));
-    seqThreads = std::move(threadv);
-}
-
-void mux_stop_threads()
-{
-    std::cout << "MUX stop audio threads\n";
-    mux_audio_process_run = 0;
-    seqThreads[0].join();
-}
-
-
 void mux_network_open_ctrl()
 {
     std::cerr << "MUX ZeroMQ started control at port tcp://*:7770\n";
     //  Socket to talk to clients
     zmq_context_ctrl = zmq_ctx_new();
-    zmq_responder_ctrl = zmq_socket(zmq_context_ctrl, ZMQ_PAIR);
-    int rc = zmq_bind(zmq_responder_ctrl, "tcp://*:7770");
+    zmq_socket_ctrl = zmq_socket(zmq_context_ctrl, ZMQ_PAIR);
+    int rc = zmq_bind(zmq_socket_ctrl, "tcp://*:7770");
     if (rc) {
         fprintf(stderr, "zmq-bind error: %s\n", strerror(errno));
         exit(rc);
@@ -370,15 +373,13 @@ void mux_network_mainloop_ctrl()
     std::cerr << "MUX ZeroMQ control entering main-loop\n";
     while (1) {
         struct Msg msg;
-        qDebug("zmq-recv control len %i", sizeof(struct Msg));
-        if (zmq_recv(zmq_responder_ctrl, &msg, sizeof(struct Msg), 0) < 0) {
+        if (zmq_recv(zmq_socket_ctrl, &msg, sizeof(struct Msg), 0) < 0) {
             fprintf(stderr, "zmq-recv control  error: %s\n", strerror(errno));
             break;
         }
-        fprintf(stderr, "Received Control Message, type=%i\n", msg.type);
+        fprintf(stderr, "Received Control Message, type=(%i)%s\n", msg.type,
+                mux_msg_type_name(msg.type));
         mux_mq_to_audio_writer_put(msg);
-        //std::this_thread::sleep_for(std::chrono::microseconds(10000));
-        //zmq_send(zmq_responder, "World", 5, 0);
     }
     fprintf(stderr, "mux_network_mainloop control has exited\n");
 }
@@ -388,8 +389,8 @@ void mux_network_open_audio()
     std::cerr << "MUX ZeroMQ started audio at port tcp://*:7771\n";
     //  Socket to talk to clients
     zmq_context_audio = zmq_ctx_new();
-    zmq_responder_audio = zmq_socket(zmq_context_audio, ZMQ_PAIR);
-    int rc = zmq_bind(zmq_responder_audio, "tcp://*:7771");
+    zmq_socket_audio = zmq_socket(zmq_context_audio, ZMQ_PAIR);
+    int rc = zmq_bind(zmq_socket_audio, "tcp://*:7771");
     if (rc) {
         fprintf(stderr, "zmq-bind error: %s\n", strerror(errno));
         exit(rc);
@@ -400,16 +401,7 @@ void mux_network_mainloop_audio()
 {
     std::cerr << "MUX ZeroMQ audio entering main-loop\n";
     while (1) {
-        struct Msg msg;
-        qDebug("zmq-recv audio len %i", sizeof(struct Msg));
-        if (zmq_recv(zmq_responder_audio, &msg, sizeof(struct Msg), 0) < 0) {
-            fprintf(stderr, "zmq-recv error: %s\n", strerror(errno));
-            break;
-        }
-        fprintf(stderr, "Received Audio Message, type=%i\n", msg.type);
-        mux_mq_to_audio_writer_put(msg);
-        //std::this_thread::sleep_for(std::chrono::microseconds(10000));
-        //zmq_send(zmq_responder, "World", 5, 0);
+        std::this_thread::sleep_for(std::chrono::microseconds(100000));
     }
     fprintf(stderr, "mux_network_mainloop audio has exited\n");
 }
