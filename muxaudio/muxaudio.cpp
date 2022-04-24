@@ -274,6 +274,7 @@ void mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
             g_readerPause++;
             std::this_thread::sleep_for(std::chrono::microseconds(MUX_READER_USLEEP));
         } else { // there is enough room in reader-part of ring-buffer to use
+            std::cout << "MUX feed jack buffer numFrames: " << numFrames << "\n";
             for (unsigned int i = 0; i < numFrames * MUX_CHAN; i++) {
                 bufferStereo[i] =
                  g_ringBufferStereo[(i + g_ringBufferReaderStart) % MUX_RINGSIZE];
@@ -320,8 +321,8 @@ int mux_audio_process_work() {
     // Request a chunk over the network from mscore/seq
     //seq->process(MUX_CHUNKSIZE >> 1, g_chunkBufferStereo);
     std::cout << "MUX tell (over zmq-network) mscore/seq to process an chunk\n";
-    zmq_send(zmq_socket_audio, "a", 1, 0);
-    zmq_recv(zmq_socket_audio, g_chunkBufferStereo, sizeof(float) * MUX_CHUNKSIZE, 0);
+    if (zmq_send(zmq_socket_audio, "a", 1, 0) < 0) return 1;
+    if (zmq_recv(zmq_socket_audio, g_chunkBufferStereo, sizeof(float) * MUX_CHUNKSIZE, 0) < 0) return 1;
     //zmq_recv(zmq_socket_audio, g_chunkBufferStereo, 1, 0);
     std::cout << "MUX got (over zmq-network) chunk from mscore/seq\n";
     // copy over the chunk to the ringbuffer
@@ -329,6 +330,7 @@ int mux_audio_process_work() {
         g_ringBufferStereo[(i + g_ringBufferWriterStart) % (MUX_RINGSIZE)] =
          g_chunkBufferStereo[i];
     }
+
     if (newWriterPos < g_ringBufferWriterStart) {
         g_writerCycle++;
     }
