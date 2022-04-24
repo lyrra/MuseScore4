@@ -19,7 +19,6 @@ static bool g_threads_started = false;
 
 void mux_network_client_ctrl();
 void mux_network_client_audio();
-int mux_mq_to_audio_visit();
 
 static std::vector<std::thread> muxThreads;
 
@@ -37,15 +36,6 @@ void mux_teardown_driver (JackAudio *driver) {
 }
 */
 
-void mux_audio_internalcontrol_thread_init(std::string _notused)
-{
-    while (1) {
-        if (! mux_mq_to_audio_visit()) {
-            std::this_thread::sleep_for(std::chrono::microseconds(10000));
-        }
-    }
-}
-
 void mux_audio_zmq_thread_init(std::string _notused)
 {
     mux_network_client_ctrl();
@@ -61,9 +51,6 @@ void mux_threads_start()
     if (g_threads_started) return;
     g_threads_started = true;
     std::vector<std::thread> threadv;
-    // temporary thread that uses internal/same-process audio+ctrl
-    std::thread ictrlThread(mux_audio_internalcontrol_thread_init, "notused");
-    threadv.push_back(std::move(ictrlThread));
     //
     std::thread zmqCtrlThread(mux_ctrl_zmq_thread_init, "notused");
     threadv.push_back(std::move(zmqCtrlThread));

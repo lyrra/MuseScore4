@@ -40,19 +40,12 @@
 
     Aside from feeding jack with audiobuffers, audio and mux thread
     need to signal information, for example transport play/stop.
-    This is done by a simple message-queue also in form of a ringbuffer.
+    This is done by sending message directly using ZeroMQ.
 
-               +-------------------------+
-    audio <--- | g_msg_to_audio          | <--- mux
-               |   g_msg_to_audio_reader |
-               |   g_msg_to_audio_writer |
-               +-------------------------+
+    ..--------+                  +------------..
+     muxaudio | <-- ZeroMQ ----> | mscore/seq
+    ..-------+|                  +------------..
 
-               +---------------------------+
-    audio ---> | g_msg_from_audio          | ---> mux
-               |   g_msg_from_audio_reader |
-               |   g_msg_from_audio_writer |
-               +---------------------------+
 */
 
 
@@ -86,10 +79,7 @@ static void *zmq_socket_audio;
  */ 
 
 #define MAILBOX_SIZE 256
-struct Msg g_msg_to_audio[MAILBOX_SIZE];
 struct Msg g_msg_from_audio[MAILBOX_SIZE];
-int g_msg_to_audio_reader = 0;
-int g_msg_to_audio_writer = 0;
 int g_msg_from_audio_reader = 0;
 int g_msg_from_audio_writer = 0;
 
@@ -99,15 +89,6 @@ int mux_mq_from_audio_writer_put (struct Msg msg) {
     // setting the type will signal to the reader that this slot is filled
     g_msg_from_audio[g_msg_from_audio_writer].type = msg.type;
     g_msg_from_audio_writer = (g_msg_from_audio_writer + 1) % MAILBOX_SIZE;
-    return 1;
-}
-
-// mux/mscore thread uses this function to send messages to audio-thread
-int mux_mq_to_audio_writer_put (struct Msg msg) {
-    memcpy(&g_msg_to_audio[g_msg_to_audio_writer].payload, &msg.payload, sizeof(msg.payload));
-    // setting the type will signal to the reader that this slot is filled
-    g_msg_to_audio[g_msg_to_audio_writer].type = msg.type;
-    g_msg_to_audio_writer = (g_msg_to_audio_writer + 1) % MAILBOX_SIZE;
     return 1;
 }
 
@@ -141,51 +122,6 @@ int mux_mq_from_audio_reader_visit () {
     return rc;
 }
 
-int mux_mq_to_audio_visit() {
-    if (g_msg_to_audio_reader == g_msg_to_audio_writer) {
-        return 0;
-    }
-    Msg msg = g_msg_to_audio[g_msg_to_audio_reader];
-    switch (msg.type) {
-        case MsgTypeAudioInit:
-            mux_audio_init(msg.payload.i);
-        break;
-        case MsgTypeAudioStart:
-            mux_audio_start(msg.payload.i);
-        break;
-        case MsgTypeAudioStop:
-            mux_audio_stop();
-        break;
-        case MsgTypeTransportStart:
-            mux_audio_jack_transport_start();
-        break;
-        case MsgTypeTransportStop:
-            mux_audio_jack_transport_stop();
-        break;
-        case MsgTypeTransportSeek:
-            mux_audio_jack_transport_seek(msg.payload.i);
-        break;
-        case MsgTypeEventToMidi:
-            mux_audio_send_event_to_midi(msg);
-        break;
-        case MsgTypeTimeSigTempoChanged:
-            mux_audio_handle_MsgTimeSigTempoChanged();
-        break;
-        case MsgTypeOutPortCount:
-            mux_audio_handle_updateOutPortCount(msg.payload.i);
-        break;
-        default: // this should not happen
-            qFatal("MUX got unknown message from audio: %u", msg.type);
-            // skip this message
-            g_msg_to_audio_reader = (g_msg_to_audio_reader + 1) % MAILBOX_SIZE;
-        return 0;
-    }
-    msg.type = MsgTypeInit; // mark this as free, FIX: not needed
-    g_msg_to_audio_reader = (g_msg_to_audio_reader + 1) % MAILBOX_SIZE;
-    //std::cout << "mux_to_audio new r:" << g_msg_to_audio_reader << "\n";
-    return 1;
-}
-
 /* message to/from audio helpers
  */
 void mux_msg_to_audio(MsgType typ, int val)
@@ -194,8 +130,6 @@ void mux_msg_to_audio(MsgType typ, int val)
     struct Msg msg;
     msg.type = typ;
     msg.payload.i = val;
-    mux_mq_to_audio_writer_put(msg);
-    // also write message on network-MQ towards external audio-process(muxaudio)
     mux_zmq_ctrl_send_to_audio(msg);
 }
 
@@ -205,6 +139,10 @@ void mux_msg_from_audio(MsgType typ, int val)
     msg.type = typ;
     msg.payload.i = val;
     mux_mq_from_audio_writer_put(msg);
+}
+
+void msgToAudioSeekTransport(int utick) {
+    mux_msg_to_audio(MsgTypeTransportSeek, utick);
 }
 
 /*

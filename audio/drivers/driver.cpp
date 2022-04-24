@@ -23,11 +23,6 @@
 
 #include "mscore/preferences.h"
 
-#ifdef USE_JACK
-#include "jackaudio.h"
-#endif
-
-
 #ifdef USE_ALSA
 #include "alsa.h"
 #endif
@@ -129,14 +124,7 @@ Driver* driverFactory(Seq* seq, QString driverName)
       if (useJackFlag) {
             useAlsaFlag      = false;
             usePortaudioFlag = false;
-            driver = new JackAudio(seq);
-            if (!driver->init()) {
-                  qDebug("no JACK server found");
-                  delete driver;
-                  driver = 0;
-                  }
-            else
-                  jackIsUsed = true;
+            jackIsUsed = true;
             }
 #else
        (void)useJackFlag; // avoid compiler warning
