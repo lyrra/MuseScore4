@@ -19,7 +19,9 @@
 
 #include "config.h"
 #include <chrono>
+#include "muxcommon.h"
 #include "seq.h"
+#include "mux.h"
 #include "musescore.h"
 
 #include "audio/midi/msynthesizer.h"
@@ -1700,7 +1702,7 @@ void Seq::putEvent(const NPlayEvent& event, unsigned framePos)
             msg.payload.sparseMidiEvent.type     = event.type();
             msg.payload.sparseMidiEvent.dataA    = event.dataA();
             msg.payload.sparseMidiEvent.dataB    = event.dataB();
-            mux_mq_to_audio_writer_put(msg);
+            mux_zmq_ctrl_send_to_audio(msg);
             }
       }
 

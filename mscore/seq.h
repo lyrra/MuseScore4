@@ -29,9 +29,6 @@
 #include "audio/midi/event.h"
 #include "audio/drivers/control.h"
 
-#include "mscore/mux.h"
-#include "mscore/muxmessage2audio.h"
-
 class QTimer;
 
 namespace Ms {

@@ -31,6 +31,7 @@
 #include "libmscore/score.h"
 
 #include "mscore/preferences.h"
+#include "mscore/muxcommon.h"
 #include "mscore/mux.h"
 #include "mscore/seq.h"
 
