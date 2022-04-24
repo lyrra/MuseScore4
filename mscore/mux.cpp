@@ -77,7 +77,9 @@ static std::vector<std::thread> seqThreads;
 static int mux_audio_process_run = 0;
 
 static void *zmq_context_ctrl;
-static void *zmq_requester_ctrl;
+static void *zmq_socket_ctrl;
+static void *zmq_context_audio;
+static void *zmq_socket_audio;
 
 /*
  * message queue, between audio and mux
@@ -345,8 +347,8 @@ void mux_network_open_ctrl()
 {
     qDebug("ZMQ ctrl Connecting to muxaudio");
     zmq_context_ctrl = zmq_ctx_new();
-    zmq_requester_ctrl = zmq_socket(zmq_context_ctrl, ZMQ_PAIR);
-    int rc = zmq_connect(zmq_requester_ctrl, "tcp://localhost:7770");
+    zmq_socket_ctrl = zmq_socket(zmq_context_ctrl, ZMQ_PAIR);
+    int rc = zmq_connect(zmq_socket_ctrl, "tcp://localhost:7770");
     if (rc) {
         qDebug("zmq-connect ctrl error: %s", strerror(errno));
         exit(rc);
@@ -356,18 +358,69 @@ void mux_network_open_ctrl()
 void mux_zmq_ctrl_send_to_audio(struct Msg msg)
 {
     qDebug("zmq-send ctrl msg.type=%i (len %i)", msg.type, sizeof(struct Msg));
-    zmq_send(zmq_requester_ctrl, &msg, sizeof(struct Msg), 0);
+    zmq_send(zmq_socket_ctrl, &msg, sizeof(struct Msg), 0);
 }
 
 void mux_network_close_ctrl()
 {
-    zmq_close(zmq_requester_ctrl);
+    zmq_close(zmq_socket_ctrl);
     zmq_ctx_destroy(zmq_context_ctrl);
 }
 
-void mux_network_client()
+void mux_network_open_audio()
+{
+    qDebug("ZMQ audio Connecting to muxaudio");
+    zmq_context_audio = zmq_ctx_new();
+    zmq_socket_audio = zmq_socket(zmq_context_audio, ZMQ_PAIR);
+    int rc = zmq_connect(zmq_socket_audio, "tcp://localhost:7771");
+    if (rc) {
+        qDebug("zmq-connect audio error: %s", strerror(errno));
+        exit(rc);
+    }
+}
+
+void mux_network_mainloop_audio()
+{
+    qDebug("MUX ZeroMQ audio entering main-loop");
+    while (1) {
+        char c;
+        if (zmq_recv(zmq_socket_audio, &c, 1, 0) < 0) {
+            qFatal("zmq-recv error: %s", strerror(errno));
+            break;
+        }
+        qDebug("====Received Audio Message: %c", c);
+        // process a MUX_CHUNKSIZE number of Frames
+        //memset(g_chunkBufferStereo, 0, sizeof(float) * MUX_CHUNKSIZE);
+        // fill the chunk with audio content
+        //seq->process(MUX_CHUNKSIZE >> 1, g_chunkBufferStereo);
+        //FIX: since we do dual (internal ringbuffer + external muxaudio)
+        //     we need to feed the buffer content from seq->process to both (share)
+        // copy over the chunk to the ringbuffer
+        for (unsigned int i = 0; i < MUX_CHUNKSIZE; i++) {
+            g_chunkBufferStereo[i] =
+             g_ringBufferStereo[(i + g_ringBufferWriterStart) % (MUX_RINGSIZE)];
+        }
+        zmq_send(zmq_socket_audio, g_chunkBufferStereo, sizeof(float) * MUX_CHUNKSIZE, 0);
+        //zmq_send(zmq_socket_audio, "b", 1, 0);
+    }
+    qDebug("mux_network_mainloop audio has exited");
+}
+
+void mux_network_close_audio()
+{
+    zmq_close(zmq_socket_audio);
+    zmq_ctx_destroy(zmq_context_audio);
+}
+
+void mux_network_client_ctrl()
 {
     mux_network_open_ctrl();
+}
+
+void mux_network_client_audio()
+{
+    mux_network_open_audio();
+    mux_network_mainloop_audio();
 }
 
 } // end of namespace MS
