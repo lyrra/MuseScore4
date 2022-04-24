@@ -498,13 +498,13 @@ int JackAudio::processAudio(jack_nframes_t frames, void* p)
           mux_mq_from_audio_writer_put(msg);
       }
       // get audiochunk from mux/mscore-thread
-      mux_process_bufferStereo((unsigned int)frames, buffer);
+      // Turn off internal jack connection to seq/ringbuffer
+      //mux_process_bufferStereo((unsigned int)frames, buffer);
       if (l && r) {
             float* sp = buffer;
             for (unsigned i = 0; i < frames; ++i) {
-                  //FIX: dont interleave the buffer (done in seq/mux)
-                  *l++ = *sp++;
-                  *r++ = *sp++;
+                  *l++ = 0;// *sp++;
+                  *r++ = 0;// *sp++;
                   }
             }
       return 0;

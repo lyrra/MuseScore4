@@ -210,7 +210,7 @@ void mux_msg_from_audio(MsgType typ, int val)
 #define MUX_CHAN 2
 #define MUX_RINGSIZE (8192*2)
 #define MUX_CHUNKSIZE (2048*2)
-#define MUX_READER_USLEEP 10
+#define MUX_READER_USLEEP 100
 #define MUX_WRITER_USLEEP 100
 
 unsigned int g_ringBufferWriterStart = 0;
@@ -224,15 +224,10 @@ unsigned int g_writerCycle = 0;
 unsigned int g_readerPause = 0;
 unsigned int g_writerPause = 0;
 
-
-// this function is called by the realtime-context,
-// and is reading from the ring-buffer
-void mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
-    // we're in realtime-context, and shouldn't do any syscalls,
-    // or sleep because there is no maximum sleep-amount guarantees,
-    // if paranoid, just spin-loop
+// this function is called by the zmq-network audio connection towards muxaudio
+void mux_process_bufferStereo(unsigned int numFloats, float* frames) {
     while (1) {
-        unsigned int newReaderPos = (g_ringBufferReaderStart + numFrames * MUX_CHAN) % MUX_RINGSIZE;
+        unsigned int newReaderPos = (g_ringBufferReaderStart + numFloats) % MUX_RINGSIZE;
         // ensure we dont read into writers buffer part
         if (// if reader wraps around and goes beyond writer
             (g_ringBufferReaderStart > newReaderPos &&
@@ -243,29 +238,19 @@ void mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
             g_readerPause++;
             std::this_thread::sleep_for(std::chrono::microseconds(MUX_READER_USLEEP));
         } else { // there is enough room in reader-part of ring-buffer to use
-            for (unsigned int i = 0; i < numFrames * MUX_CHAN; i++) {
-                bufferStereo[i] =
+            for (unsigned int i = 0; i < numFloats; i++) {
+                frames[i] =
                  g_ringBufferStereo[(i + g_ringBufferReaderStart) % MUX_RINGSIZE];
             }
             if (newReaderPos < g_ringBufferReaderStart) {
                 g_readerCycle++;
             }
-            /*
-            std::cout << "reader: [" << g_ringBufferReaderStart << " - " << newReaderPos << "]"
-                      << "r/w: [" << g_ringBufferReaderStart << " - " << g_ringBufferWriterStart << "]"
-                      << " c:[" << g_readerCycle << ", " << g_writerCycle << "] "
-                      << " p:[" << g_readerPause << ", " << g_writerPause << "]\n";
-            */
             g_ringBufferReaderStart = newReaderPos;
             break;
         }
     }
 }
 
-
-// this is the non-realtime part, and is requested to do work
-// by the realtime-part, and then buffering its work-content
-// and is writing to the ring-buffer
 int mux_audio_process_work() {
     unsigned int newWriterPos = (g_ringBufferWriterStart + MUX_CHUNKSIZE) % MUX_RINGSIZE;
 
@@ -389,18 +374,11 @@ void mux_network_mainloop_audio()
             break;
         }
         qDebug("====Received Audio Message: %c", c);
-        // process a MUX_CHUNKSIZE number of Frames
-        //memset(g_chunkBufferStereo, 0, sizeof(float) * MUX_CHUNKSIZE);
-        // fill the chunk with audio content
-        //seq->process(MUX_CHUNKSIZE >> 1, g_chunkBufferStereo);
-        //FIX: since we do dual (internal ringbuffer + external muxaudio)
-        //     we need to feed the buffer content from seq->process to both (share)
-        // copy over the chunk to the ringbuffer
-        for (unsigned int i = 0; i < MUX_CHUNKSIZE; i++) {
-            g_chunkBufferStereo[i] =
-             g_ringBufferStereo[(i + g_ringBufferWriterStart) % (MUX_RINGSIZE)];
-        }
-        zmq_send(zmq_socket_audio, g_chunkBufferStereo, sizeof(float) * MUX_CHUNKSIZE, 0);
+        // get MUX_CHUNKSIZE number of frames from the ringbuffer
+        float frames[MUX_CHUNKSIZE]; // count stereo, ie number of floats needed
+        mux_process_bufferStereo(MUX_CHUNKSIZE, frames);
+
+        zmq_send(zmq_socket_audio, frames, sizeof(float) * MUX_CHUNKSIZE, 0);
         //zmq_send(zmq_socket_audio, "b", 1, 0);
     }
     qDebug("mux_network_mainloop audio has exited");
