@@ -26,10 +26,6 @@ if (USE_PORTMIDI)
     set (DRIVERS_SRC ${DRIVERS_SRC} ${DRIVERS_DIR}/pm.cpp ${DRIVERS_DIR}/pm.h)
 endif (USE_PORTMIDI)
 
-if (USE_JACK)
-      set (DRIVERS_SRC ${DRIVERS_SRC} ${DRIVERS_DIR}/jackaudio.cpp ${DRIVERS_DIR}/jackweakapi.cpp ${DRIVERS_DIR}/jackaudio.h)
-endif (USE_JACK)
-
 if (USE_ALSA OR USE_PORTMIDI)
       set (DRIVERS_SRC ${DRIVERS_SRC} ${DRIVERS_DIR}/mididriver.cpp ${DRIVERS_DIR}/mididriver.h)
 endif (USE_ALSA OR USE_PORTMIDI)

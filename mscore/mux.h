@@ -7,16 +7,7 @@
 #ifndef __MUX_H__
 #define __MUX_H__
 
-
 namespace Ms {
-
-// this are also the jack audio transport states:
-enum class Transport : char {
-      STOP=0,
-      PLAY=1,
-      STARTING=3,
-      NET_STARTING=4
-      };
 
 /*** MUX public interface ***/
 int mux_is_score_open ();
@@ -82,9 +73,6 @@ struct Msg {
 };
 
 int mux_mq_from_audio_writer_put (struct Msg msg);
-int mux_mq_to_audio_writer_put (struct Msg msg);
-int mux_mq_to_audio_visit();
-
 void mux_msg_from_audio(MsgType typ, int val);
 void mux_msg_to_audio(MsgType typ, int val);
 
@@ -97,6 +85,8 @@ void mux_audio_jack_transport_stop();
 void mux_audio_jack_transport_seek(int utick);
 void mux_audio_handle_MsgTimeSigTempoChanged();
 void mux_audio_handle_updateOutPortCount(int portCount);
+
+void mux_zmq_ctrl_send_to_audio(struct Msg msg);
 
 } // namespace Ms
 #endif
