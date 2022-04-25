@@ -151,7 +151,11 @@ int mux_mq_from_audio_reader_visit () {
         case MsgTypeAudioRunning:
             //g_driver_running = msg.payload.i;
             // FIX: send to seq (over network)
-            std::cout << "---- g_driver_running is running? " << msg.payload.i << "\n";
+            std::cout << "g_driver_running is running? " << msg.payload.i << "\n";
+            if (zmq_send(zmq_socket_ctrl, &msg, sizeof(struct Msg), 0) < 0) {
+                // musescore cant start if it gets no go-ahead signal
+                std::cerr << "failed to tell musescore that muxaudio-driver is in running state.\n";
+            }
         break;
         case MsgTypeJackTransportPosition:
             //mux_set_jack_position(msg.payload.jackTransportPosition);

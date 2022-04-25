@@ -111,11 +111,7 @@ int mux_mq_to_audio_writer_put (struct Msg msg) {
     return 1;
 }
 
-int mux_mq_from_audio_reader_visit () {
-    if (g_msg_from_audio_reader == g_msg_from_audio_writer) {
-        return 0;
-    }
-    Msg msg = g_msg_from_audio[g_msg_from_audio_reader];
+int mux_mq_from_muxaudio_handle (struct Msg msg) {
     switch (msg.type) {
         case MsgTypeAudioRunning:
             g_driver_running = msg.payload.i;
@@ -133,9 +129,16 @@ int mux_mq_from_audio_reader_visit () {
             g_msg_from_audio_reader = (g_msg_from_audio_reader + 1) % MAILBOX_SIZE;
         return 0;
     }
-    msg.type = MsgTypeInit; // mark this as free, FIX: not needed
-    g_msg_from_audio_reader = (g_msg_from_audio_reader + 1) % MAILBOX_SIZE;
     return 1;
+}
+int mux_mq_from_audio_reader_visit () {
+    if (g_msg_from_audio_reader == g_msg_from_audio_writer) {
+        return 0;
+    }
+    Msg msg = g_msg_from_audio[g_msg_from_audio_reader];
+    int rc = mux_mq_from_muxaudio_handle(msg);
+    g_msg_from_audio_reader = (g_msg_from_audio_reader + 1) % MAILBOX_SIZE;
+    return rc;
 }
 
 int mux_mq_to_audio_visit() {
@@ -340,6 +343,20 @@ void mux_network_open_ctrl()
     }
 }
 
+void mux_network_mainloop_ctrl()
+{
+    qDebug("MUX ZeroMQ ctrl entering main-loop");
+    while (1) {
+        struct Msg msg;
+        if (zmq_recv(zmq_socket_ctrl, &msg, sizeof(struct Msg), 0) < 0) {
+            qFatal("zmq-recv error: %s", strerror(errno));
+            break;
+        }
+        mux_mq_from_muxaudio_handle(msg);
+    }
+    qDebug("mux_network_mainloop ctrl has exited");
+}
+
 void mux_zmq_ctrl_send_to_audio(struct Msg msg)
 {
     qDebug("zmq-send ctrl msg.type=%i (len %i)", msg.type, sizeof(struct Msg));
@@ -373,7 +390,6 @@ void mux_network_mainloop_audio()
             qFatal("zmq-recv error: %s", strerror(errno));
             break;
         }
-        qDebug("====Received Audio Message: %c", c);
         // get MUX_CHUNKSIZE number of frames from the ringbuffer
         float frames[MUX_CHUNKSIZE]; // count stereo, ie number of floats needed
         mux_process_bufferStereo(MUX_CHUNKSIZE, frames);
@@ -393,6 +409,7 @@ void mux_network_close_audio()
 void mux_network_client_ctrl()
 {
     mux_network_open_ctrl();
+    mux_network_mainloop_ctrl();
 }
 
 void mux_network_client_audio()
