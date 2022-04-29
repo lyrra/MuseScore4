@@ -26,6 +26,7 @@
 #include "libmscore/fifo.h"
 #include "libmscore/tempo.h"
 
+#include "mscore/muxcommon.h"
 #include "audio/midi/event.h"
 #include "audio/drivers/control.h"
 
