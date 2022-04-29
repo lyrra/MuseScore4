@@ -19,7 +19,6 @@
 
 #include "config.h"
 #include <chrono>
-#include "muxcommon.h"
 #include "seq.h"
 #include "mux.h"
 #include "musescore.h"

@@ -36,12 +36,12 @@ void mux_teardown_driver (JackAudio *driver) {
 }
 */
 
-void mux_audio_zmq_thread_init(std::string _notused)
+void mux_ctrl_zmq_thread_init(std::string _notused)
 {
     mux_network_client_ctrl();
 }
 
-void mux_ctrl_zmq_thread_init(std::string _notused)
+void mux_audio_zmq_thread_init(std::string _notused)
 {
     mux_network_client_audio();
 }
