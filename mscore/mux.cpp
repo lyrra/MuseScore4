@@ -96,7 +96,7 @@ int mux_mq_from_muxaudio_handle (struct Msg msg) {
     switch (msg.type) {
         case MsgTypeAudioRunning:
             g_driver_running = msg.payload.i;
-            std::cout << "---- g_driver_running is running? " << msg.payload.i << "\n";
+            qDebug("---- g_driver_running is running? %i", msg.payload.i);
         break;
         case MsgTypeJackTransportPosition:
             mux_set_jack_position(msg.payload.jackTransportPosition);
@@ -243,12 +243,12 @@ void mux_audio_process() {
             std::this_thread::sleep_for(std::chrono::microseconds(slept));
         }
     }
-    std::cout << "MUX audio-process terminated.\n";
+    qDebug("MUX audio-process terminated.");
 }
 
 void mux_thread_process_init(std::string msg)
 {
-    std::cout << "MUX audio-process thread initialized:" << msg << "\n";
+    qDebug("MUX audio-process thread initialized.");
     mux_audio_process();
 }
 
@@ -264,7 +264,7 @@ void mux_start_threads()
 
 void mux_stop_threads()
 {
-    std::cout << "MUX stop audio threads\n";
+    qDebug("MUX stop audio threads");
     mux_audio_process_run = 0;
     seqThreads[0].join();
 }
