@@ -1,11 +1,11 @@
-find_path(PORTAUDIO_INCLUDE_DIR portaudio.h PATHS ${PROJECT_SOURCE_DIR}/dependencies/include;)
+find_path(PORTAUDIO_INCLUDE_DIR portaudio.h PATHS)
 
 if (MINGW)
       set(CMAKE_FIND_LIBRARY_SUFFIXES ".dll")
 else (MINGW)
       set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
 endif (MINGW)
-find_library(PORTAUDIO_LIBRARY NAMES portaudio PATHS ${DEPENDENCIES_DIR} NO_DEFAULT_PATH)
+find_library(PORTAUDIO_LIBRARY NAMES portaudio)
 
 message(STATUS ${PORTAUDIO_LIBRARY})
 
