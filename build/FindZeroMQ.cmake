@@ -1,13 +1,12 @@
-set(DEPENDENCIES_DIR "/Users/larry/Downloads/msys64/mingw64")
 
-find_path(ZMQ_INCLUDE_DIR zmq.h PATHS ${DEPENDENCIES_DIR}/include/ogg;)
+find_path(ZMQ_INCLUDE_DIR zmq.h)
 
 if (MINGW)
       set(CMAKE_FIND_LIBRARY_SUFFIXES ".dll.a")
 else (MINGW)
       set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
 endif (MINGW)
-find_library(ZMQ_LIBRARY NAMES zmq PATHS ${DEPENDENCIES_DIR}/lib NO_DEFAULT_PATH)
+find_library(ZMQ_LIBRARY NAMES zmq)
 
 message(STATUS ${ZMQ_LIBRARY})
 
