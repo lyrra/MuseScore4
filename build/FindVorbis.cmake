@@ -1,4 +1,4 @@
-find_path(VORBIS_INCLUDE_DIR vorbisenc.h)
+find_path(VORBIS_INCLUDE_DIR vorbis/vorbisenc.h)
 
 if (MINGW)
       set(CMAKE_FIND_LIBRARY_SUFFIXES ".dll.a")
@@ -7,7 +7,8 @@ else (MINGW)
 endif (MINGW)
 find_library(VORBIS_LIBRARY NAMES libvorbis)
 
-message(STATUS ${VORBIS_LIBRARY})
+message(STATUS "VORBIS INC: ${VORBIS_LIBRARY}")
+message(STATUS "VORBIS LIB: ${VORBIS_LIBRARY}")
 
 if (VORBIS_INCLUDE_DIR AND VORBIS_LIBRARY)
       set(VORBIS_FOUND TRUE)
