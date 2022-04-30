@@ -502,13 +502,12 @@ int JackAudio::processAudio(jack_nframes_t frames, void* p)
          std::vector<float> vBuffer(frames * 2);
          float* buffer = vBuffer.data();
 #endif
-      // FIX: really do this for every callback?
-      //mux_set_jack_transport(getStateRT());
       {
           jack_position_t pos;
           jack_transport_query(g_client, &pos);
           struct Msg msg;
           msg.type = MsgTypeJackTransportPosition;
+          msg.payload.jackTransportPosition.state = static_cast<unsigned int>(getStateRT());
           msg.payload.jackTransportPosition.frame = pos.frame;
           msg.payload.jackTransportPosition.valid = pos.valid;
           msg.payload.jackTransportPosition.beats_per_minute = pos.beats_per_minute;
