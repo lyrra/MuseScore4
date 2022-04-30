@@ -1,4 +1,4 @@
-find_path(PORTAUDIO_INCLUDE_DIR portaudio.h PATHS)
+find_path(PORTAUDIO_INCLUDE_DIR portaudio.h)
 
 if (MINGW)
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".dll.a")

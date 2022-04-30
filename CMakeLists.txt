@@ -157,7 +157,7 @@ option(USE_SYSTEM_QTSINGLEAPPLICATION "Use system QtSingleApplication" OFF)
 option(USE_SYSTEM_FREETYPE "Use system FreeType"          OFF) # requires freetype >= 2.5.2, does not work on win
 option(USE_SYSTEM_POPPLER  "Use system Poppler for OMR"   OFF)
 option(BUILD_LAME    "Enable MP3 export"                  ON)  # Requires libmp3lame, call CMake with -DBUILD_LAME="OFF" to disable
-option(DOWNLOAD_SOUNDFONT "Download the latest soundfont version as part of the build process" ON)
+option(DOWNLOAD_SOUNDFONT "Download the latest soundfont version as part of the build process" OFF)
 
 # licence incompatibility, must never be distributed
 set(OCR OFF)
@@ -165,8 +165,8 @@ set(OCR OFF)
 SET(JACK_LONGNAME "JACK (Jack Audio Connection Kit)")
 SET(JACK_MIN_VERSION "0.98.0")
 option(BUILD_JACK    "Build with support for ${JACK_LONGNAME} audio backend. JACK >= ${JACK_MIN_VERSION} will be needed." ON)
-option(BUILD_PULSEAUDIO "Build with support for PulseAudio audio backend." ON)
-option(BUILD_ALSA "Build with support for ALSA audio backend." ON)
+option(BUILD_PULSEAUDIO "Build with support for PulseAudio audio backend." OFF)
+option(BUILD_ALSA "Build with support for ALSA audio backend." OFF)
 option(BUILD_PORTAUDIO "Build with support for PortAudio audio backend." ON)
 option(BUILD_PORTMIDI "Build with support for PortAudio's MIDI features." ${BUILD_PORTAUDIO}) # PortAudio required
 option(BUILD_PCH "Build using precompiled headers." ON)

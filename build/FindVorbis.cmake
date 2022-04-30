@@ -5,6 +5,7 @@ if (MINGW)
 else (MINGW)
       set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
 endif (MINGW)
+
 find_library(VORBIS_LIBRARY NAMES libvorbis)
 
 message(STATUS "VORBIS INC: ${VORBIS_INCLUDE_DIR}")
