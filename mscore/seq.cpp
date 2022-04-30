@@ -762,14 +762,11 @@ static unsigned int jack_position_BBT;
 
 void mux_set_jack_position(struct JackTransportPosition jackTransportPosition)
 {
+    jack_transport = static_cast<Transport>(jackTransportPosition.state);
     jack_position_frame = jackTransportPosition.frame;
     jack_position_valid = jackTransportPosition.valid;
     jack_position_beats_per_minute = jackTransportPosition.beats_per_minute;
     jack_position_BBT = jackTransportPosition.bbt;
-}
-
-void mux_set_jack_transport(Transport transport) {
-    jack_transport = transport;
 }
 
 //---------------------------------------------------------

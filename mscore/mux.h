@@ -38,6 +38,7 @@ enum MsgType {
 };
 
 struct JackTransportPosition {
+    unsigned int state;
     unsigned int frame;
     unsigned int valid;
     unsigned int beats_per_minute;
