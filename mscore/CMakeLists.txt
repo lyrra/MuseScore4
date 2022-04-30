@@ -370,7 +370,7 @@ if (MINGW)
    endif(CMAKE_BUILD_TYPE MATCHES "DEBUG")
 
    target_link_libraries(mscoreapp
-      portaudiodll
+      ${PORTAUDIODLL}
       portmidi
       winmm
       mscore_freetype
@@ -486,7 +486,7 @@ else (MINGW)
 
       include(FindStaticLibrary)
       target_link_libraries(mscoreapp
-         portaudiodll
+         ${PORTAUDIODLL}
          portmidi
          winmm
          mscore_freetype
