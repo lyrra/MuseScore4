@@ -4,20 +4,21 @@ include_directories(
       ${PROJECT_SOURCE_DIR}/global
       ${PROJECT_SOURCE_DIR}/muxaudio/driver
       ${PROJECT_BINARY_DIR}
+      ${PROJECT_SOURCE_DIR}/thirdparty  # portmidi
       ${QTSINGLEAPPLICATION_INCLUDE_DIRS}
       )
 
 add_executable(muxaudio
-      muxaudio.cpp
-      muxaudio.h
-      control.cpp
-      control.h
-      event.cpp
-      driver/driver.cpp
-      driver/driver.h
-      driver/jackaudio.cpp
-      driver/jackaudio.h
+      muxaudio.h muxaudio.cpp
+      control.h control.cpp
+      event.h event.cpp
+      driver/mididriver.h driver/mididriver.cpp
+      driver/driver.h driver/driver.cpp
+      driver/jackaudio.h driver/jackaudio.cpp
       driver/jackweakapi.cpp
+# PortAudio backend disabled for now..
+#      driver/pa.h driver/pa.cpp
+#      driver/pm.h driver/pm.cpp
       )
 
 #if (MINGW OR MSVC)

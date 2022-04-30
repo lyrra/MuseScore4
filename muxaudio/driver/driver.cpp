@@ -27,16 +27,9 @@
 #include "jackaudio.h"
 #endif
 
-
-/*
-#ifdef USE_ALSA
-#include "alsa.h"
-#endif
 #ifdef USE_PORTAUDIO
 #include "pa.h"
 #endif
-*/
-
 
 namespace Ms {
 
@@ -63,7 +56,6 @@ bool alsaIsUsed = false, jackIsUsed = false, portAudioIsUsed = false, pulseAudio
 Driver* driverFactory(std::string driverName)
       {
       Driver* driver = 0;
-#if 1 // DEBUG: force "no audio"
       bool useJackFlag       = (preferences.PREF_IO_JACK_USEJACKAUDIO || preferences.PREF_IO_JACK_USEJACKMIDI);
       bool useAlsaFlag       = preferences.PREF_IO_ALSA_USEALSAAUDIO;
       bool usePortaudioFlag  = preferences.PREF_IO_PORTAUDIO_USEPORTAUDIO;
@@ -105,6 +97,7 @@ Driver* driverFactory(std::string driverName)
 #else
       (void)usePulseAudioFlag; // avoid compiler warning
 #endif
+*/
 #ifdef USE_PORTAUDIO
       if (usePortaudioFlag) {
             driver = new Portaudio();
@@ -119,6 +112,7 @@ Driver* driverFactory(std::string driverName)
 #else
       (void)usePortaudioFlag; // avoid compiler warning
 #endif
+/*
 #ifdef USE_ALSA
       if (driver == 0 && useAlsaFlag) {
             driver = new AlsaAudio();
@@ -150,7 +144,6 @@ Driver* driverFactory(std::string driverName)
             }
 #else
        (void)useJackFlag; // avoid compiler warning
-#endif
 #endif
       if (driver == 0)
             qDebug("no audio driver found");

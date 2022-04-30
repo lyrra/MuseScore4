@@ -47,7 +47,7 @@ class Portaudio : public Driver {
       MidiDriver* midiDriver;
 
    public:
-      Portaudio(Seq*);
+      Portaudio();
       virtual ~Portaudio();
       virtual bool init(bool hot = false);
       virtual bool start(bool hotPlug = false);
