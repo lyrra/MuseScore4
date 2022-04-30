@@ -160,8 +160,9 @@ int mux_mq_from_audio_reader_visit () {
             }
         break;
         case MsgTypeJackTransportPosition:
-            //mux_set_jack_position(msg.payload.jackTransportPosition);
-            // FIX: send to seq (over network)
+            if (zmq_send(zmq_socket_ctrl, &msg, sizeof(struct Msg), 0) < 0) {
+                std::cerr << "failed to tell musescore current jack position/state\n";
+            }
         break;
         case MsgTypeEventToGui:
             //mux_send_event_to_gui(msg.payload.sparseEvent);
