@@ -9,6 +9,7 @@ export VERBOSE=1
 mkdir build.debug 2> /dev/null
 cd build.debug || exit 1
 
+echo "*** Running cmake ***"
 cmake -G "MinGW Makefiles" \
       -DCMAKE_INSTALL_PREFIX=../win32install \
       -DCMAKE_BUILD_TYPE=DEBUG \
@@ -16,7 +17,7 @@ cmake -G "MinGW Makefiles" \
       -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
       -DCMAKE_MAKE_PROGRAM=mingw32-make.exe \
       -DBUILD_FOR_WINSTORE=OFF \
-      ..
-      #-DCMAKE_TOOLCHAIN_FILE=../tc-mingw.cmake  \
+      .. || exit 1
 
-make
+echo "*** Running make ***"
+make || exit 1
