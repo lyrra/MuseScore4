@@ -63,7 +63,6 @@ namespace Ms {
 void mux_zmq_ctrl_send_to_audio(struct Msg msg);
 void mux_send_event_to_gui(struct SparseEvent se);
 void mux_audio_send_event_to_midi(struct Msg msg);
-extern Seq* seq;
 extern int g_driver_running;
 
 static std::vector<std::thread> seqThreads;
