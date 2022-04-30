@@ -3,7 +3,7 @@ name: CI_MacOS
 on:
   pull_request:
     branches:
-    - 3.x
+    - funnel
   #schedule:
   #  - cron: '0 4 */1 * *' # At 04:00 on every day-of-month
   workflow_dispatch:
