@@ -54,6 +54,7 @@ jobs:
           mingw-w64-x86_64-libvorbis
           mingw-w64-x86_64-libsndfile
           mingw-w64-x86_64-libogg
+          mingw-w64-x86_64-lame
     - name: Clone repository
       uses: actions/checkout@v3
       with:
