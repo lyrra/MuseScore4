@@ -1,13 +1,14 @@
-find_path(SNDFILE_INCLUDE_DIR sndfile.h PATHS ${PROJECT_SOURCE_DIR}/dependencies/include;)
+find_path(SNDFILE_INCLUDE_DIR sndfile.h)
 
 if (MINGW)
-      set(CMAKE_FIND_LIBRARY_SUFFIXES ".dll")
+      set(CMAKE_FIND_LIBRARY_SUFFIXES ".dll.a")
 else (MINGW)
       set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
 endif (MINGW)
-find_library(SNDFILE_LIBRARY NAMES sndfile libsndfile-1 PATHS ${DEPENDENCIES_DIR} NO_DEFAULT_PATH)
+find_library(SNDFILE_LIBRARY NAMES sndfile libsndfile-1)
 
-message(STATUS ${SNDFILE_LIBRARY})
+message(STATUS "SNDFILE INC: ${SNDFILE_INCLUDE_DIR}")
+message(STATUS "SNDFILE LIB: ${SNDFILE_LIBRARY}")
 
 if (SNDFILE_INCLUDE_DIR AND SNDFILE_LIBRARY)
       set(SNDFILE_FOUND TRUE)
