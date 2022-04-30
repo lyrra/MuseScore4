@@ -9,7 +9,9 @@ export VERBOSE=1
 mkdir build.debug 2> /dev/null
 cd build.debug || exit 1
 
+echo "*** PATH: $PATH"
 echo "*** Running cmake ***"
+command -v cmake
 cmake -G "MinGW Makefiles" \
       -DCMAKE_INSTALL_PREFIX=../win32install \
       -DCMAKE_BUILD_TYPE=DEBUG \
@@ -20,4 +22,5 @@ cmake -G "MinGW Makefiles" \
       .. || exit 1
 
 echo "*** Running make ***"
+command -v make
 make || exit 1
