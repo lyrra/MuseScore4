@@ -45,8 +45,6 @@ foreach(_component ${_components})
   add_definitions(${Qt5${_component}_DEFINITIONS})
 endforeach()
 
-include_directories(${QT_INCLUDES})
-
 find_program(QT_QMAKE_EXECUTABLE qmake)
 set(_qmake_vars
     QT_INSTALL_ARCHDATA

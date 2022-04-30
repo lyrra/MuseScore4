@@ -1,6 +1,6 @@
 
-#include "muxseqsig.h"
 #include "musescore.h"
+#include "muxseqsig.h"
 
 namespace Ms {
 

@@ -124,15 +124,11 @@ endif (APPLE)
 if (${CMAKE_SYSTEM} MATCHES "GNU-0.3")
       # Include some cmake support file
       INCLUDE (Platform/GNU)
-      set ( USE_ALSA 0 )
-      set ( USE_PORTMIDI 0 )
 endif (${CMAKE_SYSTEM} MATCHES "GNU-0.3")
 
 if (${CMAKE_SYSTEM} MATCHES "kFreeBSD")
       # Include some cmake support file
       INCLUDE (Platform/kFreeBSD)
-      set ( USE_ALSA 0 )
-      set ( USE_PORTMIDI 0 )
 endif (${CMAKE_SYSTEM} MATCHES "kFreeBSD")
 
 if (OMR)
@@ -313,7 +309,7 @@ target_link_libraries(mscoreapp
       qzip
       importexport
       ${COCOABRIDGE}
-      ${ZMQ_LIBRARY}
+      ${ZMQ_LIBRARIES}
       )
 
 if (BUILD_CRASH_REPORTER)
@@ -374,9 +370,6 @@ if (MINGW)
    endif(CMAKE_BUILD_TYPE MATCHES "DEBUG")
 
    target_link_libraries(mscoreapp
-      ${PORTAUDIODLL}
-      portmidi
-      winmm
       mscore_freetype
       z
       )
@@ -394,7 +387,6 @@ else (MINGW)
 
    if ( NOT MSVC )
       target_link_libraries(mscoreapp
-         ${ALSA_LIB}
          ${QT_LIBRARIES}
          z
          ${CMAKE_DL_LIBS}
@@ -406,28 +398,6 @@ else (MINGW)
        else (USE_SYSTEM_FREETYPE)
             target_link_libraries(mscoreapp mscore_freetype)
        endif (USE_SYSTEM_FREETYPE)
-
-       if (USE_PORTAUDIO)
-         target_link_libraries(mscoreapp ${PORTAUDIO_LIB})
-       endif (USE_PORTAUDIO)
-
-       if (USE_PORTMIDI)
-           if (APPLE)
-               set(PORTMIDI_LIB portmidi)
-           else (APPLE)
-               find_library(PORTTIME_LIB porttime)
-               if (PORTTIME_LIB)
-                   set(PORTMIDI_LIB portmidi porttime)
-               else (PORTTIME_LIB)
-                   set(PORTMIDI_LIB portmidi)
-               endif (PORTTIME_LIB)
-           endif (APPLE)
-           target_link_libraries(mscoreapp ${PORTMIDI_LIB})
-       endif (USE_PORTMIDI)
-
-       if (USE_PULSEAUDIO)
-         target_link_libraries(mscoreapp ${PULSEAUDIO_LIBRARY})
-       endif (USE_PULSEAUDIO)
 
       set_target_properties (
          mscoreapp
@@ -490,9 +460,6 @@ else (MINGW)
 
       include(FindStaticLibrary)
       target_link_libraries(mscoreapp
-         ${PORTAUDIODLL}
-         portmidi
-         winmm
          mscore_freetype
          zlibstat
          )

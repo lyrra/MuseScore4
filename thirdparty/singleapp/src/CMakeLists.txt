@@ -18,6 +18,7 @@
 #=============================================================================
 
 include (${PROJECT_SOURCE_DIR}/build/gch.cmake)
+include_directories(${QT_INCLUDES})
 
 if (NOT MSVC)
    set(_all_h_file "${PROJECT_BINARY_DIR}/all.h")
@@ -47,10 +48,14 @@ else (NOT MSVC)
       )
 endif (NOT MSVC)   
 
-xcode_pch(qtsingleapp all)
+if (APPLE)
+      xcode_pch(qtsingleapp all)
+endif (APPLE)
 
 # Use MSVC pre-compiled headers
-vstudio_pch( qtsingleapp )
+if (MSVC)
+      vstudio_pch( qtsingleapp )
+endif (MSVC)
 
 # MSVC does not depend on mops1 & mops2 for PCH
 if (NOT MSVC)
