@@ -23,4 +23,5 @@ cmake -G "MinGW Makefiles" \
 
 echo "*** Running make ***"
 command -v make
-make || exit 1
+make V=1 || exit 1
+
