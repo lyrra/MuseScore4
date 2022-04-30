@@ -1,5 +1,7 @@
 #!/bin/sh
 
+export PATH=/mingw64/bin:/usr/local/bin:/usr/bin:/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl
+
 VERSION=$(cmake -P config.cmake | sed -n -e "s/^.*VERSION  *//p")
 BUILD_NUMBER=""
 #CPUS=1
