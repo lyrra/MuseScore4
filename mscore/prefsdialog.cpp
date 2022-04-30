@@ -27,11 +27,6 @@
 #include "shortcut.h"
 #include "workspace.h"
 
-#include "audio/drivers/pa.h"
-#ifdef USE_PORTMIDI
-#include "audio/drivers/pm.h"
-#endif
-
 #include "pathlistdialog.h"
 #include "resourceManager.h"
 #include "audio/midi/msynthesizer.h"
@@ -1396,7 +1391,7 @@ void PreferenceDialog::apply()
 #ifdef AVSOMR
       preferences.setPreference(PREF_IMPORT_AVSOMR_USELOCAL, useLocalAvsOmr->isChecked());
 #endif
-
+      qDebug("--------- PreferenceDialog::apply ----------");
       if (audioModified) {
             bool wasJack = (preferences.getBool(PREF_IO_JACK_USEJACKMIDI) || preferences.getBool(PREF_IO_JACK_USEJACKAUDIO));
             bool wasJackAudio = preferences.getBool(PREF_IO_JACK_USEJACKAUDIO);

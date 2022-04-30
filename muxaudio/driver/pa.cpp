@@ -50,8 +50,9 @@ static PaStream* stream;
 int paCallback(const void*, void* out, long unsigned frames,
    const PaStreamCallbackTimeInfo*, PaStreamCallbackFlags, void *)
       {
-      seq->setInitialMillisecondTimestampWithLatency();
-      seq->process((unsigned)frames, (float*)out);
+      //FIX20220503 portaudio support
+      //seq->setInitialMillisecondTimestampWithLatency();
+      //seq->process((unsigned)frames, (float*)out);
       return 0;
       }
 
@@ -59,8 +60,8 @@ int paCallback(const void*, void* out, long unsigned frames,
 //   Portaudio
 //---------------------------------------------------------
 
-Portaudio::Portaudio(Seq* s)
-   : Driver(s)
+Portaudio::Portaudio()
+   : Driver()
       {
       _sampleRate = 48000;    // will be replaced by device default sample rate
       initialized = false;
