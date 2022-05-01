@@ -23,6 +23,6 @@ cmake -G "MinGW Makefiles" \
       .. || exit 1
 
 echo "*** Running make ***"
-ls -ltr /mingw64/bin/make
-/mingw64/bin/make V=1 || exit 1
+command -v mingw32-make
+mingw32-make V=1 || exit 1
 
