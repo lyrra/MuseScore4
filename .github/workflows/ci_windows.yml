@@ -52,6 +52,7 @@ jobs:
           mingw-w64-x86_64-cmake
           mingw-w64-x86_64-qt5
           mingw-w64-x86_64-portaudio
+          mingw-w64-x86_64-portmidi
           mingw-w64-x86_64-libvorbis
           mingw-w64-x86_64-libsndfile
           mingw-w64-x86_64-libogg
