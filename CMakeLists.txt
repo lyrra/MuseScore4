@@ -502,6 +502,7 @@ include(FindZeroMQ)
 ##
 
 IF(BUILD_JACK)
+    set ( USE_JACK 1 )
     include(FindJack)
 ENDIF(BUILD_JACK)
 
