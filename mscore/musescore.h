@@ -961,7 +961,7 @@ extern QStringList recentScores;
 extern QString dataPath;
 extern MasterSynthesizer* synti;
 MasterSynthesizer* synthesizerFactory();
-Driver* driverFactory(Seq*, QString driver);
+Driver* driverFactory(QString driver);
 
 extern QAction* getAction(const char*);
 extern Shortcut* midiActionMap[128];
