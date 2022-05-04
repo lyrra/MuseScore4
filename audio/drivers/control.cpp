@@ -11,7 +11,6 @@
 #include <thread> // FIX: should be imported by config.h
 #include <chrono>
 #include <iostream>
-#include "driver.h"
 
 namespace Ms {
 
@@ -22,7 +21,6 @@ void mux_network_client_audio();
 
 static std::vector<std::thread> muxThreads;
 
-Driver* g_driver;
 int g_ctrl_audio_error = 0;
 int g_ctrl_audio_running = 0;
 
