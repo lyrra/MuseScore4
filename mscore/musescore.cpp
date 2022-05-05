@@ -177,6 +177,8 @@ extern Ms::Synthesizer* createZerberus();
 #endif
 #include "telemetrymanager.h"
 
+#include "libmscore/muxseq.h"
+
 namespace Ms {
 
 void mux_threads_start();
@@ -8079,7 +8081,7 @@ void MuseScore::init(QStringList& argv)
       if (!noSeq) {
             showSplashMessage(sc, tr("Initializing sequencer and audio driver…"));
             seq            = new Seq();
-            MScore::seq    = seq;
+            muxseq_init(seq);
             synti          = synthesizerFactory();
             mux_threads_start();
             // FIX: query muxaudio about current sampleRate
@@ -8091,7 +8093,7 @@ void MuseScore::init(QStringList& argv)
             }
       else {
             seq         = 0;
-            MScore::seq = 0;
+            muxseq_deinit();
             }
 //---
       //

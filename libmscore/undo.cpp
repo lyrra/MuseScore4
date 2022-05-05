@@ -80,6 +80,7 @@
 #include "fret.h"
 #include "textedit.h"
 #include "textline.h"
+#include "muxseq.h"
 
 namespace Ms {
 
@@ -1509,8 +1510,8 @@ void ChangePatch::flip(EditData*)
 
       patch            = op;
 
-      if (MScore::seq == 0) {
-            qDebug("no seq");
+      if (muxseq_seq_alive()) {
+            qWarning("no seq");
             return;
             }
 
@@ -1523,18 +1524,18 @@ void ChangePatch::flip(EditData*)
 
       event.setController(CTRL_HBANK);
       event.setValue(hbank);
-      MScore::seq->sendEvent(event);
+      muxseq_send_event(event);
 
       event.setController(CTRL_LBANK);
       event.setValue(lbank);
-      MScore::seq->sendEvent(event);
+      muxseq_send_event(event);
 
       event.setController(CTRL_PROGRAM);
       event.setValue(channel->program());
 
       score->setInstrumentsChanged(true);
 
-      MScore::seq->sendEvent(event);
+      muxseq_send_event(event);
       }
 
 //---------------------------------------------------------
