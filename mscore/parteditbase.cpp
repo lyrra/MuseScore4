@@ -22,13 +22,15 @@
 #include "libmscore/score.h"
 #include "libmscore/part.h"
 #include "mixer/mixer.h"
-#include "seq.h"
 #include "libmscore/undo.h"
 #include "synthcontrol.h"
-#include "audio/midi/msynthesizer.h"
+#include "msynthesizer.h"
 #include "preferences.h"
 #include <qmessagebox.h>
 #include <accessibletoolbutton.h>
+
+#include "muxcommon.h"
+#include "muxseq_client.h"
 
 namespace Ms {
 
@@ -214,7 +216,7 @@ void PartEdit::patchChanged(int n, bool syncControls)
 void PartEdit::volChanged(double val, bool syncControls)
       {
       int iv = lrint(val);
-      seq->setController(channel->channel(), CTRL_VOLUME, iv);
+      muxseq_seq_setController(channel->channel(), CTRL_VOLUME, iv);
       channel->setVolume(iv);
       sync(syncControls);
       }
@@ -226,7 +228,7 @@ void PartEdit::volChanged(double val, bool syncControls)
 void PartEdit::panChanged(double val, bool syncControls)
       {
       int iv = lrint(val);
-      seq->setController(channel->channel(), CTRL_PANPOT, iv);
+      muxseq_seq_setController(channel->channel(), CTRL_PANPOT, iv);
       channel->setPan(iv);
       sync(syncControls);
       }
@@ -238,7 +240,7 @@ void PartEdit::panChanged(double val, bool syncControls)
 void PartEdit::reverbChanged(double val, bool syncControls)
       {
       int iv = lrint(val);
-      seq->setController(channel->channel(), CTRL_REVERB_SEND, iv);
+      muxseq_seq_setController(channel->channel(), CTRL_REVERB_SEND, iv);
       channel->setReverb(iv);
       sync(syncControls);
       }
@@ -250,7 +252,7 @@ void PartEdit::reverbChanged(double val, bool syncControls)
 void PartEdit::chorusChanged(double val, bool syncControls)
       {
       int iv = lrint(val);
-      seq->setController(channel->channel(), CTRL_CHORUS_SEND, iv);
+      muxseq_seq_setController(channel->channel(), CTRL_CHORUS_SEND, iv);
       channel->setChorus(iv);
       sync(syncControls);
       }
@@ -262,7 +264,7 @@ void PartEdit::chorusChanged(double val, bool syncControls)
 void PartEdit::muteChanged(bool val, bool syncControls)
       {
       if (val)
-            seq->stopNotes(channel->channel());
+            muxseq_stop_notes(channel->channel());
       channel->setMute(val);
       sync(syncControls);
       }
@@ -286,7 +288,7 @@ void PartEdit::soloToggled(bool val, bool syncControls)
                               a->setSoloMute((channel != a && !a->solo()));
                               a->setSolo(channel == a || a->solo());
                               if (a->soloMute())
-                                    seq->stopNotes(a->channel());
+                                    muxseq_stop_notes(a->channel());
                               }
                         }
                   }
@@ -339,8 +341,8 @@ void PartEdit::drumsetToggled(bool val, bool syncControls)
 
       part->undoChangeProperty(Pid::USE_DRUMSET, val);
       patch->clear();
-      const auto& pl = synti->getPatchInfo();
-      for (const MidiPatch* p : pl) {
+      //const auto& pl = muxseq_synti_getPatchInfoList();
+      for (const MidiPatch* p :  muxseq_synti_getPatchInfoList()) {
             if (p->drum == val)
                   patch->addItem(p->name, QVariant::fromValue<void*>((void*)p));
             }
@@ -421,7 +423,7 @@ void PartEdit::midiChannelChanged(int)
       {
       if (part == 0)
             return;
-      seq->stopNotes(channel->channel());
+      muxseq_stop_notes(channel->channel());
       int p =    portSpinBox->value() - 1;
       int c = channelSpinBox->value() - 1;
 
@@ -529,7 +531,7 @@ void PartEdit::midiChannelChanged(int)
             ms->updateMidiMapping(ms->playbackChannel(channel), part, port, channelNo);
             ms->setInstrumentsChanged(true);
             ms->setLayoutAll();
-            seq->initInstruments();
+            muxseq_seq_initInstruments();
             }
       else {
             // Initializing an instrument with new channel
@@ -537,14 +539,14 @@ void PartEdit::midiChannelChanged(int)
                   if (e.type() == ME_INVALID)
                         continue;
                   NPlayEvent event(e.type(), channel->channel(), e.dataA(), e.dataB());
-                  seq->sendEvent(event);
+                  muxseq_send_event(event);
                   }
             }
 
       // Update MIDI Out ports
       int maxPort = std::max(p, part->score()->masterScore()->midiPortCount());
       part->score()->masterScore()->setMidiPortCount(maxPort);
-      seq->updateOutPortCount(maxPort + 1);
+      muxseq_seq_updateOutPortCount(maxPort + 1);
       }
 
 

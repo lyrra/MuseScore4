@@ -41,7 +41,7 @@
 #include "rest.h"
 #include "fret.h"
 
-#include "audio/midi/midipatch.h"
+#include "midi/midipatch.h"
 
 Q_DECLARE_LOGGING_CATEGORY(undoRedo);
 

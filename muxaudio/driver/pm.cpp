@@ -29,10 +29,11 @@
 #endif
 
 #include "pm.h"
-#include "mscore/musescore.h"
-#include "mscore/muxcommon.h"
-#include "mscore/mux.h"
-#include "mscore/seq.h"
+#include "event.h"
+#include "muxcommon.h"
+#include "muxlib.h"
+#include "muxaudio.h"
+#include "seq.h"
 
 namespace Ms {
 

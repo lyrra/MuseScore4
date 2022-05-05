@@ -16,7 +16,8 @@
 
 #include "libmscore/score.h"
 #include "libmscore/element.h"
-#include "seq.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
 #include "libmscore/mscore.h"
 
 #include "articulationprop.h"
@@ -423,7 +424,7 @@ void ScoreView::elementPropertyAction(const QString& cmd, Element* e)
                         ss->setInstrument(Instrument::fromTemplate(it));
                         ss->staff()->part()->setInstrument(ss->instrument(), ss->segment()->tick());
                         score()->masterScore()->rebuildMidiMapping();
-                        seq->initInstruments();
+                        muxseq_seq_initInstruments();
                         score()->setLayoutAll();
                         }
                   else

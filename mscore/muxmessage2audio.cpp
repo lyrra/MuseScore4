@@ -5,7 +5,6 @@
  */
 
 #include "seq.h"
-#include "mux.h"
 
 namespace Ms {
 

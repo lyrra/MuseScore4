@@ -25,10 +25,11 @@
 #include "libmscore/part.h"
 #include "mixer.h"
 #include "mixertrackitem.h"
-#include "seq.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
 #include "libmscore/undo.h"
 #include "synthcontrol.h"
-#include "audio/midi/msynthesizer.h"
+#include "msynthesizer.h"
 #include "preferences.h"
 #include "icons.h"
 
@@ -175,7 +176,7 @@ void MixerTrackPart::updateNameLabel()
       Channel* chan = _mti->focusedChan();
       trackLabel->setText(part->partName());
 
-      MidiPatch* mp = synti->getPatchInfo(chan->synti(), chan->bank(), chan->program());
+      MidiPatch* mp = muxseq_synti_getPatchInfo(chan->synti(), chan->bank(), chan->program());
 
 
       QString tooltip = tr("Part Name: %1\n"

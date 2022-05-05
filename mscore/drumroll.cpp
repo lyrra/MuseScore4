@@ -33,7 +33,8 @@
 #include "libmscore/undo.h"
 #include "libmscore/part.h"
 #include "libmscore/instrument.h"
-#include "seq.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
 #include "preferences.h"
 
 namespace Ms {
@@ -367,7 +368,7 @@ void DrumrollEditor::velocityChanged(int val)
 
 void DrumrollEditor::keyPressed(int p)
       {
-      seq->startNote(staff->part()->instrument()->channel(0)->channel(), p, 80, 0, 0.0);  //tick?
+      muxseq_start_note_dur(staff->part()->instrument()->channel(0)->channel(), p, 80, 0, 0.0);  //tick?
       }
 
 //---------------------------------------------------------
@@ -376,15 +377,16 @@ void DrumrollEditor::keyPressed(int p)
 
 void DrumrollEditor::keyReleased(int /*pitch*/)
       {
-      seq->stopNotes();
+      muxseq_stop_notes();
       }
 
 //---------------------------------------------------------
 //   heartBeat
 //---------------------------------------------------------
 
-void DrumrollEditor::heartBeat(Seq* s)
+void DrumrollEditor::heartBeat(void* s) // s :: Seq*
       {
+      /*
       unsigned t = s->getCurTick();
       if (locator[0].tick() != t) {
             locator[0].setTick(t);
@@ -393,6 +395,7 @@ void DrumrollEditor::heartBeat(Seq* s)
             if (preferences.getBool(PREF_APP_PLAYBACK_FOLLOWSONG))
                   gv->ensureVisible(t);
             }
+      */
       }
 
 //---------------------------------------------------------
@@ -402,7 +405,7 @@ void DrumrollEditor::heartBeat(Seq* s)
 void DrumrollEditor::moveLocator(int i)
       {
       if (locator[i].valid()) {
-            seq->seek(locator[i].tick());
+            muxseq_seq_seek(locator[i].tick());
             gv->moveLocator(i);
             }
       }

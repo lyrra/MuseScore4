@@ -96,7 +96,6 @@ class QmlPluginEngine;
 class MasterSynthesizer;
 class SynthesizerState;
 class Driver;
-class Seq;
 class ImportMidiPanel;
 class ScoreComparisonTool;
 class ScriptRecorder;
@@ -523,8 +522,6 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       void selectScore(QAction*);
       void startPreferenceDialog();
       void preferencesChanged(bool fromWorkspace = false, bool changeUI = true);
-      void seqStarted();
-      void seqStopped();
       void cmdAppendMeasures();
       void cmdInsertMeasures();
       void zoomBoxChanged(const ZoomIndex, const qreal);
@@ -576,6 +573,8 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       QByteArray exportPdfAsJSON(Score*);
 
    public slots:
+      void seqStarted();
+      void seqStopped();
       virtual void cmd(QAction* a);
       void dirtyChanged(Score*);
       void setPos(const Fraction& tick);
@@ -757,7 +756,6 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
 
       bool saveAudio(Score*, QIODevice*, std::function<bool(float)> updateProgress = nullptr);
       bool saveAudio(Score*, const QString& name);
-      bool canSaveMp3();
       bool saveMp3(Score*, const QString& name);
       bool saveMp3(Score*, QIODevice*, bool& wasCanceled);
       bool saveSvg(Score*, const QString& name, const NotesColors& notesColors = NotesColors(), SaveReplacePolicy* replacePolicy = nullptr);
@@ -959,9 +957,6 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
 extern MuseScore* mscore;
 extern QStringList recentScores;
 extern QString dataPath;
-extern MasterSynthesizer* synti;
-MasterSynthesizer* synthesizerFactory();
-Driver* driverFactory(QString driver);
 
 extern QAction* getAction(const char*);
 extern Shortcut* midiActionMap[128];

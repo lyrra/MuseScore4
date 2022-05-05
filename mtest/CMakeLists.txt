@@ -78,8 +78,8 @@ set (SOURCE_LIB
       ${OVE_SRC}
       ${MIDIIMPORT_SRC}
 
-      ${PROJECT_SOURCE_DIR}/audio/exports/exportmidi.cpp
-      ${PROJECT_SOURCE_DIR}/audio/exports/exportmidi.h
+      ${PROJECT_SOURCE_DIR}/muxtools/exports/exportmidi.cpp
+      ${PROJECT_SOURCE_DIR}/muxtools/exports/exportmidi.h
       ${PROJECT_SOURCE_DIR}/mscore/preferences.cpp
       ${PROJECT_SOURCE_DIR}/mscore/shortcut.cpp
       ${PROJECT_SOURCE_DIR}/mscore/stringutils.cpp

@@ -2,6 +2,10 @@
 
 include_directories(
       ${PROJECT_SOURCE_DIR}/global
+      ${PROJECT_SOURCE_DIR}/mux
+      ${PROJECT_SOURCE_DIR}/muxlib
+      ${PROJECT_SOURCE_DIR}/muxtools # needed for midifile.h
+      ${PROJECT_SOURCE_DIR}/muxseq # FIX: wrong (needs mux.h)
       ${PROJECT_SOURCE_DIR}/muxaudio/driver
       ${PROJECT_BINARY_DIR}
       ${PROJECT_SOURCE_DIR}/thirdparty  # portmidi
@@ -11,7 +15,7 @@ include_directories(
 add_executable(muxaudio
       muxaudio.h muxaudio.cpp
       control.h control.cpp
-      event.h event.cpp
+#      event.h event.cpp
       driver/mididriver.h driver/mididriver.cpp
       driver/driver.h driver/driver.cpp
       driver/jackaudio.h driver/jackaudio.cpp
@@ -42,13 +46,17 @@ target_include_directories(muxaudio PRIVATE ${PROJECT_SOURCE_DIR}
                                            ${PORTMIDI_INCLUDE_DIR}
                           )
 
-target_link_libraries(muxaudio ${ZMQ_LIBRARY} ${PORTAUDIO_LIBRARY} ${PORTMIDI_LIBRARY})
+target_link_libraries(muxaudio
+                      mux
+                      muxlib
+                      ${ZMQ_LIBRARY}
+                      ${PORTAUDIO_LIBRARY} ${PORTMIDI_LIBRARY})
 
-message("PORTAUDIO INC: ${PORTAUDIO_INCLUDE_DIR}")
-message("PORTAUDIO LIB: ${PORTAUDIO_LIBRARY}")
-message("PORTMIDI  INC: ${PORTMIDI_INCLUDE_DIR}")
-message("PORTMIDI  LIB: ${PORTMIDI_LIBRARY}")
-message("-----------------------------------§PORTMIDI  LIB: ${PORTMIDI_LIBRARY}")
+message("muxaudio PORTAUDIO INC: ${PORTAUDIO_INCLUDE_DIR}")
+message("muxaudio PORTAUDIO LIB: ${PORTAUDIO_LIBRARY}")
+message("muxaudio PORTMIDI  INC: ${PORTMIDI_INCLUDE_DIR}")
+message("muxaudio PORTMIDI  LIB: ${PORTMIDI_LIBRARY}")
+message("muxaudio PORTMIDI  LIB: ${PORTMIDI_LIBRARY}")
 
 if (MINGW)
    string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE)

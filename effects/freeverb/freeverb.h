@@ -98,7 +98,7 @@ class Freeverb : public Effect {
 
       bool setPreset(int);
       virtual const char* name() const { return "Freeverb"; }
-      virtual EffectGui* gui();
+      //virtual EffectGui* gui();
       virtual const std::vector<ParDescr>& parDescr() const;
       };
 

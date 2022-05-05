@@ -21,7 +21,9 @@
 #include "timeline.h"
 #include "preferences.h"
 #include "prefsdialog.h"
-#include "seq.h"
+
+#include "muxcommon.h"
+#include "muxseq_client.h"
 #include "shortcutcapturedialog.h"
 #include "scoreview.h"
 #include "shortcut.h"
@@ -29,7 +31,7 @@
 
 #include "pathlistdialog.h"
 #include "resourceManager.h"
-#include "audio/midi/msynthesizer.h"
+//#include "audio/midi/msynthesizer.h"
 
 #ifdef AVSOMR
 #include "avsomr/avsomrlocal.h"
@@ -40,8 +42,6 @@
 #endif
 
 namespace Ms {
-
-extern int g_driver_running; // FIX: remove this (should driver be part of seq?)
 
 //---------------------------------------------------------
 //   startPreferenceDialog
@@ -1410,15 +1410,19 @@ void PreferenceDialog::apply()
             preferences.setPreference(PREF_IO_JACK_USEJACKTRANSPORT, jackDriver->isChecked() && useJackTransport->isChecked());
 
             if (jackParametersChanged) {
+                  //------------------------------------------------
+                  // FIX: this logic should be moved to seq
                   // Change parameters of JACK driver without unload
-                  if (seq) {
-                        if (! g_driver_running) {
-                              qDebug("sequencer driver is null");
+                  if (muxseq_seq_alive()) {
+                        //if (! g_driver_running) {
+                        //      qDebug("sequencer driver is null");
                               restartAudioEngine();
-                              }
-                        if (!seq->init(true))
+                        //      }
+                        qDebug("musescore, prefsdialog calling muxseq_seq_init");
+                        if (!muxseq_seq_init(true))
                               qDebug("sequencer init failed");
                         }
+                  //------------------------------------------------
                   }
             else if (
                (wasJack != nowJack)

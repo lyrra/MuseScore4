@@ -21,10 +21,12 @@
 #include "libmscore/sig.h"
 #include "libmscore/score.h"
 #include "libmscore/repeatlist.h"
-#include "seq.h"
+#include "libmscore/tempo.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
 #include "musescore.h"
 #include "libmscore/measure.h"
-#include "audio/midi/msynthesizer.h"
+#include "msynthesizer.h"
 
 
 namespace Ms {
@@ -57,23 +59,23 @@ PlayPanel::PlayPanel(QWidget* parent)
       loopOutButton->setDefaultAction(getAction("loop-out"));
       enablePlay = new EnablePlayForWidget(this);
 
-      float minDecibels = synti->minGainAsDecibels;
-      float maxDecibels = synti->maxGainAsDecibels;
+      float minDecibels = muxseq_synti_getMinGainAsDecibels();
+      float maxDecibels = muxseq_synti_getMaxGainAsDecibels();
       volSpinBox->setRange(minDecibels, maxDecibels);
 
       volumeSlider->setLog(false);
       volumeSlider->setRange(minDecibels, maxDecibels);
-      volumeSlider->setDclickValue1(synti->defaultGainAsDecibels);
+      volumeSlider->setDclickValue1(muxseq_synti_getDefaultGainAsDecibels());
 
       speedSlider->setDclickValue1(100.0);
       speedSlider->setDclickValue2(100.0);
       speedSlider->setUseActualValue(true);
-      mgainSlider->setValue(seq->metronomeGain());
-      mgainSlider->setDclickValue1(seq->metronomeGain() - 10.75f);
-      mgainSlider->setDclickValue2(seq->metronomeGain() - 10.75f);
+      mgainSlider->setValue(muxseq_seq_metronomeGain());
+      mgainSlider->setDclickValue1(muxseq_seq_metronomeGain() - 10.75f);
+      mgainSlider->setDclickValue2(muxseq_seq_metronomeGain() - 10.75f);
 
-      volumeSlider->setDclickValue1(synti->defaultGainAsDecibels); // double click restores -40dB default
-      volumeSlider->setDclickValue2(synti->defaultGainAsDecibels);
+      volumeSlider->setDclickValue1(muxseq_synti_getDefaultGainAsDecibels()); // double click restores -40dB default
+      volumeSlider->setDclickValue2(muxseq_synti_getDefaultGainAsDecibels());
 
       connect(volumeSlider, SIGNAL(valueChanged(double,int)), SLOT(volumeChanged(double,int)));
       connect(mgainSlider,  SIGNAL(valueChanged(double,int)), SLOT(metronomeGainChanged(double,int)));
@@ -83,7 +85,8 @@ PlayPanel::PlayPanel(QWidget* parent)
       connect(speedSlider,  SIGNAL(sliderReleased(int)),      SLOT(speedSliderReleased(int)));
       connect(speedSpinBox, SIGNAL(valueChanged(int)),        SLOT(speedChanged()));
       connect(volSpinBox,   SIGNAL(valueChanged(double)),     SLOT(volSpinBoxEdited()));
-      connect(seq,          SIGNAL(heartBeat(int,int,int)),   SLOT(heartBeat(int,int,int)));
+      // FIX: hook SeqMsgHeartBeat messages from sequencer to Playpanel::heartBeat()
+      //connect(seq,    SIGNAL(heartBeat(int,int,int)),   SLOT(heartBeat(int,int,int)));
 
       volLabel();
       volSpinBoxEdited();     //update spinbox and, as a side effect, the slider with current gain value
@@ -111,7 +114,7 @@ void PlayPanel::speedChanged(double d, int)
             speed = 1.00;
             }
       emit speedChanged(speed);
-      setTempo(seq->curTempo() * speed);
+      setTempo(muxseq_seq_curTempo() * speed);
       setSpeed(speed);
       }
 
@@ -203,7 +206,7 @@ void PlayPanel::setScore(Score* s)
       volumeSlider->setEnabled(enable);
       posSlider->setEnabled(enable);
       speedSlider->setEnabled(enable);
-      if (cs && seq && seq->canStart()) {
+      if (cs && muxseq_seq_alive() && muxseq_seq_can_start()) {
             setTempo(cs->tempomap()->tempo(0));
             setSpeed(cs->tempomap()->relTempo());
             setEndpos(cs->repeatList().ticks());
@@ -301,7 +304,7 @@ void PlayPanel::setGain(float gain)  // respond to gainChanged() SIGNAL from Mas
       {
       Q_UNUSED(gain);
       const QSignalBlocker blockVolumeSpinBoxSignals(volSpinBox);
-      volumeSlider->setValue(synti->gainAsDecibels());
+      volumeSlider->setValue(muxseq_synti_getGainAsDecibels());
       volLabel();
       }
 
@@ -312,7 +315,7 @@ void PlayPanel::setGain(float gain)  // respond to gainChanged() SIGNAL from Mas
 
 void PlayPanel::volumeChanged(double decibels, int)
       {
-      synti->setGainAsDecibels(decibels);
+      muxseq_synti_setGainAsDecibels(decibels);
       }
 
 //---------------------------------------------------------
@@ -430,14 +433,14 @@ void PlayPanel::speedSliderPressed(int)
       
 void PlayPanel::volLabel()
       {
-      volSpinBox->setValue(synti->gainAsDecibels());
+      volSpinBox->setValue(muxseq_synti_getGainAsDecibels());
       volSpinBox->setSuffix(" dB");
       }
 
 
 void PlayPanel::volSpinBoxEdited()
       {
-      synti->setGainAsDecibels(volSpinBox->value());
+      muxseq_synti_setGainAsDecibels(volSpinBox->value());
       volLabel();
       }
 

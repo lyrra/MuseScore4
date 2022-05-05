@@ -30,10 +30,11 @@
 
 #include "libmscore/score.h"
 
-//#include "mscore/preferences.h"
-#include "mscore/muxcommon.h"
-#include "mscore/mux.h"
-#include "mscore/seq.h"
+#include "event.h"
+#include "muxcommon.h"
+#include "muxlib.h"
+#include "muxaudio.h"
+#include "seq.h"
 
 #ifdef USE_PORTMIDI
 #include "pm.h"

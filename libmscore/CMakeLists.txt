@@ -36,6 +36,8 @@ endif (NOT MSVC)
 include_directories(
       ${PROJECT_SOURCE_DIR}/thirdparty/dtl
       ${PROJECT_SOURCE_DIR}/global
+      ${PROJECT_SOURCE_DIR}/muxlib
+      ${PROJECT_SOURCE_DIR}/muxtools
       )
 
 add_library (

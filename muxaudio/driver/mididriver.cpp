@@ -26,15 +26,17 @@
 #include "config.h"
 #include "mididriver.h"
 
-#include "audio/midi/midifile.h"
+#include "midi/midifile.h"
 
 #include "libmscore/utils.h"
 #include "libmscore/score.h"
 
 #include "mscore/globals.h"
-#include "mscore/muxcommon.h"
-#include "mscore/mux.h"
-#include "mscore/seq.h"
+#include "event.h"
+#include "muxcommon.h"
+#include "muxlib.h"
+#include "muxaudio.h"
+#include "seq.h"
 
 namespace Ms {
 

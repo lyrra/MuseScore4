@@ -74,6 +74,7 @@
 #include "tremolo.h"
 #include "rehearsalmark.h"
 #include "sym.h"
+#include "muxseqlib.h"
 
 namespace Ms {
 
@@ -2210,8 +2211,7 @@ bool Score::processMidiInput()
                         if (!styleB(Sid::concertPitch)) {
                               ev.pitch += p->instrument(selection().tickStart())->transpose().chromatic;
                               }
-                        MScore::seq->startNote(
-                                          p->instrument(selection().tickStart())->channel(0)->channel(),   // tick that way?
+                        muxseq_start_note(p->instrument(selection().tickStart())->channel(0)->channel(),   // tick that way?
                                           ev.pitch,
                                           ev.velocity,
                                           0.0);

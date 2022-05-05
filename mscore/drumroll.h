@@ -74,7 +74,7 @@ class DrumrollEditor : public QMainWindow {
       DrumrollEditor(QWidget* parent = 0);
       void setStaff(Staff* staff);
       Score* score() const { return _score; }
-      void heartBeat(Seq*);
+      void heartBeat(void*); //void* was Seq*
       void writeSettings();
       };
 
