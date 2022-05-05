@@ -16,9 +16,8 @@ add_executable(muxaudio
       driver/driver.h driver/driver.cpp
       driver/jackaudio.h driver/jackaudio.cpp
       driver/jackweakapi.cpp
-# PortAudio backend disabled for now..
-#      driver/pa.h driver/pa.cpp
-#      driver/pm.h driver/pm.cpp
+      driver/pa.h driver/pa.cpp
+      driver/pm.h driver/pm.cpp
       )
 
 #if (MINGW OR MSVC)
@@ -38,12 +37,18 @@ add_executable(muxaudio
 #      )
 #endif (MSCORE_OUTPUT_NAME)
 
-target_include_directories(muxaudio PRIVATE
-      ${PROJECT_SOURCE_DIR}
-      )
+target_include_directories(muxaudio PRIVATE ${PROJECT_SOURCE_DIR}
+                                    PUBLIC ${PORTAUDIO_INCLUDE_DIR}
+                                           ${PORTMIDI_INCLUDE_DIR}
+                          )
 
-target_link_libraries(muxaudio ${ZMQ_LIBRARY})
+target_link_libraries(muxaudio ${ZMQ_LIBRARY} ${PORTAUDIO_LIBRARY} ${PORTMIDI_LIBRARY})
 
+message("PORTAUDIO INC: ${PORTAUDIO_INCLUDE_DIR}")
+message("PORTAUDIO LIB: ${PORTAUDIO_LIBRARY}")
+message("PORTMIDI  INC: ${PORTMIDI_INCLUDE_DIR}")
+message("PORTMIDI  LIB: ${PORTMIDI_LIBRARY}")
+message("-----------------------------------§PORTMIDI  LIB: ${PORTMIDI_LIBRARY}")
 
 if (MINGW)
    string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE)
@@ -80,6 +85,7 @@ if (MINGW)
       ${VORBIS_LIBRARY}
       ${VORBISFILE_LIBRARY}
       ${PORTAUDIO_LIBRARY}
+      ${PORTMIDI_LIBRARY}
       DESTINATION bin)
 
 else (MINGW)

@@ -45,7 +45,7 @@ class PortMidiDriver : public MidiDriver {
       PmStream* outputStream;
 
    public:
-      PortMidiDriver(Seq*);
+      PortMidiDriver();
       virtual ~PortMidiDriver();
       virtual bool init();
       virtual Port registerOutPort(const QString& name);

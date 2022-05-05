@@ -30,7 +30,7 @@
 
 #include "libmscore/score.h"
 
-#include "mscore/preferences.h"
+//#include "mscore/preferences.h"
 #include "mscore/muxcommon.h"
 #include "mscore/mux.h"
 #include "mscore/seq.h"
@@ -40,6 +40,12 @@
 #endif
 
 namespace Ms {
+
+struct {
+    int PREF_IO_PORTAUDIO_DEVICE;
+    bool midiOutputTrace;
+    bool debugMode;
+} preferences;
 
 static PaStream* stream;
 
@@ -101,10 +107,12 @@ bool Portaudio::init(bool)
             return false;
             }
       initialized = true;
-      if (MScore::debugMode)
+      if (preferences.debugMode)
             qDebug("using PortAudio Version: %s", Pa_GetVersionText());
 
-      PaDeviceIndex idx = preferences.getInt(PREF_IO_PORTAUDIO_DEVICE);
+      preferences.PREF_IO_PORTAUDIO_DEVICE = -1; // FIX: pass device on init
+      preferences.midiOutputTrace = false;
+      PaDeviceIndex idx = preferences.PREF_IO_PORTAUDIO_DEVICE;
       if (idx < 0) {
             idx = Pa_GetDefaultOutputDevice();
             qDebug("No device selected.  PortAudio detected %d devices.  Will use the default device (index %d).", Pa_GetDeviceCount(), idx);
@@ -143,11 +151,11 @@ bool Portaudio::init(bool)
       const PaStreamInfo* si = Pa_GetStreamInfo(stream);
       if (si)
             _sampleRate = int(si->sampleRate);
-#ifdef USE_ALSA
-      midiDriver = new AlsaMidiDriver(seq);
-#endif
+//#ifdef USE_ALSA
+//      midiDriver = new AlsaMidiDriver();
+//#endif
 #ifdef USE_PORTMIDI
-      midiDriver = new PortMidiDriver(seq);
+      midiDriver = new PortMidiDriver();
 #endif
       if (midiDriver && !midiDriver->init()) {
             qDebug("Init midi driver failed");
@@ -297,15 +305,15 @@ void Portaudio::putEvent(const NPlayEvent& e, unsigned framePos)
       if (!portMidiDriver || !portMidiDriver->getOutputStream() || !portMidiDriver->canOutput())
             return;
 
-      int portIdx = seq->score()->midiPort(e.channel());
-      int chan    = seq->score()->midiChannel(e.channel());
+      int portIdx = 0; // FIX: seq->score()->midiPort(e.channel());
+      int chan    = 0; // FIX: seq->score()->midiChannel(e.channel());
 
       if (portIdx < 0 ) {
             qDebug("Portaudio::putEvent: invalid port %d", portIdx);
             return;
             }
 
-      if (midiOutputTrace) {
+      if (preferences.midiOutputTrace) {
             int a     = e.dataA();
             int b     = e.dataB();
             qDebug("MidiOut<%d>: Portaudio: %02x %02x %02x, chan: %i", portIdx, e.type(), a, b, chan);
@@ -320,7 +328,7 @@ void Portaudio::putEvent(const NPlayEvent& e, unsigned framePos)
                   if (e.dataA() == CTRL_PROGRAM) {
                         // Convert CTRL_PROGRAM event to ME_PROGRAM
                         long msg = Pm_Message(ME_PROGRAM | chan, less128(e.dataB()), 0);
-                        PmError error = Pm_WriteShort(portMidiDriver->getOutputStream(), seq->getCurrentMillisecondTimestampWithLatency(framePos), msg);
+                        PmError error = Pm_WriteShort(portMidiDriver->getOutputStream(), 0 /* FIX: seq->getCurrentMillisecondTimestampWithLatency(framePos) */, msg);
                         if (error != pmNoError) {
                               qDebug("Portaudio: error %d", error);
                               return;
@@ -331,7 +339,7 @@ void Portaudio::putEvent(const NPlayEvent& e, unsigned framePos)
             case ME_PITCHBEND:
                   {
                   long msg = Pm_Message(e.type() | chan, less128(e.dataA()), less128(e.dataB()));
-                  PmError error = Pm_WriteShort(portMidiDriver->getOutputStream(), seq->getCurrentMillisecondTimestampWithLatency(framePos), msg);
+                  PmError error = Pm_WriteShort(portMidiDriver->getOutputStream(), 0 /* FIX: seq->getCurrentMillisecondTimestampWithLatency(framePos) */, msg);
                   if (error != pmNoError) {
                         qDebug("Portaudio: error %d", error);
                         return;
@@ -343,7 +351,7 @@ void Portaudio::putEvent(const NPlayEvent& e, unsigned framePos)
             case ME_AFTERTOUCH:
                   {
                   long msg = Pm_Message(e.type() | chan, less128(e.dataA()), 0);
-                  PmError error = Pm_WriteShort(portMidiDriver->getOutputStream(), seq->getCurrentMillisecondTimestampWithLatency(framePos), msg);
+                  PmError error = Pm_WriteShort(portMidiDriver->getOutputStream(), 0 /* FIX: seq->getCurrentMillisecondTimestampWithLatency(framePos) */, msg);
                   if (error != pmNoError) {
                         qDebug("Portaudio: error %d", error);
                         return;
@@ -367,7 +375,7 @@ void Portaudio::putEvent(const NPlayEvent& e, unsigned framePos)
 
 int Portaudio::currentApi() const
       {
-      PaDeviceIndex idx = preferences.getInt(PREF_IO_PORTAUDIO_DEVICE);
+      PaDeviceIndex idx = preferences.PREF_IO_PORTAUDIO_DEVICE;
       if (idx < 0)
             idx = Pa_GetDefaultOutputDevice();
 
@@ -391,7 +399,7 @@ int Portaudio::currentApi() const
 
 int Portaudio::currentDevice() const
       {
-      PaDeviceIndex idx = preferences.getInt(PREF_IO_PORTAUDIO_DEVICE);
+      PaDeviceIndex idx = preferences.PREF_IO_PORTAUDIO_DEVICE;
       if (idx < 0)
             idx = Pa_GetDefaultOutputDevice();
 
