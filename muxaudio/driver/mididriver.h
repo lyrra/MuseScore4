@@ -72,7 +72,7 @@ class MidiDriver {
       Seq* seq;
 
    public:
-      MidiDriver(Seq* s) { seq = s; }
+      MidiDriver() {}
       virtual ~MidiDriver() {}
       virtual bool init() = 0;
       virtual void getInputPollFd(struct pollfd**, int* n) = 0;

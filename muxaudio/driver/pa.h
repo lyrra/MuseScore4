@@ -26,7 +26,6 @@
 namespace Ms {
 
 class Synth;
-class Seq;
 class MidiDriver;
 class NPlayEvent;
 enum class Transport : char;

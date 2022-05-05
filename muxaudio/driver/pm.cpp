@@ -29,7 +29,6 @@
 #endif
 
 #include "pm.h"
-#include "mscore/preferences.h"
 #include "mscore/musescore.h"
 #include "mscore/muxcommon.h"
 #include "mscore/mux.h"
@@ -37,12 +36,20 @@
 
 namespace Ms {
 
+struct {
+    QString PREF_IO_PORTMIDI_INPUTDEVICE;
+    QString PREF_IO_PORTMIDI_OUTPUTDEVICE;
+    int PREF_IO_PORTMIDI_INPUTBUFFERCOUNT;
+    int PREF_IO_PORTMIDI_OUTPUTBUFFERCOUNT;
+    int PREF_IO_PORTMIDI_OUTPUTLATENCYMILLISECONDS;
+} preferences;
+
 //---------------------------------------------------------
 //   PortMidiDriver
 //---------------------------------------------------------
 
-PortMidiDriver::PortMidiDriver(Seq* s)
-  : MidiDriver(s)
+PortMidiDriver::PortMidiDriver()
+  : MidiDriver()
       {
       inputId = -1;
       outputId = -1;
@@ -74,10 +81,10 @@ PortMidiDriver::~PortMidiDriver()
 
 bool PortMidiDriver::init()
       {
-      inputId = getDeviceIn(preferences.getString(PREF_IO_PORTMIDI_INPUTDEVICE)); // Note: allow init even if inputId == pmNoDevice, in case of output
-      outputId = getDeviceOut(preferences.getString(PREF_IO_PORTMIDI_OUTPUTDEVICE)); // Note: allow init even if outputId == pmNoDevice, since input is more important than output.
+      inputId = getDeviceIn(preferences.PREF_IO_PORTMIDI_INPUTDEVICE); // Note: allow init even if inputId == pmNoDevice, in case of output
+      outputId = getDeviceOut(preferences.PREF_IO_PORTMIDI_OUTPUTDEVICE); // Note: allow init even if outputId == pmNoDevice, since input is more important than output.
       bool autoGrabbing = false;
-      if ((inputId == -1) && (preferences.getString(PREF_IO_PORTMIDI_INPUTDEVICE) != " ")) {
+      if ((inputId == -1) && (preferences.PREF_IO_PORTMIDI_INPUTDEVICE != " ")) {
             inputId = Pm_GetDefaultInputDeviceID();
             autoGrabbing = true;
             }
@@ -87,10 +94,10 @@ bool PortMidiDriver::init()
             QString portmidiInputDevice;
             if (info && (info->input))
                   portmidiInputDevice = QString(info->interf) + "," + QString(info->name);
-            if (portmidiInputDevice == preferences.getString(PREF_IO_PORTMIDI_OUTPUTDEVICE))
+            if (portmidiInputDevice == preferences.PREF_IO_PORTMIDI_OUTPUTDEVICE)
                   inputId = -1;
             }
-      if ((inputId == pmNoDevice) && (outputId == pmNoDevice) && (preferences.getString(PREF_IO_PORTMIDI_INPUTDEVICE) != " "))
+      if ((inputId == pmNoDevice) && (outputId == pmNoDevice) && (preferences.PREF_IO_PORTMIDI_INPUTDEVICE != " "))
             return false;
       static const int DRIVER_INFO = 0;
       static const int TIME_INFO = 0;
@@ -101,7 +108,7 @@ bool PortMidiDriver::init()
             PmError error = Pm_OpenInput(&inputStream,
                inputId,
                (void*)DRIVER_INFO,
-               preferences.getInt(PREF_IO_PORTMIDI_INPUTBUFFERCOUNT),
+               preferences.PREF_IO_PORTMIDI_INPUTBUFFERCOUNT,
                ((PmTimeProcPtr) Pt_Time),
                (void*)TIME_INFO);
             if (error != pmNoError) {
@@ -120,10 +127,10 @@ bool PortMidiDriver::init()
             PmError error = Pm_OpenOutput(&outputStream,
                outputId,
                (void*)DRIVER_INFO,
-               preferences.getInt(PREF_IO_PORTMIDI_OUTPUTBUFFERCOUNT),
+               preferences.PREF_IO_PORTMIDI_OUTPUTBUFFERCOUNT,
                ((PmTimeProcPtr) Pt_Time),
                (void*)TIME_INFO,
-               preferences.getInt(PREF_IO_PORTMIDI_OUTPUTLATENCYMILLISECONDS));
+               preferences.PREF_IO_PORTMIDI_OUTPUTLATENCYMILLISECONDS);
             if (error != pmNoError) {
                   const char* p = Pm_GetErrorText(error);
                   qDebug("PortMidi: open output (id=%d) failed: %s", int(outputId), p);
@@ -193,17 +200,17 @@ void PortMidiDriver::read()
                   if (type == ME_NOTEON) {
                         int pitch = Pm_MessageData1(buffer[0].message);
                         int velo = Pm_MessageData2(buffer[0].message);
-                        mscore->midiNoteReceived(channel, pitch, velo);
+                        //FIX: mscore->midiNoteReceived(channel, pitch, velo);
                         }
                   else if (type == ME_NOTEOFF) {
                         int pitch = Pm_MessageData1(buffer[0].message);
                         (void)Pm_MessageData2(buffer[0].message); // read but ignore
-                        mscore->midiNoteReceived(channel, pitch, 0);
+                        //FIX: mscore->midiNoteReceived(channel, pitch, 0);
                         }
                   else if (type == ME_CONTROLLER) {
                         int param = Pm_MessageData1(buffer[0].message);
                         int value = Pm_MessageData2(buffer[0].message);
-                        mscore->midiCtrlReceived(param, value);
+                        //FIX: mscore->midiCtrlReceived(param, value);
                         }
                   }
             }
