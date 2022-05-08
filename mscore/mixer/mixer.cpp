@@ -30,6 +30,7 @@
 #include "libmscore/score.h"
 #include "libmscore/part.h"
 #include "seq.h"
+#include "libmscore/muxseq.h"
 #include "libmscore/undo.h"
 #include "synthcontrol.h"
 #include "audio/midi/msynthesizer.h"
@@ -216,7 +217,7 @@ void Mixer::on_partOnlyCheckBox_toggled(bool checked)
       for (const MidiMapping& mm : _activeScore->masterScore()->midiMapping()) {
             const Channel* ch = mm.articulation();
             if (ch && (ch->mute() || ch->soloMute()))
-                  seq->stopNotes(ch->channel());
+                  muxseq_stop_notes(ch->channel());
             }
       }
 

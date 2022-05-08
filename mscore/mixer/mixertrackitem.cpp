@@ -21,6 +21,7 @@
 
 #include "libmscore/score.h"
 #include "libmscore/part.h"
+#include "libmscore/muxseq.h"
 #include "seq.h"
 
 namespace Ms {
@@ -87,7 +88,7 @@ void MixerTrackItem::setVolume(char value)
                         Channel* chan = playbackChannel(instrChan);
                         if (chan->volume() != value) {
                               chan->setVolume(value);
-                              seq->setController(chan->channel(), CTRL_VOLUME, chan->volume());
+                              muxseq_seq_setController(chan->channel(), CTRL_VOLUME, chan->volume());
                               }
                         }
                   }
@@ -95,7 +96,7 @@ void MixerTrackItem::setVolume(char value)
       else {
             if (_chan->volume() != value) {
                   _chan->setVolume(value);
-                  seq->setController(_chan->channel(), CTRL_VOLUME, _chan->volume());
+                  muxseq_seq_setController(_chan->channel(), CTRL_VOLUME, _chan->volume());
                   }
             }
       }
@@ -116,7 +117,7 @@ void MixerTrackItem::setPan(char value)
                         Channel* chan = playbackChannel(instrChan);
                         if (chan->pan() != value) {
                               chan->setPan(value);
-                              seq->setController(chan->channel(), CTRL_PANPOT, chan->pan());
+                              muxseq_seq_setController(chan->channel(), CTRL_PANPOT, chan->pan());
                               }
                         }
                   }
@@ -124,7 +125,7 @@ void MixerTrackItem::setPan(char value)
       else {
             if (_chan->pan() != value) {
                   _chan->setPan(value);
-                  seq->setController(_chan->channel(), CTRL_PANPOT, _chan->pan());
+                  muxseq_seq_setController(_chan->channel(), CTRL_PANPOT, _chan->pan());
                   }
             }
       }
@@ -145,7 +146,7 @@ void MixerTrackItem::setChorus(char value)
                         Channel* chan = playbackChannel(instrChan);
                         if (chan->chorus() != value) {
                               chan->setChorus(value);
-                              seq->setController(chan->channel(), CTRL_CHORUS_SEND, chan->chorus());
+                              muxseq_seq_setController(chan->channel(), CTRL_CHORUS_SEND, chan->chorus());
                               }
                         }
                   }
@@ -153,7 +154,7 @@ void MixerTrackItem::setChorus(char value)
       else {
             if (_chan->chorus() != value) {
                   _chan->setChorus(value);
-                  seq->setController(_chan->channel(), CTRL_CHORUS_SEND, _chan->chorus());
+                  muxseq_seq_setController(_chan->channel(), CTRL_CHORUS_SEND, _chan->chorus());
                   }
             }
       }
@@ -174,7 +175,7 @@ void MixerTrackItem::setReverb(char value)
                         Channel* chan = playbackChannel(instrChan);
                         if (chan->reverb() != value) {
                               chan->setReverb(value);
-                              seq->setController(chan->channel(), CTRL_REVERB_SEND, chan->reverb());
+                              muxseq_seq_setController(chan->channel(), CTRL_REVERB_SEND, chan->reverb());
                               }
                         }
                   }
@@ -182,7 +183,7 @@ void MixerTrackItem::setReverb(char value)
       else {
             if (_chan->reverb() != value) {
                   _chan->setReverb(value);
-                  seq->setController(_chan->channel(), CTRL_REVERB_SEND, _chan->reverb());
+                  muxseq_seq_setController(_chan->channel(), CTRL_REVERB_SEND, _chan->reverb());
                   }
             }
       }
@@ -223,14 +224,14 @@ void MixerTrackItem::setMute(bool value)
                   for (const Channel* instrChan: instr->channel()) {
                         Channel* chan = playbackChannel(instrChan);
                         if (value)
-                              seq->stopNotes(chan->channel());
+                              muxseq_stop_notes(chan->channel());
                         chan->setMute(value);
                         }
                   }
             }
       else {
             if (value)
-                  seq->stopNotes(_chan->channel());
+                  muxseq_stop_notes(_chan->channel());
             _chan->setMute(value);
             }
       }
@@ -282,7 +283,7 @@ void MixerTrackItem::setSolo(bool value)
                         else {
                               a->setSoloMute(!a->solo());
                               if (a->soloMute()) {
-                                    seq->stopNotes(a->channel());
+                                    muxseq_stop_notes(a->channel());
                                     }
                               }
                         }

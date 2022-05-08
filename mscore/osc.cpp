@@ -28,6 +28,7 @@
 #include "libmscore/chord.h"
 #include "libmscore/note.h"
 #include "libmscore/undo.h"
+#include "libmscore/muxseq.h"
 #include "mixer/mixer.h"
 #include "parteditbase.h"
 #include "scoreview.h"
@@ -192,8 +193,8 @@ void MuseScore::oscTempo(int val)
       qreal t = val * .01;
       if (playPanel)
             playPanel->setSpeed(t);
-      if (seq)
-            seq->setRelTempo(double(t));
+      if (muxseq_seq_alive())
+            muxseq_seq_setRelTempo(double(t));
       }
 
 void addOscPrefix(QString* methodName)
@@ -307,7 +308,7 @@ void MuseScore::oscVolChannel(double val)
             MidiMapping& mm = mms[i];
             Channel* channel = mm.articulation();
             int iv = lrint(val*127);
-            seq->setController(channel->channel(), CTRL_VOLUME, iv);
+            muxseq_seq_setController(channel->channel(), CTRL_VOLUME, iv);
             channel->setVolume(val * 100.0);
             if (mixer)
                   mixer->getPartAtIndex(i)->volume->setValue(val * 100.0);
@@ -330,7 +331,7 @@ void MuseScore::oscPanChannel(double val)
             MidiMapping& mm = mms[i];
             Channel* channel = mm.articulation();
             int iv = lrint((val + 1) * 64);
-            seq->setController(channel->channel(), CTRL_PANPOT, iv);
+            muxseq_seq_setController(channel->channel(), CTRL_PANPOT, iv);
             channel->setPan(val * 180.0);
             if (mixer)
                   mixer->getPartAtIndex(i)->pan->setValue(val * 100.0);

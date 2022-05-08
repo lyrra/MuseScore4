@@ -22,6 +22,7 @@
 #include "preferences.h"
 #include "prefsdialog.h"
 #include "seq.h"
+#include "libmscore/muxseq.h"
 #include "shortcutcapturedialog.h"
 #include "scoreview.h"
 #include "shortcut.h"
@@ -1411,12 +1412,13 @@ void PreferenceDialog::apply()
 
             if (jackParametersChanged) {
                   // Change parameters of JACK driver without unload
-                  if (seq) {
+                  if (muxseq_seq_alive()) {
                         if (! g_driver_running) {
                               qDebug("sequencer driver is null");
                               restartAudioEngine();
                               }
-                        if (!seq->init(true))
+                        qDebug("musescore, prefsdialog calling muxseq_seq_init");
+                        if (!muxseq_seq_init(true))
                               qDebug("sequencer init failed");
                         }
                   }
