@@ -121,7 +121,6 @@ double  MScore::pixelRatio  = 0.8;        // DPI / logicalDPI
 
 MPaintDevice* MScore::_paintDevice;
 
-Sequencer* MScore::seq2 = 0;
 MuseScoreCore* MuseScoreCore::mscoreCore;
 
 extern void initDrumset();

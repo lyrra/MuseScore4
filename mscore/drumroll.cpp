@@ -34,6 +34,7 @@
 #include "libmscore/part.h"
 #include "libmscore/instrument.h"
 #include "seq.h"
+#include "libmscore/muxseq.h"
 #include "preferences.h"
 
 namespace Ms {
@@ -367,7 +368,7 @@ void DrumrollEditor::velocityChanged(int val)
 
 void DrumrollEditor::keyPressed(int p)
       {
-      seq->startNote(staff->part()->instrument()->channel(0)->channel(), p, 80, 0, 0.0);  //tick?
+      muxseq_start_note_dur(staff->part()->instrument()->channel(0)->channel(), p, 80, 0, 0.0);  //tick?
       }
 
 //---------------------------------------------------------
@@ -376,7 +377,7 @@ void DrumrollEditor::keyPressed(int p)
 
 void DrumrollEditor::keyReleased(int /*pitch*/)
       {
-      seq->stopNotes();
+      muxseq_stop_notes();
       }
 
 //---------------------------------------------------------
@@ -402,7 +403,7 @@ void DrumrollEditor::heartBeat(Seq* s)
 void DrumrollEditor::moveLocator(int i)
       {
       if (locator[i].valid()) {
-            seq->seek(locator[i].tick());
+            muxseq_seq_seek(locator[i].tick());
             gv->moveLocator(i);
             }
       }

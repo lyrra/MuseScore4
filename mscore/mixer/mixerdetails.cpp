@@ -21,6 +21,7 @@
 
 #include "musescore.h"
 
+#include "libmscore/muxseq.h"
 #include "libmscore/score.h"
 #include "libmscore/part.h"
 #include "mixer.h"
@@ -556,7 +557,7 @@ void MixerDetails::midiChannelChanged(int)
       Part* part = _mti->part();
       Channel* channel = _mti->focusedChan();
 
-      seq->stopNotes(channel->channel());
+      muxseq_stop_notes(channel->channel());
       int p =    portSpinBox->value() - 1;
       int c = channelSpinBox->value() - 1;
 
@@ -565,12 +566,12 @@ void MixerDetails::midiChannelChanged(int)
 
       part->score()->setInstrumentsChanged(true);
       part->score()->setLayoutAll();
-      seq->initInstruments();
+      muxseq_seq_initInstruments();
 
       // Update MIDI Out ports
       int maxPort = std::max(p, part->score()->masterScore()->midiPortCount());
       part->score()->masterScore()->setMidiPortCount(maxPort);
-      seq->updateOutPortCount(maxPort + 1);
+      muxseq_seq_updateOutPortCount(maxPort + 1);
       }
 
 
