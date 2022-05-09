@@ -3073,10 +3073,11 @@ void MuseScore::createPlayPanel()
       {
       if (!playPanel) {
             playPanel = new PlayPanel(this);
+            MuxSeqSig* muxseqsig = muxseqsig_get();
             //FIX: decouple seq3
-            connect(playPanel, SIGNAL(metronomeGainChanged(float)), seq3, SLOT(setMetronomeGain(float)));
-            connect(playPanel, SIGNAL(speedChanged(double)), seq3, SLOT(setRelTempo(double)));
-            connect(playPanel, SIGNAL(posChange(int)), seq3, SLOT(seek(int)));
+            connect(playPanel, SIGNAL(metronomeGainChanged(float)), muxseqsig, SLOT(setMetronomeGain(float)));
+            connect(playPanel, SIGNAL(speedChanged(double)), muxseqsig, SLOT(setRelTempo(double)));
+            connect(playPanel, SIGNAL(posChange(int)), muxseqsig, SLOT(seek(int)));
             connect(playPanel, SIGNAL(closed(bool)), playId, SLOT(setChecked(bool)));
             connect(synti, SIGNAL(gainChanged(float)), playPanel, SLOT(setGain(float)));
             playPanel->setSpeedIncrement(preferences.getInt(PREF_APP_PLAYBACK_SPEEDINCREMENT));
