@@ -22,6 +22,7 @@
 #include "libmscore/score.h"
 #include "libmscore/repeatlist.h"
 #include "seq.h"
+#include "libmscore/muxseq.h"
 #include "musescore.h"
 #include "libmscore/measure.h"
 #include "audio/midi/msynthesizer.h"
@@ -68,9 +69,9 @@ PlayPanel::PlayPanel(QWidget* parent)
       speedSlider->setDclickValue1(100.0);
       speedSlider->setDclickValue2(100.0);
       speedSlider->setUseActualValue(true);
-      mgainSlider->setValue(seq->metronomeGain());
-      mgainSlider->setDclickValue1(seq->metronomeGain() - 10.75f);
-      mgainSlider->setDclickValue2(seq->metronomeGain() - 10.75f);
+      mgainSlider->setValue(muxseq_seq_metronomeGain());
+      mgainSlider->setDclickValue1(muxseq_seq_metronomeGain() - 10.75f);
+      mgainSlider->setDclickValue2(muxseq_seq_metronomeGain() - 10.75f);
 
       volumeSlider->setDclickValue1(synti->defaultGainAsDecibels); // double click restores -40dB default
       volumeSlider->setDclickValue2(synti->defaultGainAsDecibels);
@@ -83,7 +84,8 @@ PlayPanel::PlayPanel(QWidget* parent)
       connect(speedSlider,  SIGNAL(sliderReleased(int)),      SLOT(speedSliderReleased(int)));
       connect(speedSpinBox, SIGNAL(valueChanged(int)),        SLOT(speedChanged()));
       connect(volSpinBox,   SIGNAL(valueChanged(double)),     SLOT(volSpinBoxEdited()));
-      connect(seq,          SIGNAL(heartBeat(int,int,int)),   SLOT(heartBeat(int,int,int)));
+      //FIX
+      connect(seq3,          SIGNAL(heartBeat(int,int,int)),   SLOT(heartBeat(int,int,int)));
 
       volLabel();
       volSpinBoxEdited();     //update spinbox and, as a side effect, the slider with current gain value
@@ -111,7 +113,7 @@ void PlayPanel::speedChanged(double d, int)
             speed = 1.00;
             }
       emit speedChanged(speed);
-      setTempo(seq->curTempo() * speed);
+      setTempo(muxseq_seq_curTempo() * speed);
       setSpeed(speed);
       }
 
@@ -203,7 +205,7 @@ void PlayPanel::setScore(Score* s)
       volumeSlider->setEnabled(enable);
       posSlider->setEnabled(enable);
       speedSlider->setEnabled(enable);
-      if (cs && seq && seq->canStart()) {
+      if (cs && muxseq_seq_alive() && muxseq_seq_can_start()) {
             setTempo(cs->tempomap()->tempo(0));
             setSpeed(cs->tempomap()->relTempo());
             setEndpos(cs->repeatList().ticks());

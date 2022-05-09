@@ -177,6 +177,7 @@ extern Ms::Synthesizer* createZerberus();
 #endif
 #include "telemetrymanager.h"
 
+#include "muxseqsig.h"
 #include "libmscore/muxseq.h"
 
 namespace Ms {
@@ -534,8 +535,8 @@ void MuseScore::preferencesChanged(bool fromWorkspace, bool changeUI)
                   }
             }
 
-      transportTools->setEnabled(!noSeq && seq && seq->isRunning());
-      playId->setEnabled(!noSeq && seq && seq->isRunning());
+      transportTools->setEnabled(!noSeq && muxseq_seq_alive() && muxseq_seq_running());
+      playId->setEnabled(!noSeq && muxseq_seq_alive() && muxseq_seq_running());
 
       // change workspace
       if (!fromWorkspace && preferences.getString(PREF_APP_WORKSPACE) != WorkspacesManager::currentWorkspace()->name()) {
@@ -550,8 +551,8 @@ void MuseScore::preferencesChanged(bool fromWorkspace, bool changeUI)
       reloadInstrumentTemplates();
       updateInstrumentDialog();
 
-      if (seq)
-            seq->preferencesChanged();
+      if (muxseq_seq_alive())
+            muxseq_preferencesChanged();
       }
 
 //---------------------------------------------------------
@@ -1045,6 +1046,30 @@ void MuseScore::populatePlaybackControls()
                   }
             }
       }
+
+//---------------------------------------------------------
+//   seqStarted
+//---------------------------------------------------------
+
+void MuseScore::seqStarted()
+      {
+      if (cv)
+            cv->setCursorOn(true);
+      if (cs)
+            cs->update();
+      }
+
+//---------------------------------------------------------
+//   seqStopped
+//    JACK has stopped
+//    executed in gui environment
+//---------------------------------------------------------
+
+void MuseScore::seqStopped()
+      {
+      cv->setCursorOn(false);
+      }
+
 
 //---------------------------------------------------------
 //   MuseScore
@@ -1967,10 +1992,10 @@ MuseScore::MuseScore()
 
       if (!MScore::noGui)
             preferencesChanged();
-
-      if (seq) {
-            connect(seq, SIGNAL(started()), SLOT(seqStarted()));
-            connect(seq, SIGNAL(stopped()), SLOT(seqStopped()));
+      MuxSeqSig* muxseqsig = muxseqsig_init();
+      if (muxseq_seq_alive()) {
+            connect(muxseqsig, SIGNAL(sigSeqStarted()), SLOT(seqStarted()));
+            connect(muxseqsig, SIGNAL(sigSeqStopped()), SLOT(seqStopped()));
             }
       loadScoreList();
 
@@ -2416,7 +2441,7 @@ void MuseScore::selectionChanged(SelState selectionState)
             timeline()->changeSelection(selectionState);
       if (_pianoTools && _pianoTools->isVisible()) {
             if (cs) {
-                  if (seq->isStopped())
+                  if (muxseq_seq_stopped())
                         _pianoTools->changeSelection(cs->selection());
                   }
             else
@@ -2711,8 +2736,8 @@ void MuseScore::setCurrentScoreView(ScoreView* view)
             updatePlayMode();
             }
 
-      if (seq)
-            seq->setScoreView(cv);
+      if (muxseq_seq_alive())
+            muxseq_seq_set_scoreview(cv);
       if (playPanel)
             playPanel->setScore(cs);
       if (synthControl)
@@ -3048,9 +3073,10 @@ void MuseScore::createPlayPanel()
       {
       if (!playPanel) {
             playPanel = new PlayPanel(this);
-            connect(playPanel, SIGNAL(metronomeGainChanged(float)), seq, SLOT(setMetronomeGain(float)));
-            connect(playPanel, SIGNAL(speedChanged(double)), seq, SLOT(setRelTempo(double)));
-            connect(playPanel, SIGNAL(posChange(int)), seq, SLOT(seek(int)));
+            //FIX: decouple seq3
+            connect(playPanel, SIGNAL(metronomeGainChanged(float)), seq3, SLOT(setMetronomeGain(float)));
+            connect(playPanel, SIGNAL(speedChanged(double)), seq3, SLOT(setRelTempo(double)));
+            connect(playPanel, SIGNAL(posChange(int)), seq3, SLOT(seek(int)));
             connect(playPanel, SIGNAL(closed(bool)), playId, SLOT(setChecked(bool)));
             connect(synti, SIGNAL(gainChanged(float)), playPanel, SLOT(setGain(float)));
             playPanel->setSpeedIncrement(preferences.getInt(PREF_APP_PLAYBACK_SPEEDINCREMENT));
@@ -3068,7 +3094,7 @@ void MuseScore::createPlayPanel()
 
 void MuseScore::showPlayPanel(bool visible)
       {
-      if (noSeq || !(seq && seq->isRunning()))
+      if (noSeq || !(muxseq_seq_alive() && muxseq_seq_running()))
             return;
       if (playPanel == 0) {
             if (!visible)
@@ -3105,15 +3131,15 @@ void MuseScore::cmdAppendMeasures()
 
 void MuseScore::restartAudioEngine()
       {
-      if (seq)
-            seq->exit();
+      if (muxseq_seq_alive())
+            muxseq_exit();
 
-      if (seq) {
-            if (seq->synti()) {
-                  seq->synti()->setSampleRate(MScore::sampleRate);
-                  seq->synti()->init();
+      if (muxseq_seq_alive()) {
+            if (muxseq_synti()) {
+                  muxseq_synti_setSampleRate(MScore::sampleRate);
+                  muxseq_synti_init();
                   }
-            if (!seq->init())
+            if (!(muxseq_seq_init(false)))
                   qDebug("sequencer init failed");
             }
       }
@@ -3325,9 +3351,9 @@ void MuseScore::removeTab(int i)
 
       if (!scriptTestMode && !converterMode && checkDirty(score))
             return;
-      if (seq && seq->score() == score) {
-            seq->stopWait();
-            seq->setScoreView(0);
+      if (muxseq_seq_alive() && muxseq_seq_score() == score) {
+            muxseq_stop_wait();
+            muxseq_seq_set_scoreview(0);
             }
 
       int idx1      = tab1->currentIndex();
@@ -4392,7 +4418,7 @@ void MuseScore::changeState(ScoreState val)
 
       menuWorkspaces->setEnabled(enable);
 
-      transportTools->setEnabled(enable && !noSeq && seq && seq->isRunning());
+      transportTools->setEnabled(enable && !noSeq && muxseq_seq_alive() && muxseq_seq_running());
       cpitchTools->setEnabled(enable);
       zoomBox->setEnabled(enable);
       entryTools->setEnabled(enable);
@@ -4653,8 +4679,8 @@ void MuseScore::writeSettings()
             synthControl->writeSettings();
       settings.setValue("synthControlVisible", synthControl && synthControl->isVisible());
       settings.setValue("mixerVisible", mixer && mixer->isVisible());
-      if (seq) {
-            seq->exit();
+      if (muxseq_seq_alive()) {
+            muxseq_exit();
             }
       if (instrList)
             instrList->writeSettings();
@@ -4761,7 +4787,7 @@ void MuseScore::readSettings()
 
 void MuseScore::play(Element* e) const
       {
-      if (noSeq || !(seq && seq->isRunning()) || !preferences.getBool(PREF_SCORE_NOTE_PLAYONCLICK))
+      if (noSeq || !(muxseq_seq_alive() && muxseq_seq_running()) || !preferences.getBool(PREF_SCORE_NOTE_PLAYONCLICK))
             return;
 
       if (e->isNote()) {
@@ -4769,20 +4795,20 @@ void MuseScore::play(Element* e) const
             play(e, note->ppitch());
             }
       else if (e->isChord()) {
-            seq->stopNotes();
+            muxseq_stop_notes();
             Chord* c   = toChord(e);
             Part* part = c->staff()->part();
             Fraction tick   = c->segment() ? c->segment()->tick() : Fraction(0,1);
             Instrument* instr = part->instrument(tick);
             for (Note* n : c->notes()) {
                   const int channel = instr->channel(n->subchannel())->channel();
-                  seq->startNote(channel, n->ppitch(), 80, n->tuning());
+                  muxseq_start_note(channel, n->ppitch(), 80, n->tuning());
                   }
-            seq->startNoteTimer(MScore::defaultPlayDuration);
+            muxseq_start_notetimer(MScore::defaultPlayDuration);
             }
       else if (e->isHarmony()
                && preferences.getBool(PREF_SCORE_HARMONY_PLAY_ONEDIT)) {
-            seq->stopNotes();
+            muxseq_stop_notes();
             Harmony* h = toHarmony(e);
             if (!h->isRealizable())
                   return;
@@ -4798,17 +4824,17 @@ void MuseScore::play(Element* e) const
             // reset the cc that is used for single note dynamics, if any
             int cc = synthesizerState().ccToUse();
             if (cc != -1)
-                  seq->sendEvent(NPlayEvent(ME_CONTROLLER, channel, cc, 80));
+                  muxseq_send_event(NPlayEvent(ME_CONTROLLER, channel, cc, 80));
 
             for (int pitch : pitches)
-                  seq->startNote(channel, pitch, 80, 0);
-            seq->startNoteTimer(MScore::defaultPlayDuration);
+                  muxseq_start_note(channel, pitch, 80, 0);
+            muxseq_start_notetimer(MScore::defaultPlayDuration);
             }
       }
 
 void MuseScore::play(Element* e, int pitch) const
       {
-      if (noSeq || !(seq && seq->isRunning()))
+      if (noSeq || !(muxseq_seq_alive() && muxseq_seq_running()))
             return;
       if (preferences.getBool(PREF_SCORE_NOTE_PLAYONCLICK) && e->isNote()) {
             Note* note = static_cast<Note*>(e);
@@ -4832,9 +4858,9 @@ void MuseScore::play(Element* e, int pitch) const
             // reset the cc that is used for single note dynamics, if any
             int cc = synthesizerState().ccToUse();
             if (cc != -1)
-                  seq->sendEvent(NPlayEvent(ME_CONTROLLER, channel, cc, 80));
+                  muxseq_send_event(NPlayEvent(ME_CONTROLLER, channel, cc, 80));
 
-            seq->startNote(channel, pitch, 80, MScore::defaultPlayDuration, masterNote->tuning());
+            muxseq_start_note_dur(channel, pitch, 80, MScore::defaultPlayDuration, masterNote->tuning());
             }
       }
 
@@ -6122,8 +6148,8 @@ void MuseScore::endCmd(bool undoRedo)
                   ms->setExcerptsChanged(false);
                   }
             if (ms->instrumentsChanged()) {
-                  if (!noSeq && (seq && seq->isRunning()))
-                        seq->initInstruments();
+                  if (!noSeq && (muxseq_seq_alive() && muxseq_seq_running()))
+                        muxseq_seq_initInstruments();
                   instrumentChanged();                // update mixer
                   ms->setInstrumentsChanged(false);
                   }
@@ -6223,7 +6249,7 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
       else if (cmd == "rewind") {
             if (cs) {
                   Fraction tick = loop() ? cs->loopInTick() : Fraction(0,1);
-                  seq->seek(tick.ticks());
+                  muxseq_seq_seek(tick.ticks());
                   if (cv) {
                         Measure* m = cs->tick2measureMM(tick);
                         if (m)
@@ -6234,17 +6260,17 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   }
             }
       else if (cmd == "play-next-measure")
-            seq->nextMeasure();
+            muxseq_seq_nextMeasure();
       else if (cmd == "play-next-chord")
-            seq->nextChord();
+            muxseq_seq_nextChord();
       else if (cmd == "play-prev-measure")
-            seq->prevMeasure();
+            muxseq_seq_prevMeasure();
       else if (cmd == "play-prev-chord")
-            seq->prevChord();
+            muxseq_seq_prevChord();
       else if (cmd == "seek-begin")
-            seq->rewindStart();
+            muxseq_seq_rewindStart();
       else if (cmd == "seek-end")
-            seq->seekEnd();
+            muxseq_seq_seekEnd();
       else if (cmd == "keys")
             showKeyEditor();
       else if (cmd == "file-new")
@@ -6474,15 +6500,15 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             addTempo();
       else if (cmd == "loop") {
             if (loop()) {
-                  seq->setLoopSelection();
+                  muxseq_seq_setLoopSelection();
                   }
             }
       else if (cmd == "loop-in") {
-            seq->setLoopIn();
+            muxseq_seq_setLoopIn();
             loopAction->setChecked(true);
             }
       else if (cmd == "loop-out") {
-            seq->setLoopOut();
+            muxseq_seq_setLoopOut();
             loopAction->setChecked(true);
             }
       else if (cmd == "metronome")  // no action
@@ -6721,8 +6747,8 @@ void MuseScore::updatePlayMode()
 void MuseScore::closeScore(Score* score)
       {
       // Let's compute maximum count of ports in remaining scores
-      if (seq)
-            seq->recomputeMaxMidiOutPort();
+      if (muxseq_seq_alive())
+            muxseq_seq_recomputeMaxMidiOutPort();
       removeTab(scoreList.indexOf(score->masterScore()));
       }
 
@@ -8080,8 +8106,8 @@ void MuseScore::init(QStringList& argv)
       // Do not create sequencer and audio drivers if run with '-s'
       if (!noSeq) {
             showSplashMessage(sc, tr("Initializing sequencer and audio driver…"));
-            seq            = new Seq();
-            muxseq_init(seq);
+            seq3           = new Seq();
+            muxseq_alloc(seq3);
             synti          = synthesizerFactory();
             mux_threads_start();
             // FIX: query muxaudio about current sampleRate
@@ -8089,11 +8115,11 @@ void MuseScore::init(QStringList& argv)
             synti->setSampleRate(MScore::sampleRate);
             showSplashMessage(sc, tr("Loading SoundFonts…"));
             synti->init();
-            seq->setMasterSynthesizer(synti);
+            seq3->setMasterSynthesizer(synti);
             }
       else {
-            seq         = 0;
-            muxseq_deinit();
+            seq3        = 0;
+            muxseq_dealloc();
             }
 //---
       //
@@ -8185,7 +8211,8 @@ void MuseScore::init(QStringList& argv)
             }
 
       if (!noSeq) {
-            if (!seq->init())
+            qDebug("musescore calling muxseq_seq_init");
+            if (!muxseq_seq_init(false))
                   qDebug("sequencer init failed");
             }
 

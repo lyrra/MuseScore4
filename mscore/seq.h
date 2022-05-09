@@ -215,8 +215,6 @@ class Seq : public QObject, public Sequencer {
       void setMetronomeGain(float val) { metronomeVolume = val; }
 
    signals:
-      void started();
-      void stopped();
       int toGui(int, int arg = 0);
       void heartBeat(int, int, int);
       void tempoChanged();
@@ -285,7 +283,7 @@ class Seq : public QObject, public Sequencer {
       void preferencesChanged() { cachedPrefs.update(); }
       };
 
-extern Seq* seq;
+extern Seq* seq3;
 extern void initSequencer();
 extern bool initMidi();
 

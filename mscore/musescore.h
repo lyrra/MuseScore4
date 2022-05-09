@@ -523,8 +523,6 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       void selectScore(QAction*);
       void startPreferenceDialog();
       void preferencesChanged(bool fromWorkspace = false, bool changeUI = true);
-      void seqStarted();
-      void seqStopped();
       void cmdAppendMeasures();
       void cmdInsertMeasures();
       void zoomBoxChanged(const ZoomIndex, const qreal);
@@ -576,6 +574,8 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       QByteArray exportPdfAsJSON(Score*);
 
    public slots:
+      void seqStarted();
+      void seqStopped();
       virtual void cmd(QAction* a);
       void dirtyChanged(Score*);
       void setPos(const Fraction& tick);
