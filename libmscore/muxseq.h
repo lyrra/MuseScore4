@@ -3,11 +3,55 @@
 
 namespace Ms {
 
-void muxseq_init(void* seq);
-void muxseq_deinit();
+#define DEFMUXSEQVOID(name) void muxseq_seq_ ## name()
+
+void muxseq_alloc(void* seq);
+void muxseq_dealloc();
+void muxseq_exit();
+bool muxseq_seq_init(bool hotPlug);
 bool muxseq_seq_alive();
 void muxseq_send_event(NPlayEvent event);
+void muxseq_seq_start();
+void muxseq_seq_stop();
 void muxseq_start_note(int channel, int pitch, int velocity, double nt);
+void muxseq_start_note_dur(int channel, int pitch, int velocity, int duration, double nt);
+void muxseq_start_notetimer(int duration);
+void muxseq_stop_notes();
+void muxseq_stop_notes(int channel);
+void muxseq_stop_notetimer();
+void muxseq_stop_wait();
+bool muxseq_seq_playing();
+bool muxseq_seq_running();
+bool muxseq_seq_stopped();
+bool muxseq_seq_can_start();
+void muxseq_seq_seek(int ticks);
+float muxseq_seq_curTempo();
+void muxseq_seq_setRelTempo(double);
+DEFMUXSEQVOID(nextMeasure);
+DEFMUXSEQVOID(nextChord);
+DEFMUXSEQVOID(prevMeasure);
+DEFMUXSEQVOID(prevChord);
+DEFMUXSEQVOID(rewindStart);
+DEFMUXSEQVOID(seekEnd);
+DEFMUXSEQVOID(setLoopIn);
+DEFMUXSEQVOID(setLoopOut);
+DEFMUXSEQVOID(setLoopSelection);
+DEFMUXSEQVOID(recomputeMaxMidiOutPort);
+
+float muxseq_seq_metronomeGain();
+void muxseq_seq_playMetronomeBeat(BeatType beatType);
+void muxseq_seq_initInstruments();
+void muxseq_preferencesChanged();
+MasterScore* muxseq_seq_score();
+void muxseq_seq_set_scoreview(void *v);
+
+void muxseq_seq_setController(int channel, int vol, int iv);
+void muxseq_seq_updateOutPortCount(int maxPorts);
+
+
+bool muxseq_synti();
+void muxseq_synti_init();
+void muxseq_synti_setSampleRate(float sampleRate);
 
 }     // namespace Ms
 #endif

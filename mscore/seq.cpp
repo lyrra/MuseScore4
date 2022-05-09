@@ -23,6 +23,7 @@
 #include "seq.h"
 #include "mux.h"
 #include "musescore.h"
+#include "muxseqsig.h"
 
 #include "audio/midi/msynthesizer.h"
 #include "libmscore/rendermidi.h"
@@ -74,6 +75,7 @@ void mux_stop_threads();
 static Transport jack_transport;
 
 Seq* seq;
+Seq* seq3;
 
 static const int guiRefresh   = 10;       // Hz
 static const int peakHoldTime = 1400;     // msec
@@ -212,6 +214,7 @@ Seq::Seq()
 
 Seq::~Seq()
       {
+      qDebug("!!!! qseq destructor !!!!");
       }
 
 //---------------------------------------------------------
@@ -443,28 +446,6 @@ void Seq::stopWait()
             }
       }
 
-//---------------------------------------------------------
-//   seqStarted
-//---------------------------------------------------------
-
-void MuseScore::seqStarted()
-      {
-      if (cv)
-            cv->setCursorOn(true);
-      if (cs)
-            cs->update();
-      }
-
-//---------------------------------------------------------
-//   seqStopped
-//    JACK has stopped
-//    executed in gui environment
-//---------------------------------------------------------
-
-void MuseScore::seqStopped()
-      {
-      cv->setCursorOn(false);
-      }
 
 //---------------------------------------------------------
 //   unmarkNotes
@@ -498,7 +479,7 @@ void Seq::guiStop()
       int tck = cs->repeatList().utick2tick(cs->utime2utick(qreal(playFrame) / qreal(MScore::sampleRate)));
       cs->setPlayPos(Fraction::fromTicks(tck));
       cs->update();
-      emit stopped();
+      muxseqsig_seq_emit_stopped();
       }
 
 //---------------------------------------------------------
@@ -554,7 +535,7 @@ void Seq::seqMessage(int msg, int arg)
                   break;
 
             case '1':         // PLAY
-                  emit started();
+                  muxseqsig_seq_emit_started();
 //                  heartBeatTimer->start(1000/guiRefresh);
                   break;
 

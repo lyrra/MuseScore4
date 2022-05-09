@@ -19,6 +19,7 @@
 #include "fotomode.h"
 #include "tourhandler.h"
 #include "scoreaccessibility.h"
+#include "libmscore/muxseq.h"
 #include "libmscore/score.h"
 #include "libmscore/keysig.h"
 #include "libmscore/timesig.h"
@@ -317,8 +318,8 @@ bool ScoreView::startTextEditingOnMouseRelease(QMouseEvent* mouseEvent)
 void ScoreView::mouseReleaseEvent(QMouseEvent* mouseEvent)
       {
       editData.buttons = Qt::NoButton;
-      if (seq)
-            seq->stopNoteTimer();
+      if (muxseq_seq_alive())
+            muxseq_stop_notetimer();
       switch (state) {
             case ViewState::DRAG:
             case ViewState::DRAG_OBJECT:
@@ -603,11 +604,12 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
 
             case ViewState::PLAY: {
                   Element* e = elementNear(editData.startMove);
-                  if (seq && e && (e->isNote() || e->isRest())) {
+                  if (muxseq_seq_alive() && e && (e->isNote() || e->isRest())) {
                         if (e->isNote())
                               e = e->parent();
                         ChordRest* cr = toChordRest(e);
-                        seq->seek(seq->score()->repeatList().tick2utick(cr->tick().ticks()));
+                        //FIX
+                        seq3->seek(seq3->score()->repeatList().tick2utick(cr->tick().ticks()));
                         }
                   }
                   break;
@@ -1014,8 +1016,8 @@ void ScoreView::contextMenuEvent(QContextMenuEvent* ev)
                   // editData.element = e;
                   // select(ev);
                   }
-            if (seq)
-                  seq->stopNotes();       // stop now because we don’t get a mouseRelease event
+            if (muxseq_seq_alive())
+                  muxseq_stop_notes();       // stop now because we don’t get a mouseRelease event
             objectPopup(gp, e);
             }
       else {
@@ -1114,7 +1116,7 @@ void ScoreView::changeState(ViewState s)
 //            startEdit();
 //            return;
 //            }
-      if (s == ViewState::PLAY && !seq)
+      if (s == ViewState::PLAY && !(muxseq_seq_alive()))
             return;
       if (s == state)
             return;
@@ -1156,7 +1158,7 @@ void ScoreView::changeState(ViewState s)
                   endFotoDrag();
                   break;
             case ViewState::PLAY:
-                  seq->stop();
+                  muxseq_seq_stop();
                   break;
             case ViewState::EDIT:
                   setMouseTracking(false);
@@ -1212,7 +1214,7 @@ void ScoreView::changeState(ViewState s)
             case ViewState::LASSO:
                   break;
             case ViewState::PLAY:
-                  seq->start();
+                  muxseq_seq_start();
                   break;
             case ViewState::ENTRY_PLAY:
                   break;
