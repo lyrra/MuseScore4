@@ -1782,7 +1782,7 @@ void Seq::heartBeatTimeout()
       mscore->currentScoreView()->moveCursor(Fraction::fromTicks(t));
       mscore->setPos(Fraction::fromTicks(t));
 
-      emit(heartBeat(t, utick, endFrame));
+      //FIX: muxseq_send(SeqMsgHeartBeat);
 
       PianorollEditor* pre = mscore->getPianorollEditor();
       if (pre && pre->isVisible())

@@ -84,8 +84,8 @@ PlayPanel::PlayPanel(QWidget* parent)
       connect(speedSlider,  SIGNAL(sliderReleased(int)),      SLOT(speedSliderReleased(int)));
       connect(speedSpinBox, SIGNAL(valueChanged(int)),        SLOT(speedChanged()));
       connect(volSpinBox,   SIGNAL(valueChanged(double)),     SLOT(volSpinBoxEdited()));
-      //FIX
-      connect(seq3,          SIGNAL(heartBeat(int,int,int)),   SLOT(heartBeat(int,int,int)));
+      // FIX: hook SeqMsgHeartBeat messages from sequencer to Playpanel::heartBeat()
+      //connect(seq,    SIGNAL(heartBeat(int,int,int)),   SLOT(heartBeat(int,int,int)));
 
       volLabel();
       volSpinBoxEdited();     //update spinbox and, as a side effect, the slider with current gain value

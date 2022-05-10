@@ -216,7 +216,6 @@ class Seq : public QObject, public Sequencer {
 
    signals:
       int toGui(int, int arg = 0);
-      void heartBeat(int, int, int);
       void tempoChanged();
       void timeSigChanged();
 
