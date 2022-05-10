@@ -5,7 +5,7 @@ namespace Ms {
 
 #define DEFMUXSEQVOID(name) void muxseq_seq_ ## name()
 
-void muxseq_alloc(void* seq);
+void* muxseq_alloc();
 void muxseq_dealloc();
 void muxseq_exit();
 bool muxseq_seq_init(bool hotPlug);

@@ -34,6 +34,8 @@ void MuxSeqSig::emit_sigSeqStopped() {
     emit sigSeqStopped();
 }
 
+// signal emitters
+
 void muxseqsig_seq_emit_started () {
     muxseqsig->emit_sigSeqStarted();
 }
@@ -43,6 +45,7 @@ void muxseqsig_seq_emit_stopped () {
 }
 
 // signal handlers
+
 void MuxSeqSig::sigSeqStarted() {
     mscore->seqStarted();
 }

@@ -20,9 +20,9 @@ class MuseScore;
 extern Seq* seq3;
 extern Seq* seq;
 
-void muxseq_alloc(void* s) { // called from musescore.cpp: MuseScore::init
-    seq3 = (Seq*) s;  // used by seq.cpp
-    seq = (Seq*) s;  // used by seq.cpp
+void* muxseq_alloc() { // called from musescore.cpp: MuseScore::init
+    seq = seq3 = new Seq();
+    return seq;
 }
 
 void muxseq_dealloc() {

@@ -608,8 +608,8 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
                         if (e->isNote())
                               e = e->parent();
                         ChordRest* cr = toChordRest(e);
-                        //FIX
-                        seq3->seek(seq3->score()->repeatList().tick2utick(cr->tick().ticks()));
+                        // FIX: score() was seq->score(), ensure same
+                        muxseq_seq_seek(score()->repeatList().tick2utick(cr->tick().ticks()));
                         }
                   }
                   break;
