@@ -3072,7 +3072,6 @@ void MuseScore::createPlayPanel()
       if (!playPanel) {
             playPanel = new PlayPanel(this);
             MuxSeqSig* muxseqsig = muxseqsig_get();
-            //FIX: decouple seq3
             connect(playPanel, SIGNAL(metronomeGainChanged(float)), muxseqsig, SLOT(setMetronomeGain(float)));
             connect(playPanel, SIGNAL(speedChanged(double)), muxseqsig, SLOT(setRelTempo(double)));
             connect(playPanel, SIGNAL(posChange(int)), muxseqsig, SLOT(seek(int)));
@@ -8096,8 +8095,7 @@ void MuseScore::init(QStringList& argv)
       // Do not create sequencer and audio drivers if run with '-s'
       if (!noSeq) {
             showSplashMessage(sc, tr("Initializing sequencer and audio driver…"));
-            seq3           = new Seq();
-            muxseq_alloc(seq3);
+            seq3 = (Seq*) muxseq_alloc();
             synti          = synthesizerFactory();
             mux_threads_start();
             // FIX: query muxaudio about current sampleRate
