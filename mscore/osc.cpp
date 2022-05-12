@@ -28,7 +28,7 @@
 #include "libmscore/chord.h"
 #include "libmscore/note.h"
 #include "libmscore/undo.h"
-#include "libmscore/muxseq.h"
+#include "muxseq.h"
 #include "mixer/mixer.h"
 #include "parteditbase.h"
 #include "scoreview.h"

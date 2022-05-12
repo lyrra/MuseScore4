@@ -178,7 +178,7 @@ extern Ms::Synthesizer* createZerberus();
 #include "telemetrymanager.h"
 
 #include "muxseqsig.h"
-#include "libmscore/muxseq.h"
+#include "muxseq.h"
 
 namespace Ms {
 

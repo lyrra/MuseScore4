@@ -34,7 +34,7 @@
 #include "libmscore/part.h"
 #include "libmscore/instrument.h"
 #include "seq.h"
-#include "libmscore/muxseq.h"
+#include "muxseq.h"
 #include "preferences.h"
 
 namespace Ms {

@@ -1,9 +1,7 @@
 
-#include "../mscore/muxseqsig.h"
-#include "mscore.h"
-//#include "sequencer.h"
-#include "../mscore/seq.h"
-#include "../mscore/scoreview.h"
+#include "muxseqsig.h"
+#include "seq.h"
+#include "scoreview.h"
 #include "audio/midi/event.h"
 #include "audio/midi/msynthesizer.h"
 

@@ -22,7 +22,7 @@
 #include "preferences.h"
 #include "prefsdialog.h"
 #include "seq.h"
-#include "libmscore/muxseq.h"
+#include "muxseq.h"
 #include "shortcutcapturedialog.h"
 #include "scoreview.h"
 #include "shortcut.h"
