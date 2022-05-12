@@ -22,7 +22,7 @@
 #include "libmscore/score.h"
 #include "libmscore/repeatlist.h"
 #include "seq.h"
-#include "libmscore/muxseq.h"
+#include "muxseq.h"
 #include "musescore.h"
 #include "libmscore/measure.h"
 #include "audio/midi/msynthesizer.h"

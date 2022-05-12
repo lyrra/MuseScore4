@@ -192,7 +192,7 @@ add_library(mscoreapp STATIC
       radiobuttongroupbox.h recordbutton.h resourceManager.h ruler.h scoreaccessibility.h
       scoreBrowser.h scoreInfo.h scorePreview.h scoretab.h scoreview.h searchComboBox.h
       selectdialog.h selectionwindow.h selectnotedialog.h selinstrument.h
-      mux.h muxcommon.h muxseqsig.h
+      muxcommon.h mux.h muxseq.cpp muxseqsig.h
       seq.h shortcut.h shortcutcapturedialog.h simplebutton.h splitstaff.h stafftextproperties.h
       startcenter.h startupWizard.h stringutils.h svggenerator.h symboldialog.h synthcontrol.h
       templateBrowser.h textcursor.h textpalette.h texttools.h timedialog.h timeline.h timesigproperties.h
@@ -216,7 +216,7 @@ add_library(mscoreapp STATIC
       timeline.cpp
       parteditbase.cpp playpanel.cpp selectionwindow.cpp
       preferences.cpp measureproperties.cpp
-      mux.cpp muxseqsig.cpp
+      mux.cpp muxseq.cpp muxseqsig.cpp
       seq.cpp textpalette.cpp
       timedialog.cpp symboldialog.cpp shortcutcapturedialog.cpp
       radiobuttongroupbox.cpp simplebutton.cpp

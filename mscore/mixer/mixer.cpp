@@ -30,7 +30,7 @@
 #include "libmscore/score.h"
 #include "libmscore/part.h"
 #include "seq.h"
-#include "libmscore/muxseq.h"
+#include "muxseq.h"
 #include "libmscore/undo.h"
 #include "synthcontrol.h"
 #include "audio/midi/msynthesizer.h"

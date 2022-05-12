@@ -29,7 +29,7 @@
 #include "scoretab.h"
 #include "seq.h"
 #include "muxseqsig.h"
-#include "libmscore/muxseq.h"
+#include "muxseq.h"
 #include "splitstaff.h"
 #include "textcursor.h"
 #include "textpalette.h"

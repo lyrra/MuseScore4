@@ -23,7 +23,7 @@
 #include "preferences.h"
 #include "waveview.h"
 #include "notetweakerdialog.h"
-#include "libmscore/muxseq.h"
+#include "muxseq.h"
 #include "libmscore/staff.h"
 #include "libmscore/measure.h"
 #include "libmscore/note.h"

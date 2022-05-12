@@ -22,7 +22,7 @@
 #include "preferences.h"
 #include "scoreview.h"
 #include "seq.h"
-#include "libmscore/muxseq.h"
+#include "muxseq.h"
 #include "libmscore/barline.h"
 #include "libmscore/clef.h"
 #include "libmscore/excerpt.h"

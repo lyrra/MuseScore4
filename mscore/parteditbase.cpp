@@ -30,7 +30,7 @@
 #include <qmessagebox.h>
 #include <accessibletoolbutton.h>
 
-#include "libmscore/muxseq.h"
+#include "muxseq.h"
 
 namespace Ms {
 
