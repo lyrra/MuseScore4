@@ -1,5 +1,5 @@
-#ifndef __MUXSEQ_H__
-#define __MUXSEQ_H__
+#ifndef __MUXSEQLIB_H__
+#define __MUXSEQLIB_H__
 
 namespace Ms {
 

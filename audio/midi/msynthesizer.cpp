@@ -14,6 +14,7 @@
 #include "synthesizer.h"
 #include "msynthesizer.h"
 #include "synthesizergui.h"
+#include "../../mscore/muxseqsig.h"
 #include "libmscore/xml.h"
 
 #include "midi/event.h"
@@ -441,7 +442,7 @@ void MasterSynthesizer::setGain(float f)
       {
       if (_gain != f) {
             _gain = f;
-            emit gainChanged(_gain);
+            muxseqsig_emit_gainChanged(_gain);
             }
       }
 

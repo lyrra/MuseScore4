@@ -69,7 +69,6 @@ class MasterSynthesizer : public QObject {
 
    signals:
       void soundFontChanged();
-      void gainChanged(float);
 
    public:
       MasterSynthesizer();

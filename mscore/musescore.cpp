@@ -1997,8 +1997,8 @@ MuseScore::MuseScore()
             preferencesChanged();
       MuxSeqSig* muxseqsig = muxseqsig_init();
       if (muxseq_seq_alive()) {
-            connect(muxseqsig, SIGNAL(sigSeqStarted()), SLOT(seqStarted()));
-            connect(muxseqsig, SIGNAL(sigSeqStopped()), SLOT(seqStopped()));
+            connect(muxseqsig, SIGNAL(sigSeqStarted()), muxseqsig, SLOT(sigSeqStartedHandle()));
+            connect(muxseqsig, SIGNAL(sigSeqStopped()), muxseqsig, SLOT(sigSeqStoppedHandle()));
             }
       loadScoreList();
 
@@ -3076,13 +3076,12 @@ void MuseScore::createPlayPanel()
       if (!playPanel) {
             playPanel = new PlayPanel(this);
             MuxSeqSig* muxseqsig = muxseqsig_get();
-            MasterSynthesizer* synti = muxseq_get_synti();
             connect(playPanel, SIGNAL(metronomeGainChanged(float)), muxseqsig, SLOT(setMetronomeGain(float)));
             connect(playPanel, SIGNAL(speedChanged(double)), muxseqsig, SLOT(setRelTempo(double)));
             connect(playPanel, SIGNAL(posChange(int)), muxseqsig, SLOT(seek(int)));
             connect(playPanel, SIGNAL(closed(bool)), playId, SLOT(setChecked(bool)));
             //FIX: dont connect directly to synti
-            connect(synti, SIGNAL(gainChanged(float)), playPanel, SLOT(setGain(float)));
+            connect(muxseqsig, SIGNAL(gainChanged(float)), playPanel, SLOT(setGain(float)));
             playPanel->setSpeedIncrement(preferences.getInt(PREF_APP_PLAYBACK_SPEEDINCREMENT));
             playPanel->setGain(muxseq_synti_getGain());
             playPanel->setScore(cs);
