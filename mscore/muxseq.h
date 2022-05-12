@@ -55,5 +55,5 @@ void muxseq_synti_init();
 float muxseq_synti_getGain();
 void muxseq_synti_setSampleRate(float sampleRate);
 
-}     // namespace Ms
+} // namespace Ms
 #endif

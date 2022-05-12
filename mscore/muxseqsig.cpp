@@ -26,6 +26,8 @@ MuxSeqSig::~MuxSeqSig()
     qDebug("!!!! WARNING MUXSEQSIG is destructed !!!!");
 }
 
+// object signal emitters
+
 void MuxSeqSig::emit_sigSeqStarted() {
     emit sigSeqStarted();
 }
@@ -34,7 +36,11 @@ void MuxSeqSig::emit_sigSeqStopped() {
     emit sigSeqStopped();
 }
 
-// signal emitters
+void MuxSeqSig::emit_gainChanged(float gain) {
+    emit gainChanged(gain);
+}
+
+// functional signal emitters
 
 void muxseqsig_seq_emit_started () {
     muxseqsig->emit_sigSeqStarted();
@@ -44,13 +50,17 @@ void muxseqsig_seq_emit_stopped () {
     muxseqsig->emit_sigSeqStopped();
 }
 
+void muxseqsig_emit_gainChanged (float gain) {
+    muxseqsig->emit_gainChanged(gain);
+}
+
 // signal handlers
 
-void MuxSeqSig::sigSeqStarted() {
+void MuxSeqSig::sigSeqStartedHandle() {
     mscore->seqStarted();
 }
 
-void MuxSeqSig::sigSeqStopped() {
+void MuxSeqSig::sigSeqStoppedHandle() {
     mscore->seqStopped();
 }
 
