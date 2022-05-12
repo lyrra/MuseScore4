@@ -9,6 +9,8 @@ namespace Ms {
 
 class MuseScore;
 
+MasterSynthesizer* synti = 0;
+
 #define DEFMUXSEQVOID(name, sname) \
   void muxseq_seq_ ## name() { \
       seq3-> sname (); \
@@ -166,12 +168,25 @@ void muxseq_seq_updateOutPortCount(int maxPorts) {
     seq3->updateOutPortCount(maxPorts);
 }
 
+MasterSynthesizer* muxseq_get_synti() {
+    return synti;
+}
+
+void muxseq_delete_synti() {
+    delete synti;
+    synti = nullptr;
+}
+
 bool muxseq_synti () {
     return seq3->synti();
 }
 
 void muxseq_synti_init() {
     seq3->synti()->init();
+}
+
+float muxseq_synti_getGain () {
+    return synti->gain();
 }
 
 void muxseq_synti_setSampleRate (float sampleRate) {

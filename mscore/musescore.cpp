@@ -185,7 +185,6 @@ namespace Ms {
 void mux_threads_start();
 
 MuseScore* mscore;
-MasterSynthesizer* synti;
 
 bool enableExperimental = false;
 
@@ -801,6 +800,7 @@ bool MuseScore::importExtension(QString path)
             if (sfzDir.exists()) {
                   // get all sfz files
                   QDirIterator it(sfzDir.absolutePath(), QStringList("*.sfz"), QDir::Files, QDirIterator::Subdirectories);
+                  MasterSynthesizer* synti = muxseq_get_synti();
                   Synthesizer* s = synti->synthesizer("Zerberus");
                   QStringList sfzs;
                   while (it.hasNext()) {
@@ -830,6 +830,7 @@ bool MuseScore::importExtension(QString path)
                         sfs.append(it.fileInfo().absoluteFilePath());
                         }
                   sfs.sort();
+                  MasterSynthesizer* synti = muxseq_get_synti();
                   Synthesizer* s = synti->synthesizer("Fluid");
                   for (auto sf : sfs) {
                         s->addSoundFont(sf);
@@ -878,6 +879,7 @@ bool MuseScore::uninstallExtension(QString extensionId)
       if (sfzDir.exists()) {
             // get all sfz files
             QDirIterator it(sfzDir.absolutePath(), QStringList("*.sfz"), QDir::Files, QDirIterator::Subdirectories);
+            MasterSynthesizer* synti = muxseq_get_synti();
             Synthesizer* s = synti->synthesizer("Zerberus");
             bool found = it.hasNext();
             while (it.hasNext()) {
@@ -895,6 +897,7 @@ bool MuseScore::uninstallExtension(QString extensionId)
             QStringList filters("*.sf2");
             filters.append("*.sf3");
             QDirIterator it(sfDir.absolutePath(), filters, QDir::Files, QDirIterator::Subdirectories);
+            MasterSynthesizer* synti = muxseq_get_synti();
             Synthesizer* s = synti->synthesizer("Fluid");
             bool found = it.hasNext();
             while (it.hasNext()) {
@@ -2060,8 +2063,7 @@ MuseScore::~MuseScore()
       if (autoUpdater)
             autoUpdater->cleanup();
 
-      delete synti;
-      synti = nullptr;
+      muxseq_delete_synti();
 
       // A crash is possible if paletteWorkspace gets
       // deleted before paletteWidget, so force the widget
@@ -3074,13 +3076,15 @@ void MuseScore::createPlayPanel()
       if (!playPanel) {
             playPanel = new PlayPanel(this);
             MuxSeqSig* muxseqsig = muxseqsig_get();
+            MasterSynthesizer* synti = muxseq_get_synti();
             connect(playPanel, SIGNAL(metronomeGainChanged(float)), muxseqsig, SLOT(setMetronomeGain(float)));
             connect(playPanel, SIGNAL(speedChanged(double)), muxseqsig, SLOT(setRelTempo(double)));
             connect(playPanel, SIGNAL(posChange(int)), muxseqsig, SLOT(seek(int)));
             connect(playPanel, SIGNAL(closed(bool)), playId, SLOT(setChecked(bool)));
+            //FIX: dont connect directly to synti
             connect(synti, SIGNAL(gainChanged(float)), playPanel, SLOT(setGain(float)));
             playPanel->setSpeedIncrement(preferences.getInt(PREF_APP_PLAYBACK_SPEEDINCREMENT));
-            playPanel->setGain(synti->gain());
+            playPanel->setGain(muxseq_synti_getGain());
             playPanel->setScore(cs);
             addDockWidget(Qt::RightDockWidgetArea, playPanel);
             playPanel->setVisible(false);
@@ -7051,6 +7055,7 @@ void MuseScore::editInstrumentList()
 
 SynthesizerState MuseScore::synthesizerState() const
       {
+      MasterSynthesizer* synti = muxseq_get_synti();
       SynthesizerState state;
       return synti ? synti->state() : state;
       }
@@ -7061,6 +7066,7 @@ SynthesizerState MuseScore::synthesizerState() const
 
 Synthesizer* MuseScore::synthesizer(const QString& name)
       {
+      MasterSynthesizer* synti = muxseq_get_synti();
       return synti ? synti->synthesizer(name) : nullptr;
       }
 
@@ -7201,7 +7207,7 @@ bool MuseScore::saveMp3(Score* score, QIODevice* device, bool& wasCanceled)
       if (!useCurrentSynthesizerState) {
             score->masterScore()->rebuildAndUpdateExpressive(synth->synthesizer("Fluid"));
             score->renderMidi(&events, score->synthesizerState());
-            if (synti)
+            if (muxseq_get_synti())
                   score->masterScore()->rebuildAndUpdateExpressive(synti->synthesizer("Fluid"));
 
             if (events.empty())
