@@ -4825,7 +4825,7 @@ void MuseScore::play(Element* e) const
             int channel = hChannel->channel();
 
             // reset the cc that is used for single note dynamics, if any
-            int cc = synthesizerState().ccToUse();
+            int cc = muxseq_get_synthesizerState().ccToUse();
             if (cc != -1)
                   muxseq_send_event(NPlayEvent(ME_CONTROLLER, channel, cc, 80));
 
@@ -4859,7 +4859,7 @@ void MuseScore::play(Element* e, int pitch) const
             const int channel = instr->channel(masterNote->subchannel())->channel();
 
             // reset the cc that is used for single note dynamics, if any
-            int cc = synthesizerState().ccToUse();
+            int cc = muxseq_get_synthesizerState().ccToUse();
             if (cc != -1)
                   muxseq_send_event(NPlayEvent(ME_CONTROLLER, channel, cc, 80));
 
@@ -7054,9 +7054,7 @@ void MuseScore::editInstrumentList()
 
 SynthesizerState MuseScore::synthesizerState() const
       {
-      MasterSynthesizer* synti = muxseq_get_synti();
-      SynthesizerState state;
-      return synti ? synti->state() : state;
+      return muxseq_get_synthesizerState();
       }
 
 //---------------------------------------------------------
@@ -7130,7 +7128,7 @@ bool MuseScore::saveMp3(Score* score, QIODevice* device, bool& wasCanceled)
       const bool useCurrentSynthesizerState = !MScore::noGui;
 
       if (useCurrentSynthesizerState) {
-            score->renderMidi(&events, synthesizerState());
+            score->renderMidi(&events, muxseq_get_synthesizerState());
             if (events.empty())
                   return false;
             }
@@ -7193,7 +7191,7 @@ bool MuseScore::saveMp3(Score* score, QIODevice* device, bool& wasCanceled)
       synth->init();
       synth->setSampleRate(sampleRate);
 
-      const SynthesizerState state = useCurrentSynthesizerState ? mscore->synthesizerState() : score->synthesizerState();
+      const SynthesizerState state = useCurrentSynthesizerState ? muxseq_get_synthesizerState() : score->synthesizerState();
       const bool setStateOk = synth->setState(state);
 
       if (!setStateOk || !synth->hasSoundFontsLoaded()) {

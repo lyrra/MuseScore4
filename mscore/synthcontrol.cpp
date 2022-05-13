@@ -13,6 +13,8 @@
 #include "synthcontrol.h"
 #include "musescore.h"
 #include "seq.h"
+#include "muxseqsig.h"
+#include "muxseq.h"
 #include "audio/midi/msynthesizer.h"
 #include "audio/midi/synthesizer.h"
 #include "audio/midi/synthesizergui.h"
@@ -29,7 +31,6 @@
 
 namespace Ms {
 
-extern MasterSynthesizer* synti;
 extern bool useFactorySettings;
 
 //---------------------------------------------------------
@@ -47,6 +48,7 @@ SynthControl::SynthControl(QWidget* parent)
 //      setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
       int idx = 0;
+      MasterSynthesizer* synti = muxseq_get_synti();
       for (Synthesizer* s : synti->synthesizer()) {
             if (strcmp(s->name(), "Aeolus") == 0)    // no gui for aeolus
                   continue;
@@ -117,6 +119,7 @@ SynthControl::SynthControl(QWidget* parent)
 void SynthControl::setGain(float val)
       {
       Q_UNUSED(val);
+      MasterSynthesizer* synti = muxseq_get_synti();
       gainSlider->setValue(synti->gainAsDecibels());
       }
 
@@ -172,7 +175,9 @@ void MuseScore::showSynthControl(bool val)
             synthControl = new SynthControl(this);
             mscore->stackUnder(synthControl);
             synthControl->setScore(cs);
-            connect(synti,        SIGNAL(gainChanged(float)), synthControl, SLOT(setGain(float)));
+            MuxSeqSig* muxseqsig = muxseqsig_get();
+            MasterSynthesizer* synti = muxseq_get_synti();
+            connect(muxseqsig, SIGNAL(gainChanged(float)), synthControl, SLOT(setGain(float)));
             connect(synthControl, SIGNAL(closed(bool)), a,     SLOT(setChecked(bool)));
             }
       synthControl->setVisible(val);
@@ -185,6 +190,7 @@ void MuseScore::showSynthControl(bool val)
 // user has moved the gain control on this widget - update the synthesizer
 void SynthControl::gainChanged(double val, int)
       {
+      MasterSynthesizer* synti = muxseq_get_synti();
       synti->setGainAsDecibels(val);
       }
 
@@ -203,6 +209,7 @@ void SynthControl::masterTuningChanged(double /*val*/)
 
 void SynthControl::changeMasterTuning()
       {
+      MasterSynthesizer* synti = muxseq_get_synti();
       synti->setMasterTuning(masterTuning->value());
       changeTuningButton->setEnabled(false);
       setDirty();
@@ -244,6 +251,7 @@ void SynthControl::stop()
 
 void SynthControl::effectAChanged(int idx)
       {
+      MasterSynthesizer* synti = muxseq_get_synti();
       synti->setEffect(0, idx);
       effectStackA->setCurrentIndex(idx);
       setDirty();
@@ -255,6 +263,7 @@ void SynthControl::effectAChanged(int idx)
 
 void SynthControl::effectBChanged(int idx)
       {
+      MasterSynthesizer* synti = muxseq_get_synti();
       synti->setEffect(1, idx);
       effectStackB->setCurrentIndex(idx);
       setDirty();
@@ -266,6 +275,7 @@ void SynthControl::effectBChanged(int idx)
 
 void SynthControl::dynamicsMethodChanged(int val)
       {
+      MasterSynthesizer* synti = muxseq_get_synti();
       ccToUseList->setEnabled(val != 0);
       synti->setDynamicsMethod(val);
       setDirty();
@@ -277,6 +287,7 @@ void SynthControl::dynamicsMethodChanged(int val)
 
 void SynthControl::ccToUseChanged(int val)
       {
+      MasterSynthesizer* synti = muxseq_get_synti();
       synti->setCcToUseIndex(val);
       setDirty();
       }
@@ -342,6 +353,7 @@ void SynthControl::loadButtonClicked()
       {
       if (!_score)
             return;
+      MasterSynthesizer* synti = muxseq_get_synti();
       synti->setState(_score->synthesizerState());
       updateGui();
       loadButton->setEnabled(false);
@@ -361,6 +373,7 @@ void SynthControl::saveButtonClicked()
       if (!_score)
             return;
       _score->startCmd();
+      MasterSynthesizer* synti = muxseq_get_synti();
       SynthesizerState ss = synti->state();
       if (_dirty || !_score->synthesizerState().isDefault())
             ss.setIsDefault(false);
@@ -401,6 +414,7 @@ void SynthControl::recallButtonClicked()
             else
                   e.unknown();
             }
+      MasterSynthesizer* synti = muxseq_get_synti();
       state.setIsDefault(true);
       synti->setState(state);
       updateGui();
@@ -424,6 +438,7 @@ void SynthControl::storeButtonClicked()
             qDebug("no score");
             return;
             }
+      MasterSynthesizer* synti = muxseq_get_synti();
       synti->storeState();
       updateExpressivePatches();
       storeButton->setEnabled(false);
@@ -437,6 +452,7 @@ void SynthControl::storeButtonClicked()
 
 void SynthControl::updateGui()
       {
+      MasterSynthesizer* synti = muxseq_get_synti();
       masterTuning->setValue(synti->masterTuning());
       setGain(synti->gain());
 

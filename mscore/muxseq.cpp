@@ -193,6 +193,12 @@ void muxseq_synti_setSampleRate (float sampleRate) {
     seq3->synti()->setSampleRate(sampleRate);
 }
 
+SynthesizerState muxseq_get_synthesizerState() {
+    MasterSynthesizer* synti = muxseq_get_synti();
+    SynthesizerState state;
+    return synti ? synti->state() : state;
+}
+
 // signals
 
 MuxSeqSig* muxseq_init_muxseqsig() {
