@@ -25,6 +25,7 @@
 #include "libmscore/part.h"
 #include "mixer.h"
 #include "mixertrackitem.h"
+#include "muxseq.h"
 #include "seq.h"
 #include "libmscore/undo.h"
 #include "synthcontrol.h"
@@ -156,6 +157,7 @@ void MixerTrackChannel::updateNameLabel()
       QString text = QString("%1%2").arg(shortName, qApp->translate("InstrumentsXML", chan->name().toUtf8().data()));
       trackLabel->setText(text);
 
+      MasterSynthesizer* synti = muxseq_get_synti();
       MidiPatch* mp = synti->getPatchInfo(chan->synti(), chan->bank(), chan->program());
 
       QString tooltip = tr("Part Name: %1\n"

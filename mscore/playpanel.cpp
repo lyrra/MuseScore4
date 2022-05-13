@@ -58,6 +58,7 @@ PlayPanel::PlayPanel(QWidget* parent)
       loopOutButton->setDefaultAction(getAction("loop-out"));
       enablePlay = new EnablePlayForWidget(this);
 
+      MasterSynthesizer* synti = muxseq_get_synti();
       float minDecibels = synti->minGainAsDecibels;
       float maxDecibels = synti->maxGainAsDecibels;
       volSpinBox->setRange(minDecibels, maxDecibels);
@@ -303,6 +304,7 @@ void PlayPanel::setGain(float gain)  // respond to gainChanged() SIGNAL from Mas
       {
       Q_UNUSED(gain);
       const QSignalBlocker blockVolumeSpinBoxSignals(volSpinBox);
+      MasterSynthesizer* synti = muxseq_get_synti();
       volumeSlider->setValue(synti->gainAsDecibels());
       volLabel();
       }
@@ -314,6 +316,7 @@ void PlayPanel::setGain(float gain)  // respond to gainChanged() SIGNAL from Mas
 
 void PlayPanel::volumeChanged(double decibels, int)
       {
+      MasterSynthesizer* synti = muxseq_get_synti();
       synti->setGainAsDecibels(decibels);
       }
 
@@ -432,6 +435,7 @@ void PlayPanel::speedSliderPressed(int)
       
 void PlayPanel::volLabel()
       {
+      MasterSynthesizer* synti = muxseq_get_synti();
       volSpinBox->setValue(synti->gainAsDecibels());
       volSpinBox->setSuffix(" dB");
       }
@@ -439,6 +443,7 @@ void PlayPanel::volLabel()
 
 void PlayPanel::volSpinBoxEdited()
       {
+      MasterSynthesizer* synti = muxseq_get_synti();
       synti->setGainAsDecibels(volSpinBox->value());
       volLabel();
       }

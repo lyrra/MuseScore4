@@ -341,6 +341,7 @@ void PartEdit::drumsetToggled(bool val, bool syncControls)
 
       part->undoChangeProperty(Pid::USE_DRUMSET, val);
       patch->clear();
+      MasterSynthesizer* synti = muxseq_get_synti();
       const auto& pl = synti->getPatchInfo();
       for (const MidiPatch* p : pl) {
             if (p->drum == val)

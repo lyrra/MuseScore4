@@ -118,14 +118,8 @@
 #include "libmscore/utils.h"
 #include "libmscore/icon.h"
 
-#include "effects/zita1/zita.h"
-#include "effects/compressor/compressor.h"
-#include "effects/noeffect/noeffect.h"
-#include "audio/midi/synthesizer.h"
-#include "audio/midi/synthesizergui.h"
 #include "audio/midi/msynthesizer.h"
 #include "audio/midi/event.h"
-#include "audio/midi/fluid/fluid.h"
 
 #include "plugin/qmlplugin.h"
 #include "accessibletoolbutton.h"
@@ -151,13 +145,6 @@
 #include "macos/cocoabridge.h"
 #endif
 
-#ifdef AEOLUS
-extern Ms::Synthesizer* createAeolus();
-#endif
-
-#ifdef ZERBERUS
-extern Ms::Synthesizer* createZerberus();
-#endif
 
 #ifdef QT_NO_DEBUG
       Q_LOGGING_CATEGORY(undoRedo, "undoRedo", QtCriticalMsg);
@@ -798,21 +785,13 @@ bool MuseScore::importExtension(QString path)
             if (sfzDir.exists()) {
                   // get all sfz files
                   QDirIterator it(sfzDir.absolutePath(), QStringList("*.sfz"), QDir::Files, QDirIterator::Subdirectories);
-                  MasterSynthesizer* synti = muxseq_get_synti();
-                  Synthesizer* s = synti->synthesizer("Zerberus");
                   QStringList sfzs;
                   while (it.hasNext()) {
                         it.next();
                         sfzs.append(it.fileName());
                         }
                   sfzs.sort();
-                  for (int sfzNum = 0; sfzNum < sfzs.size(); ++sfzNum)
-                        s->addSoundFont(sfzs[sfzNum]);
-
-                  if (!sfzs.isEmpty())
-                        synti->storeState();
-
-                  s->gui()->synthesizerChanged();
+                  muxseq_synth_zerberus_load_soundfonts(sfzs);
                   }
 
             // After install: add soundfont to fluid
@@ -828,15 +807,7 @@ bool MuseScore::importExtension(QString path)
                         sfs.append(it.fileInfo().absoluteFilePath());
                         }
                   sfs.sort();
-                  MasterSynthesizer* synti = muxseq_get_synti();
-                  Synthesizer* s = synti->synthesizer("Fluid");
-                  for (auto sf : sfs) {
-                        s->addSoundFont(sf);
-                        }
-                  if (!sfs.isEmpty())
-                        synti->storeState();
-
-                  s->gui()->synthesizerChanged();
+                  muxseq_synth_fluid_load_soundfonts(sfs);
                   }
             };
       if (!enableExperimental) {
@@ -877,16 +848,14 @@ bool MuseScore::uninstallExtension(QString extensionId)
       if (sfzDir.exists()) {
             // get all sfz files
             QDirIterator it(sfzDir.absolutePath(), QStringList("*.sfz"), QDir::Files, QDirIterator::Subdirectories);
-            MasterSynthesizer* synti = muxseq_get_synti();
-            Synthesizer* s = synti->synthesizer("Zerberus");
-            bool found = it.hasNext();
+
+            QStringList sfl;
             while (it.hasNext()) {
-                  it.next();
-                  s->removeSoundFont(it.fileInfo().absoluteFilePath());
-                  }
-            if (found)
-                  synti->storeState();
-            s->gui()->synthesizerChanged();
+                    it.next();
+                    sfl.append(it.fileInfo().absoluteFilePath());
+                    }
+            sfl.sort();
+            muxseq_synth_zerberus_unload_soundfonts(sfl);
             }
       // Before install: remove soundfont from fluid
       QDir sfDir(QString("%1/%2/%3/%4").arg(preferences.getString(PREF_APP_PATHS_MYEXTENSIONS)).arg(extensionId).arg(version).arg(Extension::soundfontsDir));
@@ -895,17 +864,13 @@ bool MuseScore::uninstallExtension(QString extensionId)
             QStringList filters("*.sf2");
             filters.append("*.sf3");
             QDirIterator it(sfDir.absolutePath(), filters, QDir::Files, QDirIterator::Subdirectories);
-            MasterSynthesizer* synti = muxseq_get_synti();
-            Synthesizer* s = synti->synthesizer("Fluid");
-            bool found = it.hasNext();
+            QStringList sfl;
             while (it.hasNext()) {
-                  it.next();
-                  s->removeSoundFont(it.fileName());
-                  }
-            if (found)
-                  synti->storeState();
-
-            s->gui()->synthesizerChanged();
+                    it.next();
+                    sfl.append(it.fileInfo().absoluteFilePath());
+                    }
+            sfl.sort();
+            muxseq_synth_zerberus_unload_soundfonts(sfl);
             }
       bool refreshWorkspaces = false;
       QDir workspacesDir(QString("%1/%2/%3/%4").arg(preferences.getString(PREF_APP_PATHS_MYEXTENSIONS)).arg(extensionId).arg(version).arg(Extension::workspacesDir));
@@ -3078,7 +3043,6 @@ void MuseScore::createPlayPanel()
             connect(playPanel, SIGNAL(speedChanged(double)), muxseqsig, SLOT(setRelTempo(double)));
             connect(playPanel, SIGNAL(posChange(int)), muxseqsig, SLOT(seek(int)));
             connect(playPanel, SIGNAL(closed(bool)), playId, SLOT(setChecked(bool)));
-            //FIX: dont connect directly to synti
             connect(muxseqsig, SIGNAL(gainChanged(float)), playPanel, SLOT(setGain(float)));
             playPanel->setSpeedIncrement(preferences.getInt(PREF_APP_PLAYBACK_SPEEDINCREMENT));
             playPanel->setGain(muxseq_synti_getGain());
@@ -3971,45 +3935,6 @@ static void mscoreMessageHandler(QtMsgType type, const QMessageLogContext &conte
 #endif
 
 //---------------------------------------------------------
-//   synthesizerFactory
-//    create and initialize the master synthesizer
-//---------------------------------------------------------
-
-MasterSynthesizer* synthesizerFactory()
-      {
-      MasterSynthesizer* ms = new MasterSynthesizer();
-
-      FluidS::Fluid* fluid = new FluidS::Fluid();
-      ms->registerSynthesizer(fluid);
-
-#ifdef AEOLUS
-      ms->registerSynthesizer(::createAeolus());
-#endif
-#ifdef ZERBERUS
-      ms->registerSynthesizer(createZerberus());
-#endif
-      ms->registerEffect(0, new NoEffect);
-
-#ifdef ZITA_REVERB
-      ms->registerEffect(0, new ZitaReverb);
-#endif
-
-      ms->registerEffect(0, new Compressor);
-      // ms->registerEffect(0, new Freeverb);
-      ms->registerEffect(1, new NoEffect);
-
-#ifdef ZITA_REVERB
-      ms->registerEffect(1, new ZitaReverb);
-#endif
-
-      ms->registerEffect(1, new Compressor);
-      // ms->registerEffect(1, new Freeverb);
-      ms->setEffect(0, 1);
-      ms->setEffect(1, 0);
-      return ms;
-      }
-
-//---------------------------------------------------------
 //   unstable
 //---------------------------------------------------------
 
@@ -4821,7 +4746,7 @@ void MuseScore::play(Element* e) const
             int channel = hChannel->channel();
 
             // reset the cc that is used for single note dynamics, if any
-            int cc = synthesizerState().ccToUse();
+            int cc = muxseq_get_synthesizerState().ccToUse();
             if (cc != -1)
                   muxseq_send_event(NPlayEvent(ME_CONTROLLER, channel, cc, 80));
 
@@ -4855,7 +4780,7 @@ void MuseScore::play(Element* e, int pitch) const
             const int channel = instr->channel(masterNote->subchannel())->channel();
 
             // reset the cc that is used for single note dynamics, if any
-            int cc = synthesizerState().ccToUse();
+            int cc = muxseq_get_synthesizerState().ccToUse();
             if (cc != -1)
                   muxseq_send_event(NPlayEvent(ME_CONTROLLER, channel, cc, 80));
 
@@ -7050,9 +6975,7 @@ void MuseScore::editInstrumentList()
 
 SynthesizerState MuseScore::synthesizerState() const
       {
-      MasterSynthesizer* synti = muxseq_get_synti();
-      SynthesizerState state;
-      return synti ? synti->state() : state;
+      return muxseq_get_synthesizerState();
       }
 
 //---------------------------------------------------------
@@ -7126,7 +7049,7 @@ bool MuseScore::saveMp3(Score* score, QIODevice* device, bool& wasCanceled)
       const bool useCurrentSynthesizerState = !MScore::noGui;
 
       if (useCurrentSynthesizerState) {
-            score->renderMidi(&events, synthesizerState());
+            score->renderMidi(&events, muxseq_get_synthesizerState());
             if (events.empty())
                   return false;
             }
@@ -7185,11 +7108,11 @@ bool MuseScore::saveMp3(Score* score, QIODevice* device, bool& wasCanceled)
 
       int bufferSize   = exporter.getOutBufferSize();
       uchar* bufferOut = new uchar[bufferSize];
-      MasterSynthesizer* synth = synthesizerFactory();
+      MasterSynthesizer* synth = muxseq_synthesizerFactory();
       synth->init();
       synth->setSampleRate(sampleRate);
 
-      const SynthesizerState state = useCurrentSynthesizerState ? mscore->synthesizerState() : score->synthesizerState();
+      const SynthesizerState state = useCurrentSynthesizerState ? muxseq_get_synthesizerState() : score->synthesizerState();
       const bool setStateOk = synth->setState(state);
 
       if (!setStateOk || !synth->hasSoundFontsLoaded()) {
@@ -7202,8 +7125,10 @@ bool MuseScore::saveMp3(Score* score, QIODevice* device, bool& wasCanceled)
       if (!useCurrentSynthesizerState) {
             score->masterScore()->rebuildAndUpdateExpressive(synth->synthesizer("Fluid"));
             score->renderMidi(&events, score->synthesizerState());
-            if (muxseq_get_synti())
+            if (muxseq_get_synti()) {
+                  MasterSynthesizer* synti = muxseq_get_synti();
                   score->masterScore()->rebuildAndUpdateExpressive(synti->synthesizer("Fluid"));
+                  }
 
             if (events.empty())
                   return false;
@@ -8101,13 +8026,11 @@ void MuseScore::init(QStringList& argv)
       if (!noSeq) {
             showSplashMessage(sc, tr("Initializing sequencer and audio driver…"));
             seq3 = (Seq*) muxseq_alloc();
-            synti          = synthesizerFactory();
             mux_threads_start();
+            showSplashMessage(sc, tr("Loading SoundFonts…"));
             // FIX: query muxaudio about current sampleRate
             MScore::sampleRate = 48000.0f;
-            synti->setSampleRate(MScore::sampleRate);
-            showSplashMessage(sc, tr("Loading SoundFonts…"));
-            synti->init();
+            MasterSynthesizer* synti = muxseq_create_synti(MScore::sampleRate);
             seq3->setMasterSynthesizer(synti);
             }
       else {

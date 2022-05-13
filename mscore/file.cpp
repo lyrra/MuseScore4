@@ -103,12 +103,11 @@
 #include "migration/handlers/edwinstylehandler.h"
 #include "migration/handlers/resetallelementspositionshandler.h"
 
+#include "muxseq.h"
 
 namespace Ms {
 
 extern void importSoundfont(QString name);
-
-extern MasterSynthesizer* synti;
 
 //---------------------------------------------------------
 //   paintElement(s)
@@ -993,6 +992,7 @@ MasterScore* MuseScore::getNewFile()
       if (!copyright.isEmpty())
             score->setMetaTag("copyright", copyright);
 
+      MasterSynthesizer* synti = muxseq_get_synti();
       if (synti)
             score->setSynthesizerState(synti->state());
 
@@ -2321,6 +2321,7 @@ Score::FileError readScore(MasterScore* score, QString name, bool ignoreVersionE
       score->setImportedFilePath(name);
 
       // Set the default synthesizer state before we read
+      MasterSynthesizer* synti = muxseq_get_synti();
       if (synti)
             score->setSynthesizerState(synti->state());
 

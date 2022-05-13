@@ -174,6 +174,7 @@ void MixerDetails::updateFromTrack()
       //Populate patch combo
       patchCombo->blockSignals(true);
       patchCombo->clear();
+      MasterSynthesizer* synti = muxseq_get_synti();
       const auto& pl = synti->getPatchInfo();
       int patchIndex = 0;
 
@@ -525,6 +526,7 @@ void MixerDetails::drumkitToggled(bool val)
       if (instr->useDrumset() == val)
             return;
 
+      MasterSynthesizer* synti = muxseq_get_synti();
       const MidiPatch* newPatch = 0;
       const QList<MidiPatch*> pl = synti->getPatchInfo();
       for (const MidiPatch* p : pl) {
