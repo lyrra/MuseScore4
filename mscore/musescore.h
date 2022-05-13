@@ -960,9 +960,6 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
 extern MuseScore* mscore;
 extern QStringList recentScores;
 extern QString dataPath;
-extern MasterSynthesizer* synti;
-MasterSynthesizer* synthesizerFactory();
-Driver* driverFactory(QString driver);
 
 extern QAction* getAction(const char*);
 extern Shortcut* midiActionMap[128];

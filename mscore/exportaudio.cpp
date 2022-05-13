@@ -36,6 +36,7 @@
 #include "audio/midi/msynthesizer.h"
 #include "musescore.h"
 #include "preferences.h"
+#include "muxseq.h"
 
 namespace Ms {
 
@@ -73,22 +74,15 @@ bool MuseScore::saveAudio(Score* score, QIODevice *device, std::function<bool(fl
                   }
             }
 
-      MasterSynthesizer* synth = synthesizerFactory();
-      synth->init();
       int sampleRate = preferences.getInt(PREF_EXPORT_AUDIO_SAMPLERATE);
-      synth->setSampleRate(sampleRate);
-
       const SynthesizerState state = useCurrentSynthesizerState ? mscore->synthesizerState() : score->synthesizerState();
-      const bool setStateOk = synth->setState(state);
-
-      if (!setStateOk || !synth->hasSoundFontsLoaded())
-            synth->init(); // re-initialize master synthesizer with default settings
+      MasterSynthesizer* synth = muxseq_synth_create (sampleRate, state);
 
       if (!useCurrentSynthesizerState) {
             score->masterScore()->rebuildAndUpdateExpressive(synth->synthesizer("Fluid"));
             score->renderMidi(&events, score->synthesizerState());
-            if (synti)
-                  score->masterScore()->rebuildAndUpdateExpressive(synti->synthesizer("Fluid"));
+            if (muxseq_get_synti())
+                  score->masterScore()->rebuildAndUpdateExpressive(muxseq_get_synti()->synthesizer("Fluid"));
 
             if (events.empty())
                   return false;
@@ -209,7 +203,7 @@ bool MuseScore::saveAudio(Score* score, QIODevice *device, std::function<bool(fl
             }
 
       MScore::sampleRate = oldSampleRate;
-      delete synth;
+      muxseq_synth_delete(synth);
 
       device->close();
 
@@ -319,13 +313,8 @@ bool MuseScore::saveAudio(Score* score, const QString& name)
       if(events.size() == 0)
             return false;
 
-      MasterSynthesizer* synth = synthesizerFactory();
-      synth->init();
       int sampleRate = preferences.getInt(PREF_EXPORT_AUDIO_SAMPLERATE);
-      synth->setSampleRate(sampleRate);
-      bool r = synth->setState(score->synthesizerState());
-      if (!r)
-            synth->init();
+      MasterSynthesizer* synth = muxseq_synth_create(sampleRate, score->synthesizerState());
 
       int oldSampleRate  = MScore::sampleRate;
       MScore::sampleRate = sampleRate;
@@ -370,7 +359,7 @@ bool MuseScore::saveAudio(Score* score, const QString& name)
       progress.close();
 
       MScore::sampleRate = oldSampleRate;
-      delete synth;
+      muxseq_synth_delete(synth);
 
       if (wasCanceled)
             QFile::remove(name);

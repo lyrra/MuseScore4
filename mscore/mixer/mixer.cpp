@@ -30,6 +30,7 @@
 #include "libmscore/score.h"
 #include "libmscore/part.h"
 #include "seq.h"
+#include "muxseqsig.h"
 #include "muxseq.h"
 #include "libmscore/undo.h"
 #include "synthcontrol.h"
@@ -101,6 +102,7 @@ Mixer::Mixer(QWidget* parent)
       detailsArea->setLayout(detailsLayout);
 
       //Range in decibels
+      MasterSynthesizer* synti = muxseq_get_synti();
       float minDecibels = synti->minGainAsDecibels;
       float maxDecibels = synti->maxGainAsDecibels;
       float currentDecibels = synti->gainAsDecibels();
@@ -125,7 +127,8 @@ Mixer::Mixer(QWidget* parent)
       connect(toggleDetailsButton, &QPushButton::toggled, this, &Mixer::showDetailsToggled);
       connect(masterSlider, SIGNAL(valueChanged(double)), SLOT(masterVolumeChanged(double)));
       connect(masterSpin, SIGNAL(valueChanged(double)), SLOT(masterVolumeChanged(double)));
-      connect(synti, SIGNAL(gainChanged(float)), SLOT(synthGainChanged(float)));
+      MuxSeqSig* muxseqsig = muxseqsig_get();
+      connect(muxseqsig, SIGNAL(gainChanged(float)), this, SLOT(synthGainChanged(float)));
       connect(tracks_scrollArea->horizontalScrollBar(), SIGNAL(rangeChanged(int, int)), SLOT(adjustScrollPosition(int, int)));
       connect(tracks_scrollArea->horizontalScrollBar(), SIGNAL(valueChanged(int)), SLOT(checkKeptScrollValue(int)));
 
@@ -151,6 +154,7 @@ void Mixer::showDetailsToggled(bool shown)
 
 void Mixer::synthGainChanged(float)
       {
+      MasterSynthesizer* synti = muxseq_get_synti();
       float decibels = synti->gainAsDecibels();
 
       masterSlider->blockSignals(true);
@@ -189,6 +193,7 @@ void Mixer::keepScrollPosition()
 
 void Mixer::masterVolumeChanged(double decibels)
       {
+      MasterSynthesizer* synti = muxseq_get_synti();
       synti->setGainAsDecibels(decibels);
 
       masterSlider->blockSignals(true);
@@ -500,6 +505,7 @@ void MuseScore::showMixer(bool visible)
       {
       QAction* toggleMixerAction = getAction("toggle-mixer");
 
+      MasterSynthesizer* synti = muxseq_get_synti();
       if (!synti) {
             toggleMixerAction->setChecked(false);
             return;
@@ -511,7 +517,8 @@ void MuseScore::showMixer(bool visible)
             mscore->stackUnder(mixer);
             if (synthControl)
                   connect(synthControl, SIGNAL(soundFontChanged()), mixer, SLOT(updateTrack()));
-            connect(synti, SIGNAL(soundFontChanged()), mixer, SLOT(updateTracks()));
+            //FIX: connect to muxseq
+            //connect(synti, SIGNAL(soundFontChanged()), mixer, SLOT(updateTracks()));
             connect(mixer, SIGNAL(closed(bool)), toggleMixerAction, SLOT(setChecked(bool)));
             mixer->setFloating(false);
             addDockWidget(Qt::RightDockWidgetArea, mixer);

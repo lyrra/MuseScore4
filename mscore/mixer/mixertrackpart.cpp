@@ -26,6 +26,7 @@
 #include "mixer.h"
 #include "mixertrackitem.h"
 #include "seq.h"
+#include "muxseq.h"
 #include "libmscore/undo.h"
 #include "synthcontrol.h"
 #include "audio/midi/msynthesizer.h"
@@ -175,6 +176,7 @@ void MixerTrackPart::updateNameLabel()
       Channel* chan = _mti->focusedChan();
       trackLabel->setText(part->partName());
 
+      MasterSynthesizer* synti = muxseq_get_synti();
       MidiPatch* mp = synti->getPatchInfo(chan->synti(), chan->bank(), chan->program());
 
 

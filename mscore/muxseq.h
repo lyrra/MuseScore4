@@ -48,6 +48,8 @@ void muxseq_seq_set_scoreview(void *v);
 void muxseq_seq_setController(int channel, int vol, int iv);
 void muxseq_seq_updateOutPortCount(int maxPorts);
 
+MasterSynthesizer* muxseq_create_synti(int sampleRate);
+MasterSynthesizer* muxseq_synthesizerFactory();
 MasterSynthesizer* muxseq_get_synti();
 void muxseq_delete_synti();
 bool muxseq_synti();
@@ -55,6 +57,8 @@ void muxseq_synti_init();
 float muxseq_synti_getGain();
 void muxseq_synti_setSampleRate(float sampleRate);
 SynthesizerState muxseq_get_synthesizerState();
+MasterSynthesizer* muxseq_synth_create (int sampleRate, SynthesizerState synthState);
+void muxseq_synth_delete (MasterSynthesizer* synth);
 
 } // namespace Ms
 #endif

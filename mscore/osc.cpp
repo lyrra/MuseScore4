@@ -44,8 +44,6 @@
 
 namespace Ms {
 
-extern MasterSynthesizer* synti;
-
 //---------------------------------------------------------
 //   initOsc
 //---------------------------------------------------------
@@ -289,7 +287,7 @@ void MuseScore::oscColorNote(QVariantList list)
 void MuseScore::oscVolume(int val)
       {
       double v = val / 128.0;
-      synti->setGain(v);
+      muxseq_get_synti()->setGain(v);
       }
 
 //---------------------------------------------------------
