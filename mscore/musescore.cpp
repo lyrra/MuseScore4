@@ -119,8 +119,6 @@
 #include "libmscore/utils.h"
 #include "libmscore/icon.h"
 
-#include "audio/midi/synthesizer.h"
-#include "audio/midi/synthesizergui.h"
 #include "audio/midi/msynthesizer.h"
 #include "audio/midi/event.h"
 
@@ -789,21 +787,13 @@ bool MuseScore::importExtension(QString path)
             if (sfzDir.exists()) {
                   // get all sfz files
                   QDirIterator it(sfzDir.absolutePath(), QStringList("*.sfz"), QDir::Files, QDirIterator::Subdirectories);
-                  MasterSynthesizer* synti = muxseq_get_synti();
-                  Synthesizer* s = synti->synthesizer("Zerberus");
                   QStringList sfzs;
                   while (it.hasNext()) {
                         it.next();
                         sfzs.append(it.fileName());
                         }
                   sfzs.sort();
-                  for (int sfzNum = 0; sfzNum < sfzs.size(); ++sfzNum)
-                        s->addSoundFont(sfzs[sfzNum]);
-
-                  if (!sfzs.isEmpty())
-                        synti->storeState();
-
-                  s->gui()->synthesizerChanged();
+                  muxseq_synth_zerberus_load_soundfonts(sfzs);
                   }
 
             // After install: add soundfont to fluid
@@ -819,15 +809,7 @@ bool MuseScore::importExtension(QString path)
                         sfs.append(it.fileInfo().absoluteFilePath());
                         }
                   sfs.sort();
-                  MasterSynthesizer* synti = muxseq_get_synti();
-                  Synthesizer* s = synti->synthesizer("Fluid");
-                  for (auto sf : sfs) {
-                        s->addSoundFont(sf);
-                        }
-                  if (!sfs.isEmpty())
-                        synti->storeState();
-
-                  s->gui()->synthesizerChanged();
+                  muxseq_synth_fluid_load_soundfonts(sfs);
                   }
             };
       if (!enableExperimental) {
@@ -868,16 +850,14 @@ bool MuseScore::uninstallExtension(QString extensionId)
       if (sfzDir.exists()) {
             // get all sfz files
             QDirIterator it(sfzDir.absolutePath(), QStringList("*.sfz"), QDir::Files, QDirIterator::Subdirectories);
-            MasterSynthesizer* synti = muxseq_get_synti();
-            Synthesizer* s = synti->synthesizer("Zerberus");
-            bool found = it.hasNext();
+
+            QStringList sfl;
             while (it.hasNext()) {
-                  it.next();
-                  s->removeSoundFont(it.fileInfo().absoluteFilePath());
-                  }
-            if (found)
-                  synti->storeState();
-            s->gui()->synthesizerChanged();
+                    it.next();
+                    sfl.append(it.fileInfo().absoluteFilePath());
+                    }
+            sfl.sort();
+            muxseq_synth_zerberus_unload_soundfonts(sfl);
             }
       // Before install: remove soundfont from fluid
       QDir sfDir(QString("%1/%2/%3/%4").arg(preferences.getString(PREF_APP_PATHS_MYEXTENSIONS)).arg(extensionId).arg(version).arg(Extension::soundfontsDir));
@@ -886,17 +866,13 @@ bool MuseScore::uninstallExtension(QString extensionId)
             QStringList filters("*.sf2");
             filters.append("*.sf3");
             QDirIterator it(sfDir.absolutePath(), filters, QDir::Files, QDirIterator::Subdirectories);
-            MasterSynthesizer* synti = muxseq_get_synti();
-            Synthesizer* s = synti->synthesizer("Fluid");
-            bool found = it.hasNext();
+            QStringList sfl;
             while (it.hasNext()) {
-                  it.next();
-                  s->removeSoundFont(it.fileName());
-                  }
-            if (found)
-                  synti->storeState();
-
-            s->gui()->synthesizerChanged();
+                    it.next();
+                    sfl.append(it.fileInfo().absoluteFilePath());
+                    }
+            sfl.sort();
+            muxseq_synth_zerberus_unload_soundfonts(sfl);
             }
       bool refreshWorkspaces = false;
       QDir workspacesDir(QString("%1/%2/%3/%4").arg(preferences.getString(PREF_APP_PATHS_MYEXTENSIONS)).arg(extensionId).arg(version).arg(Extension::workspacesDir));

@@ -59,6 +59,10 @@ void muxseq_synti_setSampleRate(float sampleRate);
 SynthesizerState muxseq_get_synthesizerState();
 MasterSynthesizer* muxseq_synth_create (int sampleRate, SynthesizerState synthState);
 void muxseq_synth_delete (MasterSynthesizer* synth);
+void muxseq_synth_fluid_load_soundfonts (QStringList sfList);
+void muxseq_synth_zerberus_load_soundfonts (QStringList sfzList);
+void muxseq_synth_fluid_unload_soundfonts (QStringList sfList);
+void muxseq_synth_zerberus_unload_soundfonts (QStringList sfzList);
 
 } // namespace Ms
 #endif
