@@ -35,9 +35,13 @@ MasterSynthesizer* synti = 0;
 extern Seq* seq3;
 extern Seq* seq;
 
-void* muxseq_alloc() { // called from musescore.cpp: MuseScore::init
+MasterSynthesizer* muxseq_create_synti(int sampleRate);
+
+void muxseq_initialize(int sampleRate) { // called from musescore.cpp: MuseScore::init
+    // FIX: query muxaudio about current sampleRate
+    MasterSynthesizer* synti = muxseq_create_synti(MScore::sampleRate);
     seq = seq3 = new Seq();
-    return seq;
+    seq3->setMasterSynthesizer(synti);
 }
 
 void muxseq_dealloc() {

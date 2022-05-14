@@ -7836,16 +7836,12 @@ void MuseScore::init(QStringList& argv)
       // Do not create sequencer and audio drivers if run with '-s'
       if (!noSeq) {
             showSplashMessage(sc, tr("Initializing sequencer and audio driver…"));
-            seq3 = (Seq*) muxseq_alloc();
-            mux_threads_start();
-            showSplashMessage(sc, tr("Loading SoundFonts…"));
-            // FIX: query muxaudio about current sampleRate
             MScore::sampleRate = 48000.0f;
-            MasterSynthesizer* synti = muxseq_create_synti(MScore::sampleRate);
-            seq3->setMasterSynthesizer(synti);
+            muxseq_initialize(MScore::sampleRate);
+            showSplashMessage(sc, tr("Loading SoundFonts…"));
+            mux_threads_start();
             }
       else {
-            seq3        = 0;
             muxseq_dealloc();
             }
 //---
