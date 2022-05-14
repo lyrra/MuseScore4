@@ -284,6 +284,10 @@ void muxseq_synth_delete (MasterSynthesizer* synth) {
     delete synth;
 }
 
+Synthesizer* muxseq_synth_get_name(const QString& name) {
+    return synti ? synti->synthesizer(name) : nullptr;
+}
+
 void muxseq_synth_load_soundfonts (Synthesizer* s, QStringList sfList) {
     for (auto sf : sfList) {
         s->addSoundFont(sf);
@@ -324,4 +328,4 @@ void muxseq_synth_zerberus_unload_soundfonts (QStringList sfzList) {
     muxseq_synth_unload_soundfonts(s, sfzList);
 }
 
-}     // namespace Ms
+} // namespace Ms
