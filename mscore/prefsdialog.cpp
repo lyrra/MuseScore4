@@ -41,8 +41,6 @@
 
 namespace Ms {
 
-extern int g_driver_running; // FIX: remove this (should driver be part of seq?)
-
 //---------------------------------------------------------
 //   startPreferenceDialog
 //---------------------------------------------------------
@@ -1410,16 +1408,19 @@ void PreferenceDialog::apply()
             preferences.setPreference(PREF_IO_JACK_USEJACKTRANSPORT, jackDriver->isChecked() && useJackTransport->isChecked());
 
             if (jackParametersChanged) {
+                  //------------------------------------------------
+                  // FIX: this logic should be moved to seq
                   // Change parameters of JACK driver without unload
                   if (muxseq_seq_alive()) {
-                        if (! g_driver_running) {
-                              qDebug("sequencer driver is null");
+                        //if (! g_driver_running) {
+                        //      qDebug("sequencer driver is null");
                               restartAudioEngine();
-                              }
+                        //      }
                         qDebug("musescore, prefsdialog calling muxseq_seq_init");
                         if (!muxseq_seq_init(true))
                               qDebug("sequencer init failed");
                         }
+                  //------------------------------------------------
                   }
             else if (
                (wasJack != nowJack)
