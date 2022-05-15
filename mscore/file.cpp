@@ -71,7 +71,6 @@
 #include "libmscore/beam.h"
 #include "libmscore/stafftype.h"
 #include "libmscore/stafftypechange.h"
-#include "seq.h"
 #include "libmscore/revisions.h"
 #include "libmscore/lyrics.h"
 #include "libmscore/segment.h"

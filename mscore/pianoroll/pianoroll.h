@@ -105,7 +105,7 @@ class PianorollEditor : public QMainWindow, public MuseScoreView {
 
       void setStaff(Staff* staff);
       void focusOnPosition(Position* p);
-      void heartBeat(Seq*);
+      void heartBeat(void*); // was Seq*
 
       void setEditNoteLength(int);
       void setEditNoteVoice(int);

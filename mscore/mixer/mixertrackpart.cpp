@@ -25,7 +25,6 @@
 #include "libmscore/part.h"
 #include "mixer.h"
 #include "mixertrackitem.h"
-#include "seq.h"
 #include "muxseq.h"
 #include "libmscore/undo.h"
 #include "synthcontrol.h"

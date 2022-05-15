@@ -13,7 +13,6 @@
 #include "scoreview.h"
 #include "zoombox.h"
 #include "musescore.h"
-#include "seq.h"
 #include "muxseq.h"
 #include "texttools.h"
 #include "pianotools.h"

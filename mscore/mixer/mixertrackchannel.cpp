@@ -26,7 +26,6 @@
 #include "mixer.h"
 #include "mixertrackitem.h"
 #include "muxseq.h"
-#include "seq.h"
 #include "libmscore/undo.h"
 #include "synthcontrol.h"
 #include "audio/midi/msynthesizer.h"

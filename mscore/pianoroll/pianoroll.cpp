@@ -19,7 +19,6 @@
 #include "pianolevelschooser.h"
 #include "pianoview.h"
 #include "musescore.h"
-#include "seq.h"
 #include "preferences.h"
 #include "waveview.h"
 #include "notetweakerdialog.h"
@@ -850,9 +849,9 @@ void PianorollEditor::keyReleased(int /*p*/)
 //   heartBeat
 //---------------------------------------------------------
 
-void PianorollEditor::heartBeat(Seq* s)
+void PianorollEditor::heartBeat(void* s) // was Seq*
       {
-      unsigned tick = s->getCurTick();
+      unsigned tick = muxseq_seq_curTick();
       if (score()->masterScore())
             tick = score()->masterScore()->repeatList().utick2tick(tick);
       if (locator[0].tick() != tick) {

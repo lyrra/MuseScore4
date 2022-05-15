@@ -34,7 +34,6 @@
 #include "libmscore/undo.h"
 #include "libmscore/utils.h"
 #include "musescore.h"
-#include "seq.h"
 #include "selinstrument.h"
 
 namespace Ms {

@@ -33,7 +33,6 @@
 #include "libmscore/undo.h"
 #include "libmscore/part.h"
 #include "libmscore/instrument.h"
-#include "seq.h"
 #include "muxseq.h"
 #include "preferences.h"
 
@@ -384,8 +383,9 @@ void DrumrollEditor::keyReleased(int /*pitch*/)
 //   heartBeat
 //---------------------------------------------------------
 
-void DrumrollEditor::heartBeat(Seq* s)
+void DrumrollEditor::heartBeat(void* s) // s :: Seq*
       {
+      /*
       unsigned t = s->getCurTick();
       if (locator[0].tick() != t) {
             locator[0].setTick(t);
@@ -394,6 +394,7 @@ void DrumrollEditor::heartBeat(Seq* s)
             if (preferences.getBool(PREF_APP_PLAYBACK_FOLLOWSONG))
                   gv->ensureVisible(t);
             }
+      */
       }
 
 //---------------------------------------------------------

@@ -21,7 +21,7 @@
 #include "libmscore/sig.h"
 #include "libmscore/score.h"
 #include "libmscore/repeatlist.h"
-#include "seq.h"
+#include "libmscore/tempo.h"
 #include "muxseq.h"
 #include "musescore.h"
 #include "libmscore/measure.h"

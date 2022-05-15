@@ -27,7 +27,6 @@
 #include "preferences.h"
 #include "scoreaccessibility.h"
 #include "scoretab.h"
-#include "seq.h"
 #include "muxseqsig.h"
 #include "muxseq.h"
 #include "splitstaff.h"

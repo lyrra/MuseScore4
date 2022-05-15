@@ -21,7 +21,6 @@
 #include "musescore.h"
 #include "preferences.h"
 #include "scoreview.h"
-#include "seq.h"
 #include "muxseq.h"
 #include "libmscore/barline.h"
 #include "libmscore/clef.h"
