@@ -32,7 +32,6 @@
 #include "realizeharmonydialog.h"
 #include "icons.h"
 #include "libmscore/xml.h"
-#include "seq.h"
 #include "libmscore/tempo.h"
 #include "libmscore/sym.h"
 #include "pagesettings.h"
