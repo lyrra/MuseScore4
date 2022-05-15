@@ -25,6 +25,7 @@ bool muxseq_seq_running();
 bool muxseq_seq_stopped();
 bool muxseq_seq_can_start();
 void muxseq_seq_seek(int ticks);
+int muxseq_seq_curTick();
 float muxseq_seq_curTempo();
 void muxseq_seq_setRelTempo(double);
 DEFMUXSEQVOID(nextMeasure);

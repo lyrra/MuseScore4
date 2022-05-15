@@ -1,6 +1,5 @@
 
 #include "muxseqsig.h"
-#include "seq.h"
 #include "scoreview.h"
 #include "audio/midi/event.h"
 #include "audio/midi/msynthesizer.h"
@@ -24,167 +23,225 @@ namespace Ms {
 
 class MuseScore;
 
+enum MsgType {
+    MsgTypeNoop = 0,
+    MsgTypeSeqInit,
+    MsgTypeSeqDeinit,
+    MsgTypeSeqExit,
+    MsgTypeSeqAlive,
+    MsgTypeSeqStart,
+    MsgTypeSeqStop,
+    MsgTypeSeqSendEvent,
+    MsgTypeSeqStartNote,
+    MsgTypeSeqStartNoteDur,
+    MsgTypeSeqStopNotes,
+    MsgTypeSeqStartNoteTimer,
+    MsgTypeSeqStopNoteTimer,
+    MsgTypeSeqStopWait,
+    MsgTypeSeqCurTempo,
+    MsgTypeSeqSetRelTempo,
+    MsgTypeSeqPlaying,
+    MsgTypeSeqRunning,
+    MsgTypeSeqStopped,
+    MsgTypeSeqCanStart,
+    MsgTypeSeqCurTick,
+    MsgTypeSeqSeek,
+    MsgTypeSeekEnd,
+    MsgTypeNextMeasure,
+    MsgTypePrevMeasure,
+    MsgTypeNextChord,
+    MsgTypePrevChord,
+    MsgTypeRewindStart,
+    MsgTypeSetLoopIn,
+    MsgTypeSetLoopOut,
+    MsgTypeSetLoopSelection,
+    MsgTypeRecomputeMaxMidiOutPort,
+    MsgTypeSeqPreferencesChanged,
+    MsgTypeSeqUpdateOutPortCount,
+    MsgTypeEOF
+};
+
+
+void muxseq_send(MsgType type) {
+    qDebug("muxseq msg %i", type);
+}
+
+void muxseq_send(MsgType type, int i) {
+    qDebug("muxseq msg %i about int %i", type, i);
+}
+void muxseq_send(MsgType type, double d) {
+    qDebug("muxseq msg %i about int %f", type, d);
+}
+
+void muxseq_send(MsgType type, NPlayEvent event) {
+    qDebug("muxseq msg %i about event", type);
+}
+
+void muxseq_query(MsgType type) {
+    qDebug("muxseq msg query %i", type);
+}
+
+bool muxseq_query_bool(MsgType type) {
+    qDebug("muxseq msg query %i", type);
+    return true;
+}
+
+float muxseq_query_float(MsgType type) {
+    qDebug("muxseq msg query %i", type);
+    return 0.0f;
+}
+
+void muxseq_query(MsgType type, bool b) {
+    qDebug("muxseq msg query %i about bool %i", type, b);
+}
+
 MasterSynthesizer* synti = 0;
 
 #define DEFMUXSEQVOID(name, sname) \
   void muxseq_seq_ ## name() { \
-      seq3-> sname (); \
+      muxseq_send(MsgType ## sname); \
   }
-
-//extern MScore::Sequencer Mscore::seq;
-extern Seq* seq3;
-extern Seq* seq;
 
 MasterSynthesizer* muxseq_create_synti(int sampleRate);
 
 void muxseq_initialize(int sampleRate) { // called from musescore.cpp: MuseScore::init
-    // FIX: query muxaudio about current sampleRate
-    MasterSynthesizer* synti = muxseq_create_synti(MScore::sampleRate);
-    seq = seq3 = new Seq();
-    seq3->setMasterSynthesizer(synti);
+    muxseq_send(MsgTypeSeqInit, sampleRate);
 }
 
 void muxseq_dealloc() {
-    qDebug("!!!! muxseq_dealloc !!!!");
-    seq3 = 0;
-    seq = 0;
+    muxseq_send(MsgTypeSeqDeinit);
 }
 
 void muxseq_exit() {
-    seq3->exit();
+    muxseq_send(MsgTypeSeqExit);
 }
 
 bool muxseq_seq_alive() {
-    if (seq == 0 || seq3 == 0) {
-        return false;
-    }
+    //FIX: perhaps locally cache this?
+    muxseq_query(MsgTypeSeqAlive);
     return true;
 }
 
 bool muxseq_seq_init (bool hotPlug) {
-    qDebug("muxseq_seq_init seq=%lx, seq3=%lx", seq, seq3);
-    if (! seq || !seq3) {
-        qFatal("muxseq_seq_init === WARNING seq/seq3 is not initialized ===");
-    }
-    return seq3->init(hotPlug);
+    muxseq_query(MsgTypeSeqInit, hotPlug);
+    return true;
 }
 
 void muxseq_seq_start () {
-    seq3->start();
+    muxseq_send(MsgTypeSeqStart);
 }
 
 void muxseq_seq_stop () {
-    seq3->stop();
+    muxseq_send(MsgTypeSeqStop);
 }
 
 void muxseq_send_event(NPlayEvent event) {
-    seq3->sendEvent(event);
+    muxseq_send(MsgTypeSeqSendEvent, event);
 }
 
 void muxseq_start_note(int channel, int pitch, int velocity, double nt) {
-    seq3->startNote(channel,
-                    pitch,
-                    velocity,
-                    nt);
+    muxseq_send(MsgTypeSeqStartNote);
 }
 
 void muxseq_start_note_dur(int channel, int pitch, int velocity, int duration, double nt) {
-    seq3->startNote(channel,
-                    pitch,
-                    velocity,
-                    duration,
-                    nt);
+    muxseq_send(MsgTypeSeqStartNoteDur);
 }
 
 void muxseq_stop_notes () {
-    seq3->stopNotes();
+    muxseq_send(MsgTypeSeqStopNotes);
 }
 
 void muxseq_stop_notes (int channel) {
-    seq3->stopNotes(channel);
+    muxseq_send(MsgTypeSeqStopNotes, channel);
 }
 
 void muxseq_stop_notetimer () {
-    seq3->stopNoteTimer();
+    muxseq_send(MsgTypeSeqStopNoteTimer);
 }
 
 void muxseq_start_notetimer (int duration) {
-    seq3->startNoteTimer(duration);
+    muxseq_send(MsgTypeSeqStartNoteTimer);
 }
 
 void muxseq_stop_wait () {
-    seq3->stopWait();
+    muxseq_send(MsgTypeSeqStopWait);
 }
 
 bool muxseq_seq_playing() {
-    return seq3->isPlaying();
+    return muxseq_query_bool(MsgTypeSeqPlaying);
 }
 
 bool muxseq_seq_running() {
-    return seq3->isRunning();
+    return muxseq_query_bool(MsgTypeSeqRunning);
 }
 
 bool muxseq_seq_stopped() {
-    return seq3->isStopped();
+    return muxseq_query_bool(MsgTypeSeqStopped);
 }
 
 bool muxseq_seq_can_start() {
-    return seq3->canStart();
+    return muxseq_query_bool(MsgTypeSeqCanStart);
 }
 
 void muxseq_seq_seek(int ticks) {
-    seq3->seek(ticks);
+    return muxseq_send(MsgTypeSeqSeek, ticks);
 }
 
+int muxseq_seq_curTick() {
+    return muxseq_query_float(MsgTypeSeqCurTick);
+}
 float muxseq_seq_curTempo() {
-    return seq3->curTempo();
+    return muxseq_query_float(MsgTypeSeqCurTempo);
 }
 
 void muxseq_seq_setRelTempo (double tempo) {
-    seq3->setRelTempo(tempo);
+    muxseq_send(MsgTypeSeqSetRelTempo, tempo);
 }
 
-DEFMUXSEQVOID(nextMeasure, nextMeasure)
-DEFMUXSEQVOID(nextChord, nextChord)
-DEFMUXSEQVOID(prevMeasure, prevMeasure)
-DEFMUXSEQVOID(prevChord, prevChord)
-DEFMUXSEQVOID(rewindStart, rewindStart)
-DEFMUXSEQVOID(seekEnd, seekEnd)
-DEFMUXSEQVOID(setLoopIn, setLoopIn);
-DEFMUXSEQVOID(setLoopOut, setLoopOut);
-DEFMUXSEQVOID(setLoopSelection, setLoopSelection);
-DEFMUXSEQVOID(recomputeMaxMidiOutPort, recomputeMaxMidiOutPort);
+DEFMUXSEQVOID(nextMeasure, NextMeasure)
+DEFMUXSEQVOID(nextChord,   NextChord)
+DEFMUXSEQVOID(prevMeasure, PrevMeasure)
+DEFMUXSEQVOID(prevChord,   PrevChord)
+DEFMUXSEQVOID(rewindStart, RewindStart)
+DEFMUXSEQVOID(seekEnd,     SeekEnd)
+DEFMUXSEQVOID(setLoopIn,   SetLoopIn);
+DEFMUXSEQVOID(setLoopOut,  SetLoopOut);
+DEFMUXSEQVOID(setLoopSelection, SetLoopSelection);
+DEFMUXSEQVOID(recomputeMaxMidiOutPort, RecomputeMaxMidiOutPort);
 
 float muxseq_seq_metronomeGain() {
-    return seq3->metronomeGain();
+    //FIX: return seq3->metronomeGain();
+    return 1.0f;
 }
 
 void muxseq_seq_playMetronomeBeat(BeatType beatType) {
-    seq3->playMetronomeBeat(beatType);
+    //FIX: muxseq_send(MsgTypeSeqplayMetronomeBeat(beatType));
 }
 
 void muxseq_seq_initInstruments() {
-    seq3->initInstruments();
+    //FIX: seq3->initInstruments();
 }
 
 void muxseq_preferencesChanged() {
-    seq3->preferencesChanged();
+    muxseq_send(MsgTypeSeqPreferencesChanged);
 }
 
 MasterScore* muxseq_seq_score () {
-    return seq3->score();
+    //FIX: return seq3->score();
+    return nullptr;
 }
 
 void muxseq_seq_set_scoreview (void* v) {
-    seq3->setScoreView((ScoreView*)v);
+    //FIX: seq shouldn't know about the score, but instead take an eventmap
+    //FIX: seq3->setScoreView((ScoreView*)v);
 }
 
 void muxseq_seq_setController(int channel, int vol, int iv) {
-    seq3->setController(channel, vol, iv);
+    //FIX: seq3->setController(channel, vol, iv);
 }
 
 void muxseq_seq_updateOutPortCount(int maxPorts) {
-    seq3->updateOutPortCount(maxPorts);
+    muxseq_send(MsgTypeSeqUpdateOutPortCount, maxPorts);
 }
 
 // signals
@@ -252,19 +309,21 @@ void muxseq_delete_synti() {
 }
 
 bool muxseq_synti () {
-    return seq3->synti();
+    //FIX: return seq3->synti();
+    return true;
 }
 
 void muxseq_synti_init() {
-    seq3->synti()->init();
+    //FIX: seq3->synti()->init();
 }
 
 float muxseq_synti_getGain () {
-    return synti->gain();
+    //FIX: return synti->gain();
+    return 1.0f;
 }
 
 void muxseq_synti_setSampleRate (float sampleRate) {
-    seq3->synti()->setSampleRate(sampleRate);
+    //FIX: seq3->synti()->setSampleRate(sampleRate);
 }
 
 SynthesizerState muxseq_get_synthesizerState() {
