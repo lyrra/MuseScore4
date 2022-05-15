@@ -34,7 +34,6 @@
 #include "scoreview.h"
 #include "playpanel.h"
 #include "preferences.h"
-#include "seq.h"
 #include "audio/midi/msynthesizer.h"
 #include "shortcut.h"
 

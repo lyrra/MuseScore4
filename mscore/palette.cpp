@@ -32,7 +32,6 @@
 #include "libmscore/keysig.h"
 #include "libmscore/timesig.h"
 #include "preferences.h"
-#include "seq.h"
 #include "libmscore/part.h"
 #include "libmscore/textline.h"
 #include "libmscore/measure.h"

@@ -16,7 +16,6 @@
 
 #include "libmscore/score.h"
 #include "libmscore/element.h"
-#include "seq.h"
 #include "muxseq.h"
 #include "libmscore/mscore.h"
 

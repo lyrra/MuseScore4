@@ -21,7 +21,6 @@
 #include "timeline.h"
 #include "preferences.h"
 #include "prefsdialog.h"
-#include "seq.h"
 #include "muxseq.h"
 #include "shortcutcapturedialog.h"
 #include "scoreview.h"

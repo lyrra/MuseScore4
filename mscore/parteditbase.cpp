@@ -22,7 +22,6 @@
 #include "libmscore/score.h"
 #include "libmscore/part.h"
 #include "mixer/mixer.h"
-#include "seq.h"
 #include "libmscore/undo.h"
 #include "synthcontrol.h"
 #include "audio/midi/msynthesizer.h"

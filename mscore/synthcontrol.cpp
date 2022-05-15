@@ -12,7 +12,6 @@
 
 #include "synthcontrol.h"
 #include "musescore.h"
-#include "seq.h"
 #include "muxseqsig.h"
 #include "muxseq.h"
 #include "audio/midi/msynthesizer.h"

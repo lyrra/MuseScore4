@@ -25,7 +25,6 @@
 #include "libmscore/drumset.h"
 #include "libmscore/score.h"
 #include "preferences.h"
-#include "seq.h"
 #include "muxseq.h"
 #include "editdrumset.h"
 #include "libmscore/staff.h"

@@ -29,7 +29,6 @@
 #include "libmscore/excerpt.h"
 #include "libmscore/score.h"
 #include "libmscore/part.h"
-#include "seq.h"
 #include "muxseqsig.h"
 #include "muxseq.h"
 #include "libmscore/undo.h"
