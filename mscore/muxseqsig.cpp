@@ -1,5 +1,4 @@
 
-#include "seq.h"
 #include "muxseqsig.h"
 #include "musescore.h"
 
@@ -10,7 +9,6 @@ void handle_seqStopped();
 
 extern MuseScore* mscore;
 MuxSeqSig* muxseqsig;
-extern Seq* seq3;
 
 MuxSeqSig* muxseqsig_init() {
   muxseqsig = new MuxSeqSig();
@@ -65,15 +63,15 @@ void MuxSeqSig::sigSeqStoppedHandle() {
 }
 
 void MuxSeqSig::setMetronomeGain(float gain) {
-    seq3->setMetronomeGain(gain);
+    //FIX: seq3->setMetronomeGain(gain);
 }
 
 void MuxSeqSig::setRelTempo(double tempo) {
-    seq3->setRelTempo(tempo);
+    //FIX: seq3->setRelTempo(tempo);
 }
 
 void MuxSeqSig::seek(int pos) {
-    seq3->seek(pos);
+    //FIX: seq3->seek(pos);
 }
 
 }

@@ -50,16 +50,14 @@
 
 
 #include "config.h"
-#include "seq.h"
 #include "musescore.h"
+#include "muxcommon.h"
 #include "mux.h"
 #include <thread>
 #include <chrono>
 #include <zmq.h>
 
 namespace Ms {
-
-extern Seq* seq; //FIX: remove extern seq3 from seq.h
 
 void mux_zmq_ctrl_send_to_audio(struct Msg msg);
 void mux_send_event_to_gui(struct SparseEvent se);
