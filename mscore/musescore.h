@@ -96,7 +96,6 @@ class QmlPluginEngine;
 class MasterSynthesizer;
 class SynthesizerState;
 class Driver;
-class Seq;
 class ImportMidiPanel;
 class ScoreComparisonTool;
 class ScriptRecorder;
