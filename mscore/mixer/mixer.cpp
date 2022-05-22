@@ -33,7 +33,7 @@
 #include "muxseq.h"
 #include "libmscore/undo.h"
 #include "synthcontrol.h"
-#include "audio/midi/msynthesizer.h"
+#include "msynthesizer.h"
 #include "preferences.h"
 
 #include "mixerdetails.h"
@@ -101,17 +101,16 @@ Mixer::Mixer(QWidget* parent)
       detailsArea->setLayout(detailsLayout);
 
       //Range in decibels
-      MasterSynthesizer* synti = muxseq_get_synti();
-      float minDecibels = synti->minGainAsDecibels;
-      float maxDecibels = synti->maxGainAsDecibels;
-      float currentDecibels = synti->gainAsDecibels();
+      float minDecibels = muxseq_synti_getMinGainAsDecibels();
+      float maxDecibels = muxseq_synti_getMaxGainAsDecibels();
+      float currentDecibels = muxseq_synti_getGainAsDecibels();
       masterSlider->setMaxValue(maxDecibels);
       masterSlider->setMinValue(minDecibels);
       masterSlider->setNumMinorTicks(4);
       masterSlider->setNumMajorTicks(3);
       masterSlider->setHilightColor(QColor(51, 153, 255));
       masterSlider->setValue(currentDecibels);
-      masterSlider->setDoubleClickValue(synti->defaultGainAsDecibels);
+      masterSlider->setDoubleClickValue(muxseq_synti_getDefaultGainAsDecibels());
 
       masterSpin->setMaximum(maxDecibels);
       masterSpin->setMinimum(minDecibels);
@@ -153,8 +152,7 @@ void Mixer::showDetailsToggled(bool shown)
 
 void Mixer::synthGainChanged(float)
       {
-      MasterSynthesizer* synti = muxseq_get_synti();
-      float decibels = synti->gainAsDecibels();
+      float decibels = muxseq_synti_getGainAsDecibels();
 
       masterSlider->blockSignals(true);
       masterSlider->setValue(decibels);
@@ -192,8 +190,7 @@ void Mixer::keepScrollPosition()
 
 void Mixer::masterVolumeChanged(double decibels)
       {
-      MasterSynthesizer* synti = muxseq_get_synti();
-      synti->setGainAsDecibels(decibels);
+      muxseq_synti_setGainAsDecibels(decibels);
 
       masterSlider->blockSignals(true);
       masterSlider->setValue(decibels);
@@ -504,8 +501,7 @@ void MuseScore::showMixer(bool visible)
       {
       QAction* toggleMixerAction = getAction("toggle-mixer");
 
-      MasterSynthesizer* synti = muxseq_get_synti();
-      if (!synti) {
+      if (!muxseq_synti()) {
             toggleMixerAction->setChecked(false);
             return;
             }

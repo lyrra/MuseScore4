@@ -31,7 +31,7 @@ QString instrumentName(MidiType type, int program, bool isDrumTrack)
             lbank = (program >> 8) & 0xff;
             program = program & 0xff;
             }
-      return MidiInstrument::instrName(int(type), hbank, lbank, program);
+      return "FIXME"; //FIX: MidiInstrument::instrName(int(type), hbank, lbank, program);
       }
 
 bool isGrandStaff(const MTrack &t1, const MTrack &t2)

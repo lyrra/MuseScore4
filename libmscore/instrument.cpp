@@ -21,8 +21,9 @@
 #include "part.h"
 #include "score.h"
 
-#include "audio/midi/synthesizer.h"
-#include "audio/midi/midipatch.h"
+#include "synthesizer.h"
+#include "midipatch.h"
+#include "eventutils.h"
 
 namespace Ms {
 
@@ -48,7 +49,7 @@ void NamedEventList::write(XmlWriter& xml, const QString& n) const
       if (!descr.isEmpty())
             xml.tag("descr", descr);
       for (const MidiCoreEvent& e : events)
-            e.write(xml);
+            midiCoreEvent_write(e, xml);
       xml.etag();
       }
 
@@ -761,7 +762,7 @@ void Channel::write(XmlWriter& xml, const Part* part) const
                         continue;
                   }
 
-            e.write(xml);
+            midiCoreEvent_write(e, xml);
             }
       if (!MScore::testMode)
             // xml.tag("synti", ::synti->name(synti));

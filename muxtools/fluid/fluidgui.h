@@ -13,7 +13,7 @@
 #ifndef __FLUIDGUI_H__
 #define __FLUIDGUI_H__
 
-#include "audio/midi/synthesizergui.h"
+#include "synthesizergui.h"
 #include "ui_fluid_gui.h"
 #include "fluid.h"
 

@@ -1,6 +1,8 @@
 #ifndef __MUXSEQ_H__
 #define __MUXSEQ_H__
 
+#include "muxlib/midipatch.h"
+
 namespace Ms {
 
 #define DEFMUXSEQVOID(name) void muxseq_seq_ ## name()
@@ -49,16 +51,34 @@ void muxseq_seq_set_scoreview(void *v);
 void muxseq_seq_setController(int channel, int vol, int iv);
 void muxseq_seq_updateOutPortCount(int maxPorts);
 
-MasterSynthesizer* muxseq_create_synti(int sampleRate);
-MasterSynthesizer* muxseq_synthesizerFactory();
-MasterSynthesizer* muxseq_get_synti();
+int muxseq_create_synti(int sampleRate);
+int muxseq_synthesizerFactory();
 void muxseq_delete_synti();
 bool muxseq_synti();
 void muxseq_synti_init();
+SynthesizerState muxseq_synti_get_synthesizerState();
+void muxseq_synti_setState(SynthesizerState state);
+void muxseq_synti_storeState();
 float muxseq_synti_getGain();
+void muxseq_synti_setGain (double gain);
+float muxseq_synti_getMinGainAsDecibels();
+float muxseq_synti_getMaxGainAsDecibels();
+float muxseq_synti_getGainAsDecibels();
+float muxseq_synti_getDefaultGainAsDecibels();
+void muxseq_synti_setGainAsDecibels(float gain);
 void muxseq_synti_setSampleRate(float sampleRate);
-SynthesizerState muxseq_get_synthesizerState();
-MasterSynthesizer* muxseq_synth_create (int sampleRate, SynthesizerState synthState);
+void muxseq_synti_setMasterTuning(float tuning);
+float muxseq_synti_getMasterTuning();
+void muxseq_synti_setEffect(int effectIdx, int n);
+int muxseq_synti_getDynamicsMethod();
+void muxseq_synti_setDynamicsMethod(int n);
+int muxseq_synti_getCcToUseIndex();
+void muxseq_synti_setCcToUseIndex(int n);
+int muxseq_synti_getIndexOfEffect(int n);
+
+QList<MidiPatch*> muxseq_synti_getPatchInfoList();
+MidiPatch* muxseq_synti_getPatchInfo(QString chan, int bank, int prog);
+int muxseq_synth_create (int sampleRate, SynthesizerState synthState);
 Synthesizer* muxseq_synth_get_name(const QString& name);
 void muxseq_synth_delete (MasterSynthesizer* synth);
 void muxseq_synth_fluid_load_soundfonts (QStringList sfList);

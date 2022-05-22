@@ -1,6 +1,5 @@
 
-#include "audio/midi/event.h"
-//#include "../mscore/seq.h"
+#include "event.h"
 
 namespace Ms {
 

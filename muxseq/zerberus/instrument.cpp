@@ -179,6 +179,7 @@ bool ZInstrument::loadFromFile(const QString& path)
 
 bool ZInstrument::read(const QByteArray& buff, MQZipReader* /*uz*/, const QString& /*path*/)
       {
+#if 0 // FIX: FIXNOW
       Ms::XmlReader e(buff);
       while (e.readNextStartElement()) {
             if (e.name() == "MuseSynth") {
@@ -194,6 +195,7 @@ bool ZInstrument::read(const QByteArray& buff, MQZipReader* /*uz*/, const QStrin
             else
                   e.unknown();
             }
+#endif
       return true;
       }
 

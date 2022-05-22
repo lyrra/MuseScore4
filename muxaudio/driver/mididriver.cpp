@@ -32,9 +32,9 @@
 #include "libmscore/score.h"
 
 #include "mscore/globals.h"
-#include "mscore/muxcommon.h"
-#include "mscore/mux.h"
-#include "mscore/seq.h"
+#include "muxcommon.h"
+#include "mux.h"
+#include "seq.h"
 
 namespace Ms {
 

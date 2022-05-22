@@ -24,7 +24,7 @@
 #include "libmscore/synthesizerstate.h"
 
 #include "audio/midi/midifile.h"
-#include "audio/midi/event.h"
+#include "event.h"
 #include "mscore/preferences.h"
 
 namespace Ms {
@@ -323,7 +323,7 @@ bool ExportMidi::write(QIODevice* device, bool midiExpandRepeats, bool exportRPN
                         for (auto i = events.begin(); i != events.end(); ++i) {
                               const NPlayEvent& event = i->second;
 
-                              if (event.isMuted())
+                              if (nPlayEvent_isMuted(event))
                                     continue;
                               if (event.discard() == staffIdx + 1 && event.velo() > 0)
                                     // turn note off so we can restrike it in another track

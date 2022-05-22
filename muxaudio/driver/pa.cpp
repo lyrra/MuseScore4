@@ -31,9 +31,9 @@
 #include "libmscore/score.h"
 
 //#include "mscore/preferences.h"
-#include "mscore/muxcommon.h"
-#include "mscore/mux.h"
-#include "mscore/seq.h"
+#include "muxcommon.h"
+#include "mux.h"
+#include "seq.h"
 
 #ifdef USE_PORTMIDI
 #include "pm.h"

@@ -16,7 +16,7 @@
 #include "instrument.h"
 #include "zone.h"
 
-#include "midi/event.h"
+#include "event.h"
 
 // static const float PI_2 =  1.57079632679489661923;    /* pi/2 */
 

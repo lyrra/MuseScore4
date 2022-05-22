@@ -15,6 +15,7 @@
 
 #include "libmscore/sig.h"
 #include "event.h"
+#include "eventutils.h"
 
 namespace Ms {
 

@@ -22,10 +22,6 @@ QT5_ADD_RESOURCES (qrc_effects_files
      zita1/zita.qrc
      )
 
-QT5_WRAP_UI (ui_headers
-      compressor/compressor_gui.ui
-      )
-
 if (NOT MSVC)
    set(_all_h_file "${PROJECT_BINARY_DIR}/all.h")
 else (NOT MSVC)
@@ -33,18 +29,13 @@ else (NOT MSVC)
 endif (NOT MSVC)
 
 add_library (effects STATIC
-      ${ui_headers}
       ${qrc_effects_files}
       ${_all_h_file}
       ${PCH}
       effect.cpp
-      effectgui.cpp
       noeffect/noeffect.cpp
-      noeffect/noeffectgui.h
       zita1/zita.cpp
-      zita1/zitagui.cpp
       compressor/compressor.cpp
-      compressor/compressorgui.cpp
       ${INCS}
       )
 

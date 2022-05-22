@@ -13,16 +13,16 @@
 #include "config.h"
 #include "synthesizer.h"
 #include "msynthesizer.h"
-#include "synthesizergui.h"
-#include "../../mscore/muxseqsig.h"
+//#include "synthesizergui.h"
+#include "muxseqsig.h"
 #include "libmscore/xml.h"
 
-#include "midi/event.h"
-#include "midi/midipatch.h"
+#include "event.h"
+#include "midipatch.h"
 
 namespace Ms {
 
-extern QString dataPath;
+QString g_msynth_dataPath = "."; //FIX: set path at muxseq startup
 
 //---------------------------------------------------------
 //   MasterSynthesizer
@@ -41,13 +41,14 @@ MasterSynthesizer::MasterSynthesizer()
 void MasterSynthesizer::init()
       {
       SynthesizerState state;
-      QString s(dataPath + "/synthesizer.xml");
+      QString s(g_msynth_dataPath + "/synthesizer.xml");
       QFile f(s);
       if (!f.open(QIODevice::ReadOnly)) {
             // qDebug("cannot read synthesizer settings <%s>", qPrintable(s));
             setState(defaultState);
             return;
             }
+#if 0
       XmlReader e(&f);
       while (e.readNextStartElement()) {
             if (e.name() == "Synthesizer")
@@ -59,6 +60,7 @@ void MasterSynthesizer::init()
             f.remove();
             setState(defaultState);
             }
+#endif
       }
 
 //---------------------------------------------------------
@@ -262,7 +264,7 @@ void MasterSynthesizer::setSampleRate(float val)
       _sampleRate = val;
       for (Synthesizer* s : _synthesizer) {
             s->init(_sampleRate);
-            connect(s->gui(), SIGNAL(sfChanged()), SLOT(sfChanged()));
+            //connect(s->gui(), SIGNAL(sfChanged()), SLOT(sfChanged()));
             }
       for (Effect* e : _effectList[0])
             e->init(_sampleRate);
@@ -420,7 +422,8 @@ SynthesizerState MasterSynthesizer::state() const
 
 bool MasterSynthesizer::storeState()
       {
-      QString s(dataPath + "/synthesizer.xml");
+#if 0 //FIX: used?
+      QString s(g_msynth_dataPath + "/synthesizer.xml");
       QFile f(s);
       if (!f.open(QIODevice::WriteOnly)) {
             qDebug("cannot write synthesizer settings <%s>", qPrintable(s));
@@ -431,6 +434,7 @@ bool MasterSynthesizer::storeState()
       // force the write, since the msynth state is created when state() is called and so will
       // automatically have _isDefault = true, when in fact we need to write the state here, default or not
       state().write(xml, true);
+#endif
       return true;
       }
 
@@ -442,7 +446,8 @@ void MasterSynthesizer::setGain(float f)
       {
       if (_gain != f) {
             _gain = f;
-            muxseqsig_emit_gainChanged(_gain);
+            //FIX: who calls this? send to mscore?
+            //muxseqsig_emit_gainChanged(_gain);
             }
       }
 

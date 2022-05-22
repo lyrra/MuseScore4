@@ -24,11 +24,10 @@
 #include "gen.h"
 #include "voice.h"
 
-#include "midi/event.h"
-#include "midi/msynthesizer.h"
+#include "event.h"
+#include "msynthesizer.h"
 
-#include "mscore/preferences.h"
-#include "mscore/extension.h"
+#include "extension.h"
 
 namespace FluidS {
 
@@ -971,12 +970,13 @@ static void collectFiles(QFileInfoList* l, const QString& path)
 QFileInfoList Fluid::sfFiles()
       {
       QFileInfoList l;
-
-      QStringList pl = preferences.getString(PREF_APP_PATHS_MYSOUNDFONTS).split(";");
-      pl.prepend(QFileInfo(QString("%1%2").arg(mscoreGlobalShare, "sound")).absoluteFilePath());
+      QString s = ";";
+      QStringList pl = s.split(";"); //FIX: FIXNOW preferences_getString(PREF_APP_PATHS_MYSOUNDFONTS).split(";");
+      //FIX: query this instead, and give it as an argument to this method, pl.prepend(QFileInfo(QString("%1%2").arg(mscoreGlobalShare, "sound")).absoluteFilePath());
 
       // append extensions directory
-      QStringList extensionsDir = Ms::Extension::getDirectoriesByType(Ms::Extension::soundfontsDir);
+      //FIX: QStringList extensionsDir = Ms::Extension::getDirectoriesByType(Ms::Extension::soundfontsDir);
+      QStringList extensionsDir = s.split(";"); //FIX: FIXNOW 
       pl.append(extensionsDir);
 
       foreach (const QString& s, pl) {

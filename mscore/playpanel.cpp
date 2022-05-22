@@ -25,7 +25,7 @@
 #include "muxseq.h"
 #include "musescore.h"
 #include "libmscore/measure.h"
-#include "audio/midi/msynthesizer.h"
+#include "msynthesizer.h"
 
 
 namespace Ms {
@@ -58,14 +58,13 @@ PlayPanel::PlayPanel(QWidget* parent)
       loopOutButton->setDefaultAction(getAction("loop-out"));
       enablePlay = new EnablePlayForWidget(this);
 
-      MasterSynthesizer* synti = muxseq_get_synti();
-      float minDecibels = synti->minGainAsDecibels;
-      float maxDecibels = synti->maxGainAsDecibels;
+      float minDecibels = muxseq_synti_getMinGainAsDecibels();
+      float maxDecibels = muxseq_synti_getMaxGainAsDecibels();
       volSpinBox->setRange(minDecibels, maxDecibels);
 
       volumeSlider->setLog(false);
       volumeSlider->setRange(minDecibels, maxDecibels);
-      volumeSlider->setDclickValue1(synti->defaultGainAsDecibels);
+      volumeSlider->setDclickValue1(muxseq_synti_getDefaultGainAsDecibels());
 
       speedSlider->setDclickValue1(100.0);
       speedSlider->setDclickValue2(100.0);
@@ -74,8 +73,8 @@ PlayPanel::PlayPanel(QWidget* parent)
       mgainSlider->setDclickValue1(muxseq_seq_metronomeGain() - 10.75f);
       mgainSlider->setDclickValue2(muxseq_seq_metronomeGain() - 10.75f);
 
-      volumeSlider->setDclickValue1(synti->defaultGainAsDecibels); // double click restores -40dB default
-      volumeSlider->setDclickValue2(synti->defaultGainAsDecibels);
+      volumeSlider->setDclickValue1(muxseq_synti_getDefaultGainAsDecibels()); // double click restores -40dB default
+      volumeSlider->setDclickValue2(muxseq_synti_getDefaultGainAsDecibels());
 
       connect(volumeSlider, SIGNAL(valueChanged(double,int)), SLOT(volumeChanged(double,int)));
       connect(mgainSlider,  SIGNAL(valueChanged(double,int)), SLOT(metronomeGainChanged(double,int)));
@@ -304,8 +303,7 @@ void PlayPanel::setGain(float gain)  // respond to gainChanged() SIGNAL from Mas
       {
       Q_UNUSED(gain);
       const QSignalBlocker blockVolumeSpinBoxSignals(volSpinBox);
-      MasterSynthesizer* synti = muxseq_get_synti();
-      volumeSlider->setValue(synti->gainAsDecibels());
+      volumeSlider->setValue(muxseq_synti_getGainAsDecibels());
       volLabel();
       }
 
@@ -316,8 +314,7 @@ void PlayPanel::setGain(float gain)  // respond to gainChanged() SIGNAL from Mas
 
 void PlayPanel::volumeChanged(double decibels, int)
       {
-      MasterSynthesizer* synti = muxseq_get_synti();
-      synti->setGainAsDecibels(decibels);
+      muxseq_synti_setGainAsDecibels(decibels);
       }
 
 //---------------------------------------------------------
@@ -435,16 +432,14 @@ void PlayPanel::speedSliderPressed(int)
       
 void PlayPanel::volLabel()
       {
-      MasterSynthesizer* synti = muxseq_get_synti();
-      volSpinBox->setValue(synti->gainAsDecibels());
+      volSpinBox->setValue(muxseq_synti_getGainAsDecibels());
       volSpinBox->setSuffix(" dB");
       }
 
 
 void PlayPanel::volSpinBoxEdited()
       {
-      MasterSynthesizer* synti = muxseq_get_synti();
-      synti->setGainAsDecibels(volSpinBox->value());
+      muxseq_synti_setGainAsDecibels(volSpinBox->value());
       volLabel();
       }
 

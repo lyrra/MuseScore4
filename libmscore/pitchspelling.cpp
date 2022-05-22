@@ -23,7 +23,7 @@
 #include "part.h"
 #include "utils.h"
 
-#include "audio/midi/event.h"
+#include "event.h"
 
 namespace Ms {
 

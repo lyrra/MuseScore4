@@ -34,10 +34,6 @@ include_directories (
       ${PROJECT_SOURCE_DIR}/thirdparty  # because include "mscore/musescore.h"
       )
 
-include (${CMAKE_CURRENT_LIST_DIR}/midi/midi.cmake)
-include (${CMAKE_CURRENT_LIST_DIR}/drivers/drivers.cmake)
-include (${CMAKE_CURRENT_LIST_DIR}/exports/exports.cmake)
-
 QT5_WRAP_UI (ui_headers
     ${MIDI_UI}
     )
@@ -46,15 +42,11 @@ add_library (${MODULE} STATIC
       ${_all_h_file}
       ${PCH}
       ${ui_headers}
-      ${MIDI_SRC}
-      ${DRIVERS_SRC}
-      ${EXPORTS_SRC}
       )
 
 target_link_libraries (${MODULE}
       ${QT_LIBRARIES}
       audiofile
-      mscoreapp
       )
 
 if (NOT MSVC)

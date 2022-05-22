@@ -23,7 +23,7 @@
 #include "voice.h"
 
 #include "audio/midi/synthesizer.h"
-#include "audio/midi/event.h"
+#include "event.h"
 #include "audio/midi/midipatch.h"
 
 class Channel;
@@ -137,7 +137,7 @@ class Zerberus : public Ms::Synthesizer {
       
       void updatePatchList();
       
-      virtual Ms::SynthesizerGui* gui();
+      //virtual Ms::SynthesizerGui* gui();
       static QFileInfoList sfzFiles();
       };
 

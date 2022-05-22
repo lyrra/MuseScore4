@@ -13,14 +13,14 @@
 #include <stdio.h>
 
 #include "zerberus.h"
-#include "zerberusgui.h"
+//#include "zerberusgui.h"
 #include "voice.h"
 #include "channel.h"
 #include "instrument.h"
 #include "zone.h"
 
-#include "midi/event.h"
-#include "midi/midipatch.h"
+#include "event.h"
+#include "midipatch.h"
 
 #include "mscore/preferences.h"
 
@@ -463,15 +463,16 @@ bool Zerberus::loadInstrument(const QString& s)
                   return true;
                   }
             }
-
-      QFileInfoList l = Zerberus::sfzFiles();
       QString path;
+#if 0 //FIX
+      QFileInfoList l = Zerberus::sfzFiles();
       foreach (const QFileInfo& fi, l) {
             if (fi.fileName() == fileName) {
                   path = fi.absoluteFilePath();
                   break;
                   }
             }
+#endif
       busy = true;
       ZInstrument* instr = new ZInstrument(this);
 

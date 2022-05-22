@@ -11,9 +11,7 @@
 //=============================================================================
 
 #include "effects/effect.h"
-#include "effects/effectgui.h"
 #include "noeffect.h"
-#include "noeffectgui.h"
 
 namespace Ms {
 
@@ -21,6 +19,7 @@ namespace Ms {
 //   gui
 //---------------------------------------------------------
 
+#if 0
 EffectGui* NoEffect::gui()
       {
       if (!_gui) {
@@ -43,6 +42,7 @@ NoEffectGui::NoEffectGui(Effect* e, QWidget* parent)
       la->addWidget(l);
       setLayout(la);
       }
+#endif
 
 //---------------------------------------------------------
 //   parDescr

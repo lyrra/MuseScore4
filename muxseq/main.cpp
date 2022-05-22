@@ -17,59 +17,30 @@ namespace Ms {
 
 #define MUX_SYNC_MSLEEP 100
 
-void muxseq_threads_start();
+//void muxseq_threads_start();
 
-const char* mux_msg_type_name(int type) {
-    switch (type) {
-        case MsgTypeAudioInit:
-            return "MsgTypeAudioInit";
-        case MsgTypeAudioStart:
-            return "MsgTypeAudioStart";
-        case MsgTypeAudioStop:
-            return "MsgTypeAudioStop";
-        case MsgTypeTransportStart:
-            return "MsgTypeTransportStart";
-        case MsgTypeTransportStop:
-            return "MsgTypeTransportStop";
-        case MsgTypeTransportSeek:
-            return "MsgTypeTransportSeek";
-        case MsgTypeEventToMidi:
-            return "MsgTypeEventToMidi";
-        case MsgTypeTimeSigTempoChanged:
-            return "MsgTypeTimeSigTempoChanged";
-        case MsgTypeOutPortCount:
-            return "MsgTypeOutPortCount";
-        default: // this should not happen
-            return "UNKNOWN";
-    }
-}
+//void muxseq_send_event_to_gui(struct SparseEvent se);
+//void muxseq_audio_send_event_to_midi(struct Msg msg);
 
+//static std::vector<std::thread> seqThreads;
+//int mux_audio_process_run = 0;
 
-void muxseq_send_event_to_gui(struct SparseEvent se);
-void muxseq_audio_send_event_to_midi(struct Msg msg);
-//extern int g_driver_running;
-
-static std::vector<std::thread> seqThreads;
-int mux_audio_process_run = 0;
-
-static void *zmq_context;
-static void *zmq_socket;
-
-static void *zmq_context_audio;
-static void *zmq_socket_audio;
+static void *zmq_context_seq;
+static void *zmq_socket_seq;
 
 /*
  * message queue, between audio and mux
  */ 
 
-#define MAILBOX_SIZE 256
-struct Msg g_msg_to_audio[MAILBOX_SIZE];
-struct Msg g_msg_from_audio[MAILBOX_SIZE];
-int g_msg_to_audio_reader = 0;
-int g_msg_to_audio_writer = 0;
-int g_msg_from_audio_reader = 0;
-int g_msg_from_audio_writer = 0;
+//#define MAILBOX_SIZE 256
+//struct Msg g_msg_to_audio[MAILBOX_SIZE];
+//struct Msg g_msg_from_audio[MAILBOX_SIZE];
+//int g_msg_to_audio_reader = 0;
+//int g_msg_to_audio_writer = 0;
+//int g_msg_from_audio_reader = 0;
+//int g_msg_from_audio_writer = 0;
 
+#if 0
 // audio-thread uses this function to send messages to mux/mscore
 int muxseq_mq_from_audio_writer_put (struct Msg msg) {
     memcpy(&g_msg_from_audio[g_msg_from_audio_writer].payload, &msg.payload, sizeof(msg.payload));
@@ -186,7 +157,9 @@ void muxseq_msg_from_audio(MsgType typ, int val)
     msg.payload.i = val;
     mux_mq_from_audio_writer_put(msg);
 }
+#endif
 
+#if 0
 /*
  * Audio ringbuffer from mux to audio
  */
@@ -311,19 +284,21 @@ void muxseq_audio_process() {
     }
     std::cout << "MUX audio-process terminated.\n";
 }
+#endif
 
 void muxseq_network_open ()
 {
     std::cerr << "MUXSEQ ZeroMQ open network port tcp://*:7772\n";
-    zmq_context = zmq_ctx_new();
-    zmq_socket = zmq_socket(zmq_context, ZMQ_PAIR);
-    int rc = zmq_bind(zmq_socket, "tcp://*:7772");
+    zmq_context_seq = zmq_ctx_new();
+    zmq_socket_seq = zmq_socket(zmq_context_seq, ZMQ_PAIR);
+    int rc = zmq_bind(zmq_socket_seq, "tcp://*:7772");
     if (rc) {
         fprintf(stderr, "zmq-bind error: %s\n", strerror(errno));
         exit(rc);
     }
 }
 
+#if 0
 void muxseq_network_mainloop_ctrl()
 {
     std::cerr << "MUX ZeroMQ control entering main-loop\n";
@@ -349,24 +324,25 @@ void muxseq_network_mainloop_audio()
     }
     fprintf(stderr, "mux_network_mainloop audio has exited\n");
 }
+#endif
 
 void muxseq_network_server_ctrl()
 {
-    mux_network_open_ctrl();
-    mux_network_mainloop_ctrl();
+    //mux_network_open_ctrl();
+    //mux_network_mainloop_ctrl();
 }
 
 void muxseq_network_server_audio()
 {
-    mux_network_open_audio();
-    mux_network_mainloop_audio();
+    //mux_network_open_audio();
+    //mux_network_mainloop_audio();
 }
 
 } // end of namespace MS
 
 int main(int argc, char **argv)
 {
-    Ms::muxseq_threads_start();
+    //Ms::muxseq_threads_start();
     while(1){
         std::this_thread::sleep_for(std::chrono::microseconds(100000));
     }

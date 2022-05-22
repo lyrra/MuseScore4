@@ -33,8 +33,9 @@
 #include "libmscore/note.h"
 #include "libmscore/part.h"
 #include "libmscore/mscore.h"
-#include "audio/midi/msynthesizer.h"
+#include "msynthesizer.h"
 #include "musescore.h"
+#include "eventutils.h"
 #include "preferences.h"
 #include "muxseq.h"
 
@@ -76,6 +77,7 @@ bool MuseScore::saveAudio(Score* score, QIODevice *device, std::function<bool(fl
 
       int sampleRate = preferences.getInt(PREF_EXPORT_AUDIO_SAMPLERATE);
       const SynthesizerState state = useCurrentSynthesizerState ? mscore->synthesizerState() : score->synthesizerState();
+#if 0 // FIX: move this into muxseq-serverside
       MasterSynthesizer* synth = muxseq_synth_create (sampleRate, state);
 
       if (!useCurrentSynthesizerState) {
@@ -204,10 +206,10 @@ bool MuseScore::saveAudio(Score* score, QIODevice *device, std::function<bool(fl
 
       MScore::sampleRate = oldSampleRate;
       muxseq_synth_delete(synth);
-
+#endif
       device->close();
 
-      return !cancelled;
+      return true; // return !cancelled;
       }
 
 #ifdef HAS_AUDIOFILE
@@ -314,6 +316,7 @@ bool MuseScore::saveAudio(Score* score, const QString& name)
             return false;
 
       int sampleRate = preferences.getInt(PREF_EXPORT_AUDIO_SAMPLERATE);
+#if 0 //FIX: move this into muxseq-serverside
       MasterSynthesizer* synth = muxseq_synth_create(sampleRate, score->synthesizerState());
 
       int oldSampleRate  = MScore::sampleRate;
@@ -360,11 +363,12 @@ bool MuseScore::saveAudio(Score* score, const QString& name)
 
       MScore::sampleRate = oldSampleRate;
       muxseq_synth_delete(synth);
+#endif
 
-      if (wasCanceled)
-            QFile::remove(name);
+      //if (wasCanceled)
+      //      QFile::remove(name);
 
-      return result;
+      return true; // return result;
       }
 
 #endif // HAS_AUDIOFILE

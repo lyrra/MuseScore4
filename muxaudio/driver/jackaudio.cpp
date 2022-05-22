@@ -34,8 +34,8 @@
 #include "libmscore/mscore.h"
 //#include "mscore/musescore.h"
 //#include "mscore/preferences.h"
-#include "mscore/muxcommon.h"
-#include "mscore/mux.h"
+#include "muxcommon.h"
+#include "mux.h"
 
 // Prevent killing sequencer with wrong data
 #define less128(__less) ((__less >=0 && __less <= 127) ? __less : 0)

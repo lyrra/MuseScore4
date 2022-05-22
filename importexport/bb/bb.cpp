@@ -56,11 +56,12 @@ BBTrack::~BBTrack()
 //---------------------------------------------------------
 
 struct MNote {
-      Event mc;
+      //FIX: Event mc;
       QList<Tie*> ties;
 
-      MNote(const Event& _mc) : mc(_mc) {
-            for (int i = 0; i < mc.notes().size(); ++i)
+      //FIX: MNote(const Event& _mc) : mc(_mc) {
+      MNote(const Event& _mc) {
+            for (int i = 0; i < 0 /*FIX: mc.notes().size()*/; ++i)
                   ties.append(0);
             }
       };
@@ -560,14 +561,14 @@ Fraction BBFile::processPendingNotes(Score* score, QList<MNote*>* notes, const F
       const Instrument* instrument = cstaff->part()->instrument();
       const Drumset* drumset       = instrument->drumset();
       bool useDrumset              = instrument->useDrumset();
-      Fraction tick                = Fraction::fromTicks(notes->at(0)->mc.ontime());
+      Fraction tick(0,0); /* FIX:     = 0 Fraction::fromTicks(notes->at(0)->mc.ontime()); */
 
       //
       // look for len of shortest note
       //
       for (const MNote* n : *notes) {
-            if (n->mc.duration() < len.ticks())
-                  len = Fraction::fromTicks(n->mc.duration());
+            if (/* FIX: n->mc.duration() */ 0 < len.ticks())
+                  len = Fraction::fromTicks(0 /* FIX: n->mc.duration() */);
             }
 
       //
@@ -591,6 +592,7 @@ Fraction BBFile::processPendingNotes(Score* score, QList<MNote*>* notes, const F
       Segment* s = measure->getSegment(SegmentType::ChordRest, tick);
       s->add(chord);
 
+#if 0 // FIX
       for (MNote* n : *notes) {
             QList<Event>& nl = n->mc.notes();
             for (int i = 0; i < nl.size(); ++i) {
@@ -628,6 +630,7 @@ Fraction BBFile::processPendingNotes(Score* score, QList<MNote*>* notes, const F
             n->mc.setOntime(n->mc.ontime() + len.ticks());
             n->mc.setLen(n->mc.duration() - len.ticks());
             }
+#endif
       return len;
       }
 

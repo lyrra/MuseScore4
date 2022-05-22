@@ -118,7 +118,7 @@
 #include "libmscore/utils.h"
 #include "libmscore/icon.h"
 
-#include "audio/midi/event.h"
+#include "event.h"
 
 #include "plugin/qmlplugin.h"
 #include "accessibletoolbutton.h"
@@ -138,7 +138,7 @@
 #endif
 
 #ifdef USE_LAME
-#include "audio/exports/exportmp3.h"
+#include "exportmp3.h"
 #endif
 #ifdef Q_OS_MAC
 #include "macos/cocoabridge.h"
@@ -4749,7 +4749,7 @@ void MuseScore::play(Element* e) const
             int channel = hChannel->channel();
 
             // reset the cc that is used for single note dynamics, if any
-            int cc = muxseq_get_synthesizerState().ccToUse();
+            int cc = muxseq_synti_get_synthesizerState().ccToUse();
             if (cc != -1)
                   muxseq_send_event(NPlayEvent(ME_CONTROLLER, channel, cc, 80));
 
@@ -4783,7 +4783,7 @@ void MuseScore::play(Element* e, int pitch) const
             const int channel = instr->channel(masterNote->subchannel())->channel();
 
             // reset the cc that is used for single note dynamics, if any
-            int cc = muxseq_get_synthesizerState().ccToUse();
+            int cc = muxseq_synti_get_synthesizerState().ccToUse();
             if (cc != -1)
                   muxseq_send_event(NPlayEvent(ME_CONTROLLER, channel, cc, 80));
 
@@ -6978,7 +6978,7 @@ void MuseScore::editInstrumentList()
 
 SynthesizerState MuseScore::synthesizerState() const
       {
-      return muxseq_get_synthesizerState();
+      return muxseq_synti_get_synthesizerState();
       }
 
 //---------------------------------------------------------
@@ -6990,28 +6990,6 @@ Synthesizer* MuseScore::synthesizer(const QString& name)
       return muxseq_synth_get_name(name);
       }
 
-//---------------------------------------------------------
-//   canSaveMp3
-//---------------------------------------------------------
-
-bool MuseScore::canSaveMp3()
-      {
-#ifndef USE_LAME
-      return false;
-#else
-      MP3Exporter exporter;
-      if (!exporter.loadLibrary(MP3Exporter::AskUser::NO)) {
-            qDebug("Could not open MP3 encoding library!");
-            return false;
-            }
-
-      if (!exporter.validLibraryLoaded()) {
-            qDebug("Not a valid or supported MP3 encoding library!");
-            return false;
-            }
-      return true;
-#endif
-      }
 
 //---------------------------------------------------------
 //   saveMp3
@@ -7838,7 +7816,7 @@ void MuseScore::init(QStringList& argv)
             MScore::sampleRate = 48000.0f;
             muxseq_initialize(MScore::sampleRate);
             showSplashMessage(sc, tr("Loading SoundFonts…"));
-            mux_threads_start();
+            //FIX: muxaudio start mux_threads_start();
             }
       else {
             muxseq_dealloc();

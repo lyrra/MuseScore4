@@ -23,7 +23,7 @@
 #include "libmscore/note.h"
 #include "libmscore/part.h"
 
-#include "audio/midi/msynthesizer.h"
+#include "msynthesizer.h"
 #include "mscore/preferences.h"
 
 namespace Ms {

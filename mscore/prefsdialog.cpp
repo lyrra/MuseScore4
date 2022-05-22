@@ -21,6 +21,7 @@
 #include "timeline.h"
 #include "preferences.h"
 #include "prefsdialog.h"
+
 #include "muxseq.h"
 #include "shortcutcapturedialog.h"
 #include "scoreview.h"
@@ -29,7 +30,7 @@
 
 #include "pathlistdialog.h"
 #include "resourceManager.h"
-#include "audio/midi/msynthesizer.h"
+//#include "audio/midi/msynthesizer.h"
 
 #ifdef AVSOMR
 #include "avsomr/avsomrlocal.h"

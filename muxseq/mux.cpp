@@ -50,9 +50,10 @@
 
 
 #include "config.h"
-#include "musescore.h"
+//#include "musescore.h"
 #include "muxcommon.h"
 #include "mux.h"
+#include <iostream>
 #include <thread>
 #include <chrono>
 #include <zmq.h>
@@ -191,6 +192,7 @@ void mux_process_bufferStereo(unsigned int numFloats, float* frames) {
 }
 
 int mux_audio_process_work() {
+#if 0
     unsigned int newWriterPos = (g_ringBufferWriterStart + MUX_CHUNKSIZE) % MUX_RINGSIZE;
 
     // ensure we dont overwrite part of buffer that is being read by reader
@@ -229,6 +231,7 @@ int mux_audio_process_work() {
               << " p:[" << g_readerPause << ", " << g_writerPause << "]\n";
     */
     g_ringBufferWriterStart = newWriterPos;
+#endif
     return 1;
 }
 
