@@ -19,7 +19,7 @@
 
 #include "instrument.h"
 
-#include "audio/midi/midipatch.h"
+#include "midi/midipatch.h"
 #include "libmscore/part.h"
 #include "libmscore/score.h"
 #include "libmscore/undo.h"

@@ -24,7 +24,8 @@
 #include "musescore.h"
 #include "scoreview.h"
 
-#include "audio/exports/exportmidi.h"
+#include "midi/midifile.h"
+#include "exports/exportmidi.h"
 
 #include "libmscore/xml.h"
 #include "libmscore/element.h"
@@ -78,7 +79,7 @@
 #include "libmscore/sym.h"
 #include "libmscore/image.h"
 #include "libmscore/stafflines.h"
-#include "audio/midi/msynthesizer.h"
+#include "msynthesizer.h"
 #include "svggenerator.h"
 #include "scorePreview.h"
 #include "scorecmp/scorecmp.h"
@@ -102,7 +103,8 @@
 #include "migration/handlers/edwinstylehandler.h"
 #include "migration/handlers/resetallelementspositionshandler.h"
 
-#include "muxseq.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
 
 namespace Ms {
 
@@ -991,9 +993,9 @@ MasterScore* MuseScore::getNewFile()
       if (!copyright.isEmpty())
             score->setMetaTag("copyright", copyright);
 
-      MasterSynthesizer* synti = muxseq_get_synti();
-      if (synti)
-            score->setSynthesizerState(synti->state());
+      SynthesizerState state = muxseq_synti_get_synthesizerState();
+      //if (synti) FIX: check state first (NotInitialized)
+            score->setSynthesizerState(state);
 
       // Call this even if synti doesn't exist - we need to rebuild either way
       score->rebuildAndUpdateExpressive(MuseScore::synthesizer("Fluid"));
@@ -2320,9 +2322,9 @@ Score::FileError readScore(MasterScore* score, QString name, bool ignoreVersionE
       score->setImportedFilePath(name);
 
       // Set the default synthesizer state before we read
-      MasterSynthesizer* synti = muxseq_get_synti();
-      if (synti)
-            score->setSynthesizerState(synti->state());
+      SynthesizerState state = muxseq_synti_get_synthesizerState();
+      //if (synti) //FIX: only do if state is not NotInitialized (which must be added)
+            score->setSynthesizerState(state);
 
       auto read = [](MasterScore* score, const QString& name, bool ignoreVersionError, bool imported = false)->Score::FileError {
             Score::FileError rv = score->loadMsc(name, ignoreVersionError);

@@ -8,10 +8,9 @@
  */
 
 #include "config.h"
-#include <thread> // FIX: should be imported by config.h
+#include <thread>
 #include <chrono>
 #include <iostream>
-#include "driver.h"
 
 namespace Ms {
 
@@ -33,38 +32,38 @@ void muxseq_audio_control_thread_init(std::string _notused)
 void muxseq_thread_process_init(std::string msg)
 {
     std::cout << "MUXSEQ audio-process thread initialized:" << msg << "\n";
-    muxseq_audio_process_run = 1;
-    muxseq_audio_process();
+    //muxseq_audio_process();
 }
 
 void muxseq_network_reader_thread_init(std::string _notused)
 {
-    muxseq_network_server_ctrl();
+    //muxseq_network_server_ctrl();
 }
 
 void muxseq_audio_zmq_thread_init(std::string _notused)
 {
-    muxseq_network_server_audio();
+    //muxseq_network_server_audio();
 }
 
 
 void muxseq_threads_start()
 {
+    fprintf(stderr, "start threads\n"); std::fflush(stderr);
     std::vector<std::thread> threadv;
 
-    muxseq_network_open();
+    //muxseq_network_open();
 
-    std::thread ctrlThread(muxseq_control_thread_init, "notused");
-    threadv.push_back(std::move(ctrlThread));
+//    std::thread ctrlThread(muxseq_control_thread_init, "notused");
+//    threadv.push_back(std::move(ctrlThread));
 
-    std::thread procThread(muxseq_process_thread_init, "notused");
-    threadv.push_back(std::move(procThread));
+//    std::thread procThread(muxseq_process_thread_init, "notused");
+//    threadv.push_back(std::move(procThread));
 
-    std::thread zmqCtrlThread(muxseq_network_reader_thread_init, "notused");
-    threadv.push_back(std::move(zmqCtrlThread));
+//    std::thread zmqCtrlThread(muxseq_network_reader_thread_init, "notused");
+//    threadv.push_back(std::move(zmqCtrlThread));
 
-    std::thread zmqAudioThread(muxseq_audio_zmq_thread_init, "notused");
-    threadv.push_back(std::move(zmqAudioThread));
+//    std::thread zmqAudioThread(muxseq_audio_zmq_thread_init, "notused");
+//    threadv.push_back(std::move(zmqAudioThread));
 
     muxThreads = std::move(threadv);
 }
@@ -72,7 +71,6 @@ void muxseq_threads_start()
 void muxseq_threads_stop()
 {
     std::cout << "MUXSEQ stop all threads\n";
-    muxseq_audio_process_run = 0;
     //muxThreads[0].join();
 }
 

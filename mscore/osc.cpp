@@ -28,13 +28,14 @@
 #include "libmscore/chord.h"
 #include "libmscore/note.h"
 #include "libmscore/undo.h"
-#include "muxseq.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
 #include "mixer/mixer.h"
 #include "parteditbase.h"
 #include "scoreview.h"
 #include "playpanel.h"
 #include "preferences.h"
-#include "audio/midi/msynthesizer.h"
+#include "msynthesizer.h"
 #include "shortcut.h"
 
 #ifdef OSC
@@ -286,7 +287,7 @@ void MuseScore::oscColorNote(QVariantList list)
 void MuseScore::oscVolume(int val)
       {
       double v = val / 128.0;
-      muxseq_get_synti()->setGain(v);
+      muxseq_synti_setGain(v);
       }
 
 //---------------------------------------------------------

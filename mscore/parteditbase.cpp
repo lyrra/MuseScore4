@@ -24,12 +24,13 @@
 #include "mixer/mixer.h"
 #include "libmscore/undo.h"
 #include "synthcontrol.h"
-#include "audio/midi/msynthesizer.h"
+#include "msynthesizer.h"
 #include "preferences.h"
 #include <qmessagebox.h>
 #include <accessibletoolbutton.h>
 
-#include "muxseq.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
 
 namespace Ms {
 
@@ -340,9 +341,8 @@ void PartEdit::drumsetToggled(bool val, bool syncControls)
 
       part->undoChangeProperty(Pid::USE_DRUMSET, val);
       patch->clear();
-      MasterSynthesizer* synti = muxseq_get_synti();
-      const auto& pl = synti->getPatchInfo();
-      for (const MidiPatch* p : pl) {
+      //const auto& pl = muxseq_synti_getPatchInfoList();
+      for (const MidiPatch* p :  muxseq_synti_getPatchInfoList()) {
             if (p->drum == val)
                   patch->addItem(p->name, QVariant::fromValue<void*>((void*)p));
             }

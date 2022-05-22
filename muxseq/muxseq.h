@@ -1,69 +1,93 @@
-#ifndef __MUXSEQ_H__
-#define __MUXSEQ_H__
+/* GPL-2.0-or-later
+ * Copyright (C) 2022 Larry Valkama
+ *
+ * This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version. 
+ */
+
+#ifndef __MUX_H__
+#define __MUX_H__
 
 namespace Ms {
 
-#define DEFMUXSEQVOID(name) void muxseq_seq_ ## name()
+/*** MUX public interface ***/
+int mux_is_score_open ();
+//void mux_send_event (Event e);
+void mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo);
+void mux_set_jack_transport(Transport transport);
+/****************************/
 
-void muxseq_initialize(int sampleRate);
-void muxseq_dealloc();
-void muxseq_exit();
-bool muxseq_seq_init(bool hotPlug);
-bool muxseq_seq_alive();
-void muxseq_send_event(NPlayEvent event);
-void muxseq_seq_start();
-void muxseq_seq_stop();
-void muxseq_start_note(int channel, int pitch, int velocity, double nt);
-void muxseq_start_note_dur(int channel, int pitch, int velocity, int duration, double nt);
-void muxseq_start_notetimer(int duration);
-void muxseq_stop_notes();
-void muxseq_stop_notes(int channel);
-void muxseq_stop_notetimer();
-void muxseq_stop_wait();
-bool muxseq_seq_playing();
-bool muxseq_seq_running();
-bool muxseq_seq_stopped();
-bool muxseq_seq_can_start();
-void muxseq_seq_seek(int ticks);
-float muxseq_seq_curTempo();
-void muxseq_seq_setRelTempo(double);
-DEFMUXSEQVOID(nextMeasure);
-DEFMUXSEQVOID(nextChord);
-DEFMUXSEQVOID(prevMeasure);
-DEFMUXSEQVOID(prevChord);
-DEFMUXSEQVOID(rewindStart);
-DEFMUXSEQVOID(seekEnd);
-DEFMUXSEQVOID(setLoopIn);
-DEFMUXSEQVOID(setLoopOut);
-DEFMUXSEQVOID(setLoopSelection);
-DEFMUXSEQVOID(recomputeMaxMidiOutPort);
+/*
+ * message queue, between audio and mux
+ */
 
-float muxseq_seq_metronomeGain();
-void muxseq_seq_playMetronomeBeat(BeatType beatType);
-void muxseq_seq_initInstruments();
-void muxseq_preferencesChanged();
-MasterScore* muxseq_seq_score();
-void muxseq_seq_set_scoreview(void *v);
+enum MsgType {
+    MsgTypeInit = 0,
+    MsgTypeAudioInit,
+    MsgTypeAudioStart,
+    MsgTypeAudioStop,
+    MsgTypeAudioRunning,
+    MsgTypeTransportStart,
+    MsgTypeTransportStop,
+    MsgTypeTransportSeek,
+    MsgTypeJackTransportPosition,
+    MsgTypeEventToGui,
+    MsgTypeEventToMidi,
+    MsgTypeTimeSigTempoChanged,
+    MsgTypeOutPortCount,
+    MsgTypeNoop
+};
 
-void muxseq_seq_setController(int channel, int vol, int iv);
-void muxseq_seq_updateOutPortCount(int maxPorts);
+struct JackTransportPosition {
+    unsigned int state;
+    unsigned int frame;
+    unsigned int valid;
+    unsigned int beats_per_minute;
+    unsigned int bbt;
+};
 
-MasterSynthesizer* muxseq_create_synti(int sampleRate);
-MasterSynthesizer* muxseq_synthesizerFactory();
-MasterSynthesizer* muxseq_get_synti();
-void muxseq_delete_synti();
-bool muxseq_synti();
-void muxseq_synti_init();
-float muxseq_synti_getGain();
-void muxseq_synti_setSampleRate(float sampleRate);
-SynthesizerState muxseq_get_synthesizerState();
-MasterSynthesizer* muxseq_synth_create (int sampleRate, SynthesizerState synthState);
-Synthesizer* muxseq_synth_get_name(const QString& name);
-void muxseq_synth_delete (MasterSynthesizer* synth);
-void muxseq_synth_fluid_load_soundfonts (QStringList sfList);
-void muxseq_synth_zerberus_load_soundfonts (QStringList sfzList);
-void muxseq_synth_fluid_unload_soundfonts (QStringList sfList);
-void muxseq_synth_zerberus_unload_soundfonts (QStringList sfzList);
+struct SparseEvent {
+    uchar type;
+    uchar channel;
+    int pitch;
+    int velo;
+    int cont;
+    int val;
+};
+
+struct SparseMidiEvent {
+    unsigned int framepos;
+    int portIdx;
+    int channel;
+    uchar type;
+    int dataA;
+    int dataB;
+};
+
+struct Msg {
+    MsgType type;
+    union Payload {
+        int i;
+        SparseEvent sparseEvent;
+        SparseMidiEvent sparseMidiEvent;
+        struct JackTransportPosition jackTransportPosition;
+    } payload;
+};
+
+int mux_mq_from_audio_writer_put (struct Msg msg);
+void mux_msg_from_audio(MsgType typ, int val);
+void mux_msg_to_audio(MsgType typ, int val);
+
+void mux_audio_init(int hot);
+void mux_audio_start(int hotPlug);
+void mux_audio_stop();
+void mux_set_jack_position(struct JackTransportPosition jackTransportPosition);
+void mux_audio_jack_transport_start();
+void mux_audio_jack_transport_stop();
+void mux_audio_jack_transport_seek(int utick);
+void mux_audio_handle_MsgTimeSigTempoChanged();
+void mux_audio_handle_updateOutPortCount(int portCount);
+
+void mux_zmq_ctrl_send_to_audio(struct Msg msg);
 
 } // namespace Ms
 #endif

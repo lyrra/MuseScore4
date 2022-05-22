@@ -34,8 +34,8 @@
 #include "libmscore/mscore.h"
 //#include "mscore/musescore.h"
 //#include "mscore/preferences.h"
-#include "mscore/muxcommon.h"
-#include "mscore/mux.h"
+#include "muxcommon.h"
+#include "muxaudio.h"
 
 // Prevent killing sequencer with wrong data
 #define less128(__less) ((__less >=0 && __less <= 127) ? __less : 0)
@@ -43,6 +43,9 @@
 #define LL(str) std::cout << str << "\n"
 
 namespace Ms {
+
+int g_ctrl_audio_error = 0;
+int g_ctrl_audio_running = 0;
 
 int debugMode = 1;
 extern Driver* g_driver;

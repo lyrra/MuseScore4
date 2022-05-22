@@ -33,7 +33,8 @@
 #include "libmscore/undo.h"
 #include "libmscore/part.h"
 #include "libmscore/instrument.h"
-#include "muxseq.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
 #include "preferences.h"
 
 namespace Ms {

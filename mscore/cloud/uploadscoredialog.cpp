@@ -13,6 +13,7 @@
 #include <QMessageBox>
 
 #include "musescore.h"
+//#include "muxseq.h"
 #include "downloadUtils.h"
 #include "icons.h"
 #include "libmscore/score.h"
@@ -200,7 +201,7 @@ void UploadScoreDialog::uploadError(const QString& error)
 
 void UploadScoreDialog::showOrHideUploadAudio()
       {
-      uploadAudio->setEnabled(mscore->canSaveMp3());
+      uploadAudio->setEnabled(true /* FIX: muxseq_canSaveMp3() */);
       bool v = !mscore->synthesizerState().isDefaultSynthSoundfont();
       uploadAudio->setVisible(v);
       }

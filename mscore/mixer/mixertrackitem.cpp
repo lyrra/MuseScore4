@@ -21,7 +21,8 @@
 
 #include "libmscore/score.h"
 #include "libmscore/part.h"
-#include "muxseq.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
 
 namespace Ms {
 

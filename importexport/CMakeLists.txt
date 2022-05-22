@@ -23,6 +23,8 @@ include (${PROJECT_SOURCE_DIR}/build/gch.cmake)
 
 include_directories(
       ${PROJECT_SOURCE_DIR}
+      ${PROJECT_SOURCE_DIR}/muxlib
+      ${PROJECT_SOURCE_DIR}/muxtools
       ${CMAKE_CURRENT_BINARY_DIR}
       )
 
@@ -60,7 +62,6 @@ add_subdirectory(../thirdparty/rtf2html rtf2html) # for capella
 
 target_link_libraries(${MODULE}
     ${QT_LIBRARIES}
-    audio       # for midiimport
     beatroot    # for midiimport
     rtf2html    # for capella
     )

@@ -26,9 +26,9 @@
 #include "libmscore/fifo.h"
 #include "libmscore/tempo.h"
 
-#include "mscore/muxcommon.h"
-#include "audio/midi/event.h"
-#include "audio/drivers/control.h"
+#include "muxlib/muxcommon.h"
+#include "event.h"
+#include "eventutils.h"
 
 class QTimer;
 
@@ -79,8 +79,9 @@ struct SeqMsg {
 //   SeqMsgFifo
 //---------------------------------------------------------
 
-static const int SEQ_MSG_FIFO_SIZE = 1024*8;
+//static const int SEQ_MSG_FIFO_SIZE = 1024*8;
 
+/*
 class SeqMsgFifo : public FifoBase {
       SeqMsg messages[SEQ_MSG_FIFO_SIZE];
 
@@ -90,6 +91,7 @@ class SeqMsgFifo : public FifoBase {
       void enqueue(const SeqMsg&);        // put object on fifo
       SeqMsg dequeue();                   // remove object from fifo
       };
+      */
 
 //---------------------------------------------------------
 //   Seq
@@ -101,8 +103,8 @@ class Seq : public QObject, public Sequencer {
 
       mutable QMutex mutex;
 
-      MasterScore* cs;
-      ScoreView* cv;
+      //MasterScore* cs;
+      //ScoreView* cv;
       bool running;                       // true if sequencer is available
       Transport state;                    // STOP, PLAY, STARTING=3
       bool inCountIn;
@@ -119,8 +121,8 @@ class Seq : public QObject, public Sequencer {
       bool oggInit;
       bool playlistChanged;
 
-      SeqMsgFifo toSeq;
-      SeqMsgFifo fromSeq;
+      //SeqMsgFifo toSeq;
+      //SeqMsgFifo fromSeq;
       MasterSynthesizer* _synti;
 
       double meterValue[2];
@@ -254,8 +256,8 @@ class Seq : public QObject, public Sequencer {
       void setController(int, int, int);
       virtual void sendEvent(const NPlayEvent&);
       void setScoreView(ScoreView*);
-      MasterScore* score() const   { return cs; }
-      ScoreView* viewer() const { return cv; }
+      //MasterScore* score() const   { return cs; }
+      //ScoreView* viewer() const { return cv; }
       void initInstruments(bool realTime = false);
       void updateOutPortCount(const int portCount);
 

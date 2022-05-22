@@ -21,34 +21,34 @@
 #include <chrono>
 #include <thread>
 #include "seq.h"
-#include "mux.h"
-#include "musescore.h"
+#include "muxseq.h"
+//#include "musescore.h"
 #include "muxseqsig.h"
 
-#include "audio/midi/msynthesizer.h"
-#include "libmscore/rendermidi.h"
-#include "libmscore/slur.h"
-#include "libmscore/tie.h"
-#include "libmscore/score.h"
-#include "libmscore/segment.h"
-#include "libmscore/note.h"
-#include "libmscore/chord.h"
-#include "libmscore/tempo.h"
-#include "scoreview.h"
-#include "playpanel.h"
-#include "libmscore/staff.h"
-#include "libmscore/measure.h"
-#include "preferences.h"
-#include "libmscore/part.h"
-#include "libmscore/ottava.h"
-#include "libmscore/utils.h"
-#include "libmscore/repeatlist.h"
-#include "libmscore/audio.h"
-#include "synthcontrol.h"
-#include "pianoroll/pianoroll.h"
-#include "pianotools.h"
+#include "msynthesizer.h"
+//#include "libmscore/rendermidi.h"
+//#include "libmscore/slur.h"
+//#include "libmscore/tie.h"
+//#include "libmscore/score.h"
+//#include "libmscore/segment.h"
+//#include "libmscore/note.h"
+//#include "libmscore/chord.h"
+//#include "libmscore/tempo.h"
+//#include "scoreview.h"
+//#include "playpanel.h"
+//#include "libmscore/staff.h"
+//#include "libmscore/measure.h"
+//#include "preferences.h"
+//#include "libmscore/part.h"
+//#include "libmscore/ottava.h"
+//#include "libmscore/utils.h"
+//#include "libmscore/repeatlist.h"
+//#include "libmscore/audio.h"
+//#include "synthcontrol.h"
+//#include "pianoroll/pianoroll.h"
+//#include "pianotools.h"
 
-#include "click.h"
+//#include "click.h"
 
 #define OV_EXCLUDE_STATIC_CALLBACKS
 #include <vorbis/vorbisfile.h>
@@ -66,6 +66,8 @@
 namespace Ms {
 
 int g_driver_running = 0;
+int g_mscore_division = 1; // FIX: need to set this at start
+
 
 qreal g_utime;
 qreal g_utick;
@@ -165,8 +167,8 @@ Seq::Seq()
       {
       running         = false;
       playlistChanged = false;
-      cs              = 0;
-      cv              = 0;
+      //cs              = 0;
+      //cv              = 0;
       tackRemain        = 0;
       tickRemain        = 0;
       maxMidiOutPort  = 0;
@@ -221,6 +223,7 @@ Seq::~Seq()
 //   setScoreView
 //---------------------------------------------------------
 
+#if 0 //FIX: enable after move to muxseq
 void Seq::setScoreView(ScoreView* v)
       {
       if (oggInit) {
@@ -248,11 +251,13 @@ void Seq::setScoreView(ScoreView* v)
             connect(cs, SIGNAL(playlistChanged()), this, SLOT(setPlaylistChanged()));
             }
       }
+#endif
 
 //---------------------------------------------------------
 //   Seq::CachedPreferences::update
 //---------------------------------------------------------
 
+#if 0
 void Seq::CachedPreferences::update()
       {
 #ifdef USE_PORTMIDI
@@ -268,6 +273,7 @@ void Seq::CachedPreferences::update()
 #endif
       usePulseAudio = preferences.getBool(PREF_IO_PULSEAUDIO_USEPULSEAUDIO);
       }
+#endif
 
 //---------------------------------------------------------
 //   startTransport
@@ -275,7 +281,7 @@ void Seq::CachedPreferences::update()
 
 void Seq::startTransport()
       {
-      cachedPrefs.update();
+      //FIX: cachedPrefs.update();
       mux_msg_to_audio(MsgTypeTransportStart, 0);
       }
 
@@ -302,13 +308,13 @@ bool Seq::init(bool hotPlug)
       mux_msg_to_audio(MsgTypeAudioStart, hotPlug);
       while (! g_driver_running /* g_ctrl_audio_running */) {
             std::this_thread::sleep_for(std::chrono::microseconds(10000));
-            if (g_ctrl_audio_error) {
-                  running = false;
-                  return false;
-                  }
+            //FIX: if (g_ctrl_audio_error) {
+            //      running = false;
+            //      return false;
+            //      }
             }
 
-      cachedPrefs.update();
+      //FIX: cachedPrefs.update();
       running = true;
       return true;
       }
@@ -367,31 +373,34 @@ void Seq::start()
             return;
             }
 
-      mscore->moveControlCursor();
+//      mscore->moveControlCursor(); //FIX: enable move to muxseq
 
       allowBackgroundRendering = true;
       collectEvents(getPlayStartUtick());
-      if (cs->playMode() == PlayMode::AUDIO) {
+      if (true /* FIX: cs->playMode() == PlayMode::AUDIO */) {
             if (!oggInit) {
                   vorbisData.pos  = 0;
-                  vorbisData.data = cs->audio()->data();
-                  int n = ov_open_callbacks(&vorbisData, &vf, 0, 0, ovCallbacks);
-                  if (n < 0) {
-                        qDebug("ogg open failed: %d", n);
-                        }
+                  //FIX: vorbisData.data = cs->audio()->data();
+                  //FIX: send to ogg-plugin
+                  //int n = ov_open_callbacks(&vorbisData, &vf, 0, 0, ovCallbacks);
+                  //if (n < 0) {
+                  //      qDebug("ogg open failed: %d", n);
+                  //      }
                   oggInit = true;
                   }
             }
 
-      if (!preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) || (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) && state == Transport::STOP))
+      //if (!preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) || (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) && state == Transport::STOP))
+      if (state == Transport::STOP)
             seek(getPlayStartUtick());
 
-      if (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) && mscore->countIn() && state == Transport::STOP) {
+      // FIX: send to mscore
+      //if (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) && mscore->countIn() && state == Transport::STOP) {
             // Ready to start playing count in, switching to fake transport
             // to prevent playing in other applications with our ticks simultaneously
-            useJackTransportSavedFlag    = true;
-            preferences.setPreference(PREF_IO_JACK_USEJACKTRANSPORT, false);
-            }
+      //      useJackTransportSavedFlag    = true;
+      //      preferences.setPreference(PREF_IO_JACK_USEJACKTRANSPORT, false);
+      //      }
       startTransport();
       }
 
@@ -402,7 +411,7 @@ void Seq::start()
 
 void Seq::stop()
       {
-      std::cout << "---- Seq::stop ----------------------\n";
+      qDebug("---- Seq::stop ----------------------");
       const bool seqStopped = (state == Transport::STOP);
       const bool driverStopped = !g_driver_running || jack_transport == Transport::STOP;
       if (seqStopped && driverStopped)
@@ -410,21 +419,24 @@ void Seq::stop()
 
       allowBackgroundRendering = false;
       if (oggInit) {
-            ov_clear(&vf);
+            //ov_clear(&vf); //FIX: send to oggplugin
             oggInit = false;
             }
       if (!g_driver_running)
             return;
-      if (!preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) || (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) && jack_transport == Transport::PLAY))
+      //FIX: if (!preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) || (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) && jack_transport == Transport::PLAY))
+      if (jack_transport == Transport::PLAY)
             stopTransport();
-      if (cv)
-            cv->setCursorOn(false);
+      //FIX: send to mscore
+      //if (cv)
+      //      cv->setCursorOn(false);
       if (midiRenderFuture.isRunning())
             midiRenderFuture.waitForFinished();
-      if (cs) {
-            cs->setUpdateAll();
-            cs->update();
-            }
+      //FIX: send to mscore
+      //if (cs) {
+      //      cs->setUpdateAll();
+      //      cs->update();
+      //      }
       }
 
 //---------------------------------------------------------
@@ -453,14 +465,18 @@ void Seq::stopWait()
 
 void Seq::unmarkNotes()
       {
+#if 0 //FIX: Note unknown type
       foreach(const Note* n, markedNotes) {
             n->setMark(false);
-            cs->addRefresh(n->canvasBoundingRect());
+            //FIX: send to mscore
+            //cs->addRefresh(n->canvasBoundingRect());
             }
       markedNotes.clear();
-      PianoTools* piano = mscore->pianoTools();
-      if (piano && piano->isVisible())
-            piano->setPlaybackNotes(markedNotes);
+#endif
+      //FIX: send markednotes to mscore
+      //PianoTools* piano = mscore->pianoTools();
+      //if (piano && piano->isVisible())
+      //      piano->setPlaybackNotes(markedNotes);
       }
 
 //---------------------------------------------------------
@@ -469,17 +485,19 @@ void Seq::unmarkNotes()
 
 void Seq::guiStop()
       {
-      QAction* a = getAction("play");
-      a->setChecked(false);
+//FIX: send to mscore
+//      QAction* a = getAction("play");
+//      a->setChecked(false);
 
       unmarkNotes();
-      if (!cs)
-            return;
+//      if (!cs)
+//            return;
 
-      int tck = cs->repeatList().utick2tick(cs->utime2utick(qreal(playFrame) / qreal(MScore::sampleRate)));
-      cs->setPlayPos(Fraction::fromTicks(tck));
-      cs->update();
-      muxseqsig_seq_emit_stopped();
+//      int tck = cs->repeatList().utick2tick(cs->utime2utick(qreal(playFrame) / qreal(MScore::sampleRate)));
+//FIX: send to mscore
+//      cs->setPlayPos(Fraction::fromTicks(tck));
+//      cs->update();
+//      muxseqsig_seq_emit_stopped();
       }
 
 //---------------------------------------------------------
@@ -493,49 +511,51 @@ void Seq::seqMessage(int msg, int arg)
       switch(msg) {
             case '5': {
                   // Update the screen after seeking from the realtime thread
+#if 0 //FIX: send to mscore
                   Segment* seg = cs->tick2segment(Fraction::fromTicks(arg));
                   if (seg)
                         mscore->currentScoreView()->moveCursor(seg->tick());
                   cs->setPlayPos(Fraction::fromTicks(arg));
                   cs->update();
+#endif
                   break;
                   }
             case '4':   // Restart the playback at the end of the score
                   loopStart();
                   break;
             case '3':   // Loop restart while playing
-                  seek(cs->repeatList().tick2utick(cs->loopInTick().ticks()));
+                  //FIX: send to mscore seek(cs->repeatList().tick2utick(cs->loopInTick().ticks()));
                   break;
             case '2':
                   guiStop();
 //                  heartBeatTimer->stop();
-                  if (g_driver_running && mscore->getSynthControl()) {
+                  if (g_driver_running /* FIX: && mscore->getSynthControl() */) {
                         meterValue[0]     = .0f;
                         meterValue[1]     = .0f;
                         meterPeakValue[0] = .0f;
                         meterPeakValue[1] = .0f;
                         peakTimer[0]       = 0;
                         peakTimer[1]       = 0;
-                        mscore->getSynthControl()->setMeter(0.0, 0.0, 0.0, 0.0);
+                        //FIX: mscore->getSynthControl()->setMeter(0.0, 0.0, 0.0, 0.0);
                         }
                   seek(0);
                   break;
             case '0':         // STOP
                   guiStop();
 //                  heartBeatTimer->stop();
-                  if (g_driver_running && mscore->getSynthControl()) {
+                  if (g_driver_running /* FIX: && mscore->getSynthControl() */) {
                         meterValue[0]     = .0f;
                         meterValue[1]     = .0f;
                         meterPeakValue[0] = .0f;
                         meterPeakValue[1] = .0f;
                         peakTimer[0]       = 0;
                         peakTimer[1]       = 0;
-                        mscore->getSynthControl()->setMeter(0.0, 0.0, 0.0, 0.0);
+                        //FIX: mscore->getSynthControl()->setMeter(0.0, 0.0, 0.0, 0.0);
                         }
                   break;
 
             case '1':         // PLAY
-                  muxseqsig_seq_emit_started();
+//FIX: send to mscore                  muxseqsig_seq_emit_started();
 //                  heartBeatTimer->start(1000/guiRefresh);
                   break;
 
@@ -552,6 +572,7 @@ void Seq::seqMessage(int msg, int arg)
 
 void Seq::playEvent(const NPlayEvent& event, unsigned framePos)
       {
+#if 0 //FIX FIXNOW
       int type = event.type();
       PianoTools* piano = mscore->pianoTools();
       if (type == ME_NOTEON) {
@@ -573,6 +594,7 @@ void Seq::playEvent(const NPlayEvent& event, unsigned framePos)
             }
       else if (type == ME_CONTROLLER || type == ME_PITCHBEND || type == ME_AFTERTOUCH || type == ME_POLYAFTER)
             putEvent(event, framePos);
+#endif
       }
 
 //---------------------------------------------------------
@@ -583,14 +605,17 @@ void Seq::playEvent(const NPlayEvent& event, unsigned framePos)
 
 void Seq::recomputeMaxMidiOutPort()
       {
-      if (!(preferences.getBool(PREF_IO_JACK_USEJACKMIDI) || preferences.getBool(PREF_IO_ALSA_USEALSAAUDIO)))
-            return;
+      //if (!(preferences.getBool(PREF_IO_JACK_USEJACKMIDI) || preferences.getBool(PREF_IO_ALSA_USEALSAAUDIO)))
+      //      return;
+      //FIX: send to mscore query
+#if 0
       int max = 0;
       for (Score * s : MuseScoreCore::mscoreCore->scores()) {
             if (s->masterScore()->midiPortCount() > max)
                   max = s->masterScore()->midiPortCount();
             }
       maxMidiOutPort = max;
+#endif
       }
 
 
@@ -602,6 +627,7 @@ void Seq::recomputeMaxMidiOutPort()
 
 void Seq::processMessages()
       {
+#if 0 //FIX: remove this message-queue (mscore uses zmq over network instead)
       for (;;) {
             if (toSeq.empty())
                   break;
@@ -645,6 +671,7 @@ void Seq::processMessages()
                         break;
                   }
             }
+#endif
       }
 
 //---------------------------------------------------------
@@ -653,6 +680,7 @@ void Seq::processMessages()
 
 void Seq::metronome(unsigned n, float* p, bool force)
       {
+#if 0
       if (!mscore->metronome() && !force) {
             tickRemain = 0;
             tackRemain = 0;
@@ -681,6 +709,7 @@ void Seq::metronome(unsigned n, float* p, bool force)
                   }
             tackRemain -= nn;
             }
+#endif
       }
 
 //---------------------------------------------------------
@@ -689,6 +718,7 @@ void Seq::metronome(unsigned n, float* p, bool force)
 
 void Seq::addCountInClicks()
       {
+#if 0 // FIX: send to mscore, need position and score information
       const Fraction plPos = cs->playPos();
       Measure*    m        = cs->tick2measure(plPos);
       Fraction   msrTick   = m->tick();
@@ -718,6 +748,7 @@ void Seq::addCountInClicks()
       // initialize play parameters to count-in events
       countInPlayPos  = countInEvents.cbegin();
       countInPlayFrame = 0;
+#endif
       }
 
 /*
@@ -726,11 +757,13 @@ void Seq::addCountInClicks()
 
 
 int mux_is_score_open () {
-    return seq->score() ? 1 : 0;
+    //FIX: return seq->score() ? 1 : 0;
+    return 1;
 }
 
 void mux_send_event_to_gui(struct SparseEvent se)
 {
+   /* //FIX: include muxlib which has event.cpp
     Event e;
     e.setType(se.type);
     e.setChannel(se.channel);
@@ -739,6 +772,7 @@ void mux_send_event_to_gui(struct SparseEvent se)
     e.setController(se.cont);
     e.setValue(se.val);
     seq->eventToGui(e);
+    */
 }
 
 static unsigned int jack_position_frame;
@@ -763,31 +797,33 @@ void mux_set_jack_position(struct JackTransportPosition jackTransportPosition)
 
 static void checkTransportSeek(int cur_frame, int nframes, bool inCountIn)
       {
-      if (!seq || !seq->score() || inCountIn)
-            return;
+//      if (!seq || !seq->score() || inCountIn)
+//            return;
 
+#if 0
       if (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT)) {
             if (mscore->playPanelInterface() && mscore->playPanelInterface()->isSpeedSliderPressed())
-                  return;
+                   return;
             int cur_utick = seq->score()->utime2utick((qreal)cur_frame / MScore::sampleRate);
             int utick     = seq->score()->utime2utick((qreal)jack_position_frame / MScore::sampleRate);
 
             // Conversion is not precise, should check frames and uticks
             if (labs((long int)cur_frame - (long int)jack_position_frame)>nframes + 1 && abs(utick - cur_utick)> seq->score()->utime2utick((qreal)nframes / MScore::sampleRate) + 1) {
-                  if (MScore::debugMode)
-                        qDebug()<<"JACK Transport position changed, cur_frame: "<<cur_frame<<",pos.frame: "<<jack_position_frame<<", frame diff: "<<labs((long int)cur_frame - (long int)jack_position_frame)<<"cur utick:"<<cur_utick<<",seek to utick: "<<utick<<", tick diff: "<<abs(utick - cur_utick);
+                  qDebug()<<"JACK Transport position changed, cur_frame: "<<cur_frame<<",pos.frame: "<<jack_position_frame<<", frame diff: "<<labs((long int)cur_frame - (long int)jack_position_frame)<<"cur utick:"<<cur_utick<<",seek to utick: "<<utick<<", tick diff: "<<abs(utick - cur_utick);
                   seq->seekRT(utick);
                   }
             }
+#endif
 
       // Tempo
-      if (!preferences.getBool(PREF_IO_JACK_TIMEBASEMASTER)  && (jack_position_valid & jack_position_BBT)) {
-            if (!seq->score()->tempomap())
-                  return;
+      // FIX: if (!preferences.getBool(PREF_IO_JACK_TIMEBASEMASTER)  && (jack_position_valid & jack_position_BBT)) {
+      if (jack_position_valid & jack_position_BBT) {
+            //FIX: if (!seq->score()->tempomap())
+            //      return;
 
+#if 0 //FIX: score and mscore unknown
             if (int(jack_position_beats_per_minute) != int(60 * seq->curTempo() * seq->score()->tempomap()->relTempo())) {
-                  if (MScore::debugMode)
-                        qDebug()<<"JACK Transport tempo changed! JACK bpm: "<<(int)jack_position_beats_per_minute<<", current bpm: "<<int(60 * seq->curTempo() * seq->score()->tempomap()->relTempo());
+                  //FIX: qDebug()<<"JACK Transport tempo changed! JACK bpm: "<<(int)jack_position_beats_per_minute<<", current bpm: "<<int(60 * seq->curTempo() * seq->score()->tempomap()->relTempo());
                   if (60 * seq->curTempo() == 0.0)
                         return;
                   qreal newRelTempo = jack_position_beats_per_minute / (60* seq->curTempo());
@@ -798,6 +834,7 @@ static void checkTransportSeek(int cur_frame, int nframes, bool inCountIn)
                         mscore->playPanelInterface()->setTempo(seq->curTempo() * newRelTempo);
                         }
                   }
+#endif
             }
       }
 
@@ -819,12 +856,14 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
       if (driverState != state) {
             // Got a message from JACK Transport panel: Play
             if (state == Transport::STOP && driverState == Transport::PLAY) {
-                  if ((cachedPrefs.useJackMidi || cachedPrefs.useJackAudio) && !getAction("play")->isChecked()) {
+                  if ((cachedPrefs.useJackMidi || cachedPrefs.useJackAudio)
+                       //FIX: && !getAction("play")->isChecked()
+                     ) {
                         // Do not play while editing elements
-                        if (mscore->state() != STATE_NORMAL || !isRunning() || !canStart())
+                        if (/* FIX: mscore->state() != STATE_NORMAL || */ !isRunning() || !canStart())
                               return;
-                        getAction("play")->setChecked(true);
-                        getAction("play")->triggered(true);
+                        //FIX: getAction("play")->setChecked(true);
+                        //FIX: getAction("play")->triggered(true);
 
                         // If we just launch MuseScore and press "Play" on JACK Transport with time 0:00
                         // MuseScore doesn't seek to 0 and guiPos is uninitialized, so let's make it manually
@@ -833,12 +872,12 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
 
                         // Switching to fake transport while playing count in
                         // to prevent playing in other applications with our ticks simultaneously
-                        if (cachedPrefs.useJackTransport && mscore->countIn()) {
+                        if (cachedPrefs.useJackTransport /* FIX: && mscore->countIn() */) {
                               // Stopping real JACK Transport
                               stopTransport();
                               // Starting fake transport
-                              useJackTransportSavedFlag = preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT);
-                              preferences.setPreference(PREF_IO_JACK_USEJACKTRANSPORT, false);
+                              useJackTransportSavedFlag = false; //FIX: preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT);
+                              //FIX: preferences.setPreference(PREF_IO_JACK_USEJACKTRANSPORT, false);
                               startTransport();
                               }
                         }
@@ -848,11 +887,11 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                   initInstruments(true);
                   // Need to change state after calling collectEvents()
                   state = Transport::PLAY;
-                  if (mscore->countIn() && cs->playMode() == PlayMode::SYNTHESIZER) {
-                        countInEvents.clear();
-                        inCountIn = true;
-                        }
-                  emit toGui('1');
+//FIX:                  if (mscore->countIn() && cs->playMode() == PlayMode::SYNTHESIZER) {
+//                        countInEvents.clear();
+//                        inCountIn = true;
+//                        }
+                  //FIX: emit toGui('1');
                   }
             // Got a message from JACK Transport panel: Stop
             else if (state == Transport::PLAY && driverState == Transport::STOP) {
@@ -861,17 +900,19 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                   stopNotes(-1, true);
                   initInstruments(true);
                   if (playPos == eventsEnd) {
+#if 0 //FIX mscore not known
                         if (mscore->loop()) {
-                              qDebug("Seq.cpp - Process - Loop whole score. playPos = %d, cs->pos() = %d", playPos->first, cs->pos().ticks());
-                              emit toGui('4');
+                              //qDebug("Seq.cpp - Process - Loop whole score. playPos = %d, cs->pos() = %d", playPos->first, cs->pos().ticks());
+                              //FIX: emit toGui('4');
                               return;
                               }
                         else {
-                              emit toGui('2');
+                              // FIX: emit toGui('2');
                               }
+#endif
                         }
                   else {
-                     emit toGui('0');
+                     //FIX: emit toGui('0');
                      }
                   }
             else if (state != driverState)
@@ -886,8 +927,8 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
       processMessages();
 
       if (state == Transport::PLAY) {
-            if (!cs)
-                  return;
+            // FIX: if (!cs)
+            //      return;
 
             // if currently in count-in, these pointers will reference data in the count-in
             EventMap::const_iterator* pPlayPos   = &playPos;
@@ -906,6 +947,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
             //
             unsigned framePos = 0; // frame currently being processed relative to the first frame of this call to Seq::process
             int periodEndFrame = *pPlayFrame + framesPerPeriod; // the ending frame (relative to start of playback) of the period being processed by this call to Seq::process
+#if 0 // FIX FIXNOW
             int scoreEndUTick = cs->repeatList().tick2utick(cs->lastMeasure()->endTick().ticks());
             while (*pPlayPos != pEventsEnd) {
                   int playPosUTick = (*pPlayPos)->first;
@@ -914,7 +956,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                   g_utime = score()->utick2utime(playPosUTick); // FIX: leaked to real-time thread
                   if (inCountIn) {
                         qreal beatsPerSecond = curTempo() * cs->tempomap()->relTempo(); // relTempo needed here to ensure that bps changes as we slide the tempo bar
-                        qreal ticksPerSecond = beatsPerSecond * MScore::division;
+                        qreal ticksPerSecond = beatsPerSecond * g_mscore_division;
                         qreal playPosSeconds = playPosUTick / ticksPerSecond;
                         int playPosFrame = playPosSeconds * MScore::sampleRate;
                         if (playPosFrame >= periodEndFrame)
@@ -1002,6 +1044,8 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                   ++(*pPlayPos);
                   mutex.unlock();
                   }
+#endif
+#if 0
             if (framesRemain) {
                   if (cs->playMode() == PlayMode::SYNTHESIZER) {
                         metronome(framesRemain, pBuffer, inCountIn);
@@ -1027,6 +1071,8 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                               }
                         }
                   }
+#endif
+#if 0
             if (*pPlayPos == pEventsEnd) {
                   if (inCountIn) {
                         inCountIn = false;
@@ -1042,8 +1088,10 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                   else
                         stopTransport();
                   }
+#endif
             }
       else {
+#if 0 //FIX: tickLength and tackLength is unknown
             // Outside of playback mode
             while (!liveEventQueue()->empty()) {
                   const NPlayEvent& event = liveEventQueue()->dequeue();
@@ -1056,6 +1104,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                         tackVolume = event.velo() ? qreal(event.value()) / 127.0 : 1.0;
                         }
                   }
+#endif
             if (framesRemain) {
                   metronome(framesRemain, pBuffer, true);
                   _synti->process(framesRemain, pBuffer);
@@ -1094,6 +1143,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
 
 void Seq::initInstruments(bool realTime)
       {
+#if 0 //FIX
       // Add midi out ports if necessary
       if (cs && (cachedPrefs.useJackMidi || cachedPrefs.useAlsaAudio)) {
             // Increase the maximum number of midi ports if user adds staves/instruments
@@ -1134,12 +1184,13 @@ void Seq::initInstruments(bool realTime)
                         }
                   }
             }
+#endif
       }
 
 void Seq::updateOutPortCount(const int portCount)
 {
-      if (g_driver_running && (preferences.getBool(PREF_IO_JACK_USEJACKMIDI) || preferences.getBool(PREF_IO_ALSA_USEALSAAUDIO)))
-            mux_msg_to_audio(MsgTypeOutPortCount, portCount);
+// FIX:      if (g_driver_running && (preferences.getBool(PREF_IO_JACK_USEJACKMIDI) || preferences.getBool(PREF_IO_ALSA_USEALSAAUDIO)))
+//            mux_msg_to_audio(MsgTypeOutPortCount, portCount);
       }
 
 //---------------------------------------------------------
@@ -1148,12 +1199,12 @@ void Seq::updateOutPortCount(const int portCount)
 
 void Seq::renderChunk(const MidiRenderer::Chunk& ch, EventMap* eventMap)
       {
-      SynthesizerState synState = mscore->synthesizerState();
-      MidiRenderer::Context ctx(synState);
-      ctx.metronome = true;
-      ctx.renderHarmony = true;
-      midi.renderChunk(ch, eventMap, ctx);
-      renderEventsStatus.setOccupied(ch.utick1(), ch.utick2());
+// FIX  SynthesizerState synState = mscore->synthesizerState();
+//      MidiRenderer::Context ctx(synState);
+//      ctx.metronome = true;
+//      ctx.renderHarmony = true;
+//      midi.renderChunk(ch, eventMap, ctx);
+//      renderEventsStatus.setOccupied(ch.utick1(), ch.utick2());
       }
 
 //---------------------------------------------------------
@@ -1192,7 +1243,7 @@ void Seq::collectEvents(int utick)
             events.insert(renderEvents.begin(), renderEvents.end());
             renderEvents.clear();
             }
-
+#if 0 //FIX: 
       int unrenderedUtick = renderEventsStatus.occupiedRangeEnd(utick);
       while (unrenderedUtick - utick < minUtickBufferSize) {
             const MidiRenderer::Chunk chunk = midi.getChunkAt(unrenderedUtick);
@@ -1201,9 +1252,9 @@ void Seq::collectEvents(int utick)
             renderChunk(chunk, &events);
             unrenderedUtick = renderEventsStatus.occupiedRangeEnd(utick);
             }
-
+#endif
       updateEventsEnd();
-      playPos = mscore->loop() ? events.find(cs->loopInTick().ticks()) : events.cbegin();
+      //FIX: playPos = mscore->loop() ? events.find(cs->loopInTick().ticks()) : events.cbegin();
       playlistChanged = false;
       mutex.unlock();
       }
@@ -1227,7 +1278,7 @@ void Seq::ensureBufferAsync(int utick)
                   updateEventsEnd();
                   renderEvents.clear();
                   }
-
+#if 0 // FIX
             const int unrenderedUtick = renderEventsStatus.occupiedRangeEnd(utick);
             if (unrenderedUtick - utick < minUtickBufferSize) {
                   const MidiRenderer::Chunk chunk = midi.getChunkAt(unrenderedUtick);
@@ -1237,6 +1288,7 @@ void Seq::ensureBufferAsync(int utick)
                               });
                         }
                   }
+#endif
             mutex.unlock();
             }
       }
@@ -1247,7 +1299,8 @@ void Seq::ensureBufferAsync(int utick)
 
 int Seq::getCurTick()
       {
-      return cs->utime2utick(qreal(playFrame) / qreal(MScore::sampleRate));
+//FIX: FIXNOW, return cs->utime2utick(qreal(playFrame) / qreal(MScore::sampleRate));
+      return 0;
       }
 
 //---------------------------------------------------------
@@ -1268,12 +1321,13 @@ void Seq::setRelTempo(double relTempo)
 
 void Seq::setPos(int utick)
       {
-      if (cs == 0)
-            return;
+      //FIX: if (cs == 0)
+      //      return;
       stopNotes(-1, true);
 
       int ucur;
       mutex.lock();
+#if 0 //FIX
       if (playPos != events.end())
             ucur = cs->repeatList().utick2tick(playPos->first);
       else
@@ -1283,6 +1337,7 @@ void Seq::setPos(int utick)
 
       playFrame = cs->utick2utime(utick) * MScore::sampleRate;
       playPos   = events.lower_bound(utick);
+#endif
       mutex.unlock();
       }
 
@@ -1292,13 +1347,16 @@ void Seq::setPos(int utick)
 
 int Seq::getPlayStartUtick()
       {
-      if ((mscore->loop())) {
-            if (preferences.getBool(PREF_APP_PLAYBACK_LOOPTOSELECTIONONPLAY)) {
-                  setLoopSelection();
-                  }
-            return cs->repeatList().tick2utick(cs->loopInTick().ticks());
+#if 0
+      if ((mscore->loop())) { //FIX: mscore->loop access
+            //FIX: if (preferences.getBool(PREF_APP_PLAYBACK_LOOPTOSELECTIONONPLAY)) {
+            //      setLoopSelection();
+            //      }
+            // return cs->repeatList().tick2utick(cs->loopInTick().ticks());
             }
-      return cs->repeatList().tick2utick(cs->playPos().ticks());
+      //return cs->repeatList().tick2utick(cs->playPos().ticks());
+#endif
+      return 0;
       }
 
 //---------------------------------------------------------
@@ -1310,18 +1368,19 @@ int Seq::getPlayStartUtick()
 
 void Seq::seekCommon(int utick)
       {
-      if (cs == 0)
-            return;
+      //FIX: if (cs == 0)
+      //      return;
 
       collectEvents(utick);
-
+#if 0 // FIX
       if (cs->playMode() == PlayMode::AUDIO) {
             ogg_int64_t sp = cs->utick2utime(utick) * MScore::sampleRate;
             ov_pcm_seek(&vf, sp);
             }
+#endif 
 
       guiPos = events.lower_bound(utick);
-      mscore->setPos(Fraction::fromTicks(cs->repeatList().utick2tick(utick)));
+      //FIX: mscore->setPos(Fraction::fromTicks(cs->repeatList().utick2tick(utick)));
       unmarkNotes();
       }
 
@@ -1333,6 +1392,7 @@ void Seq::seekCommon(int utick)
 
 void Seq::seek(int utick)
       {
+#if 0 // FIX
       if (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT)) {
             if (utick > endUTick)
                   utick = 0;
@@ -1341,7 +1401,6 @@ void Seq::seek(int utick)
                   return;
             }
       seekCommon(utick);
-
       int t = cs->repeatList().utick2tick(utick);
       Segment* seg = cs->tick2segment(Fraction::fromTicks(t));
       if (seg)
@@ -1349,6 +1408,7 @@ void Seq::seek(int utick)
       cs->setPlayPos(Fraction::fromTicks(t));
       cs->update();
       guiToSeq(SeqMsg(SeqMsgId::SEEK, utick));
+#endif
       }
 
 //---------------------------------------------------------
@@ -1363,7 +1423,7 @@ void Seq::seekRT(int utick)
       seekCommon(utick);
       setPos(utick);
       // Update the screen in GUI thread
-      emit toGui('5', cs->repeatList().utick2tick(utick));
+//FIX:       emit toGui('5', cs->repeatList().utick2tick(utick));
       }
 
 //---------------------------------------------------------
@@ -1394,7 +1454,7 @@ void Seq::playMetronomeBeat(BeatType type)
       {
       if (state != Transport::STOP)
             return;
-      liveEventQueue()->enqueue(NPlayEvent(type));
+      //FIX: no NPlayEvent type??? liveEventQueue()->enqueue(NPlayEvent(type));
       }
 
 //---------------------------------------------------------
@@ -1440,20 +1500,22 @@ void Seq::stopNotes(int channel, bool realTime)
             };
       // Stop notes in all channels
       if (channel == -1) {
+#if 0 //FIX: midimapping
             for(unsigned ch = 0; ch < cs->midiMapping().size(); ch++) {
                   send(NPlayEvent(ME_CONTROLLER, ch, CTRL_SUSTAIN, 0));
                   turnAllNotesOff(ch);
                   send(NPlayEvent(ME_CONTROLLER, ch, CTRL_ALL_NOTES_OFF, 0));
-                  if (cs->midiChannel(ch) != 9)
-                        send(NPlayEvent(ME_PITCHBEND,  ch, 0, 64));
+                  // if (cs->midiChannel(ch) != 9)
+                  //       send(NPlayEvent(ME_PITCHBEND,  ch, 0, 64));
                   }
+#endif
             }
       else {
             send(NPlayEvent(ME_CONTROLLER, channel, CTRL_SUSTAIN, 0));
             turnAllNotesOff(channel);
             send(NPlayEvent(ME_CONTROLLER, channel, CTRL_ALL_NOTES_OFF, 0));
-            if (cs->midiChannel(channel) != 9)
-                  send(NPlayEvent(ME_PITCHBEND,  channel, 0, 64));
+            //FIX: if (cs->midiChannel(channel) != 9)
+            //      send(NPlayEvent(ME_PITCHBEND,  channel, 0, 64));
             }
       if (cachedPrefs.useAlsaAudio || cachedPrefs.useJackAudio || cachedPrefs.usePulseAudio || cachedPrefs.usePortAudio) {
             guiToSeq(SeqMsg(SeqMsgId::ALL_NOTE_OFF, channel));
@@ -1487,12 +1549,14 @@ void Seq::sendEvent(const NPlayEvent& ev)
 
 void Seq::nextMeasure()
       {
+#if 0 //FIX:
       Measure* m = cs->tick2measure(Fraction::fromTicks(guiPos->first));
       if (m) {
             if (m->nextMeasure())
                   m = m->nextMeasure();
             seek(m->tick().ticks());
             }
+#endif
       }
 
 //---------------------------------------------------------
@@ -1520,12 +1584,14 @@ void Seq::prevMeasure()
       if (i == events.begin())
             return;
       --i;
+#if 0
       Measure* m = cs->tick2measure(Fraction::fromTicks(i->first));
       if (m) {
             if ((i->first == m->tick().ticks()) && m->prevMeasure())
                   m = m->prevMeasure();
             seek(m->tick().ticks());
             }
+#endif
       }
 
 //---------------------------------------------------------
@@ -1536,6 +1602,7 @@ void Seq::prevChord()
       {
       int t  = playPos->first;
       //find the chord just before playpos
+#if 0 //FIX: query mscore, which can locate this
       EventMap::const_iterator i = events.upper_bound(cs->repeatList().tick2utick(t));
       for (;;) {
             if (i->second.type() == ME_NOTEON) {
@@ -1565,6 +1632,7 @@ void Seq::prevChord()
                   --i;
                   }
             }
+#endif
       }
 
 //---------------------------------------------------------
@@ -1582,9 +1650,11 @@ void Seq::seekEnd()
 
 void Seq::guiToSeq(const SeqMsg& msg)
       {
+#if 0 //FIX: use zmq instead
       if (!g_driver_running || !running)
             return;
       toSeq.enqueue(msg);
+#endif
       }
 
 //---------------------------------------------------------
@@ -1593,7 +1663,7 @@ void Seq::guiToSeq(const SeqMsg& msg)
 
 void Seq::eventToGui(NPlayEvent e)
       {
-      fromSeq.enqueue(SeqMsg(SeqMsgId::MIDI_INPUT_EVENT, e));
+//FIX: use zmq instead:      fromSeq.enqueue(SeqMsg(SeqMsgId::MIDI_INPUT_EVENT, e));
       }
 
 //---------------------------------------------------------
@@ -1606,10 +1676,10 @@ void Seq::midiInputReady()
       //      mux_msg_to_audio(MsgTypeMidiInputReady, 0);
       }
 
+#if 0
 //---------------------------------------------------------
 //   SeqMsgFifo
 //---------------------------------------------------------
-
 SeqMsgFifo::SeqMsgFifo()
       {
       maxCount = SEQ_MSG_FIFO_SIZE;
@@ -1624,7 +1694,6 @@ void SeqMsgFifo::enqueue(const SeqMsg& msg)
       {
       int i = 0;
       int n = 50;
-
       QMutex mutex;
       QWaitCondition qwc;
       mutex.lock();
@@ -1652,6 +1721,7 @@ SeqMsg SeqMsgFifo::dequeue()
       pop();
       return msg;
       }
+#endif
 
 //---------------------------------------------------------
 //   putEvent
@@ -1659,23 +1729,24 @@ SeqMsg SeqMsgFifo::dequeue()
 
 void Seq::putEvent(const NPlayEvent& event, unsigned framePos)
       {
-      if (!cs)
-            return;
+      //FIX: if (!cs)
+      //      return;
       int channel = event.channel();
-      if (channel >= int(cs->midiMapping().size())) {
-            qDebug("bad channel value %d >= %d", channel, int(cs->midiMapping().size()));
+      if (channel >= 1 /* FIX: load maxchannels int(cs->midiMapping().size()) */) {
+            qDebug("bad channel value %d >= %d", channel, 1 /* int(cs->midiMapping().size())*/);
             return;
             }
 
       // audio
-      int syntiIdx= _synti->index(cs->midiMapping(channel)->articulation()->synti());
+      int syntiIdx = 0; //FIX: setup midimapping at start _synti->index(cs->midiMapping(channel)->articulation()->synti());
       _synti->play(event, syntiIdx);
 
       // midi
       if (g_driver_running != 0 && (cachedPrefs.useJackMidi || cachedPrefs.useAlsaAudio || cachedPrefs.usePortAudio)) {
 
-            int portIdx = score()->midiPort(event.channel());
-            int channel = score()->midiChannel(event.channel());
+            // FIX: port and channel info must be stored in the event
+            int portIdx = 0; //score()->midiPort(event.channel());
+            int channel = 0; //score()->midiChannel(event.channel());
             struct Msg msg;
             msg.type = MsgTypeEventToMidi;
             msg.payload.sparseMidiEvent.framepos = framePos;
@@ -1695,15 +1766,15 @@ void Seq::putEvent(const NPlayEvent& event, unsigned framePos)
 
 void Seq::heartBeatTimeout()
       {
+#if 0 //FIX: move much functionallity to mscore side
       SynthControl* sc = mscore->getSynthControl();
       if (sc && g_driver_running) {
             if (++peakTimer[0] >= peakHold)
                   meterPeakValue[0] *= .7f;
             if (++peakTimer[1] >= peakHold)
                   meterPeakValue[1] *= .7f;
-            sc->setMeter(meterValue[0], meterValue[1], meterPeakValue[0], meterPeakValue[1]);
+            //FIX: sc->setMeter(meterValue[0], meterValue[1], meterPeakValue[0], meterPeakValue[1]);
             }
-
       while (!fromSeq.empty()) {
             SeqMsg msg = fromSeq.dequeue();
             if (msg.id == SeqMsgId::MIDI_INPUT_EVENT) {
@@ -1716,7 +1787,6 @@ void Seq::heartBeatTimeout()
                         mscore->midiCtrlReceived(msg.event.controller(), msg.event.value());
                   }
             }
-
       if (state != Transport::PLAY || inCountIn)
             return;
 
@@ -1738,7 +1808,6 @@ void Seq::heartBeatTimeout()
             prevTempo = curTempo();
             emit tempoChanged();
             }
-
       QRectF r;
       for (;guiPos != eventsEnd; ++guiPos) {
             if (guiPos->first > ppos->first)
@@ -1792,8 +1861,11 @@ void Seq::heartBeatTimeout()
       if (piano && piano->isVisible())
             piano->updateAllKeys();
 
-      cv->update(cv->toPhysical(r));
+      //FIX: cv->update(cv->toPhysical(r));
+#endif
+
       }
+
 
 //---------------------------------------------------------
 //   updateSynthesizerState
@@ -1824,9 +1896,10 @@ void Seq::updateSynthesizerState(int tick1, int tick2)
 
 double Seq::curTempo() const
       {
+#if 0 //FIX
       if (playPos != events.end())
             return cs ? cs->tempomap()->tempo(playPos->first) : 0.0;
-
+#endif
       return 0.0;
       }
 
@@ -1836,6 +1909,7 @@ double Seq::curTempo() const
 
 void Seq::setLoopIn()
       {
+#if 0 //FIX
       Fraction t;
       if (state == Transport::PLAY) {     // If in playback mode, set the In position where note is being played
             auto ppos = playPos;
@@ -1848,6 +1922,7 @@ void Seq::setLoopIn()
       if (t >= cs->loopOutTick())         // If In pos >= Out pos, reset Out pos to end of score
             cs->setPos(POS::RIGHT, cs->lastMeasure()->endTick());
       cs->setPos(POS::LEFT, t);
+#endif
       }
 
 //---------------------------------------------------------
@@ -1856,6 +1931,7 @@ void Seq::setLoopIn()
 
 void Seq::setLoopOut()
       {
+#if 0 //FIX
       Fraction t;
       if (state == Transport::PLAY) {    // If in playback mode, set the Out position where note is being played
             t = Fraction::fromTicks(cs->repeatList().utick2tick(playPos->first));
@@ -1871,6 +1947,8 @@ void Seq::setLoopOut()
       if (state == Transport::PLAY)
             guiToSeq(SeqMsg(SeqMsgId::SEEK, t.ticks()));
       }
+#endif
+}
 
 void Seq::setPos(POS, unsigned t)
       {
@@ -1883,6 +1961,7 @@ void Seq::setPos(POS, unsigned t)
 
 void Seq::setLoopSelection()
       {
+#if 0 //FIX
       const Score* score = mscore->currentScore();
       Q_ASSERT(!score || score->masterScore() == cs);
 
@@ -1898,6 +1977,7 @@ void Seq::setLoopSelection()
             ev.setValue(ME_INVALID);
             events.insert(std::pair<int, Ms::NPlayEvent>(cs->loopOutTick().ticks(), ev));
             }
+#endif
       }
 
 //---------------------------------------------------------
@@ -1919,10 +1999,12 @@ void Seq::handleTimeSigTempoChanged()
 
 void Seq::setInitialMillisecondTimestampWithLatency()
       {
+#if 0 //FIX: portmidi sources are in muxaudio
      #ifdef USE_PORTMIDI
            initialMillisecondTimestampWithLatency = Pt_Time() + cachedPrefs.portMidiOutputLatencyMilliseconds;
            //qDebug("PortMidi initialMillisecondTimestampWithLatency: %d = %d + %d", initialMillisecondTimestampWithLatency, unsigned(Pt_Time()), preferences.getInt(PREF_IO_PORTMIDI_OUTPUTLATENCYMILLISECONDS));
      #endif
+#endif
      }
 
 //---------------------------------------------------------
@@ -1934,6 +2016,7 @@ void Seq::setInitialMillisecondTimestampWithLatency()
 
 unsigned Seq::getCurrentMillisecondTimestampWithLatency(unsigned framePos) const
       {
+#if 0 // FIX: need sampleRate (a global that is sent from muxaudio)
 #ifdef USE_PORTMIDI
       unsigned playTimeMilliseconds = unsigned(framePos * 1000) / unsigned(MScore::sampleRate);
       //qDebug("PortMidi timestamp = %d + %d", initialMillisecondTimestampWithLatency, playTimeMilliseconds);
@@ -1941,6 +2024,7 @@ unsigned Seq::getCurrentMillisecondTimestampWithLatency(unsigned framePos) const
 #else
       qDebug("Shouldn't be using this function if not using PortMidi");
       return 0;
+#endif
 #endif
       }
 }

@@ -21,7 +21,8 @@
 
 #include "musescore.h"
 
-#include "muxseq.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
 #include "libmscore/score.h"
 #include "libmscore/part.h"
 #include "mixer.h"
@@ -29,7 +30,7 @@
 #include "mixertrackitem.h"
 #include "libmscore/undo.h"
 #include "synthcontrol.h"
-#include "audio/midi/msynthesizer.h"
+#include "msynthesizer.h"
 #include "preferences.h"
 
 namespace Ms {
@@ -173,15 +174,14 @@ void MixerDetails::updateFromTrack()
       //Populate patch combo
       patchCombo->blockSignals(true);
       patchCombo->clear();
-      MasterSynthesizer* synti = muxseq_get_synti();
-      const auto& pl = synti->getPatchInfo();
+      //const auto& pl = muxseq_synti_getPatchInfo();
       int patchIndex = 0;
 
       // Order by program number instead of bank, so similar instruments
       // appear next to each other, but ordered primarily by soundfont
       std::map<int, std::map<int, std::vector<const MidiPatch*>>> orderedPl;
 
-      for (const MidiPatch* p : pl)
+      for (const auto p : muxseq_synti_getPatchInfoList())
             orderedPl[p->sfid][p->prog].push_back(p);
 
       std::vector<QString> usedNames;
@@ -525,10 +525,8 @@ void MixerDetails::drumkitToggled(bool val)
       if (instr->useDrumset() == val)
             return;
 
-      MasterSynthesizer* synti = muxseq_get_synti();
       const MidiPatch* newPatch = 0;
-      const QList<MidiPatch*> pl = synti->getPatchInfo();
-      for (const MidiPatch* p : pl) {
+      for (const auto p : muxseq_synti_getPatchInfoList()) {
             if (p->drum == val) {
                   newPatch = p;
                   break;

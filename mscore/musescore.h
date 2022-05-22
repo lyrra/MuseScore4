@@ -756,7 +756,6 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
 
       bool saveAudio(Score*, QIODevice*, std::function<bool(float)> updateProgress = nullptr);
       bool saveAudio(Score*, const QString& name);
-      bool canSaveMp3();
       bool saveMp3(Score*, const QString& name);
       bool saveMp3(Score*, QIODevice*, bool& wasCanceled);
       bool saveSvg(Score*, const QString& name, const NotesColors& notesColors = NotesColors(), SaveReplacePolicy* replacePolicy = nullptr);

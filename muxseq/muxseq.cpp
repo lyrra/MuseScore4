@@ -1,330 +1,313 @@
+/* GPL-2.0-or-later
+ * Copyright (C) 2022 Larry Valkama
+ *
+ * This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version. 
+ */
+/*
+ 
+    audio: the real-time thread that is governed by JACK
+    mux: a thread that sits between musescore and JACK
+    mscore: musescore main thread
 
-#include "muxseqsig.h"
-#include "scoreview.h"
-#include "audio/midi/event.h"
-#include "audio/midi/msynthesizer.h"
-#include "effects/zita1/zita.h"
-#include "effects/compressor/compressor.h"
-#include "effects/noeffect/noeffect.h"
-#include "audio/midi/fluid/fluid.h"
-#include "audio/midi/synthesizer.h"
-#include "audio/midi/synthesizergui.h"
-#include "audio/midi/msynthesizer.h"
+    audio <--> mux <---> mscore
 
-#ifdef AEOLUS
-extern Ms::Synthesizer* createAeolus();
-#endif
+    The mux-thread will work ahead of the audio-thread
+    to process score-events into actual audiobuffers.
 
-#ifdef ZERBERUS
-extern Ms::Synthesizer* createZerberus();
-#endif
+               +---------------------------+
+    audio <--- | g_ringBufferStereo        |
+               |   g_ringBufferReaderStart | reader is audio-thread
+               |   g_ringBufferWriterStart | writer is mux-thread
+               +---------------------------+
+                 <--- mux
+                      g_chunkBufferStereo (intermediate audiobuffer)
+                      <--- mscore
+        1) mux calls into mscore synthesizers (Seq::process), to
+           fill the audiobuffer in g_chunkBufferStereo.
+           This is synchronous and needs to ringBuffer synchronization.
+        2) mux will synchronize with the ringbuffer and write
+           the g_chunkBufferStereo audiobuffer into it.
+        3) the audio thread detects that the ringbuffer-writer has
+           advanced and can read out audio into it own buffers.
+    The writer will look at the ringbuffer, if enough free room is
+    available to fill the size of a chunk (g_chunkBufferStereo),
+    it will call mscore-synthesizers to process a chunck.
+    Statistics about the ringbuffer activity is kept in four variables:
+      - g_readerCycle  -- everytime the reader wraps around the buffer
+      - g_writerCycle  -- everytime the writer wraps around the buffer
+      - g_readerPause  -- reader has no audio to read, it will sleep
+      - g_writerPause  -- writer has no audio to write, it will sleep
+
+    Aside from feeding jack with audiobuffers, audio and mux thread
+    need to signal information, for example transport play/stop.
+    This is done by sending message directly using ZeroMQ.
+
+    ..--------+                  +------------..
+     muxaudio | <-- ZeroMQ ----> | mscore/seq
+    ..-------+|                  +------------..
+
+*/
+
+
+#include "config.h"
+#include <iostream>
+#include <thread>
+#include <chrono>
+#include <zmq.h>
+#include "muxcommon.h"
+#include "muxseq.h"
 
 namespace Ms {
 
-class MuseScore;
+void mux_zmq_ctrl_send_to_audio(struct Msg msg);
+void mux_send_event_to_gui(struct SparseEvent se);
+void mux_audio_send_event_to_midi(struct Msg msg);
+extern int g_driver_running;
 
-MasterSynthesizer* synti = 0;
+static std::vector<std::thread> seqThreads;
+static int mux_audio_process_run = 0;
 
-#define DEFMUXSEQVOID(name, sname) \
-  void muxseq_seq_ ## name() { \
-      seq3-> sname (); \
-  }
+static void *zmq_context_ctrl;
+static void *zmq_socket_ctrl;
+static void *zmq_context_audio;
+static void *zmq_socket_audio;
 
-MasterSynthesizer* muxseq_create_synti(int sampleRate);
+/*
+ * message queue, between audio and mux
+ */ 
 
-void muxseq_initialize(int sampleRate) { // called from musescore.cpp: MuseScore::init
-    // FIX: query muxaudio about current sampleRate
-    MasterSynthesizer* synti = muxseq_create_synti(MScore::sampleRate);
-    seq = seq3 = new Seq();
-    seq3->setMasterSynthesizer(synti);
+#define MAILBOX_SIZE 256
+struct Msg g_msg_from_audio[MAILBOX_SIZE];
+int g_msg_from_audio_reader = 0;
+int g_msg_from_audio_writer = 0;
+
+// audio-thread uses this function to send messages to mux/mscore
+int mux_mq_from_audio_writer_put (struct Msg msg) {
+    memcpy(&g_msg_from_audio[g_msg_from_audio_writer].payload, &msg.payload, sizeof(msg.payload));
+    // setting the type will signal to the reader that this slot is filled
+    g_msg_from_audio[g_msg_from_audio_writer].type = msg.type;
+    g_msg_from_audio_writer = (g_msg_from_audio_writer + 1) % MAILBOX_SIZE;
+    return 1;
 }
 
-void muxseq_dealloc() {
-    qDebug("!!!! muxseq_dealloc !!!!");
-    seq3 = 0;
-    seq = 0;
-}
-
-void muxseq_exit() {
-    seq3->exit();
-}
-
-bool muxseq_seq_alive() {
-    if (seq == 0 || seq3 == 0) {
-        return false;
+int mux_mq_from_muxaudio_handle (struct Msg msg) {
+    switch (msg.type) {
+        case MsgTypeAudioRunning:
+            g_driver_running = msg.payload.i;
+            qDebug("---- g_driver_running is running? %i", msg.payload.i);
+        break;
+        case MsgTypeJackTransportPosition:
+            mux_set_jack_position(msg.payload.jackTransportPosition);
+        break;
+        case MsgTypeEventToGui:
+            mux_send_event_to_gui(msg.payload.sparseEvent);
+        break;
+        default: // this should not happen
+            qFatal("MUX got unknown message from audio: %u", msg.type);
+            // skip this message
+            g_msg_from_audio_reader = (g_msg_from_audio_reader + 1) % MAILBOX_SIZE;
+        return 0;
     }
-    return true;
+    return 1;
 }
-
-bool muxseq_seq_init (bool hotPlug) {
-    qDebug("muxseq_seq_init seq=%lx, seq3=%lx", seq, seq3);
-    if (! seq || !seq3) {
-        qFatal("muxseq_seq_init === WARNING seq/seq3 is not initialized ===");
+int mux_mq_from_audio_reader_visit () {
+    if (g_msg_from_audio_reader == g_msg_from_audio_writer) {
+        return 0;
     }
-    return seq3->init(hotPlug);
+    Msg msg = g_msg_from_audio[g_msg_from_audio_reader];
+    int rc = mux_mq_from_muxaudio_handle(msg);
+    g_msg_from_audio_reader = (g_msg_from_audio_reader + 1) % MAILBOX_SIZE;
+    return rc;
 }
 
-void muxseq_seq_start () {
-    seq3->start();
+/* message to/from audio helpers
+ */
+void mux_msg_to_audio(MsgType typ, int val)
+{
+    // put message on MQ towards audio thread (second part of mux)
+    struct Msg msg;
+    msg.type = typ;
+    msg.payload.i = val;
+    mux_zmq_ctrl_send_to_audio(msg);
 }
 
-void muxseq_seq_stop () {
-    seq3->stop();
+void mux_msg_from_audio(MsgType typ, int val)
+{
+    struct Msg msg;
+    msg.type = typ;
+    msg.payload.i = val;
+    mux_mq_from_audio_writer_put(msg);
 }
 
-void muxseq_send_event(NPlayEvent event) {
-    seq3->sendEvent(event);
+void msgToAudioSeekTransport(int utick) {
+    mux_msg_to_audio(MsgTypeTransportSeek, utick);
 }
 
-void muxseq_start_note(int channel, int pitch, int velocity, double nt) {
-    seq3->startNote(channel,
-                    pitch,
-                    velocity,
-                    nt);
+/*
+ * Audio ringbuffer from mux to audio
+ */
+#define MUX_CHAN 2
+#define MUX_RINGSIZE (8192*2)
+#define MUX_CHUNKSIZE (2048*2)
+#define MUX_READER_USLEEP 100
+#define MUX_WRITER_USLEEP 100
+
+unsigned int g_ringBufferWriterStart = 0;
+unsigned int g_ringBufferReaderStart = 0;
+float g_ringBufferStereo[MUX_RINGSIZE];
+// minimal amount of work considered feasible (performance-wise)
+float g_chunkBufferStereo[MUX_CHUNKSIZE];
+
+unsigned int g_readerCycle = 0;
+unsigned int g_writerCycle = 0;
+unsigned int g_readerPause = 0;
+unsigned int g_writerPause = 0;
+
+// this function is called by the zmq-network audio connection towards muxaudio
+void mux_process_bufferStereo(unsigned int numFloats, float* frames) {
+    while (1) {
+        unsigned int newReaderPos = (g_ringBufferReaderStart + numFloats) % MUX_RINGSIZE;
+        // ensure we dont read into writers buffer part
+        if (// if reader wraps around and goes beyond writer
+            (g_ringBufferReaderStart > newReaderPos &&
+             newReaderPos > g_ringBufferWriterStart) ||
+            // no wrap, writer is at right side of reader, but new reader goes beyond writer
+            (g_ringBufferWriterStart > g_ringBufferReaderStart &&
+             newReaderPos > g_ringBufferWriterStart)) {
+            g_readerPause++;
+            std::this_thread::sleep_for(std::chrono::microseconds(MUX_READER_USLEEP));
+        } else { // there is enough room in reader-part of ring-buffer to use
+            for (unsigned int i = 0; i < numFloats; i++) {
+                frames[i] =
+                 g_ringBufferStereo[(i + g_ringBufferReaderStart) % MUX_RINGSIZE];
+            }
+            if (newReaderPos < g_ringBufferReaderStart) {
+                g_readerCycle++;
+            }
+            g_ringBufferReaderStart = newReaderPos;
+            break;
+        }
+    }
 }
 
-void muxseq_start_note_dur(int channel, int pitch, int velocity, int duration, double nt) {
-    seq3->startNote(channel,
-                    pitch,
-                    velocity,
-                    duration,
-                    nt);
-}
+int mux_audio_process_work() {
+#if 0
+    unsigned int newWriterPos = (g_ringBufferWriterStart + MUX_CHUNKSIZE) % MUX_RINGSIZE;
 
-void muxseq_stop_notes () {
-    seq3->stopNotes();
-}
+    // ensure we dont overwrite part of buffer that is being read by reader
+    // if writer wraps around and goes beyond reader
+    if (g_ringBufferReaderStart < g_ringBufferWriterStart &&
+        g_ringBufferWriterStart > newWriterPos &&
+        newWriterPos >= g_ringBufferReaderStart) {
+        return 0;
+    // wraps around, but goes beyond reader
+    } else if (g_ringBufferWriterStart < g_ringBufferReaderStart &&
+               newWriterPos < g_ringBufferWriterStart) {
+        return 0;
+    // no wrap, reader is at right side of writer, but new writer goes beyond reader
+    } else if (g_ringBufferWriterStart < g_ringBufferReaderStart &&
+               newWriterPos >= g_ringBufferReaderStart) {
+        return 0;
+    }
 
-void muxseq_stop_notes (int channel) {
-    seq3->stopNotes(channel);
-}
+    // process a MUX_CHUNKSIZE number of Frames
+    memset(g_chunkBufferStereo, 0, sizeof(float) * MUX_CHUNKSIZE);
+    // fill the chunk with audio content
+    seq->process(MUX_CHUNKSIZE >> 1, g_chunkBufferStereo);
+    // copy over the chunk to the ringbuffer
+    for (unsigned int i = 0; i < MUX_CHUNKSIZE; i++) {
+        g_ringBufferStereo[(i + g_ringBufferWriterStart) % (MUX_RINGSIZE)] =
+         g_chunkBufferStereo[i];
+    }
+    if (newWriterPos < g_ringBufferWriterStart) {
+        g_writerCycle++;
+    }
+    /*
 
-void muxseq_stop_notetimer () {
-    seq3->stopNoteTimer();
-}
-
-void muxseq_start_notetimer (int duration) {
-    seq3->startNoteTimer(duration);
-}
-
-void muxseq_stop_wait () {
-    seq3->stopWait();
-}
-
-bool muxseq_seq_playing() {
-    return seq3->isPlaying();
-}
-
-bool muxseq_seq_running() {
-    return seq3->isRunning();
-}
-
-bool muxseq_seq_stopped() {
-    return seq3->isStopped();
-}
-
-bool muxseq_seq_can_start() {
-    return seq3->canStart();
-}
-
-void muxseq_seq_seek(int ticks) {
-    seq3->seek(ticks);
-}
-
-float muxseq_seq_curTempo() {
-    return seq3->curTempo();
-}
-
-void muxseq_seq_setRelTempo (double tempo) {
-    seq3->setRelTempo(tempo);
-}
-
-DEFMUXSEQVOID(nextMeasure, nextMeasure)
-DEFMUXSEQVOID(nextChord, nextChord)
-DEFMUXSEQVOID(prevMeasure, prevMeasure)
-DEFMUXSEQVOID(prevChord, prevChord)
-DEFMUXSEQVOID(rewindStart, rewindStart)
-DEFMUXSEQVOID(seekEnd, seekEnd)
-DEFMUXSEQVOID(setLoopIn, setLoopIn);
-DEFMUXSEQVOID(setLoopOut, setLoopOut);
-DEFMUXSEQVOID(setLoopSelection, setLoopSelection);
-DEFMUXSEQVOID(recomputeMaxMidiOutPort, recomputeMaxMidiOutPort);
-
-float muxseq_seq_metronomeGain() {
-    return seq3->metronomeGain();
-}
-
-void muxseq_seq_playMetronomeBeat(BeatType beatType) {
-    seq3->playMetronomeBeat(beatType);
-}
-
-void muxseq_seq_initInstruments() {
-    seq3->initInstruments();
-}
-
-void muxseq_preferencesChanged() {
-    seq3->preferencesChanged();
-}
-
-MasterScore* muxseq_seq_score () {
-    return seq3->score();
-}
-
-void muxseq_seq_set_scoreview (void* v) {
-    seq3->setScoreView((ScoreView*)v);
-}
-
-void muxseq_seq_setController(int channel, int vol, int iv) {
-    seq3->setController(channel, vol, iv);
-}
-
-void muxseq_seq_updateOutPortCount(int maxPorts) {
-    seq3->updateOutPortCount(maxPorts);
-}
-
-// signals
-
-MuxSeqSig* muxseq_init_muxseqsig() {
-    return muxseqsig_init();
-}
-
-void muxseq_seq_emit_started () {
-    muxseqsig_seq_emit_started();
-}
-
-void muxseq_seq_emit_stopped () {
-    muxseqsig_seq_emit_stopped();
-}
-
-// synthesizer
-MasterSynthesizer* muxseq_synthesizerFactory() {
-    MasterSynthesizer* ms = new MasterSynthesizer();
-
-    FluidS::Fluid* fluid = new FluidS::Fluid();
-    ms->registerSynthesizer(fluid);
-
-#ifdef AEOLUS
-    ms->registerSynthesizer(::createAeolus());
+    std::cout << "writer: [" << g_ringBufferWriterStart << " - " << newWriterPos << "] "
+              << "r/w: [" << g_ringBufferReaderStart << " - " << g_ringBufferWriterStart << "]"
+              << " c:[" << g_readerCycle << ", " << g_writerCycle << "] "
+              << " p:[" << g_readerPause << ", " << g_writerPause << "]\n";
+    */
+    g_ringBufferWriterStart = newWriterPos;
 #endif
-#ifdef ZERBERUS
-    ms->registerSynthesizer(createZerberus());
-#endif
-    ms->registerEffect(0, new NoEffect);
-
-#ifdef ZITA_REVERB
-    ms->registerEffect(0, new ZitaReverb);
-#endif
-
-    ms->registerEffect(0, new Compressor);
-    // ms->registerEffect(0, new Freeverb);
-    ms->registerEffect(1, new NoEffect);
-
-#ifdef ZITA_REVERB
-    ms->registerEffect(1, new ZitaReverb);
-#endif
-
-    ms->registerEffect(1, new Compressor);
-    // ms->registerEffect(1, new Freeverb);
-    ms->setEffect(0, 1);
-    ms->setEffect(1, 0);
-    return ms;
+    return 1;
 }
 
-MasterSynthesizer* muxseq_create_synti(int sampleRate) {
-    synti = muxseq_synthesizerFactory();
-    synti->setSampleRate(sampleRate);
-    synti->init();
-    return synti;
-}
-
-MasterSynthesizer* muxseq_get_synti() {
-    return synti;
-}
-
-void muxseq_delete_synti() {
-    delete synti;
-    synti = nullptr;
-}
-
-bool muxseq_synti () {
-    return seq3->synti();
-}
-
-void muxseq_synti_init() {
-    seq3->synti()->init();
-}
-
-float muxseq_synti_getGain () {
-    return synti->gain();
-}
-
-void muxseq_synti_setSampleRate (float sampleRate) {
-    seq3->synti()->setSampleRate(sampleRate);
-}
-
-SynthesizerState muxseq_get_synthesizerState() {
-    MasterSynthesizer* synti = muxseq_get_synti();
-    SynthesizerState state;
-    return synti ? synti->state() : state;
-}
-
-MasterSynthesizer* muxseq_synth_create (int sampleRate, SynthesizerState synthState) {
-    MasterSynthesizer* synth = muxseq_synthesizerFactory();
-    synth->init();
-    synth->setSampleRate(sampleRate);
-    bool r = synth->setState(synthState);
-    if (!r || !synth->hasSoundFontsLoaded()) {
-        synth->init();
+void mux_audio_process() {
+    int slept = MUX_WRITER_USLEEP; // we cant sleep longer than the jack-audio-period = (numFrames / SampleRate) seconds
+    while (mux_audio_process_run) {
+        if ((! mux_audio_process_work()) && // no audio work was done,
+            (! mux_mq_from_audio_reader_visit())) { // and message-queue is empty
+            g_writerPause++;
+            std::this_thread::sleep_for(std::chrono::microseconds(slept));
+        }
     }
-    return synth;
+    qDebug("MUX audio-process terminated.");
 }
 
-void muxseq_synth_delete (MasterSynthesizer* synth) {
-    delete synth;
+void mux_thread_process_init(std::string msg)
+{
+    qDebug("MUX audio-process thread initialized.");
+    mux_audio_process();
 }
 
-Synthesizer* muxseq_synth_get_name(const QString& name) {
-    return synti ? synti->synthesizer(name) : nullptr;
+void mux_start_threads()
+{
+    std::cout << "MUX start audio threads\n";
+    mux_audio_process_run = 1;
+    std::vector<std::thread> threadv;
+    std::thread procThread(mux_thread_process_init, "hi there!");
+    threadv.push_back(std::move(procThread));
+    seqThreads = std::move(threadv);
 }
 
-void muxseq_synth_load_soundfonts (Synthesizer* s, QStringList sfList) {
-    for (auto sf : sfList) {
-        s->addSoundFont(sf);
+void mux_stop_threads()
+{
+    qDebug("MUX stop audio threads");
+    mux_audio_process_run = 0;
+    seqThreads[0].join();
+}
+
+void mux_network_mainloop_ctrl()
+{
+    qDebug("MUX ZeroMQ ctrl entering main-loop");
+    while (1) {
+        struct Msg msg;
+        if (zmq_recv(zmq_socket_ctrl, &msg, sizeof(struct Msg), 0) < 0) {
+            qFatal("zmq-recv error: %s", strerror(errno));
+            break;
+        }
+        mux_mq_from_muxaudio_handle(msg);
     }
-    if (!sfList.isEmpty()) {
-        synti->storeState();
+    qDebug("mux_network_mainloop ctrl has exited");
+}
+
+void mux_zmq_ctrl_send_to_audio(struct Msg msg)
+{
+    qDebug("zmq-send ctrl msg.type=%i (len %i)", msg.type, sizeof(struct Msg));
+    zmq_send(zmq_socket_ctrl, &msg, sizeof(struct Msg), 0);
+}
+
+void mux_network_mainloop_audio()
+{
+    qDebug("MUX ZeroMQ audio entering main-loop");
+    while (1) {
+        char c;
+        if (zmq_recv(zmq_socket_audio, &c, 1, 0) < 0) {
+            qFatal("zmq-recv error: %s", strerror(errno));
+            break;
+        }
+        // get MUX_CHUNKSIZE number of frames from the ringbuffer
+        float frames[MUX_CHUNKSIZE]; // count stereo, ie number of floats needed
+        mux_process_bufferStereo(MUX_CHUNKSIZE, frames);
+
+        zmq_send(zmq_socket_audio, frames, sizeof(float) * MUX_CHUNKSIZE, 0);
+        //zmq_send(zmq_socket_audio, "b", 1, 0);
     }
-    s->gui()->synthesizerChanged();
+    qDebug("mux_network_mainloop audio has exited");
 }
 
-void muxseq_synth_fluid_load_soundfonts (QStringList sfList) {
-    Synthesizer* s = synti->synthesizer("Fluid");
-    muxseq_synth_load_soundfonts(s, sfList);
-}
 
-void muxseq_synth_zerberus_load_soundfonts (QStringList sfzList) {
-    Synthesizer* s = synti->synthesizer("Zerberus");
-    muxseq_synth_load_soundfonts(s, sfzList);
-}
 
-void muxseq_synth_unload_soundfonts (Synthesizer* s, QStringList sfList) {
-    for (auto sf : sfList) {
-        s->removeSoundFont(sf);
-    }
-    if (!sfList.isEmpty()) {
-        synti->storeState();
-    }
-    s->gui()->synthesizerChanged();
-}
-
-void muxseq_synth_fluid_unload_soundfonts (QStringList sfList) {
-    Synthesizer* s = synti->synthesizer("Fluid");
-    muxseq_synth_unload_soundfonts(s, sfList);
-}
-
-void muxseq_synth_zerberus_unload_soundfonts (QStringList sfzList) {
-    Synthesizer* s = synti->synthesizer("Zerberus");
-    muxseq_synth_unload_soundfonts(s, sfzList);
-}
-
-} // namespace Ms
+} // end of namespace MS
