@@ -24,7 +24,7 @@
 #include "musescore.h"
 #include "scoreview.h"
 
-#include "exportmidi.h"
+#include "exports/exportmidi.h"
 
 #include "libmscore/xml.h"
 #include "libmscore/element.h"
