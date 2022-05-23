@@ -18,7 +18,7 @@
 #include "libmscore/xml.h"
 
 #include "event.h"
-#include "midipatch.h"
+#include "midi/midipatch.h"
 
 namespace Ms {
 

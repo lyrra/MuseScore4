@@ -20,7 +20,7 @@
 #include "zone.h"
 
 #include "event.h"
-#include "midipatch.h"
+#include "midi/midipatch.h"
 
 #include "mscore/preferences.h"
 

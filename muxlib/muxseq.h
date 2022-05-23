@@ -1,7 +1,7 @@
 #ifndef __MUXSEQ_H__
 #define __MUXSEQ_H__
 
-#include "muxlib/midipatch.h"
+#include "midi/midipatch.h"
 
 namespace Ms {
 

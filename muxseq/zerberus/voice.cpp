@@ -19,7 +19,7 @@
 #include "zone.h"
 #include "sample.h"
 
-#include "midi/msynthesizer.h"
+#include "msynthesizer.h"
 
 float Envelope::egPow[EG_SIZE];
 float Envelope::egLin[EG_SIZE];

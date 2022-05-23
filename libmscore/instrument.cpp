@@ -22,7 +22,7 @@
 #include "score.h"
 
 #include "synthesizer.h"
-#include "midipatch.h"
+#include "midi/midipatch.h"
 #include "eventutils.h"
 
 namespace Ms {

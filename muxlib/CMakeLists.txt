@@ -1,0 +1,66 @@
+
+set(MODULE muxlib)
+
+include (${PROJECT_SOURCE_DIR}/build/gch.cmake)
+
+if (APPLE)
+      file(GLOB_RECURSE INCS "*.h")
+else (APPLE)
+      set(INCS "")
+endif (APPLE)
+
+if (NOT MSVC)
+   set(_all_h_file "${PROJECT_BINARY_DIR}/all.h")
+else (NOT MSVC)
+   set(_all_h_file "${PROJECT_SOURCE_DIR}/all.h")
+endif (NOT MSVC)
+
+include_directories (
+      ${PROJECT_SOURCE_DIR}
+      ${CMAKE_CURRENT_BINARY_DIR}
+      ${CMAKE_CURRENT_LIST_DIR}
+      ${PROJECT_SOURCE_DIR}/mscore
+      ${PROJECT_SOURCE_DIR}/muxseq
+      #${QTSINGLEAPPLICATION_INCLUDE_DIRS}
+      ${PROJECT_SOURCE_DIR}/thirdparty  # because include "mscore/musescore.h"
+      )
+
+add_library (${MODULE} STATIC
+      ${_all_h_file}
+      ${PCH}
+      event.h event.cpp
+      muxseq.h muxseq.cpp
+      muxseqsig.h muxseqsig.cpp
+      muxseqlib.h muxseqlib.cpp
+      )
+
+target_link_libraries (${MODULE}
+      ${QT_LIBRARIES}
+      )
+
+if (NOT MSVC)
+   set_target_properties (
+      ${MODULE}
+      PROPERTIES
+         COMPILE_FLAGS "${PCH_INCLUDE} -g -Wall -Wextra -Winvalid-pch"
+      )
+else (NOT MSVC)
+   set_target_properties (
+      ${MODULE}
+      PROPERTIES
+         COMPILE_FLAGS "${PCH_INCLUDE}"
+      )
+endif (NOT MSVC)   
+
+# xcode_pch(${MODULE} all)
+
+# # Use MSVC pre-compiled headers
+# vstudio_pch( ${MODULE} )
+
+# MSVC does not depend on mops1 & mops2 for PCH
+if (NOT MSVC)
+   ADD_DEPENDENCIES(${MODULE} mops1)
+   ADD_DEPENDENCIES(${MODULE} mops2)
+endif (NOT MSVC)   
+
+
