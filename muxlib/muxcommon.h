@@ -9,7 +9,7 @@
 
 namespace Ms {
 
-// transport states
+// transport states (also the jack audio transport states)
 enum class Transport : char {
     STOP=0,
     PLAY=1,

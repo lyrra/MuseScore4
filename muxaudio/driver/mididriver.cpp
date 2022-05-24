@@ -33,7 +33,7 @@
 
 #include "mscore/globals.h"
 #include "muxcommon.h"
-#include "mux.h"
+#include "muxaudio.h"
 #include "seq.h"
 
 namespace Ms {

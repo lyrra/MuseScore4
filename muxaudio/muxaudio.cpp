@@ -67,6 +67,7 @@
 #include <iostream>
 #include <vector>
 #include <zmq.h>
+#include "muxcommon.h"
 #include "muxaudio.h"
 #include <thread>
 #include <chrono>

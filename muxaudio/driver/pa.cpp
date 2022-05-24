@@ -32,7 +32,7 @@
 
 //#include "mscore/preferences.h"
 #include "muxcommon.h"
-#include "mux.h"
+#include "muxaudio.h"
 #include "seq.h"
 
 #ifdef USE_PORTMIDI

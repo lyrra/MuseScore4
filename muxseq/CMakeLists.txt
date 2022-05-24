@@ -59,7 +59,7 @@ endif (ZERBERUS)
 add_executable(muxseq
       main.cpp
       control.cpp
-      mux.h mux.cpp
+      muxseq.h muxseq.cpp
       seq.h seq.cpp
       muxseq_api.h muxseq_api.cpp
       msynthesizer.h msynthesizer.cpp

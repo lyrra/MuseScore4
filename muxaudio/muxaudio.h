@@ -4,19 +4,11 @@
  * This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version. 
  */
 
-#ifndef __MUX_H__
-#define __MUX_H__
+#ifndef __MUXAUDIO_H__
+#define __MUXAUDIO_H__
 
 
 namespace Ms {
-
-// this are also the jack audio transport states:
-enum class Transport : char {
-      STOP=0,
-      PLAY=1,
-      STARTING=3,
-      NET_STARTING=4
-      };
 
 /*** MUX public interface ***/
 int mux_is_score_open ();

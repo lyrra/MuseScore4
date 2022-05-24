@@ -50,13 +50,12 @@
 
 
 #include "config.h"
-//#include "musescore.h"
-#include "muxcommon.h"
-#include "mux.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
 #include <zmq.h>
+#include "muxcommon.h"
+#include "muxseq.h"
 
 namespace Ms {
 
