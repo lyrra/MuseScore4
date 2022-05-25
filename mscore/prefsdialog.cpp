@@ -22,7 +22,8 @@
 #include "preferences.h"
 #include "prefsdialog.h"
 
-#include "muxseq.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
 #include "shortcutcapturedialog.h"
 #include "scoreview.h"
 #include "shortcut.h"

@@ -37,7 +37,8 @@
 #include "musescore.h"
 #include "eventutils.h"
 #include "preferences.h"
-#include "muxseq.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
 
 namespace Ms {
 

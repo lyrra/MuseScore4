@@ -21,7 +21,8 @@
 
 #include "musescore.h"
 
-#include "muxseq.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
 #include "libmscore/score.h"
 #include "libmscore/part.h"
 #include "mixer.h"

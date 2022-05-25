@@ -1,5 +1,5 @@
-#ifndef __MUXSEQ_H__
-#define __MUXSEQ_H__
+#ifndef __MUXSEQCLIENT_H__
+#define __MUXSEQCLIENT_H__
 
 #include "midi/midipatch.h"
 

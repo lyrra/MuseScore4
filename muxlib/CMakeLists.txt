@@ -29,7 +29,7 @@ add_library (${MODULE} STATIC
       ${_all_h_file}
       ${PCH}
       event.h event.cpp
-      muxseq.h muxseq.cpp
+      muxseq_client.h muxseq_client.cpp
       muxseqsig.h muxseqsig.cpp
       muxseqlib.h muxseqlib.cpp
       )

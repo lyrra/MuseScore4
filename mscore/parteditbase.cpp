@@ -29,7 +29,8 @@
 #include <qmessagebox.h>
 #include <accessibletoolbutton.h>
 
-#include "muxseq.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
 
 namespace Ms {
 

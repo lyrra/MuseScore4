@@ -4,7 +4,7 @@
 //#endif
 #include "libmscore/score.h"
 #include "libmscore/part.h"
-#include "muxlib/muxseq.h" // client-side-api muxseq
+#include "muxseq_client.h"
 #include "msynthesizer.h"
 
 namespace Ms {

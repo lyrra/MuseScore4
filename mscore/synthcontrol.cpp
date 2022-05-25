@@ -12,8 +12,9 @@
 
 #include "synthcontrol.h"
 #include "musescore.h"
+#include "muxcommon.h"
 #include "muxseqsig.h"
-#include "muxseq.h"
+#include "muxseq_client.h"
 #include "msynthesizer.h"
 #include "synthesizer.h"
 #include "synthesizergui.h"

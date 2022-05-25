@@ -102,7 +102,8 @@
 #include "migration/handlers/edwinstylehandler.h"
 #include "migration/handlers/resetallelementspositionshandler.h"
 
-#include "muxseq.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
 
 namespace Ms {
 
