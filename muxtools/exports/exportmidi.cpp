@@ -10,6 +10,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include "midi/midifile.h"
 #include "exportmidi.h"
 
 #include "libmscore/score.h"
@@ -23,7 +24,7 @@
 #include "libmscore/repeatlist.h"
 #include "libmscore/synthesizerstate.h"
 
-#include "audio/midi/midifile.h"
+#include "eventutils.h"
 #include "event.h"
 #include "mscore/preferences.h"
 

@@ -3,7 +3,7 @@
 
 #include "importmidi_inner.h"
 #include "importmidi_operation.h"
-#include "audio/midi/midifile.h"
+#include "midi/midifile.h"
 
 
 namespace Ms {

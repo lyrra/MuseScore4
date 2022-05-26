@@ -13,7 +13,6 @@
 #ifndef __BB_H__
 #define __BB_H__
 
-#include "audio/midi/midifile.h"
 
 namespace Ms {
 

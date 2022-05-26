@@ -50,7 +50,6 @@ add_library (${MODULE} STATIC
       eventutils.h eventutils.cpp
       exports/exportmidi.h exports/exportmidi.cpp
       synthesizergui.h synthesizergui.cpp
-      midi/midipatch.h
       midi/midifile.h midi/midifile.cpp
       #${FLUID_GUI_SRC}
       #${ZERBERUS_GUI_SRC}

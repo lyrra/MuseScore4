@@ -11,6 +11,9 @@
 //=============================================================================
 
 #include "libmscore/mscore.h"
+#include "event.h"
+#include "eventutils.h"
+#include "midi/midifile.h"
 #include "bb.h"
 #include "libmscore/score.h"
 #include "libmscore/part.h"

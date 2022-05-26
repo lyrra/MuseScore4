@@ -22,8 +22,8 @@
 #ifndef __FLUID_S_H__
 #define __FLUID_S_H__
 
-#include "audio/midi/synthesizer.h"
-#include "audio/midi/midipatch.h"
+#include "synthesizer.h"
+#include "midi/midipatch.h"
 
 namespace FluidS {
 

@@ -26,7 +26,7 @@
 #include "config.h"
 #include "mididriver.h"
 
-#include "audio/midi/midifile.h"
+#include "midi/midifile.h"
 
 #include "libmscore/utils.h"
 #include "libmscore/score.h"

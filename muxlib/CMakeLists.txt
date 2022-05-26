@@ -28,6 +28,7 @@ include_directories (
 add_library (${MODULE} STATIC
       ${_all_h_file}
       ${PCH}
+      midi/midipatch.h
       event.h event.cpp
       muxseq_client.h muxseq_client.cpp
       muxseqsig.h muxseqsig.cpp

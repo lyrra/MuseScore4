@@ -22,9 +22,9 @@
 
 #include "voice.h"
 
-#include "audio/midi/synthesizer.h"
+#include "synthesizer.h"
 #include "event.h"
-#include "audio/midi/midipatch.h"
+#include "midi/midipatch.h"
 
 class Channel;
 class ZInstrument;

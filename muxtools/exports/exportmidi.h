@@ -13,8 +13,6 @@
 #ifndef __EXPORTMIDI_H__
 #define __EXPORTMIDI_H__
 
-#include "audio/midi/midifile.h"
-
 namespace Ms {
 
 class Score;
