@@ -29,7 +29,6 @@
 #include "muxlib/muxcommon.h"
 #include "event.h"
 #include "eventutils.h"
-#include "audio/drivers/control.h"
 
 class QTimer;
 
