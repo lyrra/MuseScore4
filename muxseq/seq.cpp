@@ -21,6 +21,9 @@
 #include <chrono>
 #include <thread>
 #include "seq.h"
+#include "event.h"
+#include "muxlib.h"
+#include "muxaudio/muxaudio.h"
 #include "muxseq.h"
 //#include "musescore.h"
 #include "muxseqsig.h"
@@ -1747,7 +1750,7 @@ void Seq::putEvent(const NPlayEvent& event, unsigned framePos)
             // FIX: port and channel info must be stored in the event
             int portIdx = 0; //score()->midiPort(event.channel());
             int channel = 0; //score()->midiChannel(event.channel());
-            struct Msg msg;
+            struct MuxaudioMsg msg;
             msg.type = MsgTypeEventToMidi;
             msg.payload.sparseMidiEvent.framepos = framePos;
             msg.payload.sparseMidiEvent.portIdx  = portIdx;

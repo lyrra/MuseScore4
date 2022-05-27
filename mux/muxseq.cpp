@@ -1,125 +1,106 @@
 
-#include "event.h"
-#include "libmscore/synthesizerstate.h"
-#include "synthesizer.h"
-#include "mux.h"
-#include "muxlib.h"
 #include "muxseqsig.h"
 #include "scoreview.h"
+#include "event.h"
 #include "msynthesizer.h"
-#include "muxseq_client.h"
+//#include "effects/zita1/zita.h"
+//#include "effects/compressor/compressor.h"
+//#include "effects/noeffect/noeffect.h"
+//#include "fluid/fluid.h"
+#include "synthesizer.h"
+//#include "synthesizergui.h"
+
+//#ifdef AEOLUS
+//extern Ms::Synthesizer* createAeolus();
+//#endif
+
+//#ifdef ZERBERUS
+//extern Ms::Synthesizer* createZerberus();
+//#endif
 
 namespace Ms {
 
-/* initialization/control
- */
-static struct Mux::MuxSocket g_muxseq_query_client_socket;
-static struct Mux::MuxSocket g_muxseq_bulletin_client_socket;
-static bool g_threads_started = false;
-static std::vector<std::thread> muxseq_Threads;
-/**/
+class MuseScore;
 
-#define L_MUX_QUERY(type) \
-  qDebug("muxseq_client query %s", muxseq_msg_type_info(type));
+enum MsgType {
+    MsgTypeNoop = 0,
+    MsgTypeSeqInit,
+    MsgTypeSeqDeinit,
+    MsgTypeSeqExit,
+    MsgTypeSeqAlive,
+    MsgTypeSeqStart,
+    MsgTypeSeqStop,
+    MsgTypeSeqSendEvent,
+    MsgTypeSeqStartNote,
+    MsgTypeSeqStartNoteDur,
+    MsgTypeSeqStopNotes,
+    MsgTypeSeqStartNoteTimer,
+    MsgTypeSeqStopNoteTimer,
+    MsgTypeSeqStopWait,
+    MsgTypeSeqCurTempo,
+    MsgTypeSeqSetRelTempo,
+    MsgTypeSeqPlaying,
+    MsgTypeSeqRunning,
+    MsgTypeSeqStopped,
+    MsgTypeSeqCanStart,
+    MsgTypeSeqCurTick,
+    MsgTypeSeqSeek,
+    MsgTypeSeekEnd,
+    MsgTypeNextMeasure,
+    MsgTypePrevMeasure,
+    MsgTypeNextChord,
+    MsgTypePrevChord,
+    MsgTypeRewindStart,
+    MsgTypeSetLoopIn,
+    MsgTypeSetLoopOut,
+    MsgTypeSetLoopSelection,
+    MsgTypeRecomputeMaxMidiOutPort,
+    MsgTypeSeqPreferencesChanged,
+    MsgTypeSeqUpdateOutPortCount,
+    MsgTypeMasterSynthesizerInit,
+    MsgTypeEOF
+};
 
-int muxseq_query_zmq (MuxseqMsgType type, MuxseqMsg &msg) {
-    qDebug("muxseq send msg %s", muxseq_msg_type_info(type));
-    msg.type = type;
-    mux_zmq_send(g_muxseq_query_client_socket, (void*) &msg, sizeof(struct MuxseqMsg));
-    return mux_zmq_recv(g_muxseq_query_client_socket, (void*) &msg, sizeof(struct MuxseqMsg));
+
+void muxseq_send(MsgType type) {
+    qDebug("muxseq msg %i", type);
 }
 
-int muxseq_send (MuxseqMsgType type) {
-    struct MuxseqMsg msg;
-    return muxseq_query_zmq(type, msg);
+void muxseq_send(MsgType type, int i) {
+    qDebug("muxseq msg %i about int %i", type, i);
+}
+void muxseq_send(MsgType type, double d) {
+    qDebug("muxseq msg %i about int %f", type, d);
 }
 
-int muxseq_send (MuxseqMsgType type, int i) {
-    struct MuxseqMsg msg;
-    msg.payload.i = i;
-    return muxseq_query_zmq(type, msg);
+void muxseq_send(MsgType type, NPlayEvent event) {
+    qDebug("muxseq msg %i about event", type);
 }
 
-int muxseq_send (MuxseqMsgType type, double d) {
-    struct MuxseqMsg msg;
-    msg.payload.d = d;
-    return muxseq_query_zmq(type, msg);
+void muxseq_query(MsgType type) {
+    qDebug("muxseq msg query %i", type);
 }
 
-int muxseq_send (MuxseqMsgType type, NPlayEvent event) {
-    struct MuxseqMsg msg;
-    muxseq_msg_set_NPlayEvent(msg, event);
-    return muxseq_query_zmq(type, msg);
+bool muxseq_query_bool(MsgType type) {
+    qDebug("muxseq msg query %i", type);
+    return true;
 }
 
-void muxseq_query (MuxseqMsgType type) {
-    L_MUX_QUERY(type);
-    struct MuxseqMsg msg;
-    muxseq_query_zmq(type, msg);
+float muxseq_query_float(MsgType type) {
+    qDebug("muxseq msg query %i", type);
+    return 0.0f;
 }
 
-bool muxseq_query_bool (MuxseqMsgType type) {
-    L_MUX_QUERY(type);
-    struct MuxseqMsg msg;
-    muxseq_query_zmq(type, msg);
-    return msg.payload.b;
+void muxseq_query(MsgType type, bool b) {
+    qDebug("muxseq msg query %i about bool %i", type, b);
 }
-
-double muxseq_query_float (MuxseqMsgType type) {
-    L_MUX_QUERY(type);
-    struct MuxseqMsg msg;
-    muxseq_query_zmq(type, msg);
-    return msg.payload.d;
-}
-
-void muxseq_query (MuxseqMsgType type, bool b) {
-    L_MUX_QUERY(type);
-    qDebug("  -- about bool %i", b);
-    struct MuxseqMsg msg;
-    msg.payload.b = b;
-    muxseq_query_zmq(type, msg);
-    return;
-}
-
-
-
-// void mux_network_close(struct MuxSocket &sock)
-
-void muxseq_query_client_thread_init(std::string _notused)
-{
-    Mux::mux_network_query_client(g_muxseq_query_client_socket, MUX_MUSESCORE_QUERY_CLIENT_URL, true);
-    //muxseq_network_mainloop_query();
-}
-
-void muxseq_bulletin_client_thread_init(std::string _notused)
-{
-    Mux::mux_network_bulletin_client(g_muxseq_bulletin_client_socket, MUX_MUSESCORE_BULLETIN_CLIENT_URL);
-    //muxseq_network_mainloop_bulletin();
-}
-
-void mux_musescore_client_start()
-{
-    if (g_threads_started) {
-        qWarning("musescore-mux-client already started");
-        return;
-    }
-    g_threads_started = true;
-    std::vector<std::thread> threadv;
-    //
-    std::thread zmqMuxseqQueryThread(muxseq_query_client_thread_init, "notused");
-    threadv.push_back(std::move(zmqMuxseqQueryThread));
-    //
-    std::thread zmqMuxseqBulletinThread(muxseq_bulletin_client_thread_init, "notused");
-    threadv.push_back(std::move(zmqMuxseqBulletinThread));
-    // move threads to heap
-    muxseq_Threads = std::move(threadv);
-}
-
-/* Musescore/client specific
- *
- */
 
 MasterSynthesizer* synti = 0;
+
+#define DEFMUXSEQVOID(name, sname) \
+  void muxseq_seq_ ## name() { \
+      muxseq_send(MsgType ## sname); \
+  }
 
 int muxseq_create_synti(int sampleRate);
 
@@ -203,7 +184,7 @@ bool muxseq_seq_can_start() {
 }
 
 void muxseq_seq_seek(int ticks) {
-    muxseq_send(MsgTypeSeqSeek, ticks);
+    return muxseq_send(MsgTypeSeqSeek, ticks);
 }
 
 int muxseq_seq_curTick() {
@@ -217,21 +198,16 @@ void muxseq_seq_setRelTempo (double tempo) {
     muxseq_send(MsgTypeSeqSetRelTempo, tempo);
 }
 
-#define DEFUNMUXSEQVOID(name, sname) \
-  void muxseq_seq_ ## name() { \
-      muxseq_send(MsgType ## sname); \
-  }
-
-DEFUNMUXSEQVOID(nextMeasure, NextMeasure)
-DEFUNMUXSEQVOID(nextChord,   NextChord)
-DEFUNMUXSEQVOID(prevMeasure, PrevMeasure)
-DEFUNMUXSEQVOID(prevChord,   PrevChord)
-DEFUNMUXSEQVOID(rewindStart, RewindStart)
-DEFUNMUXSEQVOID(seekEnd,     SeekEnd)
-DEFUNMUXSEQVOID(setLoopIn,   SetLoopIn);
-DEFUNMUXSEQVOID(setLoopOut,  SetLoopOut);
-DEFUNMUXSEQVOID(setLoopSelection, SetLoopSelection);
-DEFUNMUXSEQVOID(recomputeMaxMidiOutPort, RecomputeMaxMidiOutPort);
+DEFMUXSEQVOID(nextMeasure, NextMeasure)
+DEFMUXSEQVOID(nextChord,   NextChord)
+DEFMUXSEQVOID(prevMeasure, PrevMeasure)
+DEFMUXSEQVOID(prevChord,   PrevChord)
+DEFMUXSEQVOID(rewindStart, RewindStart)
+DEFMUXSEQVOID(seekEnd,     SeekEnd)
+DEFMUXSEQVOID(setLoopIn,   SetLoopIn);
+DEFMUXSEQVOID(setLoopOut,  SetLoopOut);
+DEFMUXSEQVOID(setLoopSelection, SetLoopSelection);
+DEFMUXSEQVOID(recomputeMaxMidiOutPort, RecomputeMaxMidiOutPort);
 
 float muxseq_seq_metronomeGain() {
     //FIX: return seq3->metronomeGain();
@@ -477,6 +453,5 @@ void muxseq_synth_zerberus_unload_soundfonts (QStringList sfzList) {
     //Synthesizer* s = synti->synthesizer("Zerberus");
     //muxseq_synth_unload_soundfonts(s, sfzList);
 }
-
 
 } // namespace Ms

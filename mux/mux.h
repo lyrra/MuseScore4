@@ -1,0 +1,24 @@
+/* GPL-2.0-or-later
+ * Copyright (C) 2022 Larry Valkama
+ * This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version. 
+ */
+
+#ifndef __MUX_H__
+#define __MUX_H__
+
+namespace Mux {
+
+struct MuxSocket {
+    void *context;
+    void *socket;
+};
+
+int mux_zmq_send (Mux::MuxSocket &muxsock, void* buf, int len);
+int mux_zmq_recv (Mux::MuxSocket &muxsock, void* buf, int len);
+int mux_network_query_server (struct MuxSocket &sock, const char* url, bool req);
+int mux_network_query_client (struct MuxSocket &sock, const char *url, bool req);
+int mux_network_bulletin_server (struct MuxSocket &sock, const char* url);
+int mux_network_bulletin_client (struct MuxSocket &sock, const char *url);
+
+} // namespace Mux
+#endif

@@ -29,7 +29,9 @@
 #endif
 
 #include "pm.h"
+#include "event.h"
 #include "muxcommon.h"
+#include "muxlib.h"
 #include "muxaudio.h"
 #include "seq.h"
 

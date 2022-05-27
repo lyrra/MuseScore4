@@ -5,6 +5,7 @@
 
 namespace Ms {
 
+
 #define DEFMUXSEQVOID(name) void muxseq_seq_ ## name()
 
 void muxseq_initialize(int sampleRate);
@@ -45,7 +46,7 @@ float muxseq_seq_metronomeGain();
 void muxseq_seq_playMetronomeBeat(BeatType beatType);
 void muxseq_seq_initInstruments();
 void muxseq_preferencesChanged();
-MasterScore* muxseq_seq_score();
+//MasterScore* muxseq_seq_score();
 void muxseq_seq_set_scoreview(void *v);
 
 void muxseq_seq_setController(int channel, int vol, int iv);
@@ -87,3 +88,4 @@ void muxseq_synth_fluid_unload_soundfonts (QStringList sfList);
 void muxseq_synth_zerberus_unload_soundfonts (QStringList sfzList);
 
 } // namespace Ms
+#endif

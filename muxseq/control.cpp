@@ -11,22 +11,28 @@
 #include <thread>
 #include <chrono>
 #include <iostream>
+#include "event.h"
+#include "mux.h"
+#include "muxcommon.h"
+#include "muxlib.h"
+#include "muxaudio/muxaudio.h"
+#include "muxseq.h"
 
 namespace Ms {
 
+void muxseq_mscoreQueryServer_mainloop(Mux::MuxSocket &sock);
 void mux_network_server_ctrl();
 void mux_network_server_audio();
 int mux_mq_to_audio_visit();
 void mux_audio_process();
 
 static std::vector<std::thread> muxThreads;
+struct Mux::MuxSocket g_muxsocket_mscoreQueryServer;
 
-void muxseq_audio_control_thread_init(std::string _notused)
+void muxseq_mscoreQueryServer_thread_init(std::string _notused)
 {
-    while (1) {
-        std::this_thread::sleep_for(std::chrono::microseconds(10000));
-        // if (! mux_mq_to_audio_visit()) {}
-    }
+    Mux::mux_network_query_server(g_muxsocket_mscoreQueryServer, MUX_MUSESCORE_QUERY_SERVER_URL, false);
+    muxseq_mscoreQueryServer_mainloop(g_muxsocket_mscoreQueryServer);
 }
 
 void muxseq_thread_process_init(std::string msg)
@@ -51,10 +57,8 @@ void muxseq_threads_start()
     fprintf(stderr, "start threads\n"); std::fflush(stderr);
     std::vector<std::thread> threadv;
 
-    //muxseq_network_open();
-
-//    std::thread ctrlThread(muxseq_control_thread_init, "notused");
-//    threadv.push_back(std::move(ctrlThread));
+    std::thread mscoreQueryServerThread(muxseq_mscoreQueryServer_thread_init, "notused");
+    threadv.push_back(std::move(mscoreQueryServerThread));
 
 //    std::thread procThread(muxseq_process_thread_init, "notused");
 //    threadv.push_back(std::move(procThread));

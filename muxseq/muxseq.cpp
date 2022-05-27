@@ -54,14 +54,17 @@
 #include <thread>
 #include <chrono>
 #include <zmq.h>
+#include "event.h"
+#include "mux.h"
 #include "muxcommon.h"
+#include "muxlib.h"
 #include "muxseq.h"
 
 namespace Ms {
 
-void mux_zmq_ctrl_send_to_audio(struct Msg msg);
+void mux_zmq_ctrl_send_to_audio(struct MuxaudioMsg msg);
 void mux_send_event_to_gui(struct SparseEvent se);
-void mux_audio_send_event_to_midi(struct Msg msg);
+void mux_audio_send_event_to_midi(struct MuxaudioMsg msg);
 extern int g_driver_running;
 
 static std::vector<std::thread> seqThreads;
@@ -77,12 +80,12 @@ static void *zmq_socket_audio;
  */ 
 
 #define MAILBOX_SIZE 256
-struct Msg g_msg_from_audio[MAILBOX_SIZE];
+struct MuxaudioMsg g_msg_from_audio[MAILBOX_SIZE];
 int g_msg_from_audio_reader = 0;
 int g_msg_from_audio_writer = 0;
 
 // audio-thread uses this function to send messages to mux/mscore
-int mux_mq_from_audio_writer_put (struct Msg msg) {
+int mux_mq_from_audio_writer_put (struct MuxaudioMsg msg) {
     memcpy(&g_msg_from_audio[g_msg_from_audio_writer].payload, &msg.payload, sizeof(msg.payload));
     // setting the type will signal to the reader that this slot is filled
     g_msg_from_audio[g_msg_from_audio_writer].type = msg.type;
@@ -90,7 +93,7 @@ int mux_mq_from_audio_writer_put (struct Msg msg) {
     return 1;
 }
 
-int mux_mq_from_muxaudio_handle (struct Msg msg) {
+int mux_mq_from_muxaudio_handle (struct MuxaudioMsg msg) {
     switch (msg.type) {
         case MsgTypeAudioRunning:
             g_driver_running = msg.payload.i;
@@ -114,7 +117,7 @@ int mux_mq_from_audio_reader_visit () {
     if (g_msg_from_audio_reader == g_msg_from_audio_writer) {
         return 0;
     }
-    Msg msg = g_msg_from_audio[g_msg_from_audio_reader];
+    struct MuxaudioMsg msg = g_msg_from_audio[g_msg_from_audio_reader];
     int rc = mux_mq_from_muxaudio_handle(msg);
     g_msg_from_audio_reader = (g_msg_from_audio_reader + 1) % MAILBOX_SIZE;
     return rc;
@@ -122,18 +125,18 @@ int mux_mq_from_audio_reader_visit () {
 
 /* message to/from audio helpers
  */
-void mux_msg_to_audio(MsgType typ, int val)
+void mux_msg_to_audio(MuxaudioMsgType typ, int val)
 {
     // put message on MQ towards audio thread (second part of mux)
-    struct Msg msg;
+    struct MuxaudioMsg msg;
     msg.type = typ;
     msg.payload.i = val;
     mux_zmq_ctrl_send_to_audio(msg);
 }
 
-void mux_msg_from_audio(MsgType typ, int val)
+void mux_msg_from_audio(MuxaudioMsgType typ, int val)
 {
-    struct Msg msg;
+    struct MuxaudioMsg msg;
     msg.type = typ;
     msg.payload.i = val;
     mux_mq_from_audio_writer_put(msg);
@@ -273,8 +276,8 @@ void mux_network_mainloop_ctrl()
 {
     qDebug("MUX ZeroMQ ctrl entering main-loop");
     while (1) {
-        struct Msg msg;
-        if (zmq_recv(zmq_socket_ctrl, &msg, sizeof(struct Msg), 0) < 0) {
+        struct MuxaudioMsg msg;
+        if (zmq_recv(zmq_socket_ctrl, &msg, sizeof(struct MuxseqMsg), 0) < 0) {
             qFatal("zmq-recv error: %s", strerror(errno));
             break;
         }
@@ -283,10 +286,10 @@ void mux_network_mainloop_ctrl()
     qDebug("mux_network_mainloop ctrl has exited");
 }
 
-void mux_zmq_ctrl_send_to_audio(struct Msg msg)
+void mux_zmq_ctrl_send_to_audio(struct MuxaudioMsg msg)
 {
-    qDebug("zmq-send ctrl msg.type=%i (len %i)", msg.type, sizeof(struct Msg));
-    zmq_send(zmq_socket_ctrl, &msg, sizeof(struct Msg), 0);
+    qDebug("zmq-send ctrl msg.type=%i (len %i)", msg.type, sizeof(struct MuxaudioMsg));
+    zmq_send(zmq_socket_ctrl, &msg, sizeof(struct MuxaudioMsg), 0);
 }
 
 void mux_network_mainloop_audio()
@@ -308,6 +311,20 @@ void mux_network_mainloop_audio()
     qDebug("mux_network_mainloop audio has exited");
 }
 
-
+/* mscoreQueryServer -- handle requests from musescore
+ *
+ */
+void muxseq_mscoreQueryServer_mainloop(Mux::MuxSocket &sock) {
+    qDebug("musescore ==> muxseq -- query server started");
+    while(1){
+        struct MuxseqMsg msg;
+        if (zmq_recv(sock.socket, &msg, sizeof(struct MuxseqMsg), 0) < 0) {
+            qFatal("zmq-recv error: %s", strerror(errno));
+            break;
+        }
+        qDebug("got message from musescore: %s", muxseq_msg_type_info(msg.type));
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
+    }
+}
 
 } // end of namespace MS

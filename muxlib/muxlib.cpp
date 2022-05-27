@@ -1,82 +1,74 @@
 
+#include "event.h"
 #include "mux.h"
-
+#include "muxlib.h"
 
 namespace Ms {
 
-/*
- * controller for muxseq client
- *
- */
-
-static bool g_threads_started = false;
-
-void mux_network_client_ctrl();
-void mux_network_client_audio();
-
-static std::vector<std::thread> muxThreads;
-
-int g_ctrl_audio_error = 0;
-int g_ctrl_audio_running = 0;
-
-static struct Mux::MuxSocket g_ctrl_socket;
-static struct Mux::MuxSocket g_audio_socket;
-
-void mux_network_client_ctrl()
-{
-    Mux::mux_network_connect(g_ctrl_socket, "tcp://localhost:7770");
-//    mux_network_mainloop_ctrl();
+const char* muxseq_msg_type_info (MuxseqMsgType type) {
+    switch (type) {
+    case MsgTypeNoop: return "MsgTypeNoop";
+    case MsgTypeSeqInit: return "MsgTypeSeqInit";
+    case MsgTypeSeqDeinit: return "MsgTypeSeqDeinit";
+    case MsgTypeSeqExit: return "MsgTypeSeqExit";
+    case MsgTypeSeqAlive: return "MsgTypeSeqAlive";
+    case MsgTypeSeqStart: return "MsgTypeSeqStart";
+    case MsgTypeSeqStop: return "MsgTypeSeqStop";
+    case MsgTypeSeqSendEvent: return "MsgTypeSeqSendEvent";
+    case MsgTypeSeqStartNote: return "MsgTypeSeqStartNote";
+    case MsgTypeSeqStartNoteDur: return "MsgTypeSeqStartNoteDur";
+    case MsgTypeSeqStopNotes: return "MsgTypeSeqStopNotes";
+    case MsgTypeSeqStartNoteTimer: return "MsgTypeSeqStartNoteTimer";
+    case MsgTypeSeqStopNoteTimer: return "MsgTypeSeqStopNoteTimer";
+    case MsgTypeSeqStopWait: return "MsgTypeSeqStopWait";
+    case MsgTypeSeqCurTempo: return "MsgTypeSeqCurTempo";
+    case MsgTypeSeqSetRelTempo: return "MsgTypeSeqSetRelTempo";
+    case MsgTypeSeqPlaying: return "MsgTypeSeqPlaying";
+    case MsgTypeSeqRunning: return "MsgTypeSeqRunning";
+    case MsgTypeSeqStopped: return "MsgTypeSeqStopped";
+    case MsgTypeSeqCanStart: return "MsgTypeSeqCanStart";
+    case MsgTypeSeqCurTick: return "MsgTypeSeqCurTick";
+    case MsgTypeSeqSeek: return "MsgTypeSeqSeek";
+    case MsgTypeSeekEnd: return "MsgTypeSeekEnd";
+    case MsgTypeNextMeasure: return "MsgTypeNextMeasure";
+    case MsgTypePrevMeasure: return "MsgTypePrevMeasure";
+    case MsgTypeNextChord: return "MsgTypeNextChord";
+    case MsgTypePrevChord: return "MsgTypePrevChord";
+    case MsgTypeRewindStart: return "MsgTypeRewindStart";
+    case MsgTypeSetLoopIn: return "MsgTypeSetLoopIn";
+    case MsgTypeSetLoopOut: return "MsgTypeSetLoopOut";
+    case MsgTypeSetLoopSelection: return "MsgTypeSetLoopSelection";
+    case MsgTypeRecomputeMaxMidiOutPort: return "MsgTypeRecomputeMaxMidiOutPort";
+    case MsgTypeSeqPreferencesChanged: return "MsgTypeSeqPreferencesChanged";
+    case MsgTypeSeqUpdateOutPortCount: return "MsgTypeSeqUpdateOutPortCount";
+    case MsgTypeMasterSynthesizerInit: return "MsgTypeMasterSynthesizerInit";
+    case MsgTypeEOF: return "MsgTypeEOF";
+    default: return "ERROR:UNKNOWN-MUXSEQ-MSG-TYPE";
+    }
 }
 
-void mux_network_client_audio()
-{
-    Mux::mux_network_connect(g_audio_socket, "tcp://localhost:7771");
-//    mux_network_mainloop_audio();
+const char* muxaudio_msg_type_info(MuxaudioMsgType type) {
+    switch (type) {
+        case MsgTypeAudioInit: return "MsgTypeAudioInit";
+        case MsgTypeAudioStart: return "MsgTypeAudioStart";
+        case MsgTypeAudioStop: return "MsgTypeAudioStop";
+        case MsgTypeTransportStart: return "MsgTypeTransportStart";
+        case MsgTypeTransportStop: return "MsgTypeTransportStop";
+        case MsgTypeTransportSeek: return "MsgTypeTransportSeek";
+        case MsgTypeEventToMidi: return "MsgTypeEventToMidi";
+        case MsgTypeTimeSigTempoChanged: return "MsgTypeTimeSigTempoChanged";
+        case MsgTypeOutPortCount: return "MsgTypeOutPortCount";
+        default: return "ERROR:UNKNOWN-MUXAUDIO-MSG-TYPE";
+    }
 }
 
-void mux_network_close_audio()
-{
-    // void mux_network_close(struct MuxSocket &sock)
-        // zmq_close(zmq_socket_audio);
-        // zmq_ctx_destroy(zmq_context_audio);
-}
-void mux_network_close_ctrl()
-{
-    // zmq_close(zmq_socket_ctrl);
-    // zmq_ctx_destroy(zmq_context_ctrl);
-}
-
-
-
-/**/
-
-void muxseq_ctrl_zmq_thread_init(std::string _notused)
-{
-    mux_network_client_ctrl();
-}
-
-void mux_audio_zmq_thread_init(std::string _notused)
-{
-    mux_network_client_audio();
-}
-
-void muxseq_start_threads()
-{
-    if (g_threads_started) return;
-    g_threads_started = true;
-    std::vector<std::thread> threadv;
-    //
-    std::thread zmqCtrlThread(muxseq_ctrl_zmq_thread_init, "notused");
-    threadv.push_back(std::move(zmqCtrlThread));
-    //
-    std::thread zmqAudioThread(muxseq_audio_zmq_thread_init, "notused");
-    threadv.push_back(std::move(zmqAudioThread));
-    // move threads to heap
-    muxThreads = std::move(threadv);
-}
-
-void mux_musescore_client_start() {
-    muxseq_start_threads();
+void muxseq_msg_set_NPlayEvent (MuxseqMsg msg, NPlayEvent event) {
+    msg.payload.sparseEvent.type    = event.type();
+    msg.payload.sparseEvent.channel = event.channel();
+    msg.payload.sparseEvent.pitch   = event.pitch();
+    msg.payload.sparseEvent.velo    = event.velo();
+    msg.payload.sparseEvent.cont    = event.controller();
+    msg.payload.sparseEvent.val     = event.value();
 }
 
 
