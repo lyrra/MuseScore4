@@ -21,8 +21,6 @@
 
 namespace Ms {
 
-class MuseScore;
-
 enum MsgType {
     MsgTypeNoop = 0,
     MsgTypeSeqInit,
