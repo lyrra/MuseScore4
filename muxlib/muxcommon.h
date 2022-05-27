@@ -17,7 +17,6 @@ enum class Transport : char {
     NET_STARTING=4
 };
 
-void msgToAudioSeekTransport(int utick);
 
 } // namespace Ms
 #endif
