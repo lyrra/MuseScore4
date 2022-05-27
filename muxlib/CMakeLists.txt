@@ -19,6 +19,7 @@ include_directories (
       ${PROJECT_SOURCE_DIR}
       ${CMAKE_CURRENT_BINARY_DIR}
       ${CMAKE_CURRENT_LIST_DIR}
+      ${PROJECT_SOURCE_DIR}/mux
       ${PROJECT_SOURCE_DIR}/mscore
       ${PROJECT_SOURCE_DIR}/muxseq
       #${QTSINGLEAPPLICATION_INCLUDE_DIRS}
@@ -33,9 +34,11 @@ add_library (${MODULE} STATIC
       muxseq_client.h muxseq_client.cpp
       muxseqsig.h muxseqsig.cpp
       muxseqlib.h muxseqlib.cpp
+      muxlib.h muxlib.cpp
       )
 
 target_link_libraries (${MODULE}
+      mux
       ${QT_LIBRARIES}
       )
 

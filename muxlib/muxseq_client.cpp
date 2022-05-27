@@ -1,4 +1,5 @@
 
+#include "mux.h"
 #include "muxseqsig.h"
 #include "scoreview.h"
 #include "event.h"
@@ -453,5 +454,6 @@ void muxseq_synth_zerberus_unload_soundfonts (QStringList sfzList) {
     //Synthesizer* s = synti->synthesizer("Zerberus");
     //muxseq_synth_unload_soundfonts(s, sfzList);
 }
+
 
 } // namespace Ms

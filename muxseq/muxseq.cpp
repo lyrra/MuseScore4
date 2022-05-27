@@ -269,18 +269,6 @@ void mux_stop_threads()
     seqThreads[0].join();
 }
 
-void mux_network_open_ctrl()
-{
-    qDebug("ZMQ ctrl Connecting to muxaudio");
-    zmq_context_ctrl = zmq_ctx_new();
-    zmq_socket_ctrl = zmq_socket(zmq_context_ctrl, ZMQ_PAIR);
-    int rc = zmq_connect(zmq_socket_ctrl, "tcp://localhost:7770");
-    if (rc) {
-        qDebug("zmq-connect ctrl error: %s", strerror(errno));
-        exit(rc);
-    }
-}
-
 void mux_network_mainloop_ctrl()
 {
     qDebug("MUX ZeroMQ ctrl entering main-loop");
@@ -299,24 +287,6 @@ void mux_zmq_ctrl_send_to_audio(struct Msg msg)
 {
     qDebug("zmq-send ctrl msg.type=%i (len %i)", msg.type, sizeof(struct Msg));
     zmq_send(zmq_socket_ctrl, &msg, sizeof(struct Msg), 0);
-}
-
-void mux_network_close_ctrl()
-{
-    zmq_close(zmq_socket_ctrl);
-    zmq_ctx_destroy(zmq_context_ctrl);
-}
-
-void mux_network_open_audio()
-{
-    qDebug("ZMQ audio Connecting to muxaudio");
-    zmq_context_audio = zmq_ctx_new();
-    zmq_socket_audio = zmq_socket(zmq_context_audio, ZMQ_PAIR);
-    int rc = zmq_connect(zmq_socket_audio, "tcp://localhost:7771");
-    if (rc) {
-        qDebug("zmq-connect audio error: %s", strerror(errno));
-        exit(rc);
-    }
 }
 
 void mux_network_mainloop_audio()
@@ -338,22 +308,6 @@ void mux_network_mainloop_audio()
     qDebug("mux_network_mainloop audio has exited");
 }
 
-void mux_network_close_audio()
-{
-    zmq_close(zmq_socket_audio);
-    zmq_ctx_destroy(zmq_context_audio);
-}
 
-void mux_network_client_ctrl()
-{
-    mux_network_open_ctrl();
-    mux_network_mainloop_ctrl();
-}
-
-void mux_network_client_audio()
-{
-    mux_network_open_audio();
-    mux_network_mainloop_audio();
-}
 
 } // end of namespace MS

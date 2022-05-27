@@ -44,6 +44,9 @@
 
 namespace Ms {
 
+int g_ctrl_audio_error = 0;
+int g_ctrl_audio_running = 0;
+
 int debugMode = 1;
 extern Driver* g_driver;
 static jack_client_t* g_client; // used by static member function needing jack-client access

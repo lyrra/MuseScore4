@@ -8,10 +8,9 @@
  */
 
 #include "config.h"
-#include <thread> // FIX: should be imported by config.h
+#include <thread>
 #include <chrono>
 #include <iostream>
-//#include "driver.h"
 
 namespace Ms {
 
@@ -49,6 +48,7 @@ void muxseq_audio_zmq_thread_init(std::string _notused)
 
 void muxseq_threads_start()
 {
+    fprintf(stderr, "start threads\n"); std::fflush(stderr);
     std::vector<std::thread> threadv;
 
     //muxseq_network_open();

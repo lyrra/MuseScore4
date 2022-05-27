@@ -67,6 +67,7 @@
 #include <iostream>
 #include <vector>
 #include <zmq.h>
+#include "mux.h"
 #include "muxcommon.h"
 #include "muxaudio.h"
 #include <thread>
@@ -107,13 +108,10 @@ void mux_audio_send_event_to_midi(struct Msg msg);
 //extern int g_driver_running;
 
 static std::vector<std::thread> seqThreads;
-int mux_audio_process_run = 0;
+int g_mux_audio_process_run = 0;
 
-static void *zmq_context_ctrl;
-static void *zmq_socket_ctrl;
-
-static void *zmq_context_audio;
-static void *zmq_socket_audio;
+struct Mux::MuxSocket g_socket_ctrl;
+struct Mux::MuxSocket g_socket_audio;
 
 /*
  * message queue, between audio and mux
@@ -149,19 +147,19 @@ int mux_mq_from_audio_reader_visit () {
     if (g_msg_from_audio_reader == g_msg_from_audio_writer) {
         return 0;
     }
-    Msg msg = g_msg_from_audio[g_msg_from_audio_reader];
+    struct Msg msg = g_msg_from_audio[g_msg_from_audio_reader];
     switch (msg.type) {
         case MsgTypeAudioRunning:
             //g_driver_running = msg.payload.i;
             // FIX: send to seq (over network)
             std::cout << "g_driver_running is running? " << msg.payload.i << "\n";
-            if (zmq_send(zmq_socket_ctrl, &msg, sizeof(struct Msg), 0) < 0) {
+            if (zmq_send(g_socket_ctrl.socket, &msg, sizeof(struct Msg), 0) < 0) {
                 // musescore cant start if it gets no go-ahead signal
                 std::cerr << "failed to tell musescore that muxaudio-driver is in running state.\n";
             }
         break;
         case MsgTypeJackTransportPosition:
-            if (zmq_send(zmq_socket_ctrl, &msg, sizeof(struct Msg), 0) < 0) {
+            if (zmq_send(g_socket_ctrl.socket, &msg, sizeof(struct Msg), 0) < 0) {
                 std::cerr << "failed to tell musescore current jack position/state\n";
             }
         break;
@@ -328,9 +326,9 @@ int mux_audio_process_work() {
     //memset(g_chunkBufferStereo, 0, sizeof(float) * MUX_CHUNKSIZE);
     // Request a chunk over the network from mscore/seq
     //seq->process(MUX_CHUNKSIZE >> 1, g_chunkBufferStereo);
-    if (zmq_send(zmq_socket_audio, "a", 1, 0) < 0) return -1;
-    if (zmq_recv(zmq_socket_audio, g_chunkBufferStereo, sizeof(float) * MUX_CHUNKSIZE, 0) < 0) return -1;
-    //zmq_recv(zmq_socket_audio, g_chunkBufferStereo, 1, 0);
+    if (zmq_send(g_socket_audio.socket, "a", 1, 0) < 0) return -1;
+    if (zmq_recv(g_socket_audio.socket, g_chunkBufferStereo, sizeof(float) * MUX_CHUNKSIZE, 0) < 0) return -1;
+    //zmq_recv(g_socket_audio.socket, g_chunkBufferStereo, 1, 0);
     // copy over the chunk to the ringbuffer
     for (unsigned int i = 0; i < MUX_CHUNKSIZE; i++) {
         g_ringBufferStereo[(i + g_ringBufferWriterStart) % (MUX_RINGSIZE)] =
@@ -353,7 +351,7 @@ int mux_audio_process_work() {
 
 void mux_audio_process() {
     int slept = MUX_WRITER_USLEEP; // we cant sleep longer than the jack-audio-period = (numFrames / SampleRate) seconds
-    while (mux_audio_process_run) {
+    while (g_mux_audio_process_run) {
         int rc = mux_audio_process_work();
         if (rc < 0) { // error, sleep longer
             std::cout << "MUX mscore/seq audio not ready, waiting..\n";
@@ -369,25 +367,12 @@ void mux_audio_process() {
     std::cout << "MUX audio-process terminated.\n";
 }
 
-void mux_network_open_ctrl()
-{
-    std::cerr << "MUX ZeroMQ started control at port tcp://*:7770\n";
-    //  Socket to talk to clients
-    zmq_context_ctrl = zmq_ctx_new();
-    zmq_socket_ctrl = zmq_socket(zmq_context_ctrl, ZMQ_PAIR);
-    int rc = zmq_bind(zmq_socket_ctrl, "tcp://*:7770");
-    if (rc) {
-        fprintf(stderr, "zmq-bind error: %s\n", strerror(errno));
-        exit(rc);
-    }
-}
-
 void mux_network_mainloop_ctrl()
 {
     std::cerr << "MUX ZeroMQ control entering main-loop\n";
     while (1) {
         struct Msg msg;
-        if (zmq_recv(zmq_socket_ctrl, &msg, sizeof(struct Msg), 0) < 0) {
+        if (zmq_recv(g_socket_ctrl.socket, &msg, sizeof(struct Msg), 0) < 0) {
             fprintf(stderr, "zmq-recv control  error: %s\n", strerror(errno));
             break;
         }
@@ -396,19 +381,6 @@ void mux_network_mainloop_ctrl()
         mux_mq_to_audio_writer_put(msg);
     }
     fprintf(stderr, "mux_network_mainloop control has exited\n");
-}
-
-void mux_network_open_audio()
-{
-    std::cerr << "MUX ZeroMQ started audio at port tcp://*:7771\n";
-    //  Socket to talk to clients
-    zmq_context_audio = zmq_ctx_new();
-    zmq_socket_audio = zmq_socket(zmq_context_audio, ZMQ_PAIR);
-    int rc = zmq_bind(zmq_socket_audio, "tcp://*:7771");
-    if (rc) {
-        fprintf(stderr, "zmq-bind error: %s\n", strerror(errno));
-        exit(rc);
-    }
 }
 
 void mux_network_mainloop_audio()
@@ -422,13 +394,13 @@ void mux_network_mainloop_audio()
 
 void mux_network_server_ctrl()
 {
-    mux_network_open_ctrl();
+    Mux::mux_network_server(g_socket_ctrl, "tcp://*:7770");
     mux_network_mainloop_ctrl();
 }
 
 void mux_network_server_audio()
 {
-    mux_network_open_audio();
+    Mux::mux_network_server(g_socket_audio, "tcp://*:7771");
     mux_network_mainloop_audio();
 }
 

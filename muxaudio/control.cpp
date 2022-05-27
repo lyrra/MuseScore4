@@ -21,11 +21,9 @@ int mux_mq_to_audio_visit();
 void mux_audio_process();
 
 static std::vector<std::thread> muxThreads;
-extern int mux_audio_process_run;
+extern int g_mux_audio_process_run;
 
 Driver* g_driver;
-int g_ctrl_audio_error = 0;
-int g_ctrl_audio_running = 0;
 
 /*
 void mux_teardown_driver (JackAudio *driver) {
@@ -49,7 +47,7 @@ void mux_audio_control_thread_init(std::string _notused)
 void mux_thread_process_init(std::string msg)
 {
     std::cout << "MUX audio-process thread initialized:" << msg << "\n";
-    mux_audio_process_run = 1;
+    g_mux_audio_process_run = 1;
     mux_audio_process();
 }
 
@@ -83,7 +81,7 @@ void mux_threads_start()
 void mux_threads_stop()
 {
     std::cout << "MUX stop all threads\n";
-    mux_audio_process_run = 0;
+    g_mux_audio_process_run = 0;
     //muxThreads[0].join();
 }
 

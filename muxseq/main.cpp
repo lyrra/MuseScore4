@@ -12,21 +12,19 @@
 #include <zmq.h>
 #include <thread>
 #include <chrono>
-
+#include <cstring>
+#include "mux.h"
 namespace Ms {
 
 #define MUX_SYNC_MSLEEP 100
 
-//void muxseq_threads_start();
+void muxseq_threads_start();
 
 //void muxseq_send_event_to_gui(struct SparseEvent se);
 //void muxseq_audio_send_event_to_midi(struct Msg msg);
 
 //static std::vector<std::thread> seqThreads;
 //int mux_audio_process_run = 0;
-
-static void *zmq_context_seq;
-static void *zmq_socket_seq;
 
 /*
  * message queue, between audio and mux
@@ -286,17 +284,6 @@ void muxseq_audio_process() {
 }
 #endif
 
-void muxseq_network_open ()
-{
-    std::cerr << "MUXSEQ ZeroMQ open network port tcp://*:7772\n";
-    zmq_context_seq = zmq_ctx_new();
-    zmq_socket_seq = zmq_socket(zmq_context_seq, ZMQ_PAIR);
-    int rc = zmq_bind(zmq_socket_seq, "tcp://*:7772");
-    if (rc) {
-        fprintf(stderr, "zmq-bind error: %s\n", strerror(errno));
-        exit(rc);
-    }
-}
 
 #if 0
 void muxseq_network_mainloop_ctrl()
@@ -338,11 +325,12 @@ void muxseq_network_server_audio()
     //mux_network_mainloop_audio();
 }
 
-} // end of namespace MS
+} // end of namespace Ms
 
 int main(int argc, char **argv)
 {
-    //Ms::muxseq_threads_start();
+    fprintf(stderr, "muxseq initializing\n"); std::fflush(stderr);
+    Ms::muxseq_threads_start();
     while(1){
         std::this_thread::sleep_for(std::chrono::microseconds(100000));
     }

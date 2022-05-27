@@ -87,4 +87,3 @@ void muxseq_synth_fluid_unload_soundfonts (QStringList sfList);
 void muxseq_synth_zerberus_unload_soundfonts (QStringList sfzList);
 
 } // namespace Ms
-#endif

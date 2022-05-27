@@ -4,6 +4,7 @@ include_directories(
       ${PROJECT_SOURCE_DIR}/global
       ${PROJECT_SOURCE_DIR}/mscore
       ${PROJECT_SOURCE_DIR}/thirdparty
+      ${PROJECT_SOURCE_DIR}/mux
       ${PROJECT_SOURCE_DIR}/muxlib
       ${PROJECT_SOURCE_DIR}/muxtools
       ${QTSINGLEAPPLICATION_INCLUDE_DIRS}
@@ -71,6 +72,7 @@ target_include_directories(muxseq PRIVATE ${PROJECT_SOURCE_DIR}
                           )
 
 target_link_libraries(muxseq
+    mux
     effects
     qzip
     audiofile

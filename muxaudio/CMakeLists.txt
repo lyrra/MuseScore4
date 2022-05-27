@@ -2,6 +2,7 @@
 
 include_directories(
       ${PROJECT_SOURCE_DIR}/global
+      ${PROJECT_SOURCE_DIR}/mux
       ${PROJECT_SOURCE_DIR}/muxlib
       ${PROJECT_SOURCE_DIR}/muxtools
       ${PROJECT_SOURCE_DIR}/muxseq # FIX: wrong (needs mux.h)
@@ -46,6 +47,7 @@ target_include_directories(muxaudio PRIVATE ${PROJECT_SOURCE_DIR}
                           )
 
 target_link_libraries(muxaudio
+                      mux
                       muxlib
                       ${ZMQ_LIBRARY}
                       ${PORTAUDIO_LIBRARY} ${PORTMIDI_LIBRARY})
