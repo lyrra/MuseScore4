@@ -21,48 +21,53 @@
 
 namespace Ms {
 
-enum MsgType {
-    MsgTypeNoop = 0,
-    MsgTypeSeqInit,
-    MsgTypeSeqDeinit,
-    MsgTypeSeqExit,
-    MsgTypeSeqAlive,
-    MsgTypeSeqStart,
-    MsgTypeSeqStop,
-    MsgTypeSeqSendEvent,
-    MsgTypeSeqStartNote,
-    MsgTypeSeqStartNoteDur,
-    MsgTypeSeqStopNotes,
-    MsgTypeSeqStartNoteTimer,
-    MsgTypeSeqStopNoteTimer,
-    MsgTypeSeqStopWait,
-    MsgTypeSeqCurTempo,
-    MsgTypeSeqSetRelTempo,
-    MsgTypeSeqPlaying,
-    MsgTypeSeqRunning,
-    MsgTypeSeqStopped,
-    MsgTypeSeqCanStart,
-    MsgTypeSeqCurTick,
-    MsgTypeSeqSeek,
-    MsgTypeSeekEnd,
-    MsgTypeNextMeasure,
-    MsgTypePrevMeasure,
-    MsgTypeNextChord,
-    MsgTypePrevChord,
-    MsgTypeRewindStart,
-    MsgTypeSetLoopIn,
-    MsgTypeSetLoopOut,
-    MsgTypeSetLoopSelection,
-    MsgTypeRecomputeMaxMidiOutPort,
-    MsgTypeSeqPreferencesChanged,
-    MsgTypeSeqUpdateOutPortCount,
-    MsgTypeMasterSynthesizerInit,
-    MsgTypeEOF
-};
+#define L_MUX_QUERY(type) \
+  qDebug("muxseq_client query %s", mux_msg_type_info(type));
 
+const char* mux_msg_type_info (MsgType type) {
+    switch (type) {
+    case MsgTypeNoop: return "MsgTypeNoop";
+    case MsgTypeSeqInit: return "MsgTypeSeqInit";
+    case MsgTypeSeqDeinit: return "MsgTypeSeqDeinit";
+    case MsgTypeSeqExit: return "MsgTypeSeqExit";
+    case MsgTypeSeqAlive: return "MsgTypeSeqAlive";
+    case MsgTypeSeqStart: return "MsgTypeSeqStart";
+    case MsgTypeSeqStop: return "MsgTypeSeqStop";
+    case MsgTypeSeqSendEvent: return "MsgTypeSeqSendEvent";
+    case MsgTypeSeqStartNote: return "MsgTypeSeqStartNote";
+    case MsgTypeSeqStartNoteDur: return "MsgTypeSeqStartNoteDur";
+    case MsgTypeSeqStopNotes: return "MsgTypeSeqStopNotes";
+    case MsgTypeSeqStartNoteTimer: return "MsgTypeSeqStartNoteTimer";
+    case MsgTypeSeqStopNoteTimer: return "MsgTypeSeqStopNoteTimer";
+    case MsgTypeSeqStopWait: return "MsgTypeSeqStopWait";
+    case MsgTypeSeqCurTempo: return "MsgTypeSeqCurTempo";
+    case MsgTypeSeqSetRelTempo: return "MsgTypeSeqSetRelTempo";
+    case MsgTypeSeqPlaying: return "MsgTypeSeqPlaying";
+    case MsgTypeSeqRunning: return "MsgTypeSeqRunning";
+    case MsgTypeSeqStopped: return "MsgTypeSeqStopped";
+    case MsgTypeSeqCanStart: return "MsgTypeSeqCanStart";
+    case MsgTypeSeqCurTick: return "MsgTypeSeqCurTick";
+    case MsgTypeSeqSeek: return "MsgTypeSeqSeek";
+    case MsgTypeSeekEnd: return "MsgTypeSeekEnd";
+    case MsgTypeNextMeasure: return "MsgTypeNextMeasure";
+    case MsgTypePrevMeasure: return "MsgTypePrevMeasure";
+    case MsgTypeNextChord: return "MsgTypeNextChord";
+    case MsgTypePrevChord: return "MsgTypePrevChord";
+    case MsgTypeRewindStart: return "MsgTypeRewindStart";
+    case MsgTypeSetLoopIn: return "MsgTypeSetLoopIn";
+    case MsgTypeSetLoopOut: return "MsgTypeSetLoopOut";
+    case MsgTypeSetLoopSelection: return "MsgTypeSetLoopSelection";
+    case MsgTypeRecomputeMaxMidiOutPort: return "MsgTypeRecomputeMaxMidiOutPort";
+    case MsgTypeSeqPreferencesChanged: return "MsgTypeSeqPreferencesChanged";
+    case MsgTypeSeqUpdateOutPortCount: return "MsgTypeSeqUpdateOutPortCount";
+    case MsgTypeMasterSynthesizerInit: return "MsgTypeMasterSynthesizerInit";
+    case MsgTypeEOF: return "MsgTypeEOF";
+    default: return "ERROR:UNKNOWN-MUX-MSG-TYPE";
+    }
+}
 
 void muxseq_send(MsgType type) {
-    qDebug("muxseq msg %i", type);
+    qDebug("muxseq send msg %s", mux_msg_type_info(type));
 }
 
 void muxseq_send(MsgType type, int i) {
@@ -77,11 +82,11 @@ void muxseq_send(MsgType type, NPlayEvent event) {
 }
 
 void muxseq_query(MsgType type) {
-    qDebug("muxseq msg query %i", type);
+    L_MUX_QUERY(type);
 }
 
 bool muxseq_query_bool(MsgType type) {
-    qDebug("muxseq msg query %i", type);
+    L_MUX_QUERY(type);
     return true;
 }
 
@@ -91,7 +96,8 @@ float muxseq_query_float(MsgType type) {
 }
 
 void muxseq_query(MsgType type, bool b) {
-    qDebug("muxseq msg query %i about bool %i", type, b);
+    L_MUX_QUERY(type);
+    qDebug("  -- about bool %i", b);
 }
 
 MasterSynthesizer* synti = 0;

@@ -1,8 +1,10 @@
 
 #include "mux.h"
+#include "muxlib.h"
 
 
 namespace Ms {
+
 
 /*
  * controller for muxseq client
@@ -55,7 +57,7 @@ void muxseq_ctrl_zmq_thread_init(std::string _notused)
     mux_network_client_ctrl();
 }
 
-void mux_audio_zmq_thread_init(std::string _notused)
+void muxseq_audio_zmq_thread_init(std::string _notused)
 {
     mux_network_client_audio();
 }
