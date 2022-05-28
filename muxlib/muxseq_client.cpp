@@ -1,28 +1,18 @@
 
+#include "event.h"
+#include "libmscore/synthesizerstate.h"
+#include "synthesizer.h"
 #include "mux.h"
+#include "muxlib.h"
 #include "muxseqsig.h"
 #include "scoreview.h"
-#include "event.h"
 #include "msynthesizer.h"
-//#include "effects/zita1/zita.h"
-//#include "effects/compressor/compressor.h"
-//#include "effects/noeffect/noeffect.h"
-//#include "fluid/fluid.h"
-#include "synthesizer.h"
-//#include "synthesizergui.h"
-
-//#ifdef AEOLUS
-//extern Ms::Synthesizer* createAeolus();
-//#endif
-
-//#ifdef ZERBERUS
-//extern Ms::Synthesizer* createZerberus();
-//#endif
+#include "muxseq_client.h"
 
 namespace Ms {
 
-#define L_MUX_QUERY(type) \
-  qDebug("muxseq_client query %s", mux_msg_type_info(type));
+MasterSynthesizer* synti = 0;
+
 
 const char* mux_msg_type_info (MsgType type) {
     switch (type) {
@@ -66,6 +56,9 @@ const char* mux_msg_type_info (MsgType type) {
     }
 }
 
+#define L_MUX_QUERY(type) \
+  qDebug("muxseq_client query %s", mux_msg_type_info(type));
+
 void muxseq_send(MsgType type) {
     qDebug("muxseq send msg %s", mux_msg_type_info(type));
 }
@@ -100,12 +93,7 @@ void muxseq_query(MsgType type, bool b) {
     qDebug("  -- about bool %i", b);
 }
 
-MasterSynthesizer* synti = 0;
 
-#define DEFMUXSEQVOID(name, sname) \
-  void muxseq_seq_ ## name() { \
-      muxseq_send(MsgType ## sname); \
-  }
 
 int muxseq_create_synti(int sampleRate);
 
@@ -203,16 +191,21 @@ void muxseq_seq_setRelTempo (double tempo) {
     muxseq_send(MsgTypeSeqSetRelTempo, tempo);
 }
 
-DEFMUXSEQVOID(nextMeasure, NextMeasure)
-DEFMUXSEQVOID(nextChord,   NextChord)
-DEFMUXSEQVOID(prevMeasure, PrevMeasure)
-DEFMUXSEQVOID(prevChord,   PrevChord)
-DEFMUXSEQVOID(rewindStart, RewindStart)
-DEFMUXSEQVOID(seekEnd,     SeekEnd)
-DEFMUXSEQVOID(setLoopIn,   SetLoopIn);
-DEFMUXSEQVOID(setLoopOut,  SetLoopOut);
-DEFMUXSEQVOID(setLoopSelection, SetLoopSelection);
-DEFMUXSEQVOID(recomputeMaxMidiOutPort, RecomputeMaxMidiOutPort);
+#define DEFUNMUXSEQVOID(name, sname) \
+  void muxseq_seq_ ## name() { \
+      muxseq_send(MsgType ## sname); \
+  }
+
+DEFUNMUXSEQVOID(nextMeasure, NextMeasure)
+DEFUNMUXSEQVOID(nextChord,   NextChord)
+DEFUNMUXSEQVOID(prevMeasure, PrevMeasure)
+DEFUNMUXSEQVOID(prevChord,   PrevChord)
+DEFUNMUXSEQVOID(rewindStart, RewindStart)
+DEFUNMUXSEQVOID(seekEnd,     SeekEnd)
+DEFUNMUXSEQVOID(setLoopIn,   SetLoopIn);
+DEFUNMUXSEQVOID(setLoopOut,  SetLoopOut);
+DEFUNMUXSEQVOID(setLoopSelection, SetLoopSelection);
+DEFUNMUXSEQVOID(recomputeMaxMidiOutPort, RecomputeMaxMidiOutPort);
 
 float muxseq_seq_metronomeGain() {
     //FIX: return seq3->metronomeGain();

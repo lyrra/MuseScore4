@@ -3317,7 +3317,9 @@ void MuseScore::removeTab(int i)
 
       if (!scriptTestMode && !converterMode && checkDirty(score))
             return;
-      if (muxseq_seq_alive() && muxseq_seq_score() == score) {
+      if (muxseq_seq_alive()
+          /* FIX do what?: && muxseq_seq_score() == score */
+         ) {
             muxseq_stop_wait();
             muxseq_seq_set_scoreview(0);
             }
