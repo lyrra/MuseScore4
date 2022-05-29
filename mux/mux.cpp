@@ -45,11 +45,13 @@ void mux_stop_threads()
     seqThreads[0].join();
 }
 
-int mux_network_connect (struct MuxSocket &sock, const char *url)
+/*** REQ/REP (query) client/server *****/
+
+int mux_network_query_client (struct MuxSocket &sock, const char *url, bool req)
 {
-    std::cerr << "MUX ZeroMQ network connect " << url << "\n";
+    std::cerr << "MUX ZeroMQ query network client connect " << url << "\n";
     sock.context = zmq_ctx_new();
-    sock.socket = zmq_socket(sock.context, ZMQ_PAIR);
+    sock.socket = zmq_socket(sock.context, req ? ZMQ_REQ : ZMQ_REP);
     int rc = zmq_connect(sock.socket, url);
     if (rc) {
         fprintf(stderr, "zmq-bind error: %s\n", std::strerror(errno));
@@ -57,17 +59,45 @@ int mux_network_connect (struct MuxSocket &sock, const char *url)
     return rc;
 }
 
-int mux_network_server (struct MuxSocket &sock, const char* url)
+int mux_network_query_server (struct MuxSocket &sock, const char* url, bool req)
 {
-    std::cerr << "MUX ZeroMQ network server " << url << "\n";
+    std::cerr << "MUX ZeroMQ query network server bind " << url << "\n";
     sock.context = zmq_ctx_new();
-    sock.socket = zmq_socket(sock.context, ZMQ_PAIR);
+    sock.socket = zmq_socket(sock.context, req ? ZMQ_REQ : ZMQ_REP);
     int rc = zmq_bind(sock.socket, url);
     if (rc) {
         fprintf(stderr, "zmq-bind error: %s\n", std::strerror(errno));
     }
     return rc;
 }
+
+/*** PUB/SUB (bulletin) client/server *****/
+
+int mux_network_bulletin_client (struct MuxSocket &sock, const char *url)
+{
+    std::cerr << "MUX ZeroMQ bulletin network client connect " << url << "\n";
+    sock.context = zmq_ctx_new();
+    sock.socket = zmq_socket(sock.context, ZMQ_SUB);
+    int rc = zmq_connect(sock.socket, url);
+    if (rc) {
+        fprintf(stderr, "zmq-bind error: %s\n", std::strerror(errno));
+    }
+    return rc;
+}
+
+int mux_network_bulletin_server (struct MuxSocket &sock, const char* url)
+{
+    std::cerr << "MUX ZeroMQ bulletin network server bind " << url << "\n";
+    sock.context = zmq_ctx_new();
+    sock.socket = zmq_socket(sock.context, ZMQ_PUB);
+    int rc = zmq_bind(sock.socket, url);
+    if (rc) {
+        fprintf(stderr, "zmq-bind error: %s\n", std::strerror(errno));
+    }
+    return rc;
+}
+
+/********/
 
 void mux_network_close(struct MuxSocket &sock)
 {

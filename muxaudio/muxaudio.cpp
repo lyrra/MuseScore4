@@ -394,13 +394,13 @@ void mux_network_mainloop_audio()
 
 void mux_network_server_ctrl()
 {
-    Mux::mux_network_server(g_socket_ctrl, "tcp://*:7770");
+    Mux::mux_network_query_server(g_socket_ctrl, "tcp://*:7771", false);
     mux_network_mainloop_ctrl();
 }
 
 void mux_network_server_audio()
 {
-    Mux::mux_network_server(g_socket_audio, "tcp://*:7771");
+    Mux::mux_network_query_server(g_socket_audio, "tcp://*:7772", true);
     mux_network_mainloop_audio();
 }
 

@@ -13,8 +13,10 @@ struct MuxSocket {
     void *socket;
 };
 
-int mux_network_server (struct MuxSocket &sock, const char* url);
-int mux_network_connect (struct MuxSocket &sock, const char *url);
+int mux_network_query_server (struct MuxSocket &sock, const char* url, bool req);
+int mux_network_query_client (struct MuxSocket &sock, const char *url, bool req);
+int mux_network_bulletin_server (struct MuxSocket &sock, const char* url);
+int mux_network_bulletin_client (struct MuxSocket &sock, const char *url);
 
 } // namespace Mux
 #endif
