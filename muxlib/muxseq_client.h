@@ -5,45 +5,6 @@
 
 namespace Ms {
 
-enum MsgType {
-    MsgTypeNoop = 0,
-    MsgTypeSeqInit,
-    MsgTypeSeqDeinit,
-    MsgTypeSeqExit,
-    MsgTypeSeqAlive,
-    MsgTypeSeqStart,
-    MsgTypeSeqStop,
-    MsgTypeSeqSendEvent,
-    MsgTypeSeqStartNote,
-    MsgTypeSeqStartNoteDur,
-    MsgTypeSeqStopNotes,
-    MsgTypeSeqStartNoteTimer,
-    MsgTypeSeqStopNoteTimer,
-    MsgTypeSeqStopWait,
-    MsgTypeSeqCurTempo,
-    MsgTypeSeqSetRelTempo,
-    MsgTypeSeqPlaying,
-    MsgTypeSeqRunning,
-    MsgTypeSeqStopped,
-    MsgTypeSeqCanStart,
-    MsgTypeSeqCurTick,
-    MsgTypeSeqSeek,
-    MsgTypeSeekEnd,
-    MsgTypeNextMeasure,
-    MsgTypePrevMeasure,
-    MsgTypeNextChord,
-    MsgTypePrevChord,
-    MsgTypeRewindStart,
-    MsgTypeSetLoopIn,
-    MsgTypeSetLoopOut,
-    MsgTypeSetLoopSelection,
-    MsgTypeRecomputeMaxMidiOutPort,
-    MsgTypeSeqPreferencesChanged,
-    MsgTypeSeqUpdateOutPortCount,
-    MsgTypeMasterSynthesizerInit,
-    MsgTypeEOF
-};
-
 
 #define DEFMUXSEQVOID(name) void muxseq_seq_ ## name()
 
