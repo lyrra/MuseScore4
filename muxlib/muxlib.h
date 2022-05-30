@@ -6,7 +6,7 @@
 
 namespace Ms {
 
-enum MsgType {
+enum MuxseqMsgType {
     MsgTypeNoop = 0,
     MsgTypeSeqInit,
     MsgTypeSeqDeinit,
@@ -54,14 +54,14 @@ struct MuxseqMsg {
     };
 };
 
-void muxseq_send(MsgType type);
-void muxseq_send(MsgType type, int i);
-void muxseq_send(MsgType type, double d);
-void muxseq_send(MsgType type, NPlayEvent event);
-void muxseq_query(MsgType type);
-bool muxseq_query_bool(MsgType type);
-float muxseq_query_float(MsgType type);
-void muxseq_query(MsgType type, bool b);
+void muxseq_send(MuxseqMsgType type);
+void muxseq_send(MuxseqMsgType type, int i);
+void muxseq_send(MuxseqMsgType type, double d);
+void muxseq_send(MuxseqMsgType type, NPlayEvent event);
+void muxseq_query(MuxseqMsgType type);
+bool muxseq_query_bool(MuxseqMsgType type);
+float muxseq_query_float(MuxseqMsgType type);
+void muxseq_query(MuxseqMsgType type, bool b);
 void mux_musescore_client_start();
 
 } // namespace Ms

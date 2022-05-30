@@ -5,7 +5,7 @@
 
 namespace Ms {
 
-const char* mux_msg_type_info (MsgType type) {
+const char* mux_msg_type_info (MuxseqMsgType type) {
     switch (type) {
     case MsgTypeNoop: return "MsgTypeNoop";
     case MsgTypeSeqInit: return "MsgTypeSeqInit";
@@ -50,36 +50,36 @@ const char* mux_msg_type_info (MsgType type) {
 #define L_MUX_QUERY(type) \
   qDebug("muxseq_client query %s", mux_msg_type_info(type));
 
-void muxseq_send(MsgType type) {
+void muxseq_send(MuxseqMsgType type) {
     qDebug("muxseq send msg %s", mux_msg_type_info(type));
 }
 
-void muxseq_send(MsgType type, int i) {
+void muxseq_send(MuxseqMsgType type, int i) {
     qDebug("muxseq msg %i about int %i", type, i);
 }
-void muxseq_send(MsgType type, double d) {
+void muxseq_send(MuxseqMsgType type, double d) {
     qDebug("muxseq msg %i about int %f", type, d);
 }
 
-void muxseq_send(MsgType type, NPlayEvent event) {
+void muxseq_send(MuxseqMsgType type, NPlayEvent event) {
     qDebug("muxseq msg %i about event", type);
 }
 
-void muxseq_query(MsgType type) {
+void muxseq_query(MuxseqMsgType type) {
     L_MUX_QUERY(type);
 }
 
-bool muxseq_query_bool(MsgType type) {
+bool muxseq_query_bool(MuxseqMsgType type) {
     L_MUX_QUERY(type);
     return true;
 }
 
-float muxseq_query_float(MsgType type) {
+float muxseq_query_float(MuxseqMsgType type) {
     qDebug("muxseq msg query %i", type);
     return 0.0f;
 }
 
-void muxseq_query(MsgType type, bool b) {
+void muxseq_query(MuxseqMsgType type, bool b) {
     L_MUX_QUERY(type);
     qDebug("  -- about bool %i", b);
 }
