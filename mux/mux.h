@@ -13,6 +13,8 @@ struct MuxSocket {
     void *socket;
 };
 
+int mux_zmq_send (Mux::MuxSocket &muxsock, void* buf, int len);
+int mux_zmq_recv (Mux::MuxSocket &muxsock, void* buf, int len);
 int mux_network_query_server (struct MuxSocket &sock, const char* url, bool req);
 int mux_network_query_client (struct MuxSocket &sock, const char *url, bool req);
 int mux_network_bulletin_server (struct MuxSocket &sock, const char* url);

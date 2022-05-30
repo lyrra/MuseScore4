@@ -17,6 +17,14 @@
 
 namespace Mux {
 
+int mux_zmq_send (Mux::MuxSocket &muxsock, void* buf, int len) {
+    return zmq_send(muxsock.socket, buf, len, 0);
+}
+
+int mux_zmq_recv (Mux::MuxSocket &muxsock, void* buf, int len) {
+    return zmq_recv(muxsock.socket, buf, len, 0);
+}
+
 void mux_zmq_ctrl_send_to_audio(int len, unsigned char *buf);
 
 static std::vector<std::thread> seqThreads;

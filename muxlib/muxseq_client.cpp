@@ -95,7 +95,7 @@ bool muxseq_seq_can_start() {
 }
 
 void muxseq_seq_seek(int ticks) {
-    return muxseq_send(MsgTypeSeqSeek, ticks);
+    muxseq_send(MsgTypeSeqSeek, ticks);
 }
 
 int muxseq_seq_curTick() {
