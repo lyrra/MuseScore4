@@ -4,7 +4,6 @@
 
 namespace Ms {
 
-class MuseScore;
 
 bool muxseq_seq_alive() {
     //if (seq == 0) {
