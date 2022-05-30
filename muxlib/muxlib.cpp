@@ -137,13 +137,13 @@ static std::vector<std::thread> muxseq_Threads;
 
 void muxseq_query_client_thread_init(std::string _notused)
 {
-    Mux::mux_network_query_client(g_muxseq_query_client_socket, "MUX_MUSESCORE_QUERY_CLIENT_URL", true);
+    Mux::mux_network_query_client(g_muxseq_query_client_socket, MUX_MUSESCORE_QUERY_CLIENT_URL, true);
     //muxseq_network_mainloop_query();
 }
 
 void muxseq_bulletin_client_thread_init(std::string _notused)
 {
-    Mux::mux_network_bulletin_client(g_muxseq_bulletin_client_socket, "MUX_MUSESCORE_BULLETIN_CLIENT_URL");
+    Mux::mux_network_bulletin_client(g_muxseq_bulletin_client_socket, MUX_MUSESCORE_BULLETIN_CLIENT_URL);
     //muxseq_network_mainloop_bulletin();
 }
 
