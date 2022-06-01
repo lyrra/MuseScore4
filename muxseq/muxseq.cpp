@@ -60,6 +60,8 @@
 #include "muxlib.h"
 #include "muxseq.h"
 
+#define LD(...) qDebug(__VA_ARGS__);
+
 namespace Ms {
 
 void mux_zmq_ctrl_send_to_audio(struct MuxaudioMsg msg);
@@ -286,10 +288,59 @@ void mux_network_mainloop_ctrl()
     qDebug("mux_network_mainloop ctrl has exited");
 }
 
-void mux_zmq_ctrl_send_to_audio(struct MuxaudioMsg msg)
+void mux_zmq_ctrl_send_to_audio (struct MuxaudioMsg msg)
 {
     qDebug("zmq-send ctrl msg.type=%i (len %i)", msg.type, sizeof(struct MuxaudioMsg));
     zmq_send(zmq_socket_ctrl, &msg, sizeof(struct MuxaudioMsg), 0);
+}
+
+int muxseq_handle_musescore_reply_int (Mux::MuxSocket &sock, struct MuxseqMsg msg, int i) {
+    msg.payload.i = i;
+    return zmq_send(sock.socket, &msg, sizeof(struct MuxseqMsg), 0);
+}
+
+int muxseq_handle_musescore_msg_SeqAlive (Mux::MuxSocket &sock, struct MuxseqMsg msg) {
+    return muxseq_handle_musescore_reply_int(sock, msg, 1); // always alive
+}
+
+int muxseq_handle_musescore_msg_SeqRunning (Mux::MuxSocket &sock, struct MuxseqMsg msg) {
+    return muxseq_handle_musescore_reply_int(sock, msg, g_driver_running);
+}
+
+int muxseq_handle_musescore_msg_SeqPreferencesChanged (Mux::MuxSocket &sock, struct MuxseqMsg msg) {
+    // FIX: copy preferences?
+    return muxseq_handle_musescore_reply_int(sock, msg, 0);
+}
+
+int muxseq_handle_musescore_msg_SeqInit (Mux::MuxSocket &sock, struct MuxseqMsg msg) {
+    // FIX: initialize seq
+    return muxseq_handle_musescore_reply_int(sock, msg, 0);
+}
+
+int muxseq_handle_musescore_msg_SeqStopNoteTimer (Mux::MuxSocket &sock, struct MuxseqMsg msg) {
+    // FIX: initialize seq
+    return muxseq_handle_musescore_reply_int(sock, msg, 0);
+}
+
+int muxseq_handle_musescore_msg(Mux::MuxSocket &sock, struct MuxseqMsg msg)
+{
+    LD("got message from musescore: %s", muxseq_msg_type_info(msg.type));
+    switch (msg.type) {
+        case MsgTypeSeqAlive:
+            return muxseq_handle_musescore_msg_SeqAlive(sock, msg);
+        case MsgTypeSeqRunning:
+            return muxseq_handle_musescore_msg_SeqRunning(sock, msg);
+        case MsgTypeSeqPreferencesChanged:
+            return muxseq_handle_musescore_msg_SeqPreferencesChanged(sock, msg);
+        case MsgTypeSeqInit:
+            return muxseq_handle_musescore_msg_SeqInit(sock, msg);
+        case MsgTypeSeqStopNoteTimer:
+            return muxseq_handle_musescore_msg_SeqStopNoteTimer(sock, msg);
+        default:
+            LD("ERROR: Unknown message: %s", muxseq_msg_type_info(msg.type));
+        break;
+    }
+    return 0;
 }
 
 void mux_network_mainloop_audio()
@@ -322,7 +373,7 @@ void muxseq_mscoreQueryServer_mainloop(Mux::MuxSocket &sock) {
             qFatal("zmq-recv error: %s", strerror(errno));
             break;
         }
-        qDebug("got message from musescore: %s", muxseq_msg_type_info(msg.type));
+        muxseq_handle_musescore_msg(sock, msg);
         std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
 }
