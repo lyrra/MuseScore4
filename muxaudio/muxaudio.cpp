@@ -69,6 +69,8 @@
 #include <zmq.h>
 #include "mux.h"
 #include "muxcommon.h"
+#include "event.h"
+#include "muxlib.h"
 #include "muxaudio.h"
 #include <thread>
 #include <chrono>
@@ -77,34 +79,10 @@ namespace Ms {
 
 #define MUX_SYNC_MSLEEP 100
 
-const char* mux_msg_type_name(int type) {
-    switch (type) {
-        case MsgTypeAudioInit:
-            return "MsgTypeAudioInit";
-        case MsgTypeAudioStart:
-            return "MsgTypeAudioStart";
-        case MsgTypeAudioStop:
-            return "MsgTypeAudioStop";
-        case MsgTypeTransportStart:
-            return "MsgTypeTransportStart";
-        case MsgTypeTransportStop:
-            return "MsgTypeTransportStop";
-        case MsgTypeTransportSeek:
-            return "MsgTypeTransportSeek";
-        case MsgTypeEventToMidi:
-            return "MsgTypeEventToMidi";
-        case MsgTypeTimeSigTempoChanged:
-            return "MsgTypeTimeSigTempoChanged";
-        case MsgTypeOutPortCount:
-            return "MsgTypeOutPortCount";
-        default: // this should not happen
-            return "UNKNOWN";
-    }
-}
 
 
 void mux_send_event_to_gui(struct SparseEvent se);
-void mux_audio_send_event_to_midi(struct Msg msg);
+void mux_audio_send_event_to_midi(struct MuxaudioMsg msg);
 //extern int g_driver_running;
 
 static std::vector<std::thread> seqThreads;
@@ -118,15 +96,15 @@ struct Mux::MuxSocket g_socket_audio;
  */ 
 
 #define MAILBOX_SIZE 256
-struct Msg g_msg_to_audio[MAILBOX_SIZE];
-struct Msg g_msg_from_audio[MAILBOX_SIZE];
+struct MuxaudioMsg g_msg_to_audio[MAILBOX_SIZE];
+struct MuxaudioMsg g_msg_from_audio[MAILBOX_SIZE];
 int g_msg_to_audio_reader = 0;
 int g_msg_to_audio_writer = 0;
 int g_msg_from_audio_reader = 0;
 int g_msg_from_audio_writer = 0;
 
 // audio-thread uses this function to send messages to mux/mscore
-int mux_mq_from_audio_writer_put (struct Msg msg) {
+int mux_mq_from_audio_writer_put (struct MuxaudioMsg msg) {
     memcpy(&g_msg_from_audio[g_msg_from_audio_writer].payload, &msg.payload, sizeof(msg.payload));
     // setting the type will signal to the reader that this slot is filled
     g_msg_from_audio[g_msg_from_audio_writer].type = msg.type;
@@ -135,7 +113,7 @@ int mux_mq_from_audio_writer_put (struct Msg msg) {
 }
 
 // mux/mscore thread uses this function to send messages to audio-thread
-int mux_mq_to_audio_writer_put (struct Msg msg) {
+int mux_mq_to_audio_writer_put (struct MuxaudioMsg msg) {
     memcpy(&g_msg_to_audio[g_msg_to_audio_writer].payload, &msg.payload, sizeof(msg.payload));
     // setting the type will signal to the reader that this slot is filled
     g_msg_to_audio[g_msg_to_audio_writer].type = msg.type;
@@ -147,19 +125,19 @@ int mux_mq_from_audio_reader_visit () {
     if (g_msg_from_audio_reader == g_msg_from_audio_writer) {
         return 0;
     }
-    struct Msg msg = g_msg_from_audio[g_msg_from_audio_reader];
+    struct MuxaudioMsg msg = g_msg_from_audio[g_msg_from_audio_reader];
     switch (msg.type) {
         case MsgTypeAudioRunning:
             //g_driver_running = msg.payload.i;
             // FIX: send to seq (over network)
             std::cout << "g_driver_running is running? " << msg.payload.i << "\n";
-            if (zmq_send(g_socket_ctrl.socket, &msg, sizeof(struct Msg), 0) < 0) {
+            if (zmq_send(g_socket_ctrl.socket, &msg, sizeof(struct MuxaudioMsg), 0) < 0) {
                 // musescore cant start if it gets no go-ahead signal
                 std::cerr << "failed to tell musescore that muxaudio-driver is in running state.\n";
             }
         break;
         case MsgTypeJackTransportPosition:
-            if (zmq_send(g_socket_ctrl.socket, &msg, sizeof(struct Msg), 0) < 0) {
+            if (zmq_send(g_socket_ctrl.socket, &msg, sizeof(struct MuxaudioMsg), 0) < 0) {
                 std::cerr << "failed to tell musescore current jack position/state\n";
             }
         break;
@@ -182,8 +160,8 @@ int mux_mq_to_audio_visit() {
     if (g_msg_to_audio_reader == g_msg_to_audio_writer) {
         return 0;
     }
-    struct Msg msg = g_msg_to_audio[g_msg_to_audio_reader];
-    std::cerr << "MUX ctrl message, type: " << msg.type << " " << mux_msg_type_name(msg.type) << "\n";
+    struct MuxaudioMsg msg = g_msg_to_audio[g_msg_to_audio_reader];
+    std::cerr << "MUX ctrl message, type: " << msg.type << " " << muxaudio_msg_type_info(msg.type) << "\n";
     switch (msg.type) {
         case MsgTypeAudioInit:
             mux_audio_init(msg.payload.i);
@@ -226,17 +204,17 @@ int mux_mq_to_audio_visit() {
 
 /* message to/from audio helpers
  */
-void mux_msg_to_audio(MsgType typ, int val)
+void mux_msg_to_audio(MuxaudioMsgType typ, int val)
 {
-    struct Msg msg;
+    struct MuxaudioMsg msg;
     msg.type = typ;
     msg.payload.i = val;
     mux_mq_to_audio_writer_put(msg);
 }
 
-void mux_msg_from_audio(MsgType typ, int val)
+void mux_msg_from_audio(MuxaudioMsgType typ, int val)
 {
-    struct Msg msg;
+    struct MuxaudioMsg msg;
     msg.type = typ;
     msg.payload.i = val;
     mux_mq_from_audio_writer_put(msg);
@@ -371,13 +349,13 @@ void mux_network_mainloop_ctrl()
 {
     std::cerr << "MUX ZeroMQ control entering main-loop\n";
     while (1) {
-        struct Msg msg;
-        if (zmq_recv(g_socket_ctrl.socket, &msg, sizeof(struct Msg), 0) < 0) {
+        struct MuxaudioMsg msg;
+        if (zmq_recv(g_socket_ctrl.socket, &msg, sizeof(struct MuxaudioMsg), 0) < 0) {
             fprintf(stderr, "zmq-recv control  error: %s\n", strerror(errno));
             break;
         }
         fprintf(stderr, "Received Control Message, type=(%i)%s\n", msg.type,
-                mux_msg_type_name(msg.type));
+                muxaudio_msg_type_info(msg.type));
         mux_mq_to_audio_writer_put(msg);
     }
     fprintf(stderr, "mux_network_mainloop control has exited\n");

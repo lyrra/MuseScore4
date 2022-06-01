@@ -32,7 +32,9 @@
 #include "libmscore/score.h"
 
 #include "mscore/globals.h"
+#include "event.h"
 #include "muxcommon.h"
+#include "muxlib.h"
 #include "muxaudio.h"
 #include "seq.h"
 

@@ -5,10 +5,7 @@
 
 namespace Ms {
 
-static struct Mux::MuxSocket g_muxseq_query_client_socket;
-static struct Mux::MuxSocket g_muxseq_bulletin_client_socket;
-
-const char* mux_msg_type_info (MuxseqMsgType type) {
+const char* muxseq_msg_type_info (MuxseqMsgType type) {
     switch (type) {
     case MsgTypeNoop: return "MsgTypeNoop";
     case MsgTypeSeqInit: return "MsgTypeSeqInit";
@@ -46,11 +43,25 @@ const char* mux_msg_type_info (MuxseqMsgType type) {
     case MsgTypeSeqUpdateOutPortCount: return "MsgTypeSeqUpdateOutPortCount";
     case MsgTypeMasterSynthesizerInit: return "MsgTypeMasterSynthesizerInit";
     case MsgTypeEOF: return "MsgTypeEOF";
-    default: return "ERROR:UNKNOWN-MUX-MSG-TYPE";
+    default: return "ERROR:UNKNOWN-MUXSEQ-MSG-TYPE";
     }
 }
 
-//FIX: this is partly redundant with muxaudio/drivers/jackaudio.cpp
+const char* muxaudio_msg_type_info(MuxaudioMsgType type) {
+    switch (type) {
+        case MsgTypeAudioInit: return "MsgTypeAudioInit";
+        case MsgTypeAudioStart: return "MsgTypeAudioStart";
+        case MsgTypeAudioStop: return "MsgTypeAudioStop";
+        case MsgTypeTransportStart: return "MsgTypeTransportStart";
+        case MsgTypeTransportStop: return "MsgTypeTransportStop";
+        case MsgTypeTransportSeek: return "MsgTypeTransportSeek";
+        case MsgTypeEventToMidi: return "MsgTypeEventToMidi";
+        case MsgTypeTimeSigTempoChanged: return "MsgTypeTimeSigTempoChanged";
+        case MsgTypeOutPortCount: return "MsgTypeOutPortCount";
+        default: return "ERROR:UNKNOWN-MUXAUDIO-MSG-TYPE";
+    }
+}
+
 void muxseq_msg_set_NPlayEvent (MuxseqMsg msg, NPlayEvent event) {
     msg.payload.sparseEvent.type    = event.type();
     msg.payload.sparseEvent.channel = event.channel();
@@ -58,111 +69,6 @@ void muxseq_msg_set_NPlayEvent (MuxseqMsg msg, NPlayEvent event) {
     msg.payload.sparseEvent.velo    = event.velo();
     msg.payload.sparseEvent.cont    = event.controller();
     msg.payload.sparseEvent.val     = event.value();
-}
-
-#define L_MUX_QUERY(type) \
-  qDebug("muxseq_client query %s", mux_msg_type_info(type));
-
-int muxseq_query_zmq (MuxseqMsgType type, MuxseqMsg &msg) {
-    qDebug("muxseq send msg %s", mux_msg_type_info(type));
-    msg.type = type;
-    mux_zmq_send(g_muxseq_query_client_socket, (void*) &msg, sizeof(struct MuxseqMsg));
-    return mux_zmq_recv(g_muxseq_query_client_socket, (void*) &msg, sizeof(struct MuxseqMsg));
-}
-
-int muxseq_send (MuxseqMsgType type) {
-    struct MuxseqMsg msg;
-    return muxseq_query_zmq(type, msg);
-}
-
-int muxseq_send (MuxseqMsgType type, int i) {
-    struct MuxseqMsg msg;
-    msg.payload.i = i;
-    return muxseq_query_zmq(type, msg);
-}
-
-int muxseq_send (MuxseqMsgType type, double d) {
-    struct MuxseqMsg msg;
-    msg.payload.d = d;
-    return muxseq_query_zmq(type, msg);
-}
-
-int muxseq_send (MuxseqMsgType type, NPlayEvent event) {
-    struct MuxseqMsg msg;
-    muxseq_msg_set_NPlayEvent(msg, event);
-    return muxseq_query_zmq(type, msg);
-}
-
-void muxseq_query (MuxseqMsgType type) {
-    L_MUX_QUERY(type);
-    struct MuxseqMsg msg;
-    muxseq_query_zmq(type, msg);
-}
-
-bool muxseq_query_bool (MuxseqMsgType type) {
-    L_MUX_QUERY(type);
-    struct MuxseqMsg msg;
-    muxseq_query_zmq(type, msg);
-    return msg.payload.b;
-}
-
-double muxseq_query_float (MuxseqMsgType type) {
-    L_MUX_QUERY(type);
-    struct MuxseqMsg msg;
-    muxseq_query_zmq(type, msg);
-    return msg.payload.d;
-}
-
-void muxseq_query (MuxseqMsgType type, bool b) {
-    L_MUX_QUERY(type);
-    qDebug("  -- about bool %i", b);
-    struct MuxseqMsg msg;
-    msg.payload.b = b;
-    muxseq_query_zmq(type, msg);
-    return;
-}
-
-/*
- * controller for muxseq client
- *
- */
-
-static bool g_threads_started = false;
-
-static std::vector<std::thread> muxseq_Threads;
-
-
-/**/
-// void mux_network_close(struct MuxSocket &sock)
-
-void muxseq_query_client_thread_init(std::string _notused)
-{
-    Mux::mux_network_query_client(g_muxseq_query_client_socket, MUX_MUSESCORE_QUERY_CLIENT_URL, true);
-    //muxseq_network_mainloop_query();
-}
-
-void muxseq_bulletin_client_thread_init(std::string _notused)
-{
-    Mux::mux_network_bulletin_client(g_muxseq_bulletin_client_socket, MUX_MUSESCORE_BULLETIN_CLIENT_URL);
-    //muxseq_network_mainloop_bulletin();
-}
-
-void mux_musescore_client_start()
-{
-    if (g_threads_started) {
-        qWarning("musescore-mux-client already started");
-        return;
-    }
-    g_threads_started = true;
-    std::vector<std::thread> threadv;
-    //
-    std::thread zmqMuxseqQueryThread(muxseq_query_client_thread_init, "notused");
-    threadv.push_back(std::move(zmqMuxseqQueryThread));
-    //
-    std::thread zmqMuxseqBulletinThread(muxseq_bulletin_client_thread_init, "notused");
-    threadv.push_back(std::move(zmqMuxseqBulletinThread));
-    // move threads to heap
-    muxseq_Threads = std::move(threadv);
 }
 
 

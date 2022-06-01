@@ -35,6 +35,7 @@
 //#include "mscore/musescore.h"
 //#include "mscore/preferences.h"
 #include "muxcommon.h"
+#include "muxlib.h"
 #include "muxaudio.h"
 
 // Prevent killing sequencer with wrong data
@@ -66,6 +67,7 @@ struct {
     bool PREF_IO_JACK_USEJACKTRANSPORT = false;
 } preferences;
 
+//FIX: move to muxlib
 void mux_send_event (Event e) {
     struct SparseEvent se;
     se.type    = e.type();
@@ -74,7 +76,7 @@ void mux_send_event (Event e) {
     se.velo    = e.velo();
     se.cont    = e.controller();
     se.val     = e.value();
-    struct Msg msg;
+    struct MuxaudioMsg msg;
     msg.type = MsgTypeEventToGui;
     memcpy(&msg.payload.sparseEvent, &se, sizeof(struct SparseEvent));
     mux_mq_from_audio_writer_put(msg);
@@ -116,7 +118,7 @@ void mux_audio_handle_updateOutPortCount(int portCount)
     g_driver->updateOutPortCount(portCount);
 }
 
-void mux_audio_send_event_to_midi(struct Msg msg) {
+void mux_audio_send_event_to_midi(struct MuxaudioMsg msg) {
     NPlayEvent event;
     event.setType(msg.payload.sparseMidiEvent.type);
     event.setDataA(msg.payload.sparseMidiEvent.dataA);
@@ -508,7 +510,7 @@ int JackAudio::processAudio(jack_nframes_t frames, void* p)
       {
           jack_position_t pos;
           jack_transport_query(g_client, &pos);
-          struct Msg msg;
+          struct MuxaudioMsg msg;
           msg.type = MsgTypeJackTransportPosition;
           msg.payload.jackTransportPosition.state = static_cast<unsigned int>(getStateRT());
           msg.payload.jackTransportPosition.frame = pos.frame;

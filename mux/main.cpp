@@ -286,18 +286,6 @@ void muxseq_audio_process() {
 }
 #endif
 
-void muxseq_network_open ()
-{
-    std::cerr << "MUXSEQ ZeroMQ open network port tcp://*:7772\n";
-    zmq_context_seq = zmq_ctx_new();
-    zmq_socket_seq = zmq_socket(zmq_context_seq, ZMQ_PAIR);
-    int rc = zmq_bind(zmq_socket_seq, "tcp://*:7772");
-    if (rc) {
-        fprintf(stderr, "zmq-bind error: %s\n", strerror(errno));
-        exit(rc);
-    }
-}
-
 #if 0
 void muxseq_network_mainloop_ctrl()
 {

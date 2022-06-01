@@ -3,6 +3,8 @@
 
 #define MUX_MUSESCORE_QUERY_CLIENT_URL "tcp://localhost:7701"
 #define MUX_MUSESCORE_BULLETIN_CLIENT_URL "tcp://localhost:7702"
+#define MUX_MUSESCORE_QUERY_SERVER_URL "tcp://*:7701"
+#define MUX_MUSESCORE_BULLETIN_SERVER_URL "tcp://*:7702"
 
 namespace Ms {
 
@@ -45,7 +47,23 @@ enum MuxseqMsgType {
     MsgTypeEOF
 };
 
-//FIX: redundant with muxaudio.h, move to mux.h
+enum MuxaudioMsgType {
+    MsgTypeInit = 0,
+    MsgTypeAudioInit,
+    MsgTypeAudioStart,
+    MsgTypeAudioStop,
+    MsgTypeAudioRunning,
+    MsgTypeTransportStart,
+    MsgTypeTransportStop,
+    MsgTypeTransportSeek,
+    MsgTypeJackTransportPosition,
+    MsgTypeEventToGui,
+    MsgTypeEventToMidi,
+    MsgTypeTimeSigTempoChanged,
+    MsgTypeOutPortCount,
+    MsgTypeEOF2
+};
+
 struct SparseEvent {
     unsigned char type;
     unsigned char channel;
@@ -54,6 +72,7 @@ struct SparseEvent {
     int cont;
     int val;
 };
+
 struct SparseMidiEvent {
     unsigned int framepos;
     int portIdx;
@@ -61,6 +80,24 @@ struct SparseMidiEvent {
     unsigned char type;
     int dataA;
     int dataB;
+};
+
+struct JackTransportPosition {
+    unsigned int state;
+    unsigned int frame;
+    unsigned int valid;
+    unsigned int beats_per_minute;
+    unsigned int bbt;
+};
+
+struct MuxaudioMsg {
+    MuxaudioMsgType type;
+    union Payload {
+        int i;
+        SparseEvent sparseEvent;
+        SparseMidiEvent sparseMidiEvent;
+        struct JackTransportPosition jackTransportPosition;
+    } payload;
 };
 
 struct MuxseqMsg {
@@ -74,6 +111,9 @@ struct MuxseqMsg {
     } payload;
 };
 
+const char*   muxseq_msg_type_info (MuxseqMsgType   type);
+const char* muxaudio_msg_type_info (MuxaudioMsgType type);
+void muxseq_msg_set_NPlayEvent (MuxseqMsg msg, NPlayEvent event);
 int  muxseq_send (MuxseqMsgType type);
 int  muxseq_send (MuxseqMsgType type, int i);
 int  muxseq_send (MuxseqMsgType type, double d);
