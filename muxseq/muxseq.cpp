@@ -60,8 +60,6 @@
 #include "muxlib.h"
 #include "muxseq.h"
 
-#define LD(...) qDebug(__VA_ARGS__);
-
 namespace Ms {
 
 void mux_zmq_ctrl_send_to_audio(struct MuxaudioMsg msg);
@@ -70,7 +68,7 @@ void mux_audio_send_event_to_midi(struct MuxaudioMsg msg);
 extern int g_driver_running;
 
 static std::vector<std::thread> seqThreads;
-static int mux_audio_process_run = 0;
+int g_mux_audio_process_run = 0;
 
 static void *zmq_context_ctrl;
 static void *zmq_socket_ctrl;
@@ -95,32 +93,12 @@ int mux_mq_from_audio_writer_put (struct MuxaudioMsg msg) {
     return 1;
 }
 
-int mux_mq_from_muxaudio_handle (struct MuxaudioMsg msg) {
-    switch (msg.type) {
-        case MsgTypeAudioRunning:
-            g_driver_running = msg.payload.i;
-            qDebug("---- g_driver_running is running? %i", msg.payload.i);
-        break;
-        case MsgTypeJackTransportPosition:
-            mux_set_jack_position(msg.payload.jackTransportPosition);
-        break;
-        case MsgTypeEventToGui:
-            mux_send_event_to_gui(msg.payload.sparseEvent);
-        break;
-        default: // this should not happen
-            qFatal("MUX got unknown message from audio: %u", msg.type);
-            // skip this message
-            g_msg_from_audio_reader = (g_msg_from_audio_reader + 1) % MAILBOX_SIZE;
-        return 0;
-    }
-    return 1;
-}
 int mux_mq_from_audio_reader_visit () {
     if (g_msg_from_audio_reader == g_msg_from_audio_writer) {
         return 0;
     }
     struct MuxaudioMsg msg = g_msg_from_audio[g_msg_from_audio_reader];
-    int rc = mux_mq_from_muxaudio_handle(msg);
+    int rc = 0; //FIX muxseq_mq_from_muxaudio_handle(msg);
     g_msg_from_audio_reader = (g_msg_from_audio_reader + 1) % MAILBOX_SIZE;
     return rc;
 }
@@ -239,54 +217,36 @@ int mux_audio_process_work() {
     return 1;
 }
 
-void mux_audio_process() {
+void muxseq_audioWorker_process() {
     int slept = MUX_WRITER_USLEEP; // we cant sleep longer than the jack-audio-period = (numFrames / SampleRate) seconds
-    while (mux_audio_process_run) {
+    while (g_mux_audio_process_run) {
         if ((! mux_audio_process_work()) && // no audio work was done,
             (! mux_mq_from_audio_reader_visit())) { // and message-queue is empty
             g_writerPause++;
             std::this_thread::sleep_for(std::chrono::microseconds(slept));
         }
     }
-    qDebug("MUX audio-process terminated.");
+    LD("MUXSEQ audio-process terminated.");
 }
 
-void mux_thread_process_init(std::string msg)
+void muxseq_audioWorker_thread_init(std::string msg)
 {
-    qDebug("MUX audio-process thread initialized.");
-    mux_audio_process();
+    LD("MUXSEQ audio-worker-process thread initializing.");
+    muxseq_audioWorker_process();
 }
 
-void mux_start_threads()
+void muxseq_audioQueryServer_thread_init(std::string msg)
 {
-    std::cout << "MUX start audio threads\n";
-    mux_audio_process_run = 1;
-    std::vector<std::thread> threadv;
-    std::thread procThread(mux_thread_process_init, "hi there!");
-    threadv.push_back(std::move(procThread));
-    seqThreads = std::move(threadv);
+    LD("MUXSEQ audio-query-server thread initializing.");
 }
 
 void mux_stop_threads()
 {
-    qDebug("MUX stop audio threads");
-    mux_audio_process_run = 0;
+    LD("MUXSEQ stop audio threads");
+    g_mux_audio_process_run = 0;
     seqThreads[0].join();
 }
 
-void mux_network_mainloop_ctrl()
-{
-    qDebug("MUX ZeroMQ ctrl entering main-loop");
-    while (1) {
-        struct MuxaudioMsg msg;
-        if (zmq_recv(zmq_socket_ctrl, &msg, sizeof(struct MuxseqMsg), 0) < 0) {
-            qFatal("zmq-recv error: %s", strerror(errno));
-            break;
-        }
-        mux_mq_from_muxaudio_handle(msg);
-    }
-    qDebug("mux_network_mainloop ctrl has exited");
-}
 
 void mux_zmq_ctrl_send_to_audio (struct MuxaudioMsg msg)
 {
@@ -343,23 +303,54 @@ int muxseq_handle_musescore_msg(Mux::MuxSocket &sock, struct MuxseqMsg msg)
     return 0;
 }
 
-void mux_network_mainloop_audio()
+int muxseq_handle_audioQueryClient_msg_AudioBufferFeed (Mux::MuxSocket &sock, struct MuxaudioMsg msg)
 {
-    qDebug("MUX ZeroMQ audio entering main-loop");
+    // get MUX_CHUNKSIZE number of frames from the ringbuffer
+    float frames[MUX_CHUNKSIZE]; // count stereo, ie number of floats needed
+    mux_process_bufferStereo(MUX_CHUNKSIZE, frames);
+    zmq_send(zmq_socket_audio, frames, sizeof(float) * MUX_CHUNKSIZE, 0);
+}
+
+int muxseq_handle_audioQueryClient_msg (Mux::MuxSocket &sock, struct MuxaudioMsg msg)
+{
+    switch (msg.type) {
+        case MsgTypeAudioBufferFeed:
+            return muxseq_handle_audioQueryClient_msg_AudioBufferFeed(sock, msg);
+        //FIX: perhaps not all these can be done from this thread?
+        case MsgTypeAudioRunning:
+            g_driver_running = msg.payload.i;
+            qDebug("---- g_driver_running is running? %i", msg.payload.i);
+        break;
+        case MsgTypeJackTransportPosition:
+            mux_set_jack_position(msg.payload.jackTransportPosition);
+        break;
+        case MsgTypeEventToGui:
+            mux_send_event_to_gui(msg.payload.sparseEvent);
+        break;
+        default: // this should not happen
+            LD("audio-query-client WARNING: unknown msg from muxaudio: %i", msg.type);
+            // skip this message
+            // g_msg_from_audio_reader = (g_msg_from_audio_reader + 1) % MAILBOX_SIZE;
+    }
+    return 0;
+}
+
+
+/* audioQueryServer -- handle requests from muxaudio
+ *
+ */
+void muxseq_audioQueryClient_mainloop(Mux::MuxSocket &sock)
+{
+    LD("MUXSEQ ZeroMQ audio-query-client entering main-loop");
     while (1) {
-        char c;
-        if (zmq_recv(zmq_socket_audio, &c, 1, 0) < 0) {
-            qFatal("zmq-recv error: %s", strerror(errno));
+        struct MuxaudioMsg msg;
+        if (zmq_recv(zmq_socket_ctrl, &msg, sizeof(struct MuxaudioMsg), 0) < 0) {
+            LE("zmq-recv error: %s", strerror(errno));
             break;
         }
-        // get MUX_CHUNKSIZE number of frames from the ringbuffer
-        float frames[MUX_CHUNKSIZE]; // count stereo, ie number of floats needed
-        mux_process_bufferStereo(MUX_CHUNKSIZE, frames);
-
-        zmq_send(zmq_socket_audio, frames, sizeof(float) * MUX_CHUNKSIZE, 0);
-        //zmq_send(zmq_socket_audio, "b", 1, 0);
+        muxseq_handle_audioQueryClient_msg(sock, msg);
     }
-    qDebug("mux_network_mainloop audio has exited");
+    LD("mux_network_mainloop audio has exited");
 }
 
 /* mscoreQueryServer -- handle requests from musescore

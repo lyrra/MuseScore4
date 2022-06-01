@@ -1,10 +1,14 @@
 #ifndef __MUXLIB_H__
 #define __MUXLIB_H__
 
+#define LD(...) qDebug(__VA_ARGS__);
+#define LE(...) qFatal(__VA_ARGS__);
+
 #define MUX_MUSESCORE_QUERY_CLIENT_URL "tcp://localhost:7701"
 #define MUX_MUSESCORE_BULLETIN_CLIENT_URL "tcp://localhost:7702"
 #define MUX_MUSESCORE_QUERY_SERVER_URL "tcp://*:7701"
 #define MUX_MUSESCORE_BULLETIN_SERVER_URL "tcp://*:7702"
+#define MUX_AUDIO_QUERY_CLIENT_URL "tcp://localhost:7711"
 
 namespace Ms {
 
@@ -52,6 +56,7 @@ enum MuxaudioMsgType {
     MsgTypeAudioInit,
     MsgTypeAudioStart,
     MsgTypeAudioStop,
+    MsgTypeAudioBufferFeed,
     MsgTypeAudioRunning,
     MsgTypeTransportStart,
     MsgTypeTransportStop,

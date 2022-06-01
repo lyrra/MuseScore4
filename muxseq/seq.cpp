@@ -75,8 +75,8 @@ int g_mscore_division = 1; // FIX: need to set this at start
 qreal g_utime;
 qreal g_utick;
         
-void mux_start_threads();
 void mux_stop_threads();
+extern int g_mux_audio_process_run;
 static Transport jack_transport;
 
 Seq* seq;
@@ -307,7 +307,7 @@ bool Seq::init(bool hotPlug)
       if (hotPlug) {
             mux_msg_to_audio(MsgTypeAudioInit, hotPlug);
             }
-      mux_start_threads();
+      g_mux_audio_process_run = 1;
       mux_msg_to_audio(MsgTypeAudioStart, hotPlug);
       while (! g_driver_running /* g_ctrl_audio_running */) {
             std::this_thread::sleep_for(std::chrono::microseconds(10000));
