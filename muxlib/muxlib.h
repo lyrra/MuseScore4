@@ -14,6 +14,7 @@ namespace Ms {
 
 enum MuxseqMsgType {
     MsgTypeNoop = 0,
+    MsgTypeSeqCreate,
     MsgTypeSeqInit,
     MsgTypeSeqDeinit,
     MsgTypeSeqExit,

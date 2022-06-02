@@ -8,6 +8,7 @@ namespace Ms {
 const char* muxseq_msg_type_info (MuxseqMsgType type) {
     switch (type) {
     case MsgTypeNoop: return "MsgTypeNoop";
+    case MsgTypeSeqCreate: return "MsgTypeSeqCreate";
     case MsgTypeSeqInit: return "MsgTypeSeqInit";
     case MsgTypeSeqDeinit: return "MsgTypeSeqDeinit";
     case MsgTypeSeqExit: return "MsgTypeSeqExit";

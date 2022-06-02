@@ -8,7 +8,7 @@ namespace Ms {
 
 #define DEFMUXSEQVOID(name) void muxseq_seq_ ## name()
 
-void muxseq_initialize(int sampleRate);
+void muxseq_create(int sampleRate);
 void muxseq_dealloc();
 void muxseq_exit();
 bool muxseq_seq_init(bool hotPlug);

@@ -7815,10 +7815,10 @@ void MuseScore::init(QStringList& argv)
       // Do not create sequencer and audio drivers if run with '-s'
       if (!noSeq) {
             showSplashMessage(sc, tr("Initializing sequencer and audio driver…"));
-            MScore::sampleRate = 48000.0f;
-            muxseq_initialize(MScore::sampleRate);
-            showSplashMessage(sc, tr("Loading SoundFonts…"));
             mux_musescore_client_start();
+            MScore::sampleRate = 48000.0f;
+            muxseq_create(MScore::sampleRate);
+            showSplashMessage(sc, tr("Loading SoundFonts…"));
             }
       else {
             muxseq_dealloc();

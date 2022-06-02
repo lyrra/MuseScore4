@@ -347,7 +347,7 @@ void mux_audio_process() {
 
 void mux_network_mainloop_ctrl()
 {
-    std::cerr << "MUX ZeroMQ control entering main-loop\n";
+    std::cerr << "MUXAUDIO ZeroMQ control entering main-loop\n";
     while (1) {
         struct MuxaudioMsg msg;
         if (zmq_recv(g_socket_ctrl.socket, &msg, sizeof(struct MuxaudioMsg), 0) < 0) {
@@ -372,13 +372,13 @@ void mux_network_mainloop_audio()
 
 void mux_network_server_ctrl()
 {
-    Mux::mux_network_query_server(g_socket_ctrl, "tcp://*:7771", false);
+    Mux::mux_network_query_server(g_socket_ctrl, "tcp://*:7711", false);
     mux_network_mainloop_ctrl();
 }
 
 void mux_network_server_audio()
 {
-    Mux::mux_network_query_server(g_socket_audio, "tcp://*:7772", true);
+    Mux::mux_network_query_server(g_socket_audio, "tcp://*:7712", true);
     mux_network_mainloop_audio();
 }
 

@@ -1,4 +1,7 @@
 
+#include <iostream>
+#include <thread>
+#include <chrono>
 #include "event.h"
 #include "libmscore/synthesizerstate.h"
 #include "synthesizer.h"
@@ -16,6 +19,8 @@ namespace Ms {
 static struct Mux::MuxSocket g_muxseq_query_client_socket;
 static struct Mux::MuxSocket g_muxseq_bulletin_client_socket;
 static bool g_threads_started = false;
+static bool g_thread_musescoreQuery_started = false;
+static bool g_thread_musescoreBulletin_started = false;
 static std::vector<std::thread> muxseq_Threads;
 /**/
 
@@ -37,12 +42,14 @@ int muxseq_send (MuxseqMsgType type) {
 int muxseq_send (MuxseqMsgType type, int i) {
     struct MuxseqMsg msg;
     msg.payload.i = i;
+    qDebug("muxseq-send msg %s, int=%i", muxseq_msg_type_info(type), msg.payload.i);
     return muxseq_query_zmq(type, msg);
 }
 
 int muxseq_send (MuxseqMsgType type, double d) {
     struct MuxseqMsg msg;
     msg.payload.d = d;
+    qDebug("muxseq-send msg %s, double=%f", muxseq_msg_type_info(type), d);
     return muxseq_query_zmq(type, msg);
 }
 
@@ -88,12 +95,14 @@ void muxseq_query (MuxseqMsgType type, bool b) {
 void muxseq_query_client_thread_init(std::string _notused)
 {
     Mux::mux_network_query_client(g_muxseq_query_client_socket, MUX_MUSESCORE_QUERY_CLIENT_URL, true);
+    g_thread_musescoreQuery_started = true;
     //muxseq_network_mainloop_query();
 }
 
 void muxseq_bulletin_client_thread_init(std::string _notused)
 {
     Mux::mux_network_bulletin_client(g_muxseq_bulletin_client_socket, MUX_MUSESCORE_BULLETIN_CLIENT_URL);
+    g_thread_musescoreBulletin_started = true;
     //muxseq_network_mainloop_bulletin();
 }
 
@@ -103,7 +112,6 @@ void mux_musescore_client_start()
         qWarning("musescore-mux-client already started");
         return;
     }
-    g_threads_started = true;
     std::vector<std::thread> threadv;
     //
     std::thread zmqMuxseqQueryThread(muxseq_query_client_thread_init, "notused");
@@ -113,6 +121,11 @@ void mux_musescore_client_start()
     threadv.push_back(std::move(zmqMuxseqBulletinThread));
     // move threads to heap
     muxseq_Threads = std::move(threadv);
+    while(g_thread_musescoreQuery_started == false ||
+          g_thread_musescoreBulletin_started == false) {
+        std::this_thread::sleep_for(std::chrono::microseconds(10000));
+    }
+    g_threads_started = true;
 }
 
 /* Musescore/client specific
@@ -123,8 +136,9 @@ MasterSynthesizer* synti = 0;
 
 int muxseq_create_synti(int sampleRate);
 
-void muxseq_initialize(int sampleRate) { // called from musescore.cpp: MuseScore::init
-    muxseq_send(MsgTypeSeqInit, sampleRate);
+void muxseq_create(int sampleRate) { // called from musescore.cpp: MuseScore::init
+    qDebug("musescore-muxseq-seqCreate sampleRate=%i", sampleRate);
+    muxseq_send(MsgTypeSeqCreate, sampleRate);
 }
 
 void muxseq_dealloc() {
