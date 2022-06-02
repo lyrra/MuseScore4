@@ -2663,6 +2663,7 @@ void MuseScore::setCurrentView(int tabIdx, int idx)
 
 void MuseScore::setCurrentScoreView(ScoreView* view)
       {
+      qDebug("-- MuseScore::setCurrentScoreView --");
       cv = view;
       if (cv) {
             ctab = (tab2 && tab2->view() == view) ? tab2 : tab1;
@@ -4260,7 +4261,7 @@ void MuseScore::showModeText(const QString& s, bool informScreenReader)
 
 void MuseScore::changeState(ScoreState val)
       {
-      if (MScore::debugMode)
+      //if (MScore::debugMode)
             qDebug("MuseScore::changeState: %s", stateName(val));
 
       // disallow change to edit modes if currently in play mode
@@ -7804,10 +7805,10 @@ void MuseScore::init(QStringList& argv)
       // Do not create sequencer and audio drivers if run with '-s'
       if (!noSeq) {
             showSplashMessage(sc, tr("Initializing sequencer and audio driver…"));
-            MScore::sampleRate = 48000.0f;
-            muxseq_initialize(MScore::sampleRate);
-            showSplashMessage(sc, tr("Loading SoundFonts…"));
             mux_musescore_client_start();
+            MScore::sampleRate = 48000.0f;
+            muxseq_create(MScore::sampleRate);
+            showSplashMessage(sc, tr("Loading SoundFonts…"));
             }
       else {
             muxseq_dealloc();

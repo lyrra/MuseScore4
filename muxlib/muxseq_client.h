@@ -8,7 +8,7 @@ namespace Ms {
 
 #define DEFMUXSEQVOID(name) void muxseq_seq_ ## name()
 
-void muxseq_initialize(int sampleRate);
+void muxseq_create(int sampleRate);
 void muxseq_dealloc();
 void muxseq_exit();
 bool muxseq_seq_init(bool hotPlug);
@@ -46,13 +46,11 @@ float muxseq_seq_metronomeGain();
 void muxseq_seq_playMetronomeBeat(BeatType beatType);
 void muxseq_seq_initInstruments();
 void muxseq_preferencesChanged();
-//MasterScore* muxseq_seq_score();
 void muxseq_seq_set_scoreview(void *v);
 
 void muxseq_seq_setController(int channel, int vol, int iv);
 void muxseq_seq_updateOutPortCount(int maxPorts);
 
-int muxseq_create_synti(int sampleRate);
 int muxseq_synthesizerFactory();
 void muxseq_delete_synti();
 bool muxseq_synti();

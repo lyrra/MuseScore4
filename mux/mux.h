@@ -8,17 +8,33 @@
 
 namespace Mux {
 
+enum class ZmqType {
+  QUERY = 0,
+  PUBSUB
+};
+enum class ZmqDir {
+  REQ = 0,
+  REP,
+  PUB,
+  SUB
+};
+enum class ZmqServer {
+  BIND = 0,
+  CONNECT
+};
+
 struct MuxSocket {
     void *context;
     void *socket;
 };
 
-int mux_zmq_send (Mux::MuxSocket &muxsock, void* buf, int len);
-int mux_zmq_recv (Mux::MuxSocket &muxsock, void* buf, int len);
-int mux_network_query_server (struct MuxSocket &sock, const char* url, bool req);
-int mux_network_query_client (struct MuxSocket &sock, const char *url, bool req);
-int mux_network_bulletin_server (struct MuxSocket &sock, const char* url);
-int mux_network_bulletin_client (struct MuxSocket &sock, const char *url);
+int mux_zmq_send (struct MuxSocket &muxsock, void* buf, int len);
+int mux_zmq_recv (MuxSocket &muxsock, void* buf, int len);
+int mux_query_send (struct MuxSocket &sock, void* buf, int len);
+void* mux_query_recv (struct MuxSocket &sock, int *rlen);
+int mux_request (struct MuxSocket &sock, void* buf, int len);
+int mux_make_connection(struct MuxSocket &sock, const char *url, ZmqType type, ZmqDir dir, ZmqServer server);
+
 
 } // namespace Mux
 #endif

@@ -87,6 +87,7 @@ Fluid::Fluid()
 
 void Fluid::init(float sampleRate)
       {
+      qDebug("-- Fluid::init --");
       if (!initialized) {     // initialize all the conversion tables and other stuff
             initialized = true;
             fluid_conversion_config();
@@ -685,6 +686,7 @@ std::vector<SoundFontInfo> Fluid::soundFontsInfo() const
 
 bool Fluid::loadSoundFonts(const QStringList& sl)
       {
+      qDebug("-- Fluid::loadSoundFonts --");
       QStringList ol = soundFonts();
       if (ol == sl) {
             qDebug("Fluid:loadSoundFonts: already loaded");
@@ -703,16 +705,21 @@ bool Fluid::loadSoundFonts(const QStringList& sl)
       QFileInfoList l = sfFiles();
       for (int i = sl.size() - 1; i >= 0; --i) {
             QString s = sl[i];
+            qDebug("  load %s", qPrintable(s));
             if (s.isEmpty())
                   continue;
             QString path;
             QFileInfo fis(s);
             QString fileName = fis.fileName();
             for (const QFileInfo& fi : qAsConst(l)) {
+                  qDebug("  try soundfont file %s", qPrintable(fi.fileName()));
                   if (fi.fileName() == fileName) {
                         path = fi.absoluteFilePath();
                         break;
                         }
+                  }
+            if (path.isEmpty()) {
+                  path = "../../share/sound/MuseScore_General.sf3";
                   }
             if (path.isEmpty()) {
                   qDebug("Fluid: sf <%s> not found", qPrintable(s));

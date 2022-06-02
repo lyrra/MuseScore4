@@ -2105,8 +2105,8 @@ void ScoreView::cmd(const char* s)
       const QByteArray cmd(s);
 
       shadowNote->setVisible(false);
-      if (MScore::debugMode)
-            qDebug("ScoreView::cmd <%s>", s);
+      //if (MScore::debugMode)
+      qDebug("ScoreView::cmd <%s>", s);
 
       static const std::vector<ScoreViewCmd> cmdList {
             {{"escape"}, [](ScoreView* cv, const QByteArray&) {
@@ -2179,11 +2179,15 @@ void ScoreView::cmd(const char* s)
                   // ??
                   }},
             {{"play"}, [](ScoreView* cv, const QByteArray&) {
+                  qDebug("-- scoreview play x1");
                   if (muxseq_seq_alive() && muxseq_seq_can_start()) {
-                        if (cv->state == ViewState::NORMAL || cv->state == ViewState::NOTE_ENTRY)
+                        qDebug("-- scoreview play x2, seq is alive, and can start");
+                        if (cv->state == ViewState::NORMAL || cv->state == ViewState::NOTE_ENTRY) {
+                              qDebug("-- scoreview play x3, cv-state is normal or note-entry");
                               cv->changeState(ViewState::PLAY);
-                        else if (cv->state == ViewState::PLAY)
+                        } else if (cv->state == ViewState::PLAY) {
                               cv->changeState(ViewState::NORMAL);
+                              }
                         }
                   else
                         getAction("play")->setChecked(false);

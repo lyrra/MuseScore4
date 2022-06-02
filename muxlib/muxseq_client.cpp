@@ -1,6 +1,20 @@
+/* GPL-2.0-or-later
+ * Copyright (C) 2022 Larry Valkama
+ *
+ * This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+ */
+/*
+ *
+ *
+ */
 
+#include <iostream>
+#include <thread>
+#include <chrono>
 #include "event.h"
 #include "libmscore/synthesizerstate.h"
+#include "libmscore/rendermidi.h"
+#include "libmscore/tempo.h"
 #include "synthesizer.h"
 #include "mux.h"
 #include "muxlib.h"
@@ -8,25 +22,45 @@
 #include "scoreview.h"
 #include "msynthesizer.h"
 #include "muxseq_client.h"
+#include "musescore.h" //FIX: too much to include, needed for extern *mscore
+
+#include "libmscore/rendermidi.h"
+#include "libmscore/score.h"
+#include "muxtools/eventutils.h"
+
+//FIX: muxseq shouldn't use QT
+#define LD(...) qDebug(__VA_ARGS__)
+#define LD4(...) qDebug(__VA_ARGS__)
+#define LD8(...) qDebug(__VA_ARGS__)
+#define LE(...) qError(__VA_ARGS__)
+#define LEX(...) qFatal(__VA_ARGS__)
 
 namespace Ms {
+
+static constexpr int minUtickBufferSize = 480 * 4 * 10; // about 10 measures of 4/4 time signature
 
 /* initialization/control
  */
 static struct Mux::MuxSocket g_muxseq_query_client_socket;
-static struct Mux::MuxSocket g_muxseq_bulletin_client_socket;
+static struct Mux::MuxSocket g_muxseq_queryreq_client_socket;
 static bool g_threads_started = false;
+static bool g_thread_musescoreQuery_started = false;
+static bool g_thread_musescoreBulletin_started = false;
 static std::vector<std::thread> muxseq_Threads;
 /**/
+// these are an mscore-side Seq object
+static ScoreView* g_cv = nullptr;
+static Score* g_cs = nullptr;
+static MidiRenderer g_midi(nullptr);
 
 #define L_MUX_QUERY(type) \
   qDebug("muxseq_client query %s", muxseq_msg_type_info(type));
 
 int muxseq_query_zmq (MuxseqMsgType type, MuxseqMsg &msg) {
-    qDebug("muxseq send msg %s", muxseq_msg_type_info(type));
+    LD("MSCORE ==> MUXSEQ query msg %s", muxseq_msg_type_info(type));
     msg.type = type;
-    mux_zmq_send(g_muxseq_query_client_socket, (void*) &msg, sizeof(struct MuxseqMsg));
-    return mux_zmq_recv(g_muxseq_query_client_socket, (void*) &msg, sizeof(struct MuxseqMsg));
+    Mux::mux_zmq_send(g_muxseq_query_client_socket, (void*) &msg, sizeof(struct MuxseqMsg));
+    return Mux::mux_zmq_recv(g_muxseq_query_client_socket, (void*) &msg, sizeof(struct MuxseqMsg));
 }
 
 int muxseq_send (MuxseqMsgType type) {
@@ -37,12 +71,14 @@ int muxseq_send (MuxseqMsgType type) {
 int muxseq_send (MuxseqMsgType type, int i) {
     struct MuxseqMsg msg;
     msg.payload.i = i;
+    //qDebug("muxseq-send msg %s, int=%i", muxseq_msg_type_info(type), msg.payload.i);
     return muxseq_query_zmq(type, msg);
 }
 
 int muxseq_send (MuxseqMsgType type, double d) {
     struct MuxseqMsg msg;
     msg.payload.d = d;
+    //qDebug("muxseq-send msg %s, double=%f", muxseq_msg_type_info(type), d);
     return muxseq_query_zmq(type, msg);
 }
 
@@ -52,28 +88,30 @@ int muxseq_send (MuxseqMsgType type, NPlayEvent event) {
     return muxseq_query_zmq(type, msg);
 }
 
-void muxseq_query (MuxseqMsgType type) {
-    L_MUX_QUERY(type);
+int muxseq_query (MuxseqMsgType type) {
+    //L_MUX_QUERY(type);
     struct MuxseqMsg msg;
     muxseq_query_zmq(type, msg);
+    return 0;
 }
 
 bool muxseq_query_bool (MuxseqMsgType type) {
-    L_MUX_QUERY(type);
+    //L_MUX_QUERY(type);
     struct MuxseqMsg msg;
     muxseq_query_zmq(type, msg);
+    //LD("muxseq_query_bool %s => %i", muxseq_msg_type_info(type), msg.payload.b);
     return msg.payload.b;
 }
 
 double muxseq_query_float (MuxseqMsgType type) {
-    L_MUX_QUERY(type);
+    //L_MUX_QUERY(type);
     struct MuxseqMsg msg;
     muxseq_query_zmq(type, msg);
     return msg.payload.d;
 }
 
 void muxseq_query (MuxseqMsgType type, bool b) {
-    L_MUX_QUERY(type);
+    //L_MUX_QUERY(type);
     qDebug("  -- about bool %i", b);
     struct MuxseqMsg msg;
     msg.payload.b = b;
@@ -81,20 +119,153 @@ void muxseq_query (MuxseqMsgType type, bool b) {
     return;
 }
 
+int mux_query_recv_Muxseq (Mux::MuxSocket &sock, struct MuxseqMsg &msg)
+{
+    int rlen;
+    void* m = mux_query_recv(sock, &rlen);
+    if (! m) return -1;
+    if (rlen != sizeof(struct MuxseqMsg)) return -1;
+    memcpy(&msg, m, sizeof(struct MuxseqMsg));
+    free(m);
+    return 0;
+}
+
+
+void maybe_update_midiRenderer()
+{
+      Score* cs = g_cv ? g_cv->score()->masterScore() : 0;
+      g_midi = MidiRenderer(cs);
+      g_midi.setMinChunkSize(10);
+}
+
+void _renderChunk(RangeMap &renderEventsStatus,
+                  const MidiRenderer::Chunk& ch,
+                  EventMap* eventMap)
+{
+    SynthesizerState synState = mscore->synthesizerState();
+    MidiRenderer::Context ctx(synState);
+    ctx.metronome = true;
+    ctx.renderHarmony = true;
+    g_midi.renderChunk(ch, eventMap, ctx);
+    renderEventsStatus.setOccupied(ch.utick1(), ch.utick2());
+}
+
+//FIX: put this is muxlib
+unsigned char* eventMap_to_muxbuffer(MuxseqMsgType type, EventMap evm,
+                                     qreal beatsPerSecond, int *rlen) {
+    size_t numEvents = evm.size();
+    struct MuxseqEventsHeader head;
+    head.numEvents = numEvents;
+    head.type = type;
+    int len = sizeof(struct MuxseqEventsHeader) +
+              sizeof(struct SparseEvent) * numEvents;
+    unsigned char* buf = (unsigned char*) malloc(len);
+    memcpy(buf, &head, sizeof(struct MuxseqEventsHeader));
+    struct SparseEvent *sevs = (struct SparseEvent *) (buf + sizeof(struct MuxseqEventsHeader));
+    size_t i = 0;
+    for(const auto &pair: evm) {
+        int framepos = pair.first;
+        NPlayEvent nev = pair.second;
+        sevs[i].framepos = framepos;
+        sevs[i].type = nev.type();
+        sevs[i].channel = nev.channel();
+        sevs[i].pitch = nev.pitch();
+        sevs[i].velo  = nev.velo();
+        // derived
+        sevs[i].playPosSeconds = g_cs->utick2utime(framepos);
+        sevs[i].beatsPerSecond = (int) beatsPerSecond;
+        sevs[i].division       = (int) MScore::division;
+        LD4("%i: storing event framepos=%i pitch=%i/%i channel=%i/%i playPosSeconds=%f",
+            i, sevs[i].framepos,
+            sevs[i].pitch, nev.pitch(),
+            sevs[i].channel, nev.channel(),
+            sevs[i].playPosSeconds);
+        i++;
+    }
+    LD4("Done computing the payload, numEvents=%i bufLen=%i", numEvents, len);
+    *rlen = len;
+    return buf;
+}
+
+int handle_mscore_msg_SeqRenderEvents(Mux::MuxSocket &sock, struct MuxseqMsg msg)
+{
+    maybe_update_midiRenderer();
+    int utick = msg.payload.i;
+    RangeMap renderEventsStatus;
+    renderEventsStatus.clear();
+    int unrenderedUtick = renderEventsStatus.occupiedRangeEnd(utick);
+    EventMap events;
+    LD4("SeqRenderEvents -- utick=%i unrenderedUtick=%i (num events before render: %i)\n", utick, unrenderedUtick, events.size());
+    while (unrenderedUtick - utick < minUtickBufferSize) {
+        const MidiRenderer::Chunk chunk = g_midi.getChunkAt(unrenderedUtick);
+        if (!chunk)
+              break;
+        _renderChunk(renderEventsStatus, chunk, &events);
+        unrenderedUtick = renderEventsStatus.occupiedRangeEnd(utick);
+    }
+    int rlen;
+    unsigned int playPosUTick;
+    unsigned char* buf = eventMap_to_muxbuffer(MsgTypeSeqRenderEvents, events,
+                                               g_cs->tempomap()->relTempo(), // relTempo needed here to ensure that bps changes as we slide the tempo bar
+                                               &rlen);
+    // send events to muxseq
+    LD8("SeqRenderEvents -- done render-chunk, num-events-rendered: %i bufSize=%i\n", events.size(), rlen);
+    if (mux_query_send(sock, buf, rlen) == -1) {
+        free(buf);
+        return -1;
+    }
+    LD8("SeqRenderEvents -- done sending render-chunk to MUXSEQ");
+    free(buf);
+    return 0;
+}
+
+int muxseq_network_mainloop_queryrep_recv(Mux::MuxSocket &sock) {
+    struct MuxseqMsg msg;
+    if (mux_query_recv_Muxseq(sock, msg) < 0) {
+        return -1;
+    }
+    LD("MSCORE ==> MUXSEQ got query from muxseq, type=%i (%s) label=%s", msg.type, muxseq_msg_type_info(msg.type), msg.label);
+    switch (msg.type) {
+        case MsgTypeSeqRenderEvents:
+            return handle_mscore_msg_SeqRenderEvents(sock, msg);
+        break;
+        default:
+            strcpy(msg.label, "mscore");
+            if (mux_query_send(sock, &msg, sizeof(struct MuxseqMsg)) == -1) {
+                return -1;
+            }
+            return 0;
+    }
+}
+
+void muxseq_network_mainloop_queryrep(Mux::MuxSocket &sock)
+{
+    while (1) {
+        int rc = muxseq_network_mainloop_queryrep_recv(sock);
+        if (rc < 0) {
+            qFatal("  -- musescore-muxseq queryreq client error");
+            return;
+        }
+    }
+}
 
 
 // void mux_network_close(struct MuxSocket &sock)
 
-void muxseq_query_client_thread_init(std::string _notused)
+void muxseq_query_req_thread_init(std::string _notused)
 {
-    Mux::mux_network_query_client(g_muxseq_query_client_socket, MUX_MUSESCORE_QUERY_CLIENT_URL, true);
+    qDebug("Connecting to muxseq query-req-client.");
+    Mux::mux_make_connection(g_muxseq_query_client_socket, MUX_MUSESCORE_QUERY_CLIENT_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REQ, Mux::ZmqServer::CONNECT);
+    qDebug("Connected to muxseq (as query-req-client).");
+    g_thread_musescoreQuery_started = true;
     //muxseq_network_mainloop_query();
 }
 
-void muxseq_bulletin_client_thread_init(std::string _notused)
+void muxseq_query_rep_thread_init(std::string _notused)
 {
-    Mux::mux_network_bulletin_client(g_muxseq_bulletin_client_socket, MUX_MUSESCORE_BULLETIN_CLIENT_URL);
-    //muxseq_network_mainloop_bulletin();
+    Mux::mux_make_connection(g_muxseq_queryreq_client_socket, MUX_MUSESCORE_QUERYREQ_CLIENT_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REP, Mux::ZmqServer::CONNECT);
+    //g_thread_musescoreBulletin_started = true;
+    muxseq_network_mainloop_queryrep(g_muxseq_queryreq_client_socket);
 }
 
 void mux_musescore_client_start()
@@ -103,16 +274,20 @@ void mux_musescore_client_start()
         qWarning("musescore-mux-client already started");
         return;
     }
-    g_threads_started = true;
     std::vector<std::thread> threadv;
     //
-    std::thread zmqMuxseqQueryThread(muxseq_query_client_thread_init, "notused");
+    std::thread zmqMuxseqQueryThread(muxseq_query_req_thread_init, "notused");
     threadv.push_back(std::move(zmqMuxseqQueryThread));
     //
-    std::thread zmqMuxseqBulletinThread(muxseq_bulletin_client_thread_init, "notused");
+    std::thread zmqMuxseqBulletinThread(muxseq_query_rep_thread_init, "notused");
     threadv.push_back(std::move(zmqMuxseqBulletinThread));
     // move threads to heap
     muxseq_Threads = std::move(threadv);
+    while(g_thread_musescoreQuery_started == false /* ||
+          g_thread_musescoreBulletin_started == false */) {
+        std::this_thread::sleep_for(std::chrono::microseconds(10000));
+    }
+    g_threads_started = true;
 }
 
 /* Musescore/client specific
@@ -121,10 +296,9 @@ void mux_musescore_client_start()
 
 MasterSynthesizer* synti = 0;
 
-int muxseq_create_synti(int sampleRate);
-
-void muxseq_initialize(int sampleRate) { // called from musescore.cpp: MuseScore::init
-    muxseq_send(MsgTypeSeqInit, sampleRate);
+void muxseq_create(int sampleRate) { // called from musescore.cpp: MuseScore::init
+    qDebug("musescore-muxseq-seqCreate sampleRate=%i", sampleRate);
+    muxseq_send(MsgTypeSeqCreate, sampleRate);
 }
 
 void muxseq_dealloc() {
@@ -143,7 +317,7 @@ bool muxseq_seq_alive() {
 
 bool muxseq_seq_init (bool hotPlug) {
     muxseq_query(MsgTypeSeqInit, hotPlug);
-    return true;
+    return true; //FIX use the return value (when implemented in muxseq)
 }
 
 void muxseq_seq_start () {
@@ -256,8 +430,21 @@ MasterScore* muxseq_seq_score () {
 }
 
 void muxseq_seq_set_scoreview (void* v) {
-    //FIX: seq shouldn't know about the score, but instead take an eventmap
-    //FIX: seq3->setScoreView((ScoreView*)v);
+    //FIX: note, this code is from Seq::setScoreView
+    if (g_cv != v && g_cs) {
+        //unmarkNotes(); // FIX: tracks what notes are being played
+        //stopWait();
+    }
+    g_cv = static_cast<ScoreView*>(v);
+    g_cs = g_cv ? g_cv->score()->masterScore() : 0;
+    g_midi = MidiRenderer(g_cs);   // see muxseq_client.cpp:maybe_update_midiRenderer()
+    g_midi.setMinChunkSize(10);
+    //FIX: send to muxseq
+    //g_seq->_synti->reset();
+    if (g_cs) {
+        //FIX: send to muxseq: muxseq_seq_initInstruments
+        //g_seq->initInstruments();
+    }
 }
 
 void muxseq_seq_setController(int channel, int vol, int iv) {
@@ -288,13 +475,10 @@ int muxseq_synthesizerFactory() {
     return 0;
 }
 
-int muxseq_create_synti(int sampleRate) {
-    muxseq_send(MsgTypeMasterSynthesizerInit);
-    //synti = muxseq_synthesizerFactory();
-    //synti->setSampleRate(sampleRate);
-    //synti->init();
-    return 0; // return some index?
-}
+//int muxseq_create_synti(int sampleRate) {
+//    muxseq_send(MsgTypeMasterSynthesizerInit);
+//    return 0; // return some index?
+//}
 
 MasterSynthesizer* muxseq_get_synti() {
     return synti;

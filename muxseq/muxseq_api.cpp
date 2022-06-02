@@ -1,7 +1,19 @@
+/* GPL-2.0-or-later
+ * Copyright (C) 2022 Larry Valkama
+ *
+ * This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+ */
+/*
+ *
+ *
+ */
 
+#include "mux.h"
 #include "muxseqsig.h"
-#include "scoreview.h"
 #include "event.h"
+#include "muxlib.h"
+#include "seq.h"
+#include "scoreview.h"
 #include "msynthesizer.h"
 #include "effects/zita1/zita.h"
 #include "effects/compressor/compressor.h"
@@ -18,82 +30,79 @@ extern Ms::Synthesizer* createAeolus();
 extern Ms::Synthesizer* createZerberus();
 #endif
 
+#define LE(...) qDebug(__VA_ARGS__)
+#define LD8(...) qDebug(__VA_ARGS__)
 namespace Ms {
+extern struct Mux::MuxSocket g_muxsocket_mscoreQueryReqServer;
+extern Seq* g_seq;
+MasterSynthesizer* synti = 0;
 
-enum MsgType {
-    MsgTypeNoop = 0,
-    MsgTypeSeqInit,
-    MsgTypeSeqDeinit,
-    MsgTypeSeqExit,
-    MsgTypeSeqAlive,
-    MsgTypeSeqStart,
-    MsgTypeSeqStop,
-    MsgTypeSeqSendEvent,
-    MsgTypeSeqStartNote,
-    MsgTypeSeqStartNoteDur,
-    MsgTypeSeqStopNotes,
-    MsgTypeSeqStartNoteTimer,
-    MsgTypeSeqStopNoteTimer,
-    MsgTypeSeqStopWait,
-    MsgTypeSeqCurTempo,
-    MsgTypeSeqSetRelTempo,
-    MsgTypeSeqPlaying,
-    MsgTypeSeqRunning,
-    MsgTypeSeqStopped,
-    MsgTypeSeqCanStart,
-    MsgTypeSeqCurTick,
-    MsgTypeSeqSeek,
-    MsgTypeSeekEnd,
-    MsgTypeNextMeasure,
-    MsgTypePrevMeasure,
-    MsgTypeNextChord,
-    MsgTypePrevChord,
-    MsgTypeRewindStart,
-    MsgTypeSetLoopIn,
-    MsgTypeSetLoopOut,
-    MsgTypeSetLoopSelection,
-    MsgTypeRecomputeMaxMidiOutPort,
-    MsgTypeSeqPreferencesChanged,
-    MsgTypeSeqUpdateOutPortCount,
-    MsgTypeMasterSynthesizerInit,
-    MsgTypeEOF
-};
-
-
-void muxseq_send(MsgType type) {
-    qDebug("muxseq msg %i", type);
+int  muxseq_send(MuxseqMsgType type) {
+    qDebug("muxseq msg %i (NOT IMPL)", type);
+    return 0;
 }
 
-void muxseq_send(MsgType type, int i) {
-    qDebug("muxseq msg %i about int %i", type, i);
+int  muxseq_send(MuxseqMsgType type, int i) {
+    qDebug("muxseq msg %i about int %i (NOT IMPL)", type, i);
+    return 0;
 }
-void muxseq_send(MsgType type, double d) {
-    qDebug("muxseq msg %i about int %f", type, d);
-}
-
-void muxseq_send(MsgType type, NPlayEvent event) {
-    qDebug("muxseq msg %i about event", type);
+int  muxseq_send(MuxseqMsgType type, double d) {
+    qDebug("muxseq msg %i about int %f (NOT IMPL)", type, d);
+    return 0;
 }
 
-void muxseq_query(MsgType type) {
-    qDebug("muxseq msg query %i", type);
+int  muxseq_send(MuxseqMsgType type, NPlayEvent event) {
+    qDebug("muxseq msg %i about event (NOT IMPL)", type);
+    return 0;
 }
 
-bool muxseq_query_bool(MsgType type) {
-    qDebug("muxseq msg query %i", type);
+int  muxseq_query(MuxseqMsgType type) {
+    qDebug("muxseq msg query %i (NOT IMPL)", type);
+    return 0;
+}
+
+bool muxseq_query_bool(MuxseqMsgType type) {
+    qDebug("muxseq msg query %i (NOT IMPL)", type);
     return true;
 }
 
-float muxseq_query_float(MsgType type) {
-    qDebug("muxseq msg query %i", type);
-    return 0.0f;
+double muxseq_query_float(MuxseqMsgType type) {
+    qDebug("muxseq msg query %i (NOT IMPL)", type);
+    return 0.0;
 }
 
-void muxseq_query(MsgType type, bool b) {
-    qDebug("muxseq msg query %i about bool %i", type, b);
+void muxseq_query(MuxseqMsgType type, bool b) {
+    qDebug("muxseq msg query %i about bool %i (NOT IMPL)", type, b);
 }
 
-MasterSynthesizer* synti = 0;
+//FIX: handles only payload  'i'
+void* muxseq_mscore_query (MuxseqMsgType type, int i)
+{
+    qDebug("MUXSEQ ==> MSCORE query msg %s", muxseq_msg_type_info(type));
+    /* Create a new message, allocating 6 bytes for message content */
+    struct MuxseqMsg msg;
+    msg.type = type;
+    msg.payload.i = i;
+    strcpy(msg.label, "muxseq");
+    if (mux_query_send(g_muxsocket_mscoreQueryReqServer, &msg, sizeof(struct MuxseqMsg)) < 0) {
+        LE("muxseq_mscore_query send failed");
+        return nullptr;
+    }
+    LD8("MUXSEQ ==> MSCORE query msg %s (done sending request)", muxseq_msg_type_info(type));
+    // receive reply, which is a 'struct MuxseqEventsHeader' followed by an list of events
+    int rlen2;
+    void *m = mux_query_recv(g_muxsocket_mscoreQueryReqServer, &rlen2);
+    LD8("muxseq_mscore_query got reply, bufSize=%i", rlen2);
+    if (! m) {
+        LE("muxseq_mscore_query recv failed");
+        return nullptr;
+    }
+    struct MuxseqEventsHeader *meh;
+    meh = (struct MuxseqEventsHeader *) m;
+    meh->sevs = (struct SparseEvent *) (m + sizeof(struct MuxseqEventsHeader));
+    /* Release message */
+    return meh;
+}
 
 #define DEFMUXSEQVOID(name, sname) \
   void muxseq_seq_ ## name() { \
@@ -126,6 +135,7 @@ bool muxseq_seq_init (bool hotPlug) {
 }
 
 void muxseq_seq_start () {
+    qDebug("muxseq_seq_start");
     muxseq_send(MsgTypeSeqStart);
 }
 
@@ -181,7 +191,7 @@ bool muxseq_seq_can_start() {
     return muxseq_query_bool(MsgTypeSeqCanStart);
 }
 
-void muxseq_seq_seek(int ticks) {
+int muxseq_seq_seek(int ticks) {
     return muxseq_send(MsgTypeSeqSeek, ticks);
 }
 
@@ -224,7 +234,7 @@ void muxseq_preferencesChanged() {
     muxseq_send(MsgTypeSeqPreferencesChanged);
 }
 
-MasterScore* muxseq_seq_score () {
+void* muxseq_seq_score () {
     //FIX: return seq3->score();
     return nullptr;
 }
@@ -293,9 +303,15 @@ MasterSynthesizer* muxseq_synthesizerFactory() {
 }
 
 MasterSynthesizer* muxseq_create_synti(int sampleRate) {
+    qDebug("muxseq_create_synti initialize synthesizers");
     synti = muxseq_synthesizerFactory();
     synti->setSampleRate(sampleRate);
     synti->init();
+    if (g_seq == nullptr) {
+        qWarning("muxseq_create_synti cant initialize synthesizers: sequencer is not initialized!");
+        return nullptr;
+    }
+    g_seq->setMasterSynthesizer(synti);
     return synti;
 }
 

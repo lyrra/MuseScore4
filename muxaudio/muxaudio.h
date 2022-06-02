@@ -21,12 +21,12 @@ void mux_set_jack_transport(Transport transport);
  * message queue, between audio and mux
  */
 
-int mux_mq_from_audio_writer_put (struct MuxaudioMsg msg);
+int muxaudio_mq_from_audio_writer_put (struct MuxaudioMsg msg);
 int mux_mq_to_audio_writer_put (struct MuxaudioMsg msg);
 int mux_mq_to_audio_visit();
 
-void mux_msg_from_audio(MuxaudioMsgType typ, int val);
-void mux_msg_to_audio(MuxaudioMsgType typ, int val);
+void muxaudio_msg_from_audio(MuxaudioMsgType typ, int val);
+//void mux_msg_to_audio(MuxaudioMsgType typ, int val);
 
 void mux_audio_init(int hot);
 void mux_audio_start(int hotPlug);

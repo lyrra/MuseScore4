@@ -3,11 +3,17 @@
 #include "mux.h"
 #include "muxlib.h"
 
+//FIX: muxlib shouldn't use QT
+#define LD(...) qDebug(__VA_ARGS__)
+#define LE(...) qCritical(__VA_ARGS__)
+#define LEX(...) qFatal(__VA_ARGS__)
+
 namespace Ms {
 
 const char* muxseq_msg_type_info (MuxseqMsgType type) {
     switch (type) {
     case MsgTypeNoop: return "MsgTypeNoop";
+    case MsgTypeSeqCreate: return "MsgTypeSeqCreate";
     case MsgTypeSeqInit: return "MsgTypeSeqInit";
     case MsgTypeSeqDeinit: return "MsgTypeSeqDeinit";
     case MsgTypeSeqExit: return "MsgTypeSeqExit";
@@ -41,6 +47,7 @@ const char* muxseq_msg_type_info (MuxseqMsgType type) {
     case MsgTypeRecomputeMaxMidiOutPort: return "MsgTypeRecomputeMaxMidiOutPort";
     case MsgTypeSeqPreferencesChanged: return "MsgTypeSeqPreferencesChanged";
     case MsgTypeSeqUpdateOutPortCount: return "MsgTypeSeqUpdateOutPortCount";
+    case MsgTypeSeqRenderEvents: return "MsgTypeSeqRenderEvents";
     case MsgTypeMasterSynthesizerInit: return "MsgTypeMasterSynthesizerInit";
     case MsgTypeEOF: return "MsgTypeEOF";
     default: return "ERROR:UNKNOWN-MUXSEQ-MSG-TYPE";
@@ -52,10 +59,13 @@ const char* muxaudio_msg_type_info(MuxaudioMsgType type) {
         case MsgTypeAudioInit: return "MsgTypeAudioInit";
         case MsgTypeAudioStart: return "MsgTypeAudioStart";
         case MsgTypeAudioStop: return "MsgTypeAudioStop";
+        case MsgTypeAudioRunning: return "MsgTypeAudioRunning";
+        case MsgTypeJackTransportPosition: return "MsgTypeJackTransportPosition";
         case MsgTypeTransportStart: return "MsgTypeTransportStart";
         case MsgTypeTransportStop: return "MsgTypeTransportStop";
         case MsgTypeTransportSeek: return "MsgTypeTransportSeek";
         case MsgTypeEventToMidi: return "MsgTypeEventToMidi";
+        case MsgTypeEventToGui: return "MsgTypeEventToGui";
         case MsgTypeTimeSigTempoChanged: return "MsgTypeTimeSigTempoChanged";
         case MsgTypeOutPortCount: return "MsgTypeOutPortCount";
         default: return "ERROR:UNKNOWN-MUXAUDIO-MSG-TYPE";

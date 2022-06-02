@@ -40,6 +40,7 @@ MasterSynthesizer::MasterSynthesizer()
 
 void MasterSynthesizer::init()
       {
+      qDebug("-- MasterSynthesizer::init --");
       SynthesizerState state;
       QString s(g_msynth_dataPath + "/synthesizer.xml");
       QFile f(s);

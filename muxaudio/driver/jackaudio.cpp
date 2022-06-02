@@ -80,7 +80,7 @@ void mux_send_event (Event e) {
     struct MuxaudioMsg msg;
     msg.type = MsgTypeEventToGui;
     memcpy(&msg.payload.sparseEvent, &se, sizeof(struct SparseEvent));
-    mux_mq_from_audio_writer_put(msg);
+    muxaudio_mq_from_audio_writer_put(msg);
 }
 
 void mux_audio_init(int hot)
@@ -98,6 +98,7 @@ void mux_audio_stop()
 }
 
 void mux_audio_jack_transport_start() {
+    qDebug("--- mux_audio_jack_transport_start\n");
     g_driver->startTransport();
 }
 
@@ -327,7 +328,7 @@ bool JackAudio::start(bool hotPlug)
 
       if (hotPlug)
             preferences.PREF_IO_JACK_REMEMBERLASTCONNECTIONS = oldremember;
-      mux_msg_from_audio(MsgTypeAudioRunning, 1);
+      muxaudio_msg_from_audio(MsgTypeAudioRunning, 1);
       return true;
       }
 
@@ -515,7 +516,6 @@ int JackAudio::processAudio(jack_nframes_t frames, void* p)
               if ((tp.tv_nsec < g_jack_transport_position_time) || // wrap
                   (tp.tv_nsec - g_jack_transport_position_time) > 100000000) {
                   g_jack_transport_position_time = tp.tv_nsec;
-                  //qDebug("--- jack_transport_query --- %lu", g_jack_transport_position_time);
                   jack_position_t pos;
                   jack_transport_query(g_client, &pos);
                   struct MuxaudioMsg msg;
@@ -525,6 +525,7 @@ int JackAudio::processAudio(jack_nframes_t frames, void* p)
                   msg.payload.jackTransportPosition.valid = pos.valid;
                   msg.payload.jackTransportPosition.beats_per_minute = pos.beats_per_minute;
                   msg.payload.jackTransportPosition.bbt = JackPositionBBT;
+                  qDebug("--- jack_transport_query --- %lu state=%i", g_jack_transport_position_time, msg.payload.jackTransportPosition.state);
                   muxaudio_mq_from_audio_writer_put(msg);
               }
           }
@@ -622,12 +623,15 @@ bool JackAudio::init(bool hot)
 //---------------------------------------------------------
 
 void JackAudio::startTransport()
-      {
-      if (preferences.PREF_IO_JACK_USEJACKTRANSPORT)
+{
+      if (preferences.PREF_IO_JACK_USEJACKTRANSPORT) {
+            qDebug("    -- JackAudio::startTransport use REAL transport, set to start");
             jack_transport_start(client);
-      else
+      } else {
+            qDebug("    -- JackAudio::startTransport use g_fakeState, set to start");
             g_fakeState = fakeState = Transport::PLAY;
-      }
+            }
+}
 
 //---------------------------------------------------------
 //   stopTransport
@@ -651,8 +655,10 @@ Transport JackAudio::getState()
 
 Transport getStateRT()
       {
-      if (!preferences.PREF_IO_JACK_USEJACKTRANSPORT)
+      if (!preferences.PREF_IO_JACK_USEJACKTRANSPORT) {
+            qDebug("    -- getStateRT use transport g_fakeState");
             return g_fakeState;
+            }
       int transportState = jack_transport_query(g_client, NULL);
       switch (transportState) {
             case JackTransportStopped:  return Transport::STOP;
