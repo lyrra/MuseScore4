@@ -4,7 +4,7 @@ include_directories(
       ${PROJECT_SOURCE_DIR}/global
       ${PROJECT_SOURCE_DIR}/mux
       ${PROJECT_SOURCE_DIR}/muxlib
-      ${PROJECT_SOURCE_DIR}/muxtools
+      ${PROJECT_SOURCE_DIR}/muxtools # needed for midifile.h
       ${PROJECT_SOURCE_DIR}/muxseq # FIX: wrong (needs mux.h)
       ${PROJECT_SOURCE_DIR}/muxaudio/driver
       ${PROJECT_BINARY_DIR}

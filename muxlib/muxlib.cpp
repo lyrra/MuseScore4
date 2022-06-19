@@ -3,6 +3,11 @@
 #include "mux.h"
 #include "muxlib.h"
 
+//FIX: muxlib shouldn't use QT
+#define LD(...) qDebug(__VA_ARGS__)
+#define LE(...) qCritical(__VA_ARGS__)
+#define LEX(...) qFatal(__VA_ARGS__)
+
 namespace Ms {
 
 const char* muxseq_msg_type_info (MuxseqMsgType type) {

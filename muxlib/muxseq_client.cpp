@@ -12,6 +12,11 @@
 #include "msynthesizer.h"
 #include "muxseq_client.h"
 
+//FIX: muxseq shouldn't use QT
+#define LD(...) qDebug(__VA_ARGS__)
+#define LE(...) qError(__VA_ARGS__)
+#define LEX(...) qFatal(__VA_ARGS__)
+
 namespace Ms {
 
 /* initialization/control

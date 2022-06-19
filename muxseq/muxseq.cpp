@@ -329,7 +329,8 @@ int muxseq_handle_audioQueryClient_msg_AudioBufferFeed (Mux::MuxSocket &sock, st
     // get MUX_CHUNKSIZE number of frames from the ringbuffer
     float frames[MUX_CHUNKSIZE]; // count stereo, ie number of floats needed
     mux_process_bufferStereo(MUX_CHUNKSIZE, frames);
-    zmq_send(zmq_socket_audio, frames, sizeof(float) * MUX_CHUNKSIZE, 0);
+    zmq_send(sock.socket, frames, sizeof(float) * MUX_CHUNKSIZE, 0);
+    return 0;
 }
 
 int muxseq_handle_audioQueryClient_msg (Mux::MuxSocket &sock, struct MuxaudioMsg msg)
@@ -353,6 +354,8 @@ int muxseq_handle_audioQueryClient_msg (Mux::MuxSocket &sock, struct MuxaudioMsg
             // skip this message
             // g_msg_from_audio_reader = (g_msg_from_audio_reader + 1) % MAILBOX_SIZE;
     }
+    msg.type = MsgTypeAudioNoop;
+    zmq_send(sock.socket, &msg, sizeof(struct MuxaudioMsg), 0);
     return 0;
 }
 

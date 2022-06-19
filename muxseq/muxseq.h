@@ -7,6 +7,10 @@
 #ifndef __MUXSEQ_H__
 #define __MUXSEQ_H__
 
+#define LD(...) qDebug(__VA_ARGS__)
+#define LE(...) qCritical(__VA_ARGS__)
+#define LEX(...) qFatal(__VA_ARGS__)
+
 namespace Ms {
 
 /*** MUX public interface ***/
@@ -33,6 +37,7 @@ void mux_audio_jack_transport_stop();
 void mux_audio_jack_transport_seek(int utick);
 void mux_audio_handle_MsgTimeSigTempoChanged();
 void mux_audio_handle_updateOutPortCount(int portCount);
+void mux_msg_to_audio(MuxaudioMsgType typ, int val);
 
 void mux_zmq_ctrl_send_to_audio(struct MuxaudioMsg msg);
 

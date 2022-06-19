@@ -28,8 +28,9 @@ struct MuxSocket {
     void *socket;
 };
 
-int mux_zmq_send (Mux::MuxSocket &muxsock, void* buf, int len);
-int mux_zmq_recv (Mux::MuxSocket &muxsock, void* buf, int len);
+int mux_zmq_send (struct MuxSocket &muxsock, void* buf, int len);
+int mux_zmq_recv (MuxSocket &muxsock, void* buf, int len);
+int mux_request (struct MuxSocket &sock, void* buf, int len);
 int mux_make_connection(struct MuxSocket &sock, const char *url, ZmqType type, ZmqDir dir, ZmqServer server);
 
 } // namespace Mux

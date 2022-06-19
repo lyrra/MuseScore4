@@ -16,6 +16,8 @@
 #include "mux.h"
 
 #define LD(...) fprintf(stderr, __VA_ARGS__)
+#define LE(...) { fprintf(stderr, __VA_ARGS__); }
+#define LEX(...) { fprintf(stderr, __VA_ARGS__); exit(1); }
 
 namespace Mux {
 
@@ -70,6 +72,12 @@ int mux_make_connection(struct MuxSocket &sock, const char *url, ZmqType type, Z
            std::strerror(errno));
     }
     return rc;
+}
+
+int mux_request (struct MuxSocket &sock, void* buf, int len) {
+    if (zmq_send(sock.socket, buf, len, 0) < 0) return -1;
+    if (zmq_recv(sock.socket, buf, len, 0) < 0) return -2;
+    return 0;
 }
 
 void mux_network_close(struct MuxSocket &sock)

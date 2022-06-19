@@ -1,8 +1,6 @@
 #ifndef __MUXLIB_H__
 #define __MUXLIB_H__
 
-#define LD(...) qDebug(__VA_ARGS__);
-#define LE(...) qFatal(__VA_ARGS__);
 
 #define MUX_MUSESCORE_QUERY_CLIENT_URL "tcp://localhost:7701"
 #define MUX_MUSESCORE_BULLETIN_CLIENT_URL "tcp://localhost:7702"
@@ -53,7 +51,8 @@ enum MuxseqMsgType {
 };
 
 enum MuxaudioMsgType {
-    MsgTypeInit = 0,
+    MsgTypeAudioNoop = 0,
+    MsgTypeInit,
     MsgTypeAudioInit,
     MsgTypeAudioStart,
     MsgTypeAudioStop,

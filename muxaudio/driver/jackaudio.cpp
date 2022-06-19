@@ -79,7 +79,7 @@ void mux_send_event (Event e) {
     struct MuxaudioMsg msg;
     msg.type = MsgTypeEventToGui;
     memcpy(&msg.payload.sparseEvent, &se, sizeof(struct SparseEvent));
-    mux_mq_from_audio_writer_put(msg);
+    muxaudio_mq_from_audio_writer_put(msg);
 }
 
 void mux_audio_init(int hot)
@@ -325,7 +325,7 @@ bool JackAudio::start(bool hotPlug)
 
       if (hotPlug)
             preferences.PREF_IO_JACK_REMEMBERLASTCONNECTIONS = oldremember;
-      mux_msg_from_audio(MsgTypeAudioRunning, 1);
+      muxaudio_msg_from_audio(MsgTypeAudioRunning, 1);
       return true;
       }
 
@@ -517,7 +517,7 @@ int JackAudio::processAudio(jack_nframes_t frames, void* p)
           msg.payload.jackTransportPosition.valid = pos.valid;
           msg.payload.jackTransportPosition.beats_per_minute = pos.beats_per_minute;
           msg.payload.jackTransportPosition.bbt = JackPositionBBT;
-          mux_mq_from_audio_writer_put(msg);
+          muxaudio_mq_from_audio_writer_put(msg);
       }
       // get audiochunk from mux/mscore-thread
       mux_process_bufferStereo((unsigned int)frames, buffer);
