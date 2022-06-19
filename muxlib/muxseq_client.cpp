@@ -35,8 +35,8 @@ static std::vector<std::thread> muxseq_Threads;
 int muxseq_query_zmq (MuxseqMsgType type, MuxseqMsg &msg) {
     qDebug("muxseq send msg %s", muxseq_msg_type_info(type));
     msg.type = type;
-    mux_zmq_send(g_muxseq_query_client_socket, (void*) &msg, sizeof(struct MuxseqMsg));
-    return mux_zmq_recv(g_muxseq_query_client_socket, (void*) &msg, sizeof(struct MuxseqMsg));
+    Mux::mux_zmq_send(g_muxseq_query_client_socket, (void*) &msg, sizeof(struct MuxseqMsg));
+    return Mux::mux_zmq_recv(g_muxseq_query_client_socket, (void*) &msg, sizeof(struct MuxseqMsg));
 }
 
 int muxseq_send (MuxseqMsgType type) {
@@ -100,15 +100,18 @@ void muxseq_query (MuxseqMsgType type, bool b) {
 
 void muxseq_query_req_thread_init(std::string _notused)
 {
-    Mux::mux_make_connection(g_muxseq_query_client_socket, MUX_MUSESCORE_QUERY_CLIENT_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REP, Mux::ZmqServer::CONNECT);
+    qDebug("Connecting to muxseq query-req-client.");
+    Mux::mux_make_connection(g_muxseq_query_client_socket, MUX_MUSESCORE_QUERY_CLIENT_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REQ, Mux::ZmqServer::CONNECT);
+    qDebug("Connected to muxseq (as query-req-client).");
     g_thread_musescoreQuery_started = true;
     //muxseq_network_mainloop_query();
 }
 
 void muxseq_query_rep_thread_init(std::string _notused)
 {
-    Mux::mux_make_connection(g_muxseq_bulletin_client_socket, MUX_MUSESCORE_BULLETIN_CLIENT_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REQ, Mux::ZmqServer::CONNECT);
-    g_thread_musescoreBulletin_started = true;
+//FIX: muxseq has no PUB/SUB (yet)
+//    Mux::mux_make_connection(g_muxseq_bulletin_client_socket, MUX_MUSESCORE_BULLETIN_CLIENT_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REQ, Mux::ZmqServer::CONNECT);
+//    g_thread_musescoreBulletin_started = true;
     //muxseq_network_mainloop_bulletin();
 }
 
@@ -127,8 +130,8 @@ void mux_musescore_client_start()
     threadv.push_back(std::move(zmqMuxseqBulletinThread));
     // move threads to heap
     muxseq_Threads = std::move(threadv);
-    while(g_thread_musescoreQuery_started == false ||
-          g_thread_musescoreBulletin_started == false) {
+    while(g_thread_musescoreQuery_started == false /* ||
+          g_thread_musescoreBulletin_started == false */) {
         std::this_thread::sleep_for(std::chrono::microseconds(10000));
     }
     g_threads_started = true;

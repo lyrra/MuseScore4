@@ -63,7 +63,6 @@
 
 namespace Ms {
 
-void mux_zmq_ctrl_send_to_audio(struct MuxaudioMsg msg);
 void mux_send_event_to_gui(struct SparseEvent se);
 void mux_audio_send_event_to_midi(struct MuxaudioMsg msg);
 extern int g_driver_running;
@@ -71,10 +70,8 @@ extern int g_driver_running;
 static std::vector<std::thread> seqThreads;
 int g_muxseq_audio_process_run = 0;
 
-static void *zmq_context_ctrl;
-static void *zmq_socket_ctrl;
-static void *zmq_context_audio;
-static void *zmq_socket_audio;
+
+extern struct Mux::MuxSocket g_muxsocket_muxaudioQueryClientCtrl;
 
 extern Seq* g_seq;
 
@@ -215,9 +212,15 @@ int muxseq_audio_process_work() {
 
 void muxseq_muxaudioWorker_process() {
     int slept = MUX_WRITER_USLEEP; // we cant sleep longer than the jack-audio-period = (numFrames / SampleRate) seconds
-    while (g_muxseq_audio_process_run) {
-        if ((! muxseq_audio_process_work()) && // no audio work was done,
-            (! mux_mq_from_audio_reader_visit())) { // and message-queue is empty
+    while (true) {
+        bool workDone = false;
+        if (g_muxseq_audio_process_run) {
+            if (muxseq_audio_process_work() || // audio work was done,
+                mux_mq_from_audio_reader_visit()) { // got message from message-queue
+                workDone = true;
+            }
+        }
+        if (! workDone) {
             g_writerPause++;
             std::this_thread::sleep_for(std::chrono::microseconds(slept));
         }
@@ -228,7 +231,7 @@ void muxseq_muxaudioWorker_process() {
 void mux_zmq_ctrl_send_to_audio (struct MuxaudioMsg msg)
 {
     qDebug("zmq-send ctrl msg.type=%i (len %i)", msg.type, sizeof(struct MuxaudioMsg));
-    zmq_send(zmq_socket_ctrl, &msg, sizeof(struct MuxaudioMsg), 0);
+    zmq_send(g_muxsocket_muxaudioQueryClientCtrl.socket, &msg, sizeof(struct MuxaudioMsg), 0);
 }
 
 int muxseq_handle_musescore_reply_int (Mux::MuxSocket &sock, struct MuxseqMsg msg, int i) {
@@ -362,6 +365,7 @@ void muxseq_mscoreQueryServer_mainloop(Mux::MuxSocket &sock) {
             LE("mscoreQueryServer zmq-recv error: %s", strerror(errno));
             break;
         }
+        LD("MUXSEQ musescore ==> muxseq -- got message");
         muxseq_handle_musescore_msg(sock, msg);
         std::this_thread::sleep_for(std::chrono::microseconds(100));
     }

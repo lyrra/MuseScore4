@@ -334,7 +334,6 @@ void muxaudio_audio_process() {
         }
         if (! workDone) {
             g_writerPause++;
-            std::cout << "MUX mscore/seq audio not ready, waiting..\n";
             std::this_thread::sleep_for(std::chrono::milliseconds(MUX_WRITER_USLEEP));
         }
     }

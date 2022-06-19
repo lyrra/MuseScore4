@@ -33,7 +33,8 @@ void muxseq_muxaudioWorker_process();
 
 static std::vector<std::thread> muxThreads;
 struct Mux::MuxSocket g_muxsocket_mscoreQueryServer;
-struct Mux::MuxSocket g_muxsocket_muxaudioQueryClient;
+struct Mux::MuxSocket g_muxsocket_muxaudioQueryClientAudio;
+struct Mux::MuxSocket g_muxsocket_muxaudioQueryClientCtrl;
 extern int g_muxseq_audio_process_run;
 
 /* this thread listens on message from musescore */
@@ -46,8 +47,8 @@ void muxseq_mscoreQueryServer_thread_init(std::string _notused)
 /* this thread listens on message from muxaudio */
 void muxseq_muxaudioQueryClient_thread_init(std::string _notused)
 {
-    Mux::mux_make_connection(g_muxsocket_muxaudioQueryClient, MUX_AUDIO_QUERY_CLIENT_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REP, Mux::ZmqServer::CONNECT);
-    muxseq_muxaudioQueryClient_mainloop(g_muxsocket_muxaudioQueryClient);
+    Mux::mux_make_connection(g_muxsocket_muxaudioQueryClientAudio, MUX_MUXAUDIO_QUERY_AUDIO_CLIENT_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REP, Mux::ZmqServer::CONNECT);
+    muxseq_muxaudioQueryClient_mainloop(g_muxsocket_muxaudioQueryClientAudio);
 }
 
 void muxseq_thread_process_init(std::string msg)
@@ -79,9 +80,9 @@ void muxseq_network_reader_thread_init(std::string _notused)
     //muxseq_network_server_ctrl();
 }
 
-void muxseq_audio_zmq_thread_init(std::string _notused)
+void muxseq_audio_zmq_connect()
 {
-    //muxseq_network_server_audio();
+    Mux::mux_make_connection(g_muxsocket_muxaudioQueryClientCtrl, MUX_MUXAUDIO_QUERY_CTRL_CLIENT_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REQ, Mux::ZmqServer::CONNECT);
 }
 
 
@@ -90,8 +91,9 @@ void muxseq_threads_start()
     LD("start threads\n");
     std::vector<std::thread> threadv;
 
-    std::thread mscoreQueryServerThread(muxseq_mscoreQueryServer_thread_init, "notused");
-    threadv.push_back(std::move(mscoreQueryServerThread));
+    // phase one, connect to muxaudio
+
+    muxseq_audio_zmq_connect();
 
     std::thread procThread(muxseq_muxaudioQueryClient_thread_init, "notused");
     threadv.push_back(std::move(procThread));
@@ -99,11 +101,12 @@ void muxseq_threads_start()
     std::thread workerThread(muxseq_muxaudioWorker_thread_init, "notused");
     threadv.push_back(std::move(workerThread));
 
-//    std::thread zmqCtrlThread(muxseq_network_reader_thread_init, "notused");
-//    threadv.push_back(std::move(zmqCtrlThread));
+    //FIX: wait for servers to have connected to muxaudio
 
-//    std::thread zmqAudioThread(muxseq_audio_zmq_thread_init, "notused");
-//    threadv.push_back(std::move(zmqAudioThread));
+    // phase two, start network serving musescore
+
+    std::thread mscoreQueryServerThread(muxseq_mscoreQueryServer_thread_init, "notused");
+    threadv.push_back(std::move(mscoreQueryServerThread));
 
     muxThreads = std::move(threadv);
 }

@@ -312,6 +312,7 @@ bool Seq::init(bool hotPlug)
       if (hotPlug) {
             muxseq_msg_to_audio(MsgTypeAudioInit, hotPlug);
       }
+      LD("Seq::init g_muxseq_audio_process_run = 1\n");
       g_muxseq_audio_process_run = 1; //FIX: move this into muxseq (by a function call)
       muxseq_msg_to_audio(MsgTypeAudioStart, hotPlug);
       while (! g_driver_running /* g_ctrl_audio_running */) {
