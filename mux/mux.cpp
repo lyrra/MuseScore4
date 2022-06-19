@@ -15,6 +15,8 @@
 
 #include "mux.h"
 
+#define LD(...) fprintf(stderr, __VA_ARGS__)
+
 namespace Mux {
 
 int mux_zmq_send (Mux::MuxSocket &muxsock, void* buf, int len) {
@@ -25,54 +27,47 @@ int mux_zmq_recv (Mux::MuxSocket &muxsock, void* buf, int len) {
     return zmq_recv(muxsock.socket, buf, len, 0);
 }
 
-/*** REQ/REP (query) client/server *****/
-
-int mux_network_query_client (struct MuxSocket &sock, const char *url, bool req)
+// different types of server/client pub/sub/req/rep combinations
+// query req_or_pub server -- pub/sub sub part connect
+// query REQ_OR_PUB server -- pub/sub pub part connect
+// QUERY req_or_pub server -- QUERY   rep part connect
+// QUERY REQ_OR_PUB server -- QUERY   req part connect
+// query req_or_pub SERVER -- pub/sub sub part bind
+// query REQ_OR_PUB SERVER -- pub/sub pub part bind
+// QUERY req_or_pub SERVER -- QUERY   rep part bind
+// QUERY REQ_OR_PUB SERVER -- QUERY   req part bind
+int mux_make_connection(struct MuxSocket &sock, const char *url, ZmqType type, ZmqDir dir, ZmqServer server)
 {
-    std::cerr << "MUX ZeroMQ query network client connect " << url << "\n";
-    sock.context = zmq_ctx_new();
-    sock.socket = zmq_socket(sock.context, req ? ZMQ_REQ : ZMQ_REP);
-    int rc = zmq_connect(sock.socket, url);
-    if (rc) {
-        fprintf(stderr, "zmq-bind error: %s\n", std::strerror(errno));
+    const char *dirstr;
+    switch (dir) {
+      case ZmqDir::REQ: dirstr = "REQ"; break;
+      case ZmqDir::REP: dirstr = "REP"; break;
+      case ZmqDir::PUB: dirstr = "PUB"; break;
+      case ZmqDir::SUB: dirstr = "SUB"; break;
+      default : dirstr = "UNK";
     }
-    return rc;
-}
-
-int mux_network_query_server (struct MuxSocket &sock, const char* url, bool req)
-{
-    std::cerr << "MUX ZeroMQ query network server bind " << url << "\n";
+    LD("MUX ZeroMQ %s %s %s url %s\n",
+       type == ZmqType::QUERY ? "query" : "pub/sub",
+       dirstr,
+       server == ZmqServer::BIND ? "bind" : "connect",
+       url);
     sock.context = zmq_ctx_new();
-    sock.socket = zmq_socket(sock.context, req ? ZMQ_REQ : ZMQ_REP);
-    int rc = zmq_bind(sock.socket, url);
-    if (rc) {
-        fprintf(stderr, "zmq-bind error: %s\n", std::strerror(errno));
+    sock.socket = zmq_socket(sock.context,
+                             dir == ZmqDir::REQ ? ZMQ_REQ :
+                              (dir == ZmqDir::REP ? ZMQ_REP :
+                               (dir == ZmqDir::PUB ? ZMQ_PUB :
+                                ZMQ_SUB)));
+    int rc;
+    if (server == ZmqServer::BIND) {
+        rc = zmq_bind(sock.socket, url);
+    } else {
+        rc = zmq_connect(sock.socket, url);
     }
-    return rc;
-}
-
-/*** PUB/SUB (bulletin) client/server *****/
-
-int mux_network_bulletin_client (struct MuxSocket &sock, const char *url)
-{
-    std::cerr << "MUX ZeroMQ bulletin network client connect " << url << "\n";
-    sock.context = zmq_ctx_new();
-    sock.socket = zmq_socket(sock.context, ZMQ_SUB);
-    int rc = zmq_connect(sock.socket, url);
     if (rc) {
-        fprintf(stderr, "zmq-bind error: %s\n", std::strerror(errno));
-    }
-    return rc;
-}
-
-int mux_network_bulletin_server (struct MuxSocket &sock, const char* url)
-{
-    std::cerr << "MUX ZeroMQ bulletin network server bind " << url << "\n";
-    sock.context = zmq_ctx_new();
-    sock.socket = zmq_socket(sock.context, ZMQ_PUB);
-    int rc = zmq_bind(sock.socket, url);
-    if (rc) {
-        fprintf(stderr, "zmq-bind error: %s\n", std::strerror(errno));
+        LD("zmq-%s-% error: %s\n", 
+           type == ZmqType::QUERY ? "query" : "pub/sub",
+           server == ZmqServer::BIND ? "bind" : "connect",
+           std::strerror(errno));
     }
     return rc;
 }

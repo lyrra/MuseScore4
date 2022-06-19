@@ -75,6 +75,9 @@ static void *zmq_socket_ctrl;
 static void *zmq_context_audio;
 static void *zmq_socket_audio;
 
+
+void seq_create(int sampleRate); // FIX: move into seq.h
+
 /*
  * message queue, between audio and mux
  */ 
@@ -264,6 +267,7 @@ int muxseq_handle_musescore_msg_SeqAlive (Mux::MuxSocket &sock, struct MuxseqMsg
 }
 
 int muxseq_handle_musescore_msg_SeqRunning (Mux::MuxSocket &sock, struct MuxseqMsg msg) {
+    LD("got message from musescore, SeqRunning=%i", g_driver_running);
     return muxseq_handle_musescore_reply_int(sock, msg, g_driver_running);
 }
 
@@ -275,6 +279,7 @@ int muxseq_handle_musescore_msg_SeqPreferencesChanged (Mux::MuxSocket &sock, str
 int muxseq_handle_musescore_msg_SeqCreate (Mux::MuxSocket &sock, struct MuxseqMsg msg) {
     // FIX: initialize seq
     LD("got message from musescore, create Sequencer, sampleRate=%i", msg.payload.i);
+    seq_create(msg.payload.i);
     return muxseq_handle_musescore_reply_int(sock, msg, 0);
 }
 

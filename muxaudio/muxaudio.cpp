@@ -372,13 +372,14 @@ void mux_network_mainloop_audio()
 
 void mux_network_server_ctrl()
 {
-    Mux::mux_network_query_server(g_socket_ctrl, "tcp://*:7711", false);
+    Mux::mux_make_connection(g_socket_ctrl, "tcp://*:7711", Mux::ZmqType::QUERY, Mux::ZmqDir::REP, Mux::ZmqServer::BIND);
     mux_network_mainloop_ctrl();
 }
 
 void mux_network_server_audio()
 {
-    Mux::mux_network_query_server(g_socket_audio, "tcp://*:7712", true);
+    Mux::mux_make_connection(g_socket_audio, "tcp://*:7712", Mux::ZmqType::QUERY, Mux::ZmqDir::REQ, Mux::ZmqServer::BIND);
+    //FIX: this should be called by the thread that calls mux_audio_process() {
     mux_network_mainloop_audio();
 }
 

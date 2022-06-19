@@ -35,13 +35,13 @@ struct Mux::MuxSocket g_muxsocket_audioQueryClient;
 
 void muxseq_mscoreQueryServer_thread_init(std::string _notused)
 {
-    Mux::mux_network_query_server(g_muxsocket_mscoreQueryServer, MUX_MUSESCORE_QUERY_SERVER_URL, false);
+    Mux::mux_make_connection(g_muxsocket_mscoreQueryServer, MUX_MUSESCORE_QUERY_SERVER_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REP, Mux::ZmqServer::BIND);
     muxseq_mscoreQueryServer_mainloop(g_muxsocket_mscoreQueryServer);
 }
 
 void muxseq_audioQueryClient_thread_init(std::string _notused)
 {
-    Mux::mux_network_query_client(g_muxsocket_audioQueryClient, MUX_AUDIO_QUERY_CLIENT_URL, false);
+    Mux::mux_make_connection(g_muxsocket_audioQueryClient, MUX_AUDIO_QUERY_CLIENT_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REP, Mux::ZmqServer::CONNECT);
     muxseq_audioQueryClient_mainloop(g_muxsocket_audioQueryClient);
 }
 

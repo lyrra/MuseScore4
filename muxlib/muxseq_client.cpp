@@ -69,6 +69,7 @@ bool muxseq_query_bool (MuxseqMsgType type) {
     L_MUX_QUERY(type);
     struct MuxseqMsg msg;
     muxseq_query_zmq(type, msg);
+    LD("muxseq_query_bool %s => %i", muxseq_msg_type_info(type), msg.payload.b);
     return msg.payload.b;
 }
 
@@ -92,16 +93,16 @@ void muxseq_query (MuxseqMsgType type, bool b) {
 
 // void mux_network_close(struct MuxSocket &sock)
 
-void muxseq_query_client_thread_init(std::string _notused)
+void muxseq_query_req_thread_init(std::string _notused)
 {
-    Mux::mux_network_query_client(g_muxseq_query_client_socket, MUX_MUSESCORE_QUERY_CLIENT_URL, true);
+    Mux::mux_make_connection(g_muxseq_query_client_socket, MUX_MUSESCORE_QUERY_CLIENT_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REP, Mux::ZmqServer::CONNECT);
     g_thread_musescoreQuery_started = true;
     //muxseq_network_mainloop_query();
 }
 
-void muxseq_bulletin_client_thread_init(std::string _notused)
+void muxseq_query_rep_thread_init(std::string _notused)
 {
-    Mux::mux_network_bulletin_client(g_muxseq_bulletin_client_socket, MUX_MUSESCORE_BULLETIN_CLIENT_URL);
+    Mux::mux_make_connection(g_muxseq_bulletin_client_socket, MUX_MUSESCORE_BULLETIN_CLIENT_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REQ, Mux::ZmqServer::CONNECT);
     g_thread_musescoreBulletin_started = true;
     //muxseq_network_mainloop_bulletin();
 }
@@ -114,10 +115,10 @@ void mux_musescore_client_start()
     }
     std::vector<std::thread> threadv;
     //
-    std::thread zmqMuxseqQueryThread(muxseq_query_client_thread_init, "notused");
+    std::thread zmqMuxseqQueryThread(muxseq_query_req_thread_init, "notused");
     threadv.push_back(std::move(zmqMuxseqQueryThread));
     //
-    std::thread zmqMuxseqBulletinThread(muxseq_bulletin_client_thread_init, "notused");
+    std::thread zmqMuxseqBulletinThread(muxseq_query_rep_thread_init, "notused");
     threadv.push_back(std::move(zmqMuxseqBulletinThread));
     // move threads to heap
     muxseq_Threads = std::move(threadv);

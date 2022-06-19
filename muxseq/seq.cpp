@@ -79,8 +79,8 @@ void mux_stop_threads();
 extern int g_mux_audio_process_run;
 static Transport jack_transport;
 
-Seq* seq;
-Seq* seq3;
+Seq* seq; // FIX: rename to g_seq
+Seq* g_seq;
 
 static const int guiRefresh   = 10;       // Hz
 static const int peakHoldTime = 1400;     // msec
@@ -92,6 +92,11 @@ static constexpr int minUtickBufferSize = 480 * 4 * 10; // about 10 measures of 
 #if 0 // yet(?) unused
 static const int AUDIO_BUFFER_SIZE = 1024 * 512;  // 2 MB
 #endif
+
+void seq_create(int sampleRate) {
+    g_seq = seq = new Seq();
+}
+
 
 //---------------------------------------------------------
 //   VorbisData
