@@ -37,7 +37,7 @@ void mux_audio_jack_transport_stop();
 void mux_audio_jack_transport_seek(int utick);
 void mux_audio_handle_MsgTimeSigTempoChanged();
 void mux_audio_handle_updateOutPortCount(int portCount);
-void mux_msg_to_audio(MuxaudioMsgType typ, int val);
+void muxseq_msg_to_audio(MuxaudioMsgType typ, int val);
 
 void mux_zmq_ctrl_send_to_audio(struct MuxaudioMsg msg);
 

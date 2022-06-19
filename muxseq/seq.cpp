@@ -75,8 +75,8 @@ int g_mscore_division = 1; // FIX: need to set this at start
 qreal g_utime;
 qreal g_utick;
         
-void mux_stop_threads();
-extern int g_mux_audio_process_run;
+void muxseq_stop_threads();
+extern int g_muxseq_audio_process_run;
 static Transport jack_transport;
 
 Seq* seq; // FIX: rename to g_seq
@@ -290,7 +290,7 @@ void Seq::CachedPreferences::update()
 void Seq::startTransport()
       {
       //FIX: cachedPrefs.update();
-      mux_msg_to_audio(MsgTypeTransportStart, 0);
+      muxseq_msg_to_audio(MsgTypeTransportStart, 0);
       }
 
 //---------------------------------------------------------
@@ -299,7 +299,7 @@ void Seq::startTransport()
 
 void Seq::stopTransport()
       {
-      mux_msg_to_audio(MsgTypeTransportStop, 0);
+      muxseq_msg_to_audio(MsgTypeTransportStop, 0);
       }
 
 //---------------------------------------------------------
@@ -310,22 +310,22 @@ void Seq::stopTransport()
 bool Seq::init(bool hotPlug)
       {
       if (hotPlug) {
-            mux_msg_to_audio(MsgTypeAudioInit, hotPlug);
-            }
-      g_mux_audio_process_run = 1;
-      mux_msg_to_audio(MsgTypeAudioStart, hotPlug);
+            muxseq_msg_to_audio(MsgTypeAudioInit, hotPlug);
+      }
+      g_muxseq_audio_process_run = 1; //FIX: move this into muxseq (by a function call)
+      muxseq_msg_to_audio(MsgTypeAudioStart, hotPlug);
       while (! g_driver_running /* g_ctrl_audio_running */) {
             std::this_thread::sleep_for(std::chrono::microseconds(10000));
             //FIX: if (g_ctrl_audio_error) {
             //      running = false;
             //      return false;
             //      }
-            }
+      }
 
       //FIX: cachedPrefs.update();
       running = true;
       return true;
-      }
+}
 
 //---------------------------------------------------------
 //   exit
@@ -333,8 +333,8 @@ bool Seq::init(bool hotPlug)
 
 void Seq::exit()
       {
-      mux_stop_threads();
-      mux_msg_to_audio(MsgTypeAudioStop, 0);
+      muxseq_stop_threads();
+      muxseq_msg_to_audio(MsgTypeAudioStop, 0);
       }
 
 //---------------------------------------------------------
@@ -1160,7 +1160,7 @@ void Seq::initInstruments(bool realTime)
                   maxMidiOutPort = scoreMaxMidiPort;
             // if maxMidiOutPort is equal to existing ports number, it will do nothing
             if (g_driver_running)
-                  mux_msg_to_audio(MsgTypeOutPortCount, maxMidiOutPort + 1);
+                  muxseq_msg_to_audio(MsgTypeOutPortCount, maxMidiOutPort + 1);
             }
 
       for (const MidiMapping& mm : cs->midiMapping()) {
@@ -1198,7 +1198,7 @@ void Seq::initInstruments(bool realTime)
 void Seq::updateOutPortCount(const int portCount)
 {
 // FIX:      if (g_driver_running && (preferences.getBool(PREF_IO_JACK_USEJACKMIDI) || preferences.getBool(PREF_IO_ALSA_USEALSAAUDIO)))
-//            mux_msg_to_audio(MsgTypeOutPortCount, portCount);
+//            muxseq_msg_to_audio(MsgTypeOutPortCount, portCount);
       }
 
 //---------------------------------------------------------
@@ -1681,7 +1681,7 @@ void Seq::eventToGui(NPlayEvent e)
 void Seq::midiInputReady()
       {
       //if (g_driver_running)
-      //      mux_msg_to_audio(MsgTypeMidiInputReady, 0);
+      //      muxseq_msg_to_audio(MsgTypeMidiInputReady, 0);
       }
 
 #if 0
@@ -1995,7 +1995,7 @@ void Seq::setLoopSelection()
 
 void Seq::handleTimeSigTempoChanged()
       {
-      mux_msg_to_audio(MsgTypeTimeSigTempoChanged, 0);
+      muxseq_msg_to_audio(MsgTypeTimeSigTempoChanged, 0);
       }
 
 //---------------------------------------------------------

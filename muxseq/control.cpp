@@ -26,29 +26,52 @@ void mux_network_server_audio();
 int mux_mq_to_audio_visit();
 void mux_audio_process();
 
-void muxseq_audioQueryClient_mainloop(Mux::MuxSocket &sock);
-void muxseq_audioWorker_thread_init(std::string msg);
+void muxseq_muxaudioQueryClient_mainloop(Mux::MuxSocket &sock);
+//void muxseq_muxaudioWorker_thread_init(std::string msg);
+//void muxseq_audioWorker_thread_init(std::string msg);
+void muxseq_muxaudioWorker_process();
 
 static std::vector<std::thread> muxThreads;
 struct Mux::MuxSocket g_muxsocket_mscoreQueryServer;
-struct Mux::MuxSocket g_muxsocket_audioQueryClient;
+struct Mux::MuxSocket g_muxsocket_muxaudioQueryClient;
+extern int g_muxseq_audio_process_run;
 
+/* this thread listens on message from musescore */
 void muxseq_mscoreQueryServer_thread_init(std::string _notused)
 {
     Mux::mux_make_connection(g_muxsocket_mscoreQueryServer, MUX_MUSESCORE_QUERY_SERVER_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REP, Mux::ZmqServer::BIND);
     muxseq_mscoreQueryServer_mainloop(g_muxsocket_mscoreQueryServer);
 }
 
-void muxseq_audioQueryClient_thread_init(std::string _notused)
+/* this thread listens on message from muxaudio */
+void muxseq_muxaudioQueryClient_thread_init(std::string _notused)
 {
-    Mux::mux_make_connection(g_muxsocket_audioQueryClient, MUX_AUDIO_QUERY_CLIENT_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REP, Mux::ZmqServer::CONNECT);
-    muxseq_audioQueryClient_mainloop(g_muxsocket_audioQueryClient);
+    Mux::mux_make_connection(g_muxsocket_muxaudioQueryClient, MUX_AUDIO_QUERY_CLIENT_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REP, Mux::ZmqServer::CONNECT);
+    muxseq_muxaudioQueryClient_mainloop(g_muxsocket_muxaudioQueryClient);
 }
 
 void muxseq_thread_process_init(std::string msg)
 {
     std::cout << "MUXSEQ audio-process thread initialized:" << msg << "\n";
     //muxseq_audio_process();
+}
+
+void muxseq_muxaudioWorker_thread_init(std::string msg)
+{
+    LD("MUXSEQ audio-worker-process thread initializing.");
+    muxseq_muxaudioWorker_process();
+}
+
+void muxseq_audioQueryServer_thread_init(std::string msg)
+{
+    LD("MUXSEQ audio-query-server thread initializing.");
+}
+
+void muxseq_stop_threads()
+{
+    LD("MUXSEQ stop audio threads");
+    g_muxseq_audio_process_run = 0;
+    //seqThreads[0].join();
 }
 
 void muxseq_network_reader_thread_init(std::string _notused)
@@ -70,13 +93,11 @@ void muxseq_threads_start()
     std::thread mscoreQueryServerThread(muxseq_mscoreQueryServer_thread_init, "notused");
     threadv.push_back(std::move(mscoreQueryServerThread));
 
-    std::thread procThread(muxseq_audioQueryClient_thread_init, "notused");
+    std::thread procThread(muxseq_muxaudioQueryClient_thread_init, "notused");
     threadv.push_back(std::move(procThread));
 
-    std::thread workerThread(muxseq_audioWorker_thread_init, "notused");
+    std::thread workerThread(muxseq_muxaudioWorker_thread_init, "notused");
     threadv.push_back(std::move(workerThread));
-
-//    threadv.push_back(std::move(procThread));
 
 //    std::thread zmqCtrlThread(muxseq_network_reader_thread_init, "notused");
 //    threadv.push_back(std::move(zmqCtrlThread));
