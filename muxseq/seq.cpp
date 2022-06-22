@@ -79,8 +79,8 @@ void muxseq_stop_threads();
 extern int g_muxseq_audio_process_run;
 static Transport jack_transport;
 
-Seq* seq; // FIX: rename to g_seq
-Seq* g_seq;
+Seq* seq = nullptr; // FIX: rename to g_seq
+Seq* g_seq = nullptr;
 
 static const int guiRefresh   = 10;       // Hz
 static const int peakHoldTime = 1400;     // msec
@@ -93,8 +93,11 @@ static constexpr int minUtickBufferSize = 480 * 4 * 10; // about 10 measures of 
 static const int AUDIO_BUFFER_SIZE = 1024 * 512;  // 2 MB
 #endif
 
-void seq_create(int sampleRate) {
+int seq_create(int sampleRate) {
+    LD("seq_create -- create sequencer");
     g_seq = seq = new Seq();
+    g_seq->setMasterSynthesizer(nullptr);
+    return 0;
 }
 
 

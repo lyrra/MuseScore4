@@ -1,7 +1,7 @@
-#ifndef __MUXSEQ_H__
-#define __MUXSEQ_H__
+#ifndef __MUXSEQ_API_H__
+#define __MUXSEQ_API_H__
 
-#include "muxlib/midipatch.h"
+#include "midi/midipatch.h"
 
 namespace Ms {
 
@@ -45,7 +45,7 @@ float muxseq_seq_metronomeGain();
 void muxseq_seq_playMetronomeBeat(BeatType beatType);
 void muxseq_seq_initInstruments();
 void muxseq_preferencesChanged();
-MasterScore* muxseq_seq_score();
+void* muxseq_seq_score();
 void muxseq_seq_set_scoreview(void *v);
 
 void muxseq_seq_setController(int channel, int vol, int iv);

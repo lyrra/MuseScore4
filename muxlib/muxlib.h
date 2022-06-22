@@ -123,7 +123,7 @@ int  muxseq_send (MuxseqMsgType type);
 int  muxseq_send (MuxseqMsgType type, int i);
 int  muxseq_send (MuxseqMsgType type, double d);
 int  muxseq_send (MuxseqMsgType type, NPlayEvent event);
-void muxseq_query (MuxseqMsgType type);
+int  muxseq_query (MuxseqMsgType type);
 bool muxseq_query_bool (MuxseqMsgType type);
 double muxseq_query_float (MuxseqMsgType type);
 void muxseq_query (MuxseqMsgType type, bool b);

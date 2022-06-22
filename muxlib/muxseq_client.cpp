@@ -64,10 +64,11 @@ int muxseq_send (MuxseqMsgType type, NPlayEvent event) {
     return muxseq_query_zmq(type, msg);
 }
 
-void muxseq_query (MuxseqMsgType type) {
+int muxseq_query (MuxseqMsgType type) {
     L_MUX_QUERY(type);
     struct MuxseqMsg msg;
     muxseq_query_zmq(type, msg);
+    return 0;
 }
 
 bool muxseq_query_bool (MuxseqMsgType type) {
@@ -143,8 +144,6 @@ void mux_musescore_client_start()
 
 MasterSynthesizer* synti = 0;
 
-int muxseq_create_synti(int sampleRate);
-
 void muxseq_create(int sampleRate) { // called from musescore.cpp: MuseScore::init
     qDebug("musescore-muxseq-seqCreate sampleRate=%i", sampleRate);
     muxseq_send(MsgTypeSeqCreate, sampleRate);
@@ -166,7 +165,7 @@ bool muxseq_seq_alive() {
 
 bool muxseq_seq_init (bool hotPlug) {
     muxseq_query(MsgTypeSeqInit, hotPlug);
-    return true;
+    return true; //FIX use the return value (when implemented in muxseq)
 }
 
 void muxseq_seq_start () {
@@ -311,13 +310,10 @@ int muxseq_synthesizerFactory() {
     return 0;
 }
 
-int muxseq_create_synti(int sampleRate) {
-    muxseq_send(MsgTypeMasterSynthesizerInit);
-    //synti = muxseq_synthesizerFactory();
-    //synti->setSampleRate(sampleRate);
-    //synti->init();
-    return 0; // return some index?
-}
+//int muxseq_create_synti(int sampleRate) {
+//    muxseq_send(MsgTypeMasterSynthesizerInit);
+//    return 0; // return some index?
+//}
 
 MasterSynthesizer* muxseq_get_synti() {
     return synti;

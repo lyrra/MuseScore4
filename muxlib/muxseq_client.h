@@ -46,13 +46,11 @@ float muxseq_seq_metronomeGain();
 void muxseq_seq_playMetronomeBeat(BeatType beatType);
 void muxseq_seq_initInstruments();
 void muxseq_preferencesChanged();
-//MasterScore* muxseq_seq_score();
 void muxseq_seq_set_scoreview(void *v);
 
 void muxseq_seq_setController(int channel, int vol, int iv);
 void muxseq_seq_updateOutPortCount(int maxPorts);
 
-int muxseq_create_synti(int sampleRate);
 int muxseq_synthesizerFactory();
 void muxseq_delete_synti();
 bool muxseq_synti();

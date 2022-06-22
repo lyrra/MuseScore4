@@ -58,10 +58,13 @@ const char* muxaudio_msg_type_info(MuxaudioMsgType type) {
         case MsgTypeAudioInit: return "MsgTypeAudioInit";
         case MsgTypeAudioStart: return "MsgTypeAudioStart";
         case MsgTypeAudioStop: return "MsgTypeAudioStop";
+        case MsgTypeAudioRunning: return "MsgTypeAudioRunning";
+        case MsgTypeJackTransportPosition: return "MsgTypeJackTransportPosition";
         case MsgTypeTransportStart: return "MsgTypeTransportStart";
         case MsgTypeTransportStop: return "MsgTypeTransportStop";
         case MsgTypeTransportSeek: return "MsgTypeTransportSeek";
         case MsgTypeEventToMidi: return "MsgTypeEventToMidi";
+        case MsgTypeEventToGui: return "MsgTypeEventToGui";
         case MsgTypeTimeSigTempoChanged: return "MsgTypeTimeSigTempoChanged";
         case MsgTypeOutPortCount: return "MsgTypeOutPortCount";
         default: return "ERROR:UNKNOWN-MUXAUDIO-MSG-TYPE";

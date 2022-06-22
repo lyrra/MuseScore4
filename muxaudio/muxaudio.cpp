@@ -136,7 +136,7 @@ int muxaudio_from_audio_reply (struct MuxaudioMsg msg) {
 
 /* FIX: this doesn't do proper zmq-query, use PUB/SUB instead? */
 int muxaudio_from_audio_handle_message(struct MuxaudioMsg msg) {
-    LD("muxaudio_from_audio_handle_message msg: %s\n", muxaudio_msg_type_info(msg.type));
+    //LD("muxaudio_from_audio_handle_message msg: %s\n", muxaudio_msg_type_info(msg.type));
     switch (msg.type) {
         case MsgTypeAudioRunning:
             LD("    MsgTypeAudioRunning: g_driver_running is running? %i\n", msg.payload.i);
@@ -168,7 +168,7 @@ int muxaudio_mq_from_audio_reader_visit () {
 }
 
 int muxaudio_mq_to_audio_handle_message(struct MuxaudioMsg msg) {
-    std::cerr << "MUX ctrl message, type: " << msg.type << " " << muxaudio_msg_type_info(msg.type) << "\n";
+    LD("MUX ctrl message, type: %i(%s)\n", msg.type, muxaudio_msg_type_info(msg.type));
     switch (msg.type) {
         case MsgTypeAudioInit:
             mux_audio_init(msg.payload.i);

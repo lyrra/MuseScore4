@@ -1,7 +1,9 @@
 
 #include "muxseqsig.h"
-#include "scoreview.h"
 #include "event.h"
+#include "muxlib.h"
+#include "seq.h"
+#include "scoreview.h"
 #include "msynthesizer.h"
 #include "effects/zita1/zita.h"
 #include "effects/compressor/compressor.h"
@@ -20,80 +22,47 @@ extern Ms::Synthesizer* createZerberus();
 
 namespace Ms {
 
-enum MsgType {
-    MsgTypeNoop = 0,
-    MsgTypeSeqInit,
-    MsgTypeSeqDeinit,
-    MsgTypeSeqExit,
-    MsgTypeSeqAlive,
-    MsgTypeSeqStart,
-    MsgTypeSeqStop,
-    MsgTypeSeqSendEvent,
-    MsgTypeSeqStartNote,
-    MsgTypeSeqStartNoteDur,
-    MsgTypeSeqStopNotes,
-    MsgTypeSeqStartNoteTimer,
-    MsgTypeSeqStopNoteTimer,
-    MsgTypeSeqStopWait,
-    MsgTypeSeqCurTempo,
-    MsgTypeSeqSetRelTempo,
-    MsgTypeSeqPlaying,
-    MsgTypeSeqRunning,
-    MsgTypeSeqStopped,
-    MsgTypeSeqCanStart,
-    MsgTypeSeqCurTick,
-    MsgTypeSeqSeek,
-    MsgTypeSeekEnd,
-    MsgTypeNextMeasure,
-    MsgTypePrevMeasure,
-    MsgTypeNextChord,
-    MsgTypePrevChord,
-    MsgTypeRewindStart,
-    MsgTypeSetLoopIn,
-    MsgTypeSetLoopOut,
-    MsgTypeSetLoopSelection,
-    MsgTypeRecomputeMaxMidiOutPort,
-    MsgTypeSeqPreferencesChanged,
-    MsgTypeSeqUpdateOutPortCount,
-    MsgTypeMasterSynthesizerInit,
-    MsgTypeEOF
-};
+extern Seq* g_seq;
+MasterSynthesizer* synti = 0;
 
-
-void muxseq_send(MsgType type) {
-    qDebug("muxseq msg %i", type);
+int  muxseq_send(MuxseqMsgType type) {
+    qDebug("muxseq msg %i (NOT IMPL)", type);
+    return 0;
 }
 
-void muxseq_send(MsgType type, int i) {
-    qDebug("muxseq msg %i about int %i", type, i);
+int  muxseq_send(MuxseqMsgType type, int i) {
+    qDebug("muxseq msg %i about int %i (NOT IMPL)", type, i);
+    return 0;
 }
-void muxseq_send(MsgType type, double d) {
-    qDebug("muxseq msg %i about int %f", type, d);
-}
-
-void muxseq_send(MsgType type, NPlayEvent event) {
-    qDebug("muxseq msg %i about event", type);
+int  muxseq_send(MuxseqMsgType type, double d) {
+    qDebug("muxseq msg %i about int %f (NOT IMPL)", type, d);
+    return 0;
 }
 
-void muxseq_query(MsgType type) {
-    qDebug("muxseq msg query %i", type);
+int  muxseq_send(MuxseqMsgType type, NPlayEvent event) {
+    qDebug("muxseq msg %i about event (NOT IMPL)", type);
+    return 0;
 }
 
-bool muxseq_query_bool(MsgType type) {
-    qDebug("muxseq msg query %i", type);
+int  muxseq_query(MuxseqMsgType type) {
+    qDebug("muxseq msg query %i (NOT IMPL)", type);
+    return 0;
+}
+
+bool muxseq_query_bool(MuxseqMsgType type) {
+    qDebug("muxseq msg query %i (NOT IMPL)", type);
     return true;
 }
 
-float muxseq_query_float(MsgType type) {
-    qDebug("muxseq msg query %i", type);
-    return 0.0f;
+double muxseq_query_float(MuxseqMsgType type) {
+    qDebug("muxseq msg query %i (NOT IMPL)", type);
+    return 0.0;
 }
 
-void muxseq_query(MsgType type, bool b) {
-    qDebug("muxseq msg query %i about bool %i", type, b);
+void muxseq_query(MuxseqMsgType type, bool b) {
+    qDebug("muxseq msg query %i about bool %i (NOT IMPL)", type, b);
 }
 
-MasterSynthesizer* synti = 0;
 
 #define DEFMUXSEQVOID(name, sname) \
   void muxseq_seq_ ## name() { \
@@ -181,7 +150,7 @@ bool muxseq_seq_can_start() {
     return muxseq_query_bool(MsgTypeSeqCanStart);
 }
 
-void muxseq_seq_seek(int ticks) {
+int muxseq_seq_seek(int ticks) {
     return muxseq_send(MsgTypeSeqSeek, ticks);
 }
 
@@ -224,7 +193,7 @@ void muxseq_preferencesChanged() {
     muxseq_send(MsgTypeSeqPreferencesChanged);
 }
 
-MasterScore* muxseq_seq_score () {
+void* muxseq_seq_score () {
     //FIX: return seq3->score();
     return nullptr;
 }
@@ -293,9 +262,15 @@ MasterSynthesizer* muxseq_synthesizerFactory() {
 }
 
 MasterSynthesizer* muxseq_create_synti(int sampleRate) {
+    qDebug("muxseq_create_synti initialize synthesizers");
     synti = muxseq_synthesizerFactory();
     synti->setSampleRate(sampleRate);
     synti->init();
+    if (g_seq == nullptr) {
+        qWarning("muxseq_create_synti cant initialize synthesizers: sequencer is not initialized!");
+        return nullptr;
+    }
+    g_seq->setMasterSynthesizer(synti);
     return synti;
 }
 
