@@ -23,7 +23,7 @@
 #include <stdint.h>
 #define _STDINT_H 1
 #endif
-
+#include <time.h>
 #include "event.h"
 #include "jackaudio.h"
 #include "control.h"
@@ -45,6 +45,7 @@
 
 namespace Ms {
 
+long g_jack_transport_position_time;
 int g_ctrl_audio_error = 0;
 int g_ctrl_audio_running = 0;
 
@@ -304,6 +305,7 @@ void JackAudio::disconnect(void* src, void* dst)
 
 bool JackAudio::start(bool hotPlug)
       {
+      g_jack_transport_position_time = 0;
       bool oldremember = preferences.PREF_IO_JACK_REMEMBERLASTCONNECTIONS;
       if (hotPlug)
             preferences.PREF_IO_JACK_REMEMBERLASTCONNECTIONS = true;
@@ -508,16 +510,24 @@ int JackAudio::processAudio(jack_nframes_t frames, void* p)
          float* buffer = vBuffer.data();
 #endif
       {
-          jack_position_t pos;
-          jack_transport_query(g_client, &pos);
-          struct MuxaudioMsg msg;
-          msg.type = MsgTypeJackTransportPosition;
-          msg.payload.jackTransportPosition.state = static_cast<unsigned int>(getStateRT());
-          msg.payload.jackTransportPosition.frame = pos.frame;
-          msg.payload.jackTransportPosition.valid = pos.valid;
-          msg.payload.jackTransportPosition.beats_per_minute = pos.beats_per_minute;
-          msg.payload.jackTransportPosition.bbt = JackPositionBBT;
-          muxaudio_mq_from_audio_writer_put(msg);
+          struct timespec tp;
+          if (! clock_gettime(CLOCK_MONOTONIC, &tp)) {
+              if ((tp.tv_nsec < g_jack_transport_position_time) || // wrap
+                  (tp.tv_nsec - g_jack_transport_position_time) > 100000000) {
+                  g_jack_transport_position_time = tp.tv_nsec;
+                  //qDebug("--- jack_transport_query --- %lu", g_jack_transport_position_time);
+                  jack_position_t pos;
+                  jack_transport_query(g_client, &pos);
+                  struct MuxaudioMsg msg;
+                  msg.type = MsgTypeJackTransportPosition;
+                  msg.payload.jackTransportPosition.state = static_cast<unsigned int>(getStateRT());
+                  msg.payload.jackTransportPosition.frame = pos.frame;
+                  msg.payload.jackTransportPosition.valid = pos.valid;
+                  msg.payload.jackTransportPosition.beats_per_minute = pos.beats_per_minute;
+                  msg.payload.jackTransportPosition.bbt = JackPositionBBT;
+                  muxaudio_mq_from_audio_writer_put(msg);
+              }
+          }
       }
       // get audiochunk from mux/mscore-thread
       mux_process_bufferStereo((unsigned int)frames, buffer);
