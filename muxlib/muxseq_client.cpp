@@ -33,7 +33,7 @@ static std::vector<std::thread> muxseq_Threads;
   qDebug("muxseq_client query %s", muxseq_msg_type_info(type));
 
 int muxseq_query_zmq (MuxseqMsgType type, MuxseqMsg &msg) {
-    qDebug("muxseq send msg %s", muxseq_msg_type_info(type));
+    qDebug("MUXSEQ ==> MUXAUDIO query msg %s", muxseq_msg_type_info(type));
     msg.type = type;
     Mux::mux_zmq_send(g_muxseq_query_client_socket, (void*) &msg, sizeof(struct MuxseqMsg));
     return Mux::mux_zmq_recv(g_muxseq_query_client_socket, (void*) &msg, sizeof(struct MuxseqMsg));
@@ -47,14 +47,14 @@ int muxseq_send (MuxseqMsgType type) {
 int muxseq_send (MuxseqMsgType type, int i) {
     struct MuxseqMsg msg;
     msg.payload.i = i;
-    qDebug("muxseq-send msg %s, int=%i", muxseq_msg_type_info(type), msg.payload.i);
+    //qDebug("muxseq-send msg %s, int=%i", muxseq_msg_type_info(type), msg.payload.i);
     return muxseq_query_zmq(type, msg);
 }
 
 int muxseq_send (MuxseqMsgType type, double d) {
     struct MuxseqMsg msg;
     msg.payload.d = d;
-    qDebug("muxseq-send msg %s, double=%f", muxseq_msg_type_info(type), d);
+    //qDebug("muxseq-send msg %s, double=%f", muxseq_msg_type_info(type), d);
     return muxseq_query_zmq(type, msg);
 }
 
@@ -65,29 +65,29 @@ int muxseq_send (MuxseqMsgType type, NPlayEvent event) {
 }
 
 int muxseq_query (MuxseqMsgType type) {
-    L_MUX_QUERY(type);
+    //L_MUX_QUERY(type);
     struct MuxseqMsg msg;
     muxseq_query_zmq(type, msg);
     return 0;
 }
 
 bool muxseq_query_bool (MuxseqMsgType type) {
-    L_MUX_QUERY(type);
+    //L_MUX_QUERY(type);
     struct MuxseqMsg msg;
     muxseq_query_zmq(type, msg);
-    LD("muxseq_query_bool %s => %i", muxseq_msg_type_info(type), msg.payload.b);
+    //LD("muxseq_query_bool %s => %i", muxseq_msg_type_info(type), msg.payload.b);
     return msg.payload.b;
 }
 
 double muxseq_query_float (MuxseqMsgType type) {
-    L_MUX_QUERY(type);
+    //L_MUX_QUERY(type);
     struct MuxseqMsg msg;
     muxseq_query_zmq(type, msg);
     return msg.payload.d;
 }
 
 void muxseq_query (MuxseqMsgType type, bool b) {
-    L_MUX_QUERY(type);
+    //L_MUX_QUERY(type);
     qDebug("  -- about bool %i", b);
     struct MuxseqMsg msg;
     msg.payload.b = b;

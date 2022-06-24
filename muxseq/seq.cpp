@@ -93,10 +93,43 @@ static constexpr int minUtickBufferSize = 480 * 4 * 10; // about 10 measures of 
 static const int AUDIO_BUFFER_SIZE = 1024 * 512;  // 2 MB
 #endif
 
+/*
+ * Preferences
+ * FIX: move this to muxlib
+ */
+enum PREF {
+    PREF_IO_JACK_USEJACKTRANSPORT = 0
+};
+
+struct musescore_prefs_t {
+    bool pref_PREF_IO_JACK_USEJACKTRANSPORT;
+    bool (* getBool)(PREF);
+} preferences;
+
+
+bool getBool(PREF p) {
+    switch (p) {
+        case PREF_IO_JACK_USEJACKTRANSPORT: return preferences.pref_PREF_IO_JACK_USEJACKTRANSPORT;
+        default: qFatal("No such preference: %i", p);
+    }
+}
+
+void init_preferences ()
+{
+    preferences.pref_PREF_IO_JACK_USEJACKTRANSPORT = false;
+    preferences.getBool = &getBool;
+}
+
+/*
+ *
+ *
+ */
+
 int seq_create(int sampleRate) {
     LD("seq_create -- create sequencer");
     g_seq = seq = new Seq();
     g_seq->setMasterSynthesizer(nullptr);
+    init_preferences();
     return 0;
 }
 
@@ -293,6 +326,7 @@ void Seq::CachedPreferences::update()
 void Seq::startTransport()
       {
       //FIX: cachedPrefs.update();
+      qDebug("Seq::startTransport");
       muxseq_msg_to_audio(MsgTypeTransportStart, 0);
       }
 
@@ -380,6 +414,8 @@ bool Seq::canStart()
 
 void Seq::start()
       {
+      qDebug("---- Seq::start !!!!! time to play some notes ----");
+
       if (! g_driver_running) {
             qDebug("No driver!");
             return;
@@ -402,8 +438,8 @@ void Seq::start()
                   }
             }
 
-      //if (!preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) || (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) && state == Transport::STOP))
-      if (state == Transport::STOP)
+      if (!preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) || (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) && state == Transport::STOP))
+      //if (state == Transport::STOP)
             seek(getPlayStartUtick());
 
       // FIX: send to mscore
@@ -799,6 +835,7 @@ void mux_set_jack_position(struct JackTransportPosition jackTransportPosition)
     jack_position_valid = jackTransportPosition.valid;
     jack_position_beats_per_minute = jackTransportPosition.beats_per_minute;
     jack_position_BBT = jackTransportPosition.bbt;
+    //qDebug("--- mux_set_jack_position jack_transport state=%i frame=%i", jack_transport, jack_position_frame);
 }
 
 //---------------------------------------------------------
@@ -809,6 +846,7 @@ void mux_set_jack_position(struct JackTransportPosition jackTransportPosition)
 
 static void checkTransportSeek(int cur_frame, int nframes, bool inCountIn)
       {
+      //qDebug("--- Seq::checkTransportSeek cur_frame=%i frames=%i", cur_frame, nframes);
 //      if (!seq || !seq->score() || inCountIn)
 //            return;
 
@@ -859,6 +897,7 @@ static void checkTransportSeek(int cur_frame, int nframes, bool inCountIn)
 //-------------------------------------------------------------------
 void Seq::process(unsigned framesPerPeriod, float* buffer)
       {
+      //qDebug("--- Seq::process frames=%i", framesPerPeriod);
       unsigned framesRemain = framesPerPeriod; // the number of frames remaining to be processed by this call to Seq::process
       //Transport driverState = seq->isPlaying() ? jack_transport : Transport::STOP;
       Transport driverState = jack_transport;

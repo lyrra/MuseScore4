@@ -102,7 +102,7 @@ int mux_mq_from_audio_reader_visit () {
         return 0;
     }
     struct MuxaudioMsg msg = g_msg_from_audio[g_msg_from_audio_reader];
-    qDebug("MUXAUDIO ==> MUXSEQ msg %s", muxaudio_msg_type_info(msg.type));
+    qDebug("MUXAUDIO q=> MUXSEQ msg %s", muxaudio_msg_type_info(msg.type));
     int rc = 0; //FIX muxseq_mq_from_muxaudio_handle(msg);
     g_msg_from_audio_reader = (g_msg_from_audio_reader + 1) % MAILBOX_SIZE;
     return rc;
@@ -116,6 +116,7 @@ void muxseq_msg_to_audio(MuxaudioMsgType typ, int val)
     struct MuxaudioMsg msg;
     msg.type = typ;
     msg.payload.i = val;
+    qDebug("MUXSEQ z=> MUXAUDIO msg %s", muxaudio_msg_type_info(msg.type));
     mux_zmq_ctrl_send_to_audio(msg);
 }
 
@@ -357,7 +358,7 @@ int muxseq_handle_muxaudioQueryClient_msg (Mux::MuxSocket &sock, struct Muxaudio
             LD("---- g_driver_running is running? %i", msg.payload.i);
         break;
         case MsgTypeJackTransportPosition:
-            LD("mux_set_jack_position to %i", msg.payload.jackTransportPosition.frame);
+            //LD("mux_set_jack_position to %i", msg.payload.jackTransportPosition.frame);
             mux_set_jack_position(msg.payload.jackTransportPosition);
         break;
         case MsgTypeEventToGui:

@@ -346,7 +346,7 @@ void muxaudio_audio_process_stop () {
 
 void muxaudio_network_mainloop_ctrl()
 {
-    std::cerr << "MUXAUDIO ZeroMQ control entering main-loop\n";
+    LD("MUXAUDIO ZeroMQ control entering main-loop\n");
     while (1) {
         struct MuxaudioMsg msg;
         if (zmq_recv(g_socket_ctrl.socket, &msg, sizeof(struct MuxaudioMsg), 0) < 0) {
@@ -360,7 +360,7 @@ void muxaudio_network_mainloop_ctrl()
             break;
         }
     }
-    fprintf(stderr, "mux_network_mainloop control has exited\n");
+    LD("mux_network_mainloop control has exited\n");
 }
 
 /*

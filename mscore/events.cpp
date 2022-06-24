@@ -1158,7 +1158,8 @@ void ScoreView::changeState(ViewState s)
                   endFotoDrag();
                   break;
             case ViewState::PLAY:
-                  muxseq_seq_stop();
+                  qDebug("ScoreView::changeState ViewState::PLAY");
+                  muxseq_seq_start();
                   break;
             case ViewState::EDIT:
                   setMouseTracking(false);

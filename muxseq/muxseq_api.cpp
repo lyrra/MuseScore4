@@ -95,6 +95,7 @@ bool muxseq_seq_init (bool hotPlug) {
 }
 
 void muxseq_seq_start () {
+    qDebug("muxseq_seq_start");
     muxseq_send(MsgTypeSeqStart);
 }
 
