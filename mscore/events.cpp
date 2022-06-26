@@ -1112,16 +1112,20 @@ void ScoreView::seqStopped()
 
 void ScoreView::changeState(ViewState s)
       {
+      qDebug("changeState %s  -> %s", stateName(state), stateName(s));
 //      if (state == ViewState::EDIT && s == ViewState::EDIT) {
 //            startEdit();
 //            return;
 //            }
-      if (s == ViewState::PLAY && !(muxseq_seq_alive()))
+      if (s == ViewState::PLAY && !(muxseq_seq_alive())) {
+            qDebug("changeState, cant change state to PLAY, MUXSEQ is not alive!");
             return;
-      if (s == state)
+            }
+      if (s == state) {
+            qDebug("changeState, wont change, already in state %s!", stateName(s));
             return;
+            }
 
-      qDebug("changeState %s  -> %s", stateName(state), stateName(s));
       //
       //    end current state
       //
@@ -1158,8 +1162,8 @@ void ScoreView::changeState(ViewState s)
                   endFotoDrag();
                   break;
             case ViewState::PLAY:
-                  qDebug("ScoreView::changeState ViewState::PLAY");
-                  muxseq_seq_start();
+                  qDebug("ScoreView::changeState stopping current state PLAY");
+                  muxseq_seq_stop();
                   break;
             case ViewState::EDIT:
                   setMouseTracking(false);
@@ -1215,6 +1219,7 @@ void ScoreView::changeState(ViewState s)
             case ViewState::LASSO:
                   break;
             case ViewState::PLAY:
+                  qDebug("ScoreView::changeState starting new state PLAY");
                   muxseq_seq_start();
                   break;
             case ViewState::ENTRY_PLAY:

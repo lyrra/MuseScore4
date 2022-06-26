@@ -47,6 +47,7 @@ const char* muxseq_msg_type_info (MuxseqMsgType type) {
     case MsgTypeRecomputeMaxMidiOutPort: return "MsgTypeRecomputeMaxMidiOutPort";
     case MsgTypeSeqPreferencesChanged: return "MsgTypeSeqPreferencesChanged";
     case MsgTypeSeqUpdateOutPortCount: return "MsgTypeSeqUpdateOutPortCount";
+    case MsgTypeSeqRenderEvents: return "MsgTypeSeqRenderEvents";
     case MsgTypeMasterSynthesizerInit: return "MsgTypeMasterSynthesizerInit";
     case MsgTypeEOF: return "MsgTypeEOF";
     default: return "ERROR:UNKNOWN-MUXSEQ-MSG-TYPE";

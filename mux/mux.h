@@ -30,8 +30,11 @@ struct MuxSocket {
 
 int mux_zmq_send (struct MuxSocket &muxsock, void* buf, int len);
 int mux_zmq_recv (MuxSocket &muxsock, void* buf, int len);
+int mux_query_send (struct MuxSocket &sock, void* buf, int len);
+void* mux_query_recv (struct MuxSocket &sock, int *rlen);
 int mux_request (struct MuxSocket &sock, void* buf, int len);
 int mux_make_connection(struct MuxSocket &sock, const char *url, ZmqType type, ZmqDir dir, ZmqServer server);
+
 
 } // namespace Mux
 #endif

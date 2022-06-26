@@ -4,50 +4,22 @@
  * This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version. 
  */
 /*
- 
-    audio: the real-time thread that is governed by JACK
-    mux: a thread that sits between musescore and JACK
-    mscore: musescore main thread
+    mscore: musescore/gui, this is the application where you can see your score
+    muxseq: program that runs the sequencer and synthesizers
+    muxaudio: program that handles your audio drivers
 
-    audio <--> mux <---> mscore
-
-    The mux-thread will work ahead of the audio-thread
-    to process score-events into actual audiobuffers.
-
-               +---------------------------+
-    audio <--- | g_ringBufferStereo        |
-               |   g_ringBufferReaderStart | reader is audio-thread
-               |   g_ringBufferWriterStart | writer is mux-thread
-               +---------------------------+
-                 <--- mux
-                      g_chunkBufferStereo (intermediate audiobuffer)
-                      <--- mscore
-        1) mux calls into mscore synthesizers (Seq::process), to
-           fill the audiobuffer in g_chunkBufferStereo.
-           This is synchronous and needs to ringBuffer synchronization.
-        2) mux will synchronize with the ringbuffer and write
-           the g_chunkBufferStereo audiobuffer into it.
-        3) the audio thread detects that the ringbuffer-writer has
-           advanced and can read out audio into it own buffers.
-    The writer will look at the ringbuffer, if enough free room is
-    available to fill the size of a chunk (g_chunkBufferStereo),
-    it will call mscore-synthesizers to process a chunck.
-    Statistics about the ringbuffer activity is kept in four variables:
-      - g_readerCycle  -- everytime the reader wraps around the buffer
-      - g_writerCycle  -- everytime the writer wraps around the buffer
-      - g_readerPause  -- reader has no audio to read, it will sleep
-      - g_writerPause  -- writer has no audio to write, it will sleep
-
-    Aside from feeding jack with audiobuffers, audio and mux thread
-    need to signal information, for example transport play/stop.
-    This is done by sending message directly using ZeroMQ.
-
-    ..--------+                  +------------..
-     muxaudio | <-- ZeroMQ ----> | mscore/seq
-    ..-------+|                  +------------..
+                +----------------------------------+ 
+    mscore      | Muxseq                           |      muxaudio
+         |      |                                  |      |
+         | ---> |               g_ringBufferStereo | ---> |
+         |      |                                  |      |
+         | ZMQ  |                                  | ZMQ  |
+         |      |                                  |      |
+         | <--- |                 g_msg_from_audio | <--- |       
+         |      |                                  |      |
+                +----------------------------------+     
 
 */
-
 
 #include "config.h"
 #include <iostream>
@@ -297,8 +269,14 @@ int muxseq_handle_musescore_msg_MsgTypeSeqCanStart (Mux::MuxSocket &sock, struct
 }
 
 int muxseq_handle_musescore_msg_MsgTypeSeqStart (Mux::MuxSocket &sock, struct MuxseqMsg msg) {
-    muxseq_msg_to_audio(MsgTypeAudioStart, 0); //FIX: 0 not used
-    return muxseq_handle_musescore_reply_int(sock, msg, 0);
+    int rc = 0;
+    if (g_seq) {
+        g_seq->start(); // FIX: really call seq from this thread?
+    } else {
+        LE("cant play sequencer: it doesnt exist!");
+        rc = -1;
+    }
+    return muxseq_handle_musescore_reply_int(sock, msg, rc);
 }
 
 int muxseq_handle_musescore_msg_MsgTypeSeqSeek (Mux::MuxSocket &sock, struct MuxseqMsg msg) {
@@ -406,6 +384,19 @@ void muxseq_mscoreQueryServer_mainloop(Mux::MuxSocket &sock) {
         }
         LD("MSCORE ==> MUXSEQ -- got message");
         muxseq_handle_musescore_msg(sock, msg);
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
+    }
+}
+
+/* mscoreQueryReqServer -- handle outgoing requests to musescore
+ *
+ */
+void muxseq_mscoreQueryReqServer_mainloop(Mux::MuxSocket &sock) {
+    LD("MUXSEQ ==> MSCORE -- queryReq server started");
+    while(1){
+        // the other threads (who wants to send requests towards musescore)
+        // will use the socket directly, but we could instead consider
+        // going through an ringbuffer, and this thread would then be the single reader
         std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
 }

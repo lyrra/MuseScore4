@@ -22,7 +22,7 @@ namespace Ms {
 /* initialization/control
  */
 static struct Mux::MuxSocket g_muxseq_query_client_socket;
-static struct Mux::MuxSocket g_muxseq_bulletin_client_socket;
+static struct Mux::MuxSocket g_muxseq_queryreq_client_socket;
 static bool g_threads_started = false;
 static bool g_thread_musescoreQuery_started = false;
 static bool g_thread_musescoreBulletin_started = false;
@@ -33,7 +33,7 @@ static std::vector<std::thread> muxseq_Threads;
   qDebug("muxseq_client query %s", muxseq_msg_type_info(type));
 
 int muxseq_query_zmq (MuxseqMsgType type, MuxseqMsg &msg) {
-    qDebug("MUXSEQ ==> MUXAUDIO query msg %s", muxseq_msg_type_info(type));
+    LD("MSCORE ==> MUXSEQ query msg %s", muxseq_msg_type_info(type));
     msg.type = type;
     Mux::mux_zmq_send(g_muxseq_query_client_socket, (void*) &msg, sizeof(struct MuxseqMsg));
     return Mux::mux_zmq_recv(g_muxseq_query_client_socket, (void*) &msg, sizeof(struct MuxseqMsg));
@@ -95,6 +95,31 @@ void muxseq_query (MuxseqMsgType type, bool b) {
     return;
 }
 
+int muxseq_network_mainloop_queryrep_recv(Mux::MuxSocket &sock) {
+    int rlen;
+    void* m = mux_query_recv(sock, &rlen);
+    if (! m) return -1;
+    struct MuxseqMsg msg;
+    memcpy(&msg, m, sizeof(struct MuxseqMsg));
+    free(m);
+    LD("MSCORE ==> MUXSEQ got query from muxseq, type=%i (%s) len=%i (copy %i) (int-size %i) label=%s", msg.type, muxseq_msg_type_info(msg.type), rlen, sizeof(MuxseqMsgType), sizeof(int), msg.label);
+    strcpy(msg.label, "mscore");
+    if (mux_query_send(sock, &msg, sizeof(struct MuxseqMsg)) == -1) {
+        return -1;
+    }
+    return 0;
+}
+
+void muxseq_network_mainloop_queryrep(Mux::MuxSocket &sock)
+{
+    while (1) {
+        int rc = muxseq_network_mainloop_queryrep_recv(sock);
+        if (rc < 0) {
+            qFatal("  -- musescore-muxseq queryreq client error");
+            return;
+        }
+    }
+}
 
 
 // void mux_network_close(struct MuxSocket &sock)
@@ -110,10 +135,9 @@ void muxseq_query_req_thread_init(std::string _notused)
 
 void muxseq_query_rep_thread_init(std::string _notused)
 {
-//FIX: muxseq has no PUB/SUB (yet)
-//    Mux::mux_make_connection(g_muxseq_bulletin_client_socket, MUX_MUSESCORE_BULLETIN_CLIENT_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REQ, Mux::ZmqServer::CONNECT);
-//    g_thread_musescoreBulletin_started = true;
-    //muxseq_network_mainloop_bulletin();
+    Mux::mux_make_connection(g_muxseq_queryreq_client_socket, MUX_MUSESCORE_QUERYREQ_CLIENT_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REP, Mux::ZmqServer::CONNECT);
+    //g_thread_musescoreBulletin_started = true;
+    muxseq_network_mainloop_queryrep(g_muxseq_queryreq_client_socket);
 }
 
 void mux_musescore_client_start()

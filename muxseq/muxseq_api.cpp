@@ -1,4 +1,5 @@
 
+#include "mux.h"
 #include "muxseqsig.h"
 #include "event.h"
 #include "muxlib.h"
@@ -20,8 +21,9 @@ extern Ms::Synthesizer* createAeolus();
 extern Ms::Synthesizer* createZerberus();
 #endif
 
+#define LE(...) qDebug(__VA_ARGS__)
 namespace Ms {
-
+extern struct Mux::MuxSocket g_muxsocket_mscoreQueryReqServer;
 extern Seq* g_seq;
 MasterSynthesizer* synti = 0;
 
@@ -63,6 +65,32 @@ void muxseq_query(MuxseqMsgType type, bool b) {
     qDebug("muxseq msg query %i about bool %i (NOT IMPL)", type, b);
 }
 
+void* muxseq_mscore_query (MuxseqMsgType type)
+{
+    qDebug("MUXSEQ ==> MSCORE query msg %s", muxseq_msg_type_info(type));
+    /* Create a new message, allocating 6 bytes for message content */
+    struct MuxseqMsg msg;
+    msg.type = type;
+    strcpy(msg.label, "muxseq");
+    if (mux_query_send(g_muxsocket_mscoreQueryReqServer, &msg, sizeof(struct MuxseqMsg)) < 0) {
+        LE("muxseq_mscore_query send failed");
+        return nullptr;
+    }
+ 
+    // receive reply
+    int rlen;
+    void *m = mux_query_recv(g_muxsocket_mscoreQueryReqServer, &rlen);
+    if (! m) {
+        LE("muxseq_mscore_query recv failed");
+        return nullptr;
+    }
+    memset(&msg, 0, sizeof(struct MuxseqMsg));
+    // get message type
+    memcpy(&msg, m, sizeof(struct MuxseqMsg));
+    qDebug("MUXSEQ ==> MSCORE query recv reply msg %s (rlen=%i) label=%s", muxseq_msg_type_info(msg.type), rlen, msg.label);
+    /* Release message */
+    free(m);
+}
 
 #define DEFMUXSEQVOID(name, sname) \
   void muxseq_seq_ ## name() { \

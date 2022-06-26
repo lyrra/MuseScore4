@@ -80,6 +80,58 @@ int mux_request (struct MuxSocket &sock, void* buf, int len) {
     return 0;
 }
 
+int mux_query_send (struct MuxSocket &sock, void* buf, int len) {
+    zmq_msg_t msg;
+    int rc = zmq_msg_init_size(&msg, len);
+    if (rc < 0) return rc;
+    memcpy(zmq_msg_data(&msg), buf, len);
+    rc = zmq_msg_send(&msg, sock.socket, 0);
+    zmq_msg_close (&msg);
+    return (rc == len ? len : -1);
+}
+
+void* mux_query_recv (struct MuxSocket &sock, int *rlen) {
+    int more;
+    size_t more_size = sizeof (more);
+    int len = 0;
+    void* m = nullptr;
+    LD("mux_query_recv -- begin\n");
+    do {
+        zmq_msg_t msg;
+        int rc = zmq_msg_init(&msg);
+        if (rc < 0) {
+            if (m) free(m);
+            return nullptr;
+        }
+        rc = zmq_msg_recv (&msg, sock.socket, 0);
+        if (rc < 0) {
+            if (m) free(m);
+            return nullptr;
+        }
+        int gotlen = rc;
+        LD("mux_query_recv -- recv len=%i\n", gotlen);
+        rc = zmq_getsockopt (sock.socket, ZMQ_RCVMORE, &more, &more_size);
+        if (rc < 0) {
+            if (m) free(m);
+            return nullptr;
+        }
+        LD("mux_query_recv -- more=%i\n", more);
+        int newlen = len + gotlen;
+        void* tm = malloc(newlen);
+        if (len > 0) { // copy previous data
+            memcpy(tm, m, len);
+            free(m);
+        }
+        m = tm;
+        memcpy((unsigned char*)m+len, zmq_msg_data(&msg), gotlen);
+        len = newlen;
+        zmq_msg_close (&msg);
+    } while (more);
+    *rlen = len;
+    LD("mux_query_recv -- end, final len=%i\n", len);
+    return m;
+}
+
 void mux_network_close(struct MuxSocket &sock)
 {
     zmq_close(sock.socket);

@@ -21,6 +21,7 @@
 namespace Ms {
 
 void muxseq_mscoreQueryServer_mainloop(Mux::MuxSocket &sock);
+void muxseq_mscoreQueryReqServer_mainloop(Mux::MuxSocket &sock);
 void mux_network_server_ctrl();
 void mux_network_server_audio();
 int mux_mq_to_audio_visit();
@@ -33,6 +34,7 @@ void muxseq_muxaudioWorker_process();
 
 static std::vector<std::thread> muxThreads;
 struct Mux::MuxSocket g_muxsocket_mscoreQueryServer;
+struct Mux::MuxSocket g_muxsocket_mscoreQueryReqServer;
 struct Mux::MuxSocket g_muxsocket_muxaudioQueryClientAudio;
 struct Mux::MuxSocket g_muxsocket_muxaudioQueryClientCtrl;
 extern int g_muxseq_audio_process_run;
@@ -43,6 +45,14 @@ void muxseq_mscoreQueryServer_thread_init(std::string _notused)
     Mux::mux_make_connection(g_muxsocket_mscoreQueryServer, MUX_MUSESCORE_QUERY_SERVER_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REP, Mux::ZmqServer::BIND);
     muxseq_mscoreQueryServer_mainloop(g_muxsocket_mscoreQueryServer);
 }
+
+/* this thread ask message to musescore */
+void muxseq_mscoreQueryReqServer_thread_init(std::string _notused)
+{
+    Mux::mux_make_connection(g_muxsocket_mscoreQueryReqServer, MUX_MUSESCORE_QUERYREQ_SERVER_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REQ, Mux::ZmqServer::BIND);
+    muxseq_mscoreQueryReqServer_mainloop(g_muxsocket_mscoreQueryReqServer);
+}
+
 
 /* this thread listens on message from muxaudio */
 void muxseq_muxaudioQueryClient_thread_init(std::string _notused)
@@ -107,6 +117,9 @@ void muxseq_threads_start()
 
     std::thread mscoreQueryServerThread(muxseq_mscoreQueryServer_thread_init, "notused");
     threadv.push_back(std::move(mscoreQueryServerThread));
+
+    std::thread mscoreQueryReqServerThread(muxseq_mscoreQueryReqServer_thread_init, "notused");
+    threadv.push_back(std::move(mscoreQueryReqServerThread));
 
     muxThreads = std::move(threadv);
 }

@@ -67,6 +67,7 @@
 
 
 namespace Ms {
+void* muxseq_mscore_query (MuxseqMsgType type);
 
 int g_driver_running = 0;
 int g_mscore_division = 1; // FIX: need to set this at start
@@ -352,6 +353,7 @@ bool Seq::init(bool hotPlug)
       LD("Seq::init g_muxseq_audio_process_run = 1\n");
       g_muxseq_audio_process_run = 1; //FIX: move this into muxseq (by a function call)
       muxseq_msg_to_audio(MsgTypeAudioStart, hotPlug);
+      LD("Seq::init waiting for muxaudio to start g_driver\n");
       while (! g_driver_running /* g_ctrl_audio_running */) {
             std::this_thread::sleep_for(std::chrono::microseconds(10000));
             //FIX: if (g_ctrl_audio_error) {
@@ -359,7 +361,7 @@ bool Seq::init(bool hotPlug)
             //      return false;
             //      }
       }
-
+      LD("Seq::init muxaudio has started for g_driver\n");
       //FIX: cachedPrefs.update();
       running = true;
       return true;
@@ -417,7 +419,7 @@ void Seq::start()
       qDebug("---- Seq::start !!!!! time to play some notes ----");
 
       if (! g_driver_running) {
-            qDebug("No driver!");
+            qDebug("seq cant start: driver is not running!");
             return;
             }
 
@@ -835,7 +837,7 @@ void mux_set_jack_position(struct JackTransportPosition jackTransportPosition)
     jack_position_valid = jackTransportPosition.valid;
     jack_position_beats_per_minute = jackTransportPosition.beats_per_minute;
     jack_position_BBT = jackTransportPosition.bbt;
-    //qDebug("--- mux_set_jack_position jack_transport state=%i frame=%i", jack_transport, jack_position_frame);
+    qDebug("--- mux_set_jack_position jack_transport state=%i frame=%i", (int)jack_transport, jack_position_frame);
 }
 
 //---------------------------------------------------------
@@ -897,13 +899,13 @@ static void checkTransportSeek(int cur_frame, int nframes, bool inCountIn)
 //-------------------------------------------------------------------
 void Seq::process(unsigned framesPerPeriod, float* buffer)
       {
-      //qDebug("--- Seq::process frames=%i", framesPerPeriod);
       unsigned framesRemain = framesPerPeriod; // the number of frames remaining to be processed by this call to Seq::process
       //Transport driverState = seq->isPlaying() ? jack_transport : Transport::STOP;
       Transport driverState = jack_transport;
       // Checking for the reposition from JACK Transport
       checkTransportSeek(playFrame, framesRemain, inCountIn);
 
+      qDebug("--- Seq::process frames=%i driverState=%i state=%i", framesPerPeriod, (int) driverState, (int) state);
       if (driverState != state) {
             // Got a message from JACK Transport panel: Play
             if (state == Transport::STOP && driverState == Transport::PLAY) {
@@ -977,6 +979,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
 
       processMessages();
 
+      qDebug("Seq: state=%i (play=%i)", (int) state, (int) Transport::PLAY);
       if (state == Transport::PLAY) {
             // FIX: if (!cs)
             //      return;
@@ -1276,6 +1279,7 @@ void Seq::updateEventsEnd()
 void Seq::collectEvents(int utick)
       {
       //do not collect even while playing
+      LD("Seq::collectEvents utick=%i", utick);
       if (state == Transport::PLAY && playlistChanged)
             return;
 
@@ -1284,6 +1288,8 @@ void Seq::collectEvents(int utick)
       if (midiRenderFuture.isRunning())
             midiRenderFuture.waitForFinished();
 
+      LD("Seq::collectEvents x2");
+      // move any outstanding events in current eventmap
       if (playlistChanged) {
             midi.setScoreChanged();
             events.clear();
@@ -1294,6 +1300,10 @@ void Seq::collectEvents(int utick)
             events.insert(renderEvents.begin(), renderEvents.end());
             renderEvents.clear();
             }
+
+      LD("Seq::collectEvents asking mscore about render-events");
+      unsigned char* buf = (unsigned char*) muxseq_mscore_query(MsgTypeSeqRenderEvents);
+      LD("Seq::collectEvents DONE asking mscore about render-events");
 #if 0 //FIX: 
       int unrenderedUtick = renderEventsStatus.occupiedRangeEnd(utick);
       while (unrenderedUtick - utick < minUtickBufferSize) {
@@ -1304,10 +1314,12 @@ void Seq::collectEvents(int utick)
             unrenderedUtick = renderEventsStatus.occupiedRangeEnd(utick);
             }
 #endif
+      LD("Seq::collectEvents x3");
       updateEventsEnd();
       //FIX: playPos = mscore->loop() ? events.find(cs->loopInTick().ticks()) : events.cbegin();
       playlistChanged = false;
       mutex.unlock();
+      LD("Seq::collectEvents done");
       }
 
 //---------------------------------------------------------

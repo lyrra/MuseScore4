@@ -4264,7 +4264,7 @@ void MuseScore::showModeText(const QString& s, bool informScreenReader)
 
 void MuseScore::changeState(ScoreState val)
       {
-      if (MScore::debugMode)
+      //if (MScore::debugMode)
             qDebug("MuseScore::changeState: %s", stateName(val));
 
       // disallow change to edit modes if currently in play mode
