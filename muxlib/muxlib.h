@@ -73,12 +73,13 @@ enum MuxaudioMsgType {
 };
 
 struct SparseEvent {
+    unsigned int framepos;
     unsigned char type;
     unsigned char channel;
     int pitch;
     int velo;
-    int cont;
-    int val;
+    int cont; // FIX: redundant with pitch
+    int val;  // FIX: redundant with velo
 };
 
 struct SparseMidiEvent {
@@ -102,15 +103,15 @@ struct MuxaudioMsg {
     MuxaudioMsgType type;
     union Payload {
         int i;
-        SparseEvent sparseEvent;
-        SparseMidiEvent sparseMidiEvent;
+        struct SparseEvent sparseEvent;
+        struct SparseMidiEvent sparseMidiEvent;
         struct JackTransportPosition jackTransportPosition;
     } payload;
 };
 
 struct MuxseqMsg {
     MuxseqMsgType type;
-    char label[8];
+    char label[64];
     union Payload {
         int i;
         bool b;

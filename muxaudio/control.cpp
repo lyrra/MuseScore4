@@ -28,11 +28,13 @@ void mux_thread_process_init(std::string msg)
     muxaudio_audio_process();
 }
 
+/* this threads replies to queries from muxseq */
 void mux_ctrl_zmq_thread_init(std::string _notused)
 {
     muxaudio_network_server_ctrl();
 }
 
+/* this threads send queries to muxseq */
 void mux_audio_zmq_thread_init(std::string _notused)
 {
     muxaudio_network_server_audio();

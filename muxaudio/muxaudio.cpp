@@ -350,13 +350,13 @@ void muxaudio_network_mainloop_ctrl()
     while (1) {
         struct MuxaudioMsg msg;
         if (zmq_recv(g_socket_ctrl.socket, &msg, sizeof(struct MuxaudioMsg), 0) < 0) {
-            LE("zmq-recv control  error: %s\n", strerror(errno));
+            LE("zmq-recv control error: %s\n", strerror(errno));
             break;
         }
         LD("Received Control Message, type=(%i)%s\n", msg.type, muxaudio_msg_type_info(msg.type));
         mux_mq_to_audio_writer_put(msg);
         if (zmq_send(g_socket_ctrl.socket, &msg, sizeof(struct MuxaudioMsg), 0) < 0) {
-            LE("zmq-recv control  error: %s\n", strerror(errno));
+            LE("zmq-send control error: %s\n", strerror(errno));
             break;
         }
     }

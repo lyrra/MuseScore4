@@ -2665,6 +2665,7 @@ void MuseScore::setCurrentView(int tabIdx, int idx)
 
 void MuseScore::setCurrentScoreView(ScoreView* view)
       {
+      qDebug("-- MuseScore::setCurrentScoreView --");
       cv = view;
       if (cv) {
             ctab = (tab2 && tab2->view() == view) ? tab2 : tab1;

@@ -67,7 +67,7 @@
 
 
 namespace Ms {
-void* muxseq_mscore_query (MuxseqMsgType type);
+void* muxseq_mscore_query (MuxseqMsgType type, int i, int *rlen);
 
 int g_driver_running = 0;
 int g_mscore_division = 1; // FIX: need to set this at start
@@ -268,7 +268,7 @@ Seq::~Seq()
 //   setScoreView
 //---------------------------------------------------------
 
-#if 0 //FIX: enable after move to muxseq
+#if 0 //FIX: reenable and move this into musescore (or mscore/seq side). Unmarked code has moved to muxseq_client.cpp:muxseq_seq_set_scoreview
 void Seq::setScoreView(ScoreView* v)
       {
       if (oggInit) {
@@ -279,22 +279,22 @@ void Seq::setScoreView(ScoreView* v)
             unmarkNotes();
             stopWait();
             }
-      cv = v;
-      if (cs)
+      //cv = v;
+      //if (cs)
             disconnect(cs, SIGNAL(playlistChanged()), this, SLOT(setPlaylistChanged()));
-      cs = cv ? cv->score()->masterScore() : 0;
-      midi = MidiRenderer(cs);
-      midi.setMinChunkSize(10);
+      //cs = cv ? cv->score()->masterScore() : 0;
+//      midi = MidiRenderer(cs);   // see muxseq_client.cpp:maybe_update_midiRenderer()
+//      midi.setMinChunkSize(10);
 
       if (!heartBeatTimer->isActive())
             heartBeatTimer->start(20);    // msec
 
       playlistChanged = true;
-      _synti->reset();
-      if (cs) {
-            initInstruments();
+      //_synti->reset();
+      //if (cs) {
+            //initInstruments();
             connect(cs, SIGNAL(playlistChanged()), this, SLOT(setPlaylistChanged()));
-            }
+            //}
       }
 #endif
 
@@ -327,7 +327,7 @@ void Seq::CachedPreferences::update()
 void Seq::startTransport()
       {
       //FIX: cachedPrefs.update();
-      qDebug("Seq::startTransport");
+      qDebug("-- Seq::startTransport");
       muxseq_msg_to_audio(MsgTypeTransportStart, 0);
       }
 
@@ -403,6 +403,7 @@ void Seq::loopStart()
 
 bool Seq::canStart()
       {
+      qDebug("---- Seq::canStart ----");
       if (! g_driver_running)
             return false;
       collectEvents(getPlayStartUtick());
@@ -441,8 +442,10 @@ void Seq::start()
             }
 
       if (!preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) || (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) && state == Transport::STOP))
-      //if (state == Transport::STOP)
+      qDebug("---- Seq::start state=%i, Transport::STOP=%i", state, Transport::STOP);
+      if (state == Transport::STOP) {
             seek(getPlayStartUtick());
+            }
 
       // FIX: send to mscore
       //if (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) && mscore->countIn() && state == Transport::STOP) {
@@ -1251,15 +1254,7 @@ void Seq::updateOutPortCount(const int portCount)
 //   renderChunk
 //---------------------------------------------------------
 
-void Seq::renderChunk(const MidiRenderer::Chunk& ch, EventMap* eventMap)
-      {
-// FIX  SynthesizerState synState = mscore->synthesizerState();
-//      MidiRenderer::Context ctx(synState);
-//      ctx.metronome = true;
-//      ctx.renderHarmony = true;
-//      midi.renderChunk(ch, eventMap, ctx);
-//      renderEventsStatus.setOccupied(ch.utick1(), ch.utick2());
-      }
+//FIX: moved to muxseq_client
 
 //---------------------------------------------------------
 //   updateEventsEnd
@@ -1288,7 +1283,6 @@ void Seq::collectEvents(int utick)
       if (midiRenderFuture.isRunning())
             midiRenderFuture.waitForFinished();
 
-      LD("Seq::collectEvents x2");
       // move any outstanding events in current eventmap
       if (playlistChanged) {
             midi.setScoreChanged();
@@ -1301,25 +1295,29 @@ void Seq::collectEvents(int utick)
             renderEvents.clear();
             }
 
-      LD("Seq::collectEvents asking mscore about render-events");
-      unsigned char* buf = (unsigned char*) muxseq_mscore_query(MsgTypeSeqRenderEvents);
-      LD("Seq::collectEvents DONE asking mscore about render-events");
-#if 0 //FIX: 
-      int unrenderedUtick = renderEventsStatus.occupiedRangeEnd(utick);
-      while (unrenderedUtick - utick < minUtickBufferSize) {
-            const MidiRenderer::Chunk chunk = midi.getChunkAt(unrenderedUtick);
-            if (!chunk)
-                  break;
-            renderChunk(chunk, &events);
-            unrenderedUtick = renderEventsStatus.occupiedRangeEnd(utick);
-            }
-#endif
-      LD("Seq::collectEvents x3");
+      int rlen;
+      unsigned char* buf = (unsigned char*) muxseq_mscore_query(MsgTypeSeqRenderEvents, utick, &rlen);
+      if (buf) {
+          //FIX: make a helperfunction and put in muxlib (muxbuffer_to_eventMap)
+          struct SparseEvent *sevs = (struct SparseEvent *) buf;
+          for (int i = 0; i < rlen; i++) {
+              struct SparseEvent *sev = &sevs[i];
+              int framepos = sev->framepos;
+              NPlayEvent nev;
+              nev.setType(sev->type);
+              nev.setChannel(sev->channel);
+              nev.setPitch(sev->pitch);
+              nev.setVelo(sev->velo);
+              events.insert({framepos, nev});
+          }
+          free(buf);
+      }
+      LD("Seq::collectEvents collected %i events", events.size());
       updateEventsEnd();
-      //FIX: playPos = mscore->loop() ? events.find(cs->loopInTick().ticks()) : events.cbegin();
+      //FIX: cant handle loops, need loop-tick from mscore: playPos = mscore->loop() ? events.find(cs->loopInTick().ticks()) : events.cbegin();
+      playPos = events.cbegin();
       playlistChanged = false;
       mutex.unlock();
-      LD("Seq::collectEvents done");
       }
 
 //---------------------------------------------------------
@@ -1455,6 +1453,7 @@ void Seq::seekCommon(int utick)
 
 void Seq::seek(int utick)
       {
+      qDebug("-- Seq::seek utick=%i", utick);
 #if 0 // FIX
       if (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT)) {
             if (utick > endUTick)

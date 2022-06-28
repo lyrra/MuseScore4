@@ -88,8 +88,12 @@ void muxseq_msg_to_audio(MuxaudioMsgType typ, int val)
     struct MuxaudioMsg msg;
     msg.type = typ;
     msg.payload.i = val;
-    qDebug("MUXSEQ z=> MUXAUDIO msg %s", muxaudio_msg_type_info(msg.type));
-    mux_zmq_ctrl_send_to_audio(msg);
+    if (mux_zmq_ctrl_send_to_audio(msg) < 0) {
+        return;
+    }
+    if (zmq_recv(g_muxsocket_muxaudioQueryClientCtrl.socket, &msg, sizeof(struct MuxaudioMsg), 0) < 0) {
+        LD("muxseq_msg_to_audio failed to recv reply from muxaudio.");
+    }
 }
 
 void mux_msg_from_audio(MuxaudioMsgType typ, int val)
@@ -204,10 +208,14 @@ void muxseq_muxaudioWorker_process() {
     LD("MUXSEQ audio-process terminated.");
 }
 
-void mux_zmq_ctrl_send_to_audio (struct MuxaudioMsg msg)
+int mux_zmq_ctrl_send_to_audio (struct MuxaudioMsg msg)
 {
-    qDebug("MUXSEQ ==> MUXAUDIO msg %s", muxaudio_msg_type_info(msg.type));
-    zmq_send(g_muxsocket_muxaudioQueryClientCtrl.socket, &msg, sizeof(struct MuxaudioMsg), 0);
+    LD("MUXSEQ ==> MUXAUDIO msg %s", muxaudio_msg_type_info(msg.type));
+    if (zmq_send(g_muxsocket_muxaudioQueryClientCtrl.socket, &msg, sizeof(struct MuxaudioMsg), 0) < 0) {
+        LD("ERROR sending to MUXAUDIO msg %s", muxaudio_msg_type_info(msg.type));
+        return -1;
+    }
+    return 0;
 }
 
 int muxseq_handle_musescore_reply_int (Mux::MuxSocket &sock, struct MuxseqMsg msg, int i) {

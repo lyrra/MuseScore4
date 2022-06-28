@@ -39,7 +39,7 @@ void mux_audio_handle_MsgTimeSigTempoChanged();
 void mux_audio_handle_updateOutPortCount(int portCount);
 void muxseq_msg_to_audio(MuxaudioMsgType typ, int val);
 
-void mux_zmq_ctrl_send_to_audio(struct MuxaudioMsg msg);
+int mux_zmq_ctrl_send_to_audio(struct MuxaudioMsg msg);
 
 } // namespace Ms
 #endif

@@ -1,3 +1,12 @@
+/* GPL-2.0-or-later
+ * Copyright (C) 2022 Larry Valkama
+ *
+ * This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+ */
+/*
+ *
+ *
+ */
 
 #include "mux.h"
 #include "muxseqsig.h"
@@ -65,31 +74,42 @@ void muxseq_query(MuxseqMsgType type, bool b) {
     qDebug("muxseq msg query %i about bool %i (NOT IMPL)", type, b);
 }
 
-void* muxseq_mscore_query (MuxseqMsgType type)
+//FIX: put this is muxlib
+struct MuxseqEventsHeader {
+    int type;
+    int numEvents;
+};
+
+//FIX: handles only payload  'i'
+void* muxseq_mscore_query (MuxseqMsgType type, int i, int *rlen)
 {
     qDebug("MUXSEQ ==> MSCORE query msg %s", muxseq_msg_type_info(type));
     /* Create a new message, allocating 6 bytes for message content */
     struct MuxseqMsg msg;
     msg.type = type;
+    msg.payload.i = i;
     strcpy(msg.label, "muxseq");
     if (mux_query_send(g_muxsocket_mscoreQueryReqServer, &msg, sizeof(struct MuxseqMsg)) < 0) {
         LE("muxseq_mscore_query send failed");
         return nullptr;
     }
  
-    // receive reply
-    int rlen;
-    void *m = mux_query_recv(g_muxsocket_mscoreQueryReqServer, &rlen);
+    // receive reply, which is a header plus an eventmap
+    int rlen2;
+    void *m = mux_query_recv(g_muxsocket_mscoreQueryReqServer, &rlen2);
+    qDebug("muxseq_mscore_query got reply , bufSize=%i", rlen2);
     if (! m) {
         LE("muxseq_mscore_query recv failed");
         return nullptr;
     }
-    memset(&msg, 0, sizeof(struct MuxseqMsg));
-    // get message type
-    memcpy(&msg, m, sizeof(struct MuxseqMsg));
-    qDebug("MUXSEQ ==> MSCORE query recv reply msg %s (rlen=%i) label=%s", muxseq_msg_type_info(msg.type), rlen, msg.label);
+    struct MuxseqEventsHeader *head;
+    struct SparseEvent *sevs;
+    head = (struct MuxseqEventsHeader *) m;
+    sevs = (struct SparseEvent *) m + sizeof(struct MuxseqEventsHeader);
+    qDebug("MUXSEQ ==> MSCORE query recv reply msg %s numEvents=%i", muxseq_msg_type_info(msg.type), head->numEvents);
     /* Release message */
-    free(m);
+    *rlen = head->numEvents;
+    return m;
 }
 
 #define DEFMUXSEQVOID(name, sname) \

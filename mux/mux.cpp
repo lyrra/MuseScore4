@@ -95,7 +95,6 @@ void* mux_query_recv (struct MuxSocket &sock, int *rlen) {
     size_t more_size = sizeof (more);
     int len = 0;
     void* m = nullptr;
-    LD("mux_query_recv -- begin\n");
     do {
         zmq_msg_t msg;
         int rc = zmq_msg_init(&msg);
@@ -109,13 +108,11 @@ void* mux_query_recv (struct MuxSocket &sock, int *rlen) {
             return nullptr;
         }
         int gotlen = rc;
-        LD("mux_query_recv -- recv len=%i\n", gotlen);
         rc = zmq_getsockopt (sock.socket, ZMQ_RCVMORE, &more, &more_size);
         if (rc < 0) {
             if (m) free(m);
             return nullptr;
         }
-        LD("mux_query_recv -- more=%i\n", more);
         int newlen = len + gotlen;
         void* tm = malloc(newlen);
         if (len > 0) { // copy previous data
@@ -128,7 +125,6 @@ void* mux_query_recv (struct MuxSocket &sock, int *rlen) {
         zmq_msg_close (&msg);
     } while (more);
     *rlen = len;
-    LD("mux_query_recv -- end, final len=%i\n", len);
     return m;
 }
 
