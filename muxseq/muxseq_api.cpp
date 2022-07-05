@@ -31,6 +31,7 @@ extern Ms::Synthesizer* createZerberus();
 #endif
 
 #define LE(...) qDebug(__VA_ARGS__)
+#define LD8(...) qDebug(__VA_ARGS__)
 namespace Ms {
 extern struct Mux::MuxSocket g_muxsocket_mscoreQueryReqServer;
 extern Seq* g_seq;
@@ -74,14 +75,8 @@ void muxseq_query(MuxseqMsgType type, bool b) {
     qDebug("muxseq msg query %i about bool %i (NOT IMPL)", type, b);
 }
 
-//FIX: put this is muxlib
-struct MuxseqEventsHeader {
-    int type;
-    int numEvents;
-};
-
 //FIX: handles only payload  'i'
-void* muxseq_mscore_query (MuxseqMsgType type, int i, int *rlen)
+void* muxseq_mscore_query (MuxseqMsgType type, int i)
 {
     qDebug("MUXSEQ ==> MSCORE query msg %s", muxseq_msg_type_info(type));
     /* Create a new message, allocating 6 bytes for message content */
@@ -93,23 +88,20 @@ void* muxseq_mscore_query (MuxseqMsgType type, int i, int *rlen)
         LE("muxseq_mscore_query send failed");
         return nullptr;
     }
- 
-    // receive reply, which is a header plus an eventmap
+    LD8("MUXSEQ ==> MSCORE query msg %s (done sending request)", muxseq_msg_type_info(type));
+    // receive reply, which is a 'struct MuxseqEventsHeader' followed by an list of events
     int rlen2;
     void *m = mux_query_recv(g_muxsocket_mscoreQueryReqServer, &rlen2);
-    qDebug("muxseq_mscore_query got reply , bufSize=%i", rlen2);
+    LD8("muxseq_mscore_query got reply, bufSize=%i", rlen2);
     if (! m) {
         LE("muxseq_mscore_query recv failed");
         return nullptr;
     }
-    struct MuxseqEventsHeader *head;
-    struct SparseEvent *sevs;
-    head = (struct MuxseqEventsHeader *) m;
-    sevs = (struct SparseEvent *) m + sizeof(struct MuxseqEventsHeader);
-    qDebug("MUXSEQ ==> MSCORE query recv reply msg %s numEvents=%i", muxseq_msg_type_info(msg.type), head->numEvents);
+    struct MuxseqEventsHeader *meh;
+    meh = (struct MuxseqEventsHeader *) m;
+    meh->sevs = (struct SparseEvent *) (m + sizeof(struct MuxseqEventsHeader));
     /* Release message */
-    *rlen = head->numEvents;
-    return m;
+    return meh;
 }
 
 #define DEFMUXSEQVOID(name, sname) \

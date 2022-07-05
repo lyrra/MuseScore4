@@ -264,12 +264,16 @@ class NPlayEvent : public PlayEvent {
       void setOriginatingStaff(int i) { _origin = i; }
       void setDiscard(int d) { _discard = d; }
       int discard() const { return _discard; }
+      bool isMuted() const;
       void setPortamento(bool p) { _portamento = p; }
       bool portamento() const { 
             return (_portamento == true || 
                   (this->type() == ME_CONTROLLER && 
                   (this->controller() == CTRL_PORTAMENTO || this->controller() == CTRL_PORTAMENTO_CONTROL || 
                         this->controller() == CTRL_PORTAMENTO_TIME_MSB ||  this->controller() == CTRL_PORTAMENTO_TIME_LSB))); }
+      qreal playPosSeconds;
+      int beatsPerSecond;
+      int division;
       };
 
 //---------------------------------------------------------

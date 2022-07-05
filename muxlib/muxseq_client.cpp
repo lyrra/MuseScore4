@@ -14,6 +14,7 @@
 #include "event.h"
 #include "libmscore/synthesizerstate.h"
 #include "libmscore/rendermidi.h"
+#include "libmscore/tempo.h"
 #include "synthesizer.h"
 #include "mux.h"
 #include "muxlib.h"
@@ -29,6 +30,8 @@
 
 //FIX: muxseq shouldn't use QT
 #define LD(...) qDebug(__VA_ARGS__)
+#define LD4(...) qDebug(__VA_ARGS__)
+#define LD8(...) qDebug(__VA_ARGS__)
 #define LE(...) qError(__VA_ARGS__)
 #define LEX(...) qFatal(__VA_ARGS__)
 
@@ -148,13 +151,8 @@ void _renderChunk(RangeMap &renderEventsStatus,
 }
 
 //FIX: put this is muxlib
-struct MuxseqEventsHeader {
-    int type;
-    int numEvents;
-};
-
-//FIX: put this is muxlib
-unsigned char* eventMap_to_muxbuffer(MuxseqMsgType type, EventMap evm, int *rlen) {
+unsigned char* eventMap_to_muxbuffer(MuxseqMsgType type, EventMap evm,
+                                     qreal beatsPerSecond, int *rlen) {
     size_t numEvents = evm.size();
     struct MuxseqEventsHeader head;
     head.numEvents = numEvents;
@@ -163,7 +161,7 @@ unsigned char* eventMap_to_muxbuffer(MuxseqMsgType type, EventMap evm, int *rlen
               sizeof(struct SparseEvent) * numEvents;
     unsigned char* buf = (unsigned char*) malloc(len);
     memcpy(buf, &head, sizeof(struct MuxseqEventsHeader));
-    struct SparseEvent *sevs = (struct SparseEvent *) buf + sizeof(struct MuxseqEventsHeader);
+    struct SparseEvent *sevs = (struct SparseEvent *) (buf + sizeof(struct MuxseqEventsHeader));
     size_t i = 0;
     for(const auto &pair: evm) {
         int framepos = pair.first;
@@ -173,7 +171,18 @@ unsigned char* eventMap_to_muxbuffer(MuxseqMsgType type, EventMap evm, int *rlen
         sevs[i].channel = nev.channel();
         sevs[i].pitch = nev.pitch();
         sevs[i].velo  = nev.velo();
+        // derived
+        sevs[i].playPosSeconds = g_cs->utick2utime(framepos);
+        sevs[i].beatsPerSecond = (int) beatsPerSecond;
+        sevs[i].division       = (int) MScore::division;
+        LD4("%i: storing event framepos=%i pitch=%i/%i channel=%i/%i playPosSeconds=%f",
+            i, sevs[i].framepos,
+            sevs[i].pitch, nev.pitch(),
+            sevs[i].channel, nev.channel(),
+            sevs[i].playPosSeconds);
+        i++;
     }
+    LD4("Done computing the payload, numEvents=%i bufLen=%i", numEvents, len);
     *rlen = len;
     return buf;
 }
@@ -186,7 +195,7 @@ int handle_mscore_msg_SeqRenderEvents(Mux::MuxSocket &sock, struct MuxseqMsg msg
     renderEventsStatus.clear();
     int unrenderedUtick = renderEventsStatus.occupiedRangeEnd(utick);
     EventMap events;
-    LD("SeqRenderEvents -- utick=%i unrenderedUtick=%i (num events before render: %i)\n", utick, unrenderedUtick, events.size());
+    LD4("SeqRenderEvents -- utick=%i unrenderedUtick=%i (num events before render: %i)\n", utick, unrenderedUtick, events.size());
     while (unrenderedUtick - utick < minUtickBufferSize) {
         const MidiRenderer::Chunk chunk = g_midi.getChunkAt(unrenderedUtick);
         if (!chunk)
@@ -195,13 +204,17 @@ int handle_mscore_msg_SeqRenderEvents(Mux::MuxSocket &sock, struct MuxseqMsg msg
         unrenderedUtick = renderEventsStatus.occupiedRangeEnd(utick);
     }
     int rlen;
-    unsigned char* buf = eventMap_to_muxbuffer(MsgTypeSeqRenderEvents, events, &rlen);
+    unsigned int playPosUTick;
+    unsigned char* buf = eventMap_to_muxbuffer(MsgTypeSeqRenderEvents, events,
+                                               g_cs->tempomap()->relTempo(), // relTempo needed here to ensure that bps changes as we slide the tempo bar
+                                               &rlen);
     // send events to muxseq
-    LD("SeqRenderEvents -- done render-chunk, num-events-rendered: %i bufSize=%i\n", events.size(), rlen);
+    LD8("SeqRenderEvents -- done render-chunk, num-events-rendered: %i bufSize=%i\n", events.size(), rlen);
     if (mux_query_send(sock, buf, rlen) == -1) {
         free(buf);
         return -1;
     }
+    LD8("SeqRenderEvents -- done sending render-chunk to MUXSEQ");
     free(buf);
     return 0;
 }

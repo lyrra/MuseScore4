@@ -80,6 +80,10 @@ struct SparseEvent {
     int velo;
     int cont; // FIX: redundant with pitch
     int val;  // FIX: redundant with velo
+    int beatsPerSecond;
+    int ticksPerSecond;
+    double playPosSeconds;
+    int division;
 };
 
 struct SparseMidiEvent {
@@ -119,6 +123,12 @@ struct MuxseqMsg {
         SparseEvent sparseEvent;
         SparseMidiEvent sparseMidiEvent;
     } payload;
+};
+
+struct MuxseqEventsHeader {
+    int type;
+    int numEvents;
+    struct SparseEvent *sevs;
 };
 
 const char*   muxseq_msg_type_info (MuxseqMsgType   type);

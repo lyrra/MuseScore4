@@ -118,6 +118,37 @@ NPlayEvent::NPlayEvent(BeatType beatType)
       }
 
 //---------------------------------------------------------
+//   isMuted
+//---------------------------------------------------------
+
+bool NPlayEvent::isMuted() const
+      {
+      return false;
+// FIX: set this at musescore-side
+#if 0
+      const Note* n = note();
+      if (n) {
+            MasterScore* cs = n->masterScore();
+            Staff* staff = n->staff();
+            Instrument* instr = staff->part()->instrument(n->tick());
+            const Channel* a = instr->playbackChannel(n->subchannel(), cs);
+            return a->mute() || a->soloMute() || !staff->playbackVoice(n->voice());
+            }
+
+      const Harmony* h = harmony();
+      if (h) {
+            const Channel* hCh = h->part()->harmonyChannel();
+            if (hCh) { //if there is a harmony channel
+                  const Channel* pCh = h->masterScore()->playbackChannel(hCh);
+                  return pCh->mute() || pCh->soloMute();
+                  }
+            }
+
+      return false;
+      #endif
+      }
+
+//---------------------------------------------------------
 //   dump
 //---------------------------------------------------------
 
