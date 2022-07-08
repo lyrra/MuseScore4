@@ -25,33 +25,9 @@
 #include "muxlib.h"
 #include "muxaudio/muxaudio.h"
 #include "muxseq.h"
-//#include "musescore.h"
 #include "muxseqsig.h"
 
 #include "msynthesizer.h"
-//#include "libmscore/rendermidi.h"
-//#include "libmscore/slur.h"
-//#include "libmscore/tie.h"
-//#include "libmscore/score.h"
-//#include "libmscore/segment.h"
-//#include "libmscore/note.h"
-//#include "libmscore/chord.h"
-//#include "libmscore/tempo.h"
-//#include "scoreview.h"
-//#include "playpanel.h"
-//#include "libmscore/staff.h"
-//#include "libmscore/measure.h"
-//#include "preferences.h"
-//#include "libmscore/part.h"
-//#include "libmscore/ottava.h"
-//#include "libmscore/utils.h"
-//#include "libmscore/repeatlist.h"
-//#include "libmscore/audio.h"
-//#include "synthcontrol.h"
-//#include "pianoroll/pianoroll.h"
-//#include "pianotools.h"
-
-//#include "click.h"
 
 #define OV_EXCLUDE_STATIC_CALLBACKS
 #include <vorbis/vorbisfile.h>
@@ -65,10 +41,15 @@
 #endif
 
 
-#define LD(...) qDebug(__VA_ARGS__)
-#define LD4(...) qDebug(__VA_ARGS__)
-#define LD6(...) qDebug(__VA_ARGS__)
-#define LD8(...) qDebug(__VA_ARGS__)
+//#define LD(...) qDebug(__VA_ARGS__)
+//#define LD4(...) qDebug(__VA_ARGS__)
+//#define LD6(...) qDebug(__VA_ARGS__)
+//#define LD8(...) qDebug(__VA_ARGS__)
+
+#define LD(...) 0
+#define LD4(...) 0
+#define LD6(...) 0
+#define LD8(...) 0
 
 namespace Ms {
 void* muxseq_mscore_query (MuxseqMsgType type, int i);
@@ -1112,8 +1093,9 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                               }
 #endif
                         }
+                  // buffer has now been processed up to the framePos point. Now emit the event, which will be processed going forward from framePos
                   const NPlayEvent& event = (*pPlayPos)->second;
-                  playEvent(event, framePos); // besides emitting audio from the synths, play the event to the synths
+                  playEvent(event, framePos);
 #if 0 //Disable metronome tick accent
                   if (event.type() == ME_TICK1) {
                         tickRemain = tickLength;
