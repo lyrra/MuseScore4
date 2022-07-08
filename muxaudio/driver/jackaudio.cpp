@@ -519,13 +519,13 @@ int JackAudio::processAudio(jack_nframes_t frames, void* p)
                   jack_position_t pos;
                   jack_transport_query(g_client, &pos);
                   struct MuxaudioMsg msg;
+                  //FIX: put the wallclock in the jacktransport message
                   msg.type = MsgTypeJackTransportPosition;
                   msg.payload.jackTransportPosition.state = static_cast<unsigned int>(getStateRT());
                   msg.payload.jackTransportPosition.frame = pos.frame;
                   msg.payload.jackTransportPosition.valid = pos.valid;
                   msg.payload.jackTransportPosition.beats_per_minute = pos.beats_per_minute;
                   msg.payload.jackTransportPosition.bbt = JackPositionBBT;
-                  qDebug("--- jack_transport_query --- %lu state=%i", g_jack_transport_position_time, msg.payload.jackTransportPosition.state);
                   muxaudio_mq_from_audio_writer_put(msg);
               }
           }
@@ -656,7 +656,6 @@ Transport JackAudio::getState()
 Transport getStateRT()
       {
       if (!preferences.PREF_IO_JACK_USEJACKTRANSPORT) {
-            qDebug("    -- getStateRT use transport g_fakeState");
             return g_fakeState;
             }
       int transportState = jack_transport_query(g_client, NULL);
