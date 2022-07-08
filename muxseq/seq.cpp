@@ -1200,7 +1200,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
       qreal lv = 0.0f;
       qreal rv = 0.0f;
       pBuffer = buffer;
-      for (unsigned i = 0; i < framesRemain; ++i) {
+      for (unsigned i = 0; i < framesPerPeriod; ++i) {
             qreal val = *pBuffer;
             lv = qMax(lv, qAbs(val));
             pBuffer++;
