@@ -133,7 +133,9 @@ void mux_process_bufferStereo(unsigned int numFloats, float* frames) {
     while (1) {
         unsigned int newReaderPos = (g_ringBufferReaderStart + numFloats) % MUX_RINGSIZE;
         // ensure we dont read into writers buffer part
-        if (// if reader wraps around and goes beyond writer
+        if (// ringbuffer is empty
+            g_ringBufferReaderStart == g_ringBufferWriterStart ||
+            // if reader wraps around and goes beyond writer
             (g_ringBufferReaderStart > newReaderPos &&
              newReaderPos > g_ringBufferWriterStart) ||
             // no wrap, writer is at right side of reader, but new reader goes beyond writer
