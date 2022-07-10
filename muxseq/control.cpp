@@ -17,6 +17,9 @@
 #include "muxlib.h"
 #include "muxaudio/muxaudio.h"
 #include "muxseq.h"
+#include "muxqueue.h"
+
+#define MAILBOX_SIZE 256
 
 namespace Ms {
 
@@ -38,6 +41,7 @@ struct Mux::MuxSocket g_muxsocket_mscoreQueryReqServer;
 struct Mux::MuxSocket g_muxsocket_muxaudioQueryClientAudio;
 struct Mux::MuxSocket g_muxsocket_muxaudioQueryClientCtrl;
 extern int g_muxseq_audio_process_run;
+extern struct MuxQueue *queue_from_mscore;
 
 /* this thread listens on message from musescore */
 void muxseq_mscoreQueryServer_thread_init(std::string _notused)
@@ -98,6 +102,11 @@ void muxseq_audio_zmq_connect()
 
 void muxseq_threads_start()
 {
+    queue_from_mscore = mux_mq_new(MAILBOX_SIZE);
+    if (! queue_from_mscore) {
+        LE("Failed to allocate memory\n");
+        exit(1);
+    }
     LD("start threads\n");
     std::vector<std::thread> threadv;
 

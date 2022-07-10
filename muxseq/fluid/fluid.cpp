@@ -29,6 +29,9 @@
 
 #include "extension.h"
 
+#define LD6(...) qDebug(__VA_ARGS__)
+//#define LD6(...) (void)0
+
 namespace FluidS {
 
 /***************************************************************
@@ -87,7 +90,6 @@ Fluid::Fluid()
 
 void Fluid::init(float sampleRate)
       {
-      qDebug("-- Fluid::init --");
       if (!initialized) {     // initialize all the conversion tables and other stuff
             initialized = true;
             fluid_conversion_config();
@@ -152,10 +154,12 @@ void Fluid::play(const PlayEvent& event)
 
       int type    = event.type();
       Channel* cp = channel[ch];
+      LD6("Fluid::play channel=%i type=%i", ch, type);
 
       if (type == ME_NOTEON) {
             int key = event.dataA();
             int vel = event.dataB();
+            LD6("Fluid::play key=%i vel=%i", key, vel);
             if (vel == 0) {
                   //
                   // process note off
@@ -190,11 +194,13 @@ void Fluid::play(const PlayEvent& event)
       else if (type == ME_CONTROLLER) {
             switch(event.dataA()) {
                   case CTRL_PROGRAM:
+                        LD6("Fluid::play program_change %i", event.dataB());
                         program_change(ch, event.dataB());
                         break;
                   case CTRL_PRESS:
                         break;
                   default:
+                        LD6("Fluid::play CC %i %i", event.dataA(), event.dataB());
                         cp->setcc(event.dataA(), event.dataB());
                         break;
                   }

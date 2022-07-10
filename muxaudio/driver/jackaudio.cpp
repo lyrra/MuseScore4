@@ -75,8 +75,6 @@ void mux_send_event (Event e) {
     se.channel = e.channel();
     se.pitch   = e.pitch();
     se.velo    = e.velo();
-    se.cont    = e.controller();
-    se.val     = e.value();
     struct MuxaudioMsg msg;
     msg.type = MsgTypeEventToGui;
     memcpy(&msg.payload.sparseEvent, &se, sizeof(struct SparseEvent));
@@ -126,7 +124,7 @@ void mux_audio_send_event_to_midi(struct MuxaudioMsg msg) {
     event.setDataA(msg.payload.sparseMidiEvent.dataA);
     event.setDataB(msg.payload.sparseMidiEvent.dataB);
     g_driver->putEvent(event, msg.payload.sparseMidiEvent.framepos,
-                              msg.payload.sparseMidiEvent.portIdx,
+                              msg.payload.sparseMidiEvent.midiPort,
                               msg.payload.sparseMidiEvent.channel);
 }
 
