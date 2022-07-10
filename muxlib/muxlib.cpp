@@ -49,6 +49,7 @@ const char* muxseq_msg_type_info (MuxseqMsgType type) {
     case MsgTypeSeqUpdateOutPortCount: return "MsgTypeSeqUpdateOutPortCount";
     case MsgTypeSeqRenderEvents: return "MsgTypeSeqRenderEvents";
     case MsgTypeMasterSynthesizerInit: return "MsgTypeMasterSynthesizerInit";
+    case MsgTypeMasterSynthInitInstruments: return "MsgTypeMasterSynthInitInstruments";
     case MsgTypeEOF: return "MsgTypeEOF";
     default: return "ERROR:UNKNOWN-MUXSEQ-MSG-TYPE";
     }
@@ -77,8 +78,6 @@ void muxseq_msg_set_NPlayEvent (MuxseqMsg msg, NPlayEvent event) {
     msg.payload.sparseEvent.channel = event.channel();
     msg.payload.sparseEvent.pitch   = event.pitch();
     msg.payload.sparseEvent.velo    = event.velo();
-    msg.payload.sparseEvent.cont    = event.controller();
-    msg.payload.sparseEvent.val     = event.value();
 }
 
 

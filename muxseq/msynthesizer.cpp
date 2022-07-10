@@ -95,8 +95,10 @@ void MasterSynthesizer::reset()
 
 void MasterSynthesizer::play(const NPlayEvent& event, unsigned syntiIdx)
       {
-      if (syntiIdx >= _synthesizer.size())
+      if (syntiIdx >= _synthesizer.size()) {
+            qWarning("MasterSynthesizer::play synthesizer with index %i doesn't exist", syntiIdx);
             return;
+            }
       _synthesizer[syntiIdx]->setActive(true);
       _synthesizer[syntiIdx]->play(event);
       }

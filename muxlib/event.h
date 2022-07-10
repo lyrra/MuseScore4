@@ -167,6 +167,7 @@ class MidiCoreEvent {
       void  setType(uchar t)         { _type = t;       }
       uchar channel() const          { return _channel; }
       void  setChannel(uchar c)      { _channel = c;    }
+      int midiPort;
 
       int dataA() const              { return _a; }
       int pitch() const              { return _a; }
@@ -234,6 +235,7 @@ class PlayEvent : public MidiCoreEvent {
          : MidiCoreEvent(t, c, a, b) {}
       float tuning() const           { return _tuning;  }
       void setTuning(float v)        { _tuning = v;     }
+      int syntiIdx;
       };
 
 //---------------------------------------------------------

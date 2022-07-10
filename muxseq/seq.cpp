@@ -40,16 +40,17 @@
 #endif
 #endif
 
+#define LW(...) qWarning(__VA_ARGS__)
 
 //#define LD(...) qDebug(__VA_ARGS__)
 //#define LD4(...) qDebug(__VA_ARGS__)
 //#define LD6(...) qDebug(__VA_ARGS__)
 //#define LD8(...) qDebug(__VA_ARGS__)
 
-#define LD(...) 0
-#define LD4(...) 0
-#define LD6(...) 0
-#define LD8(...) 0
+#define LD(...) (void)0
+#define LD4(...) (void)0
+#define LD6(...) (void)0
+#define LD8(...) (void)0
 
 namespace Ms {
 void* muxseq_mscore_query (MuxseqMsgType type, int i);
@@ -255,6 +256,7 @@ Seq::~Seq()
 //---------------------------------------------------------
 
 #if 0 //FIX: reenable and move this into musescore (or mscore/seq side). Unmarked code has moved to muxseq_client.cpp:muxseq_seq_set_scoreview
+//FIX: perhaps update the score-instrument map here
 void Seq::setScoreView(ScoreView* v)
       {
       if (oggInit) {
@@ -929,7 +931,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                   // Initializing instruments every time we start playback.
                   // External synth can have wrong values, for example
                   // if we switch between scores
-                  initInstruments(true);
+                  //initInstruments(true, -1); //FIX: disabled for-now, need score-instrument map
                   // Need to change state after calling collectEvents()
                   state = Transport::PLAY;
 //FIX:                  if (mscore->countIn() && cs->playMode() == PlayMode::SYNTHESIZER) {
@@ -943,7 +945,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                   state = Transport::STOP;
                   // Muting all notes
                   stopNotes(-1, true);
-                  initInstruments(true);
+                  //initInstruments(true, -1); //FIX: disabled for-now, need score-instrument map
                   if (playPos == eventsEnd) {
 #if 0 //FIX mscore not known
                         if (mscore->loop()) {
@@ -1208,51 +1210,26 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
 //   initInstruments
 //---------------------------------------------------------
 
-void Seq::initInstruments(bool realTime)
-      {
-#if 0 //FIX
-      // Add midi out ports if necessary
-      if (cs && (cachedPrefs.useJackMidi || cachedPrefs.useAlsaAudio)) {
-            // Increase the maximum number of midi ports if user adds staves/instruments
-            int scoreMaxMidiPort = cs->masterScore()->midiPortCount();
-            if (maxMidiOutPort < scoreMaxMidiPort)
-                  maxMidiOutPort = scoreMaxMidiPort;
-            // if maxMidiOutPort is equal to existing ports number, it will do nothing
-            if (g_driver_running)
-                  muxseq_msg_to_audio(MsgTypeOutPortCount, maxMidiOutPort + 1);
-            }
-
-      for (const MidiMapping& mm : cs->midiMapping()) {
-            const Channel* channel = mm.articulation();
-            for (const MidiCoreEvent& e : channel->initList()) {
-                  if (e.type() == ME_INVALID)
-                        continue;
-                  NPlayEvent event(e.type(), channel->channel(), e.dataA(), e.dataB());
-                  if (realTime)
-                        putEvent(event);
-                  else
-                        sendEvent(event);
-                  }
-            // Setting pitch bend sensitivity to 12 semitones for external synthesizers
-            if ((cachedPrefs.useJackMidi || cachedPrefs.useAlsaAudio) && mm.channel() != 9) {
-                  if (realTime) {
-                        putEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_LRPN, 0));
-                        putEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_HRPN, 0));
-                        putEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_HDATA,12));
-                        putEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_LRPN, 127));
-                        putEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_HRPN, 127));
-                        }
-                  else {
-                        sendEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_LRPN, 0));
-                        sendEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_HRPN, 0));
-                        sendEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_HDATA,12));
-                        sendEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_LRPN, 127));
-                        sendEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_HRPN, 127));
-                        }
-                  }
-            }
-#endif
-      }
+void Seq::initInstruments(int newMaxMidiOutPort, int numSevs, struct SparseMidiEvent *sevs) {
+    LD4("Seq::initInstruments newMaxMidiOutPort=%i maxMidiOutPort=%i", newMaxMidiOutPort, maxMidiOutPort);
+    if (maxMidiOutPort < newMaxMidiOutPort) {
+        maxMidiOutPort = newMaxMidiOutPort;
+    }
+    if (! g_driver_running) {
+        return;
+    }
+    // Add midi out ports if necessary
+    //FIX: causes jack to register ports stuck-in-a-loop
+    muxseq_msg_to_audio(MsgTypeOutPortCount, maxMidiOutPort + 1);
+    for (int i = 0; i < numSevs; i++) {
+        struct SparseMidiEvent *sev = &sevs[i];
+        NPlayEvent event(sev->type, sev->channel, sev->dataA, sev->dataB);
+        event.syntiIdx = _synti->index(QString(sev->synthName));
+        putEvent(event);
+        LD6("Seq::initInstruments putEvent channel=%i type=%i dataA=%i dataB=%i synthName=%s", sev->channel, sev->type, sev->dataA, sev->dataB, sev->synthName);
+    }
+    LD6("Seq::initInstruments newMaxMidiOutPort=%i maxMidiOutPort=%i DONE", newMaxMidiOutPort, maxMidiOutPort);
+}
 
 void Seq::updateOutPortCount(const int portCount)
 {
@@ -1284,7 +1261,7 @@ void Seq::updateEventsEnd()
 void Seq::collectEvents(int utick)
       {
       //do not collect even while playing
-      LD("Seq::collectEvents utick=%i", utick);
+      LD4("Seq::collectEvents utick=%i", utick);
       if (state == Transport::PLAY && playlistChanged)
             return;
 
@@ -1321,12 +1298,13 @@ void Seq::collectEvents(int utick)
               nev.playPosSeconds = sev->playPosSeconds;
               nev.beatsPerSecond = sev->beatsPerSecond;
               nev.division = sev->division;
-              LD("Seq::collectEvents on framepos %i set playPosSeconds=%f", framepos, sev->playPosSeconds);
+              nev.syntiIdx = _synti->index(QString(sev->synthName)); //FIX: resolve at setup midimapping at start _synti->index(cs->midiMapping(channel)->articulation()->synti());
+              LD6("Seq::collectEvents on framepos %i set playPosSeconds=%f resolved synthName=%s to syntiIdx=%i", framepos, sev->playPosSeconds, sev->synthName, nev.syntiIdx);
               events.insert({framepos, nev});
           }
           free(meh);
       }
-      LD("Seq::collectEvents collected %i events", events.size());
+      LD4("Seq::collectEvents collected %i events", events.size());
       updateEventsEnd();
       //FIX: cant handle loops, need loop-tick from mscore: playPos = mscore->loop() ? events.find(cs->loopInTick().ticks()) : events.cbegin();
       playPos = events.cbegin();
@@ -1818,20 +1796,19 @@ void Seq::putEvent(const NPlayEvent& event, unsigned framePos)
 #endif
 
       // audio
-      int syntiIdx = 0; //FIX: setup midimapping at start _synti->index(cs->midiMapping(channel)->articulation()->synti());
+      int syntiIdx = event.syntiIdx;
+      LD4("Seq::putEvent chan=%i idx=%i", channel, syntiIdx);
       _synti->play(event, syntiIdx);
 
-      // midi
+      // send event to midi-output
       if (g_driver_running != 0 && (cachedPrefs.useJackMidi || cachedPrefs.useAlsaAudio || cachedPrefs.usePortAudio)) {
-
             // FIX: port and channel info must be stored in the event
-            int portIdx = 0; //score()->midiPort(event.channel());
-            int channel = 0; //score()->midiChannel(event.channel());
             struct MuxaudioMsg msg;
             msg.type = MsgTypeEventToMidi;
             msg.payload.sparseMidiEvent.framepos = framePos;
-            msg.payload.sparseMidiEvent.portIdx  = portIdx;
-            msg.payload.sparseMidiEvent.channel  = channel;
+            msg.payload.sparseMidiEvent.midiPort = event.midiPort;
+            msg.payload.sparseMidiEvent.synthName[0] = 0;
+            msg.payload.sparseMidiEvent.channel  = event.channel(); //score()->midiChannel(event.channel());
             msg.payload.sparseMidiEvent.type     = event.type();
             msg.payload.sparseMidiEvent.dataA    = event.dataA();
             msg.payload.sparseMidiEvent.dataB    = event.dataB();
