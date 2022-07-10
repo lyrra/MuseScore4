@@ -29,6 +29,7 @@
 #include "muxtools/eventutils.h"
 
 //FIX: muxseq shouldn't use QT
+#define LW(...) qDebug(__VA_ARGS__)
 #define LD(...) qDebug(__VA_ARGS__)
 #define LD4(...) qDebug(__VA_ARGS__)
 #define LD8(...) qDebug(__VA_ARGS__)
@@ -50,7 +51,7 @@ static std::vector<std::thread> muxseq_Threads;
 /**/
 // these are an mscore-side Seq object
 static ScoreView* g_cv = nullptr;
-static Score* g_cs = nullptr;
+static MasterScore* g_cs = nullptr;
 static MidiRenderer g_midi(nullptr);
 
 #define L_MUX_QUERY(type) \
@@ -86,6 +87,27 @@ int muxseq_send (MuxseqMsgType type, NPlayEvent event) {
     struct MuxseqMsg msg;
     muxseq_msg_set_NPlayEvent(msg, event);
     return muxseq_query_zmq(type, msg);
+}
+
+int muxseq_send (MuxseqMsgType type, int maxMidiPorts, std::vector<struct SparseMidiEvent> sevs) {
+    int slen = sevs.size();
+    int len = 12 + sizeof(struct SparseMidiEvent) * sevs.size() + sizeof(struct MuxseqMsg); // need atleast large enough to hold an generic struct MuxseqMsg
+    unsigned char* buf = (unsigned char*) malloc(len);
+    memcpy(buf,    &type, 4);
+    memcpy(buf+4,  &maxMidiPorts, 4);
+    memcpy(buf+8,  &slen, 4);
+    struct SparseMidiEvent *sevs2 = (struct SparseMidiEvent *) (buf + 12);
+    for (int i = 0; i < slen; i++) {
+        memcpy(&sevs2[i], &sevs[i], sizeof(struct SparseMidiEvent));
+    }
+    int rc = Mux::mux_zmq_send(g_muxseq_query_client_socket, buf, len);
+    free(buf);
+    if (rc != len) {
+        return -1;
+    }
+    struct MuxseqMsg msg;
+    msg.type = (MuxseqMsgType) type;
+    return Mux::mux_zmq_recv(g_muxseq_query_client_socket, (void*) &msg, sizeof(struct MuxseqMsg));
 }
 
 int muxseq_query (MuxseqMsgType type) {
@@ -416,6 +438,42 @@ void muxseq_seq_playMetronomeBeat(BeatType beatType) {
     //FIX: muxseq_send(MsgTypeSeqplayMetronomeBeat(beatType));
 }
 
+static void add_SparseMidiEvent (std::vector<SparseMidiEvent> &sevs, int type, int channel, int dataA, int dataB) {
+    struct SparseMidiEvent sev;
+    sev.type = type;
+    sev.channel = channel;
+    sev.dataA = dataA;
+    sev.dataB = dataB;
+    sevs.push_back(std::move(sev));
+}
+
+void muxseq_initInstruments () {
+    if (! g_cs) {
+        return;
+    }
+    //FIX: emit declarative events (which muxseq can turn into midi-events)
+    std::vector<SparseMidiEvent> sevs;
+    for (const MidiMapping& mm : g_cs->midiMapping()) {
+        const Channel* channel = mm.articulation();
+        for (const MidiCoreEvent& e : channel->initList()) {
+            if (e.type() == ME_INVALID) {
+                continue;
+            }
+            add_SparseMidiEvent(sevs, e.type(), channel->channel(), e.dataA(), e.dataB());
+        }
+        // Setting pitch bend sensitivity to 12 semitones for external synthesizers
+        if (mm.channel() != 9) {
+            add_SparseMidiEvent(sevs, ME_CONTROLLER, channel->channel(), CTRL_LRPN, 0);
+            add_SparseMidiEvent(sevs, ME_CONTROLLER, channel->channel(), CTRL_HRPN, 0);
+            add_SparseMidiEvent(sevs, ME_CONTROLLER, channel->channel(), CTRL_HDATA,12);
+            add_SparseMidiEvent(sevs, ME_CONTROLLER, channel->channel(), CTRL_LRPN, 127);
+            add_SparseMidiEvent(sevs, ME_CONTROLLER, channel->channel(), CTRL_HRPN, 127);
+        }
+    }
+    int midiPortCount = g_cs->masterScore()->midiPortCount();
+    muxseq_send(MsgTypeMasterSynthInitInstruments, midiPortCount, sevs);
+}
+
 void muxseq_seq_initInstruments() {
     //FIX: seq3->initInstruments();
 }
@@ -441,10 +499,7 @@ void muxseq_seq_set_scoreview (void* v) {
     g_midi.setMinChunkSize(10);
     //FIX: send to muxseq
     //g_seq->_synti->reset();
-    if (g_cs) {
-        //FIX: send to muxseq: muxseq_seq_initInstruments
-        //g_seq->initInstruments();
-    }
+    muxseq_initInstruments();
 }
 
 void muxseq_seq_setController(int channel, int vol, int iv) {

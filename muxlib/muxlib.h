@@ -50,6 +50,7 @@ enum MuxseqMsgType {
     MsgTypeSeqUpdateOutPortCount,
     MsgTypeSeqRenderEvents,
     MsgTypeMasterSynthesizerInit,
+    MsgTypeMasterSynthInitInstruments,
     MsgTypeEOF
 };
 

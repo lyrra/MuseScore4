@@ -40,6 +40,7 @@
 #endif
 #endif
 
+#define LW(...) qWarning(__VA_ARGS__)
 
 //#define LD(...) qDebug(__VA_ARGS__)
 //#define LD4(...) qDebug(__VA_ARGS__)
@@ -255,6 +256,7 @@ Seq::~Seq()
 //---------------------------------------------------------
 
 #if 0 //FIX: reenable and move this into musescore (or mscore/seq side). Unmarked code has moved to muxseq_client.cpp:muxseq_seq_set_scoreview
+//FIX: perhaps update the score-instrument map here
 void Seq::setScoreView(ScoreView* v)
       {
       if (oggInit) {
@@ -929,7 +931,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                   // Initializing instruments every time we start playback.
                   // External synth can have wrong values, for example
                   // if we switch between scores
-                  initInstruments(true);
+                  //initInstruments(true, -1); //FIX: disabled for-now, need score-instrument map
                   // Need to change state after calling collectEvents()
                   state = Transport::PLAY;
 //FIX:                  if (mscore->countIn() && cs->playMode() == PlayMode::SYNTHESIZER) {
@@ -943,7 +945,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                   state = Transport::STOP;
                   // Muting all notes
                   stopNotes(-1, true);
-                  initInstruments(true);
+                  //initInstruments(true, -1); //FIX: disabled for-now, need score-instrument map
                   if (playPos == eventsEnd) {
 #if 0 //FIX mscore not known
                         if (mscore->loop()) {
@@ -1208,51 +1210,25 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
 //   initInstruments
 //---------------------------------------------------------
 
-void Seq::initInstruments(bool realTime)
-      {
-#if 0 //FIX
-      // Add midi out ports if necessary
-      if (cs && (cachedPrefs.useJackMidi || cachedPrefs.useAlsaAudio)) {
-            // Increase the maximum number of midi ports if user adds staves/instruments
-            int scoreMaxMidiPort = cs->masterScore()->midiPortCount();
-            if (maxMidiOutPort < scoreMaxMidiPort)
-                  maxMidiOutPort = scoreMaxMidiPort;
-            // if maxMidiOutPort is equal to existing ports number, it will do nothing
-            if (g_driver_running)
-                  muxseq_msg_to_audio(MsgTypeOutPortCount, maxMidiOutPort + 1);
-            }
-
-      for (const MidiMapping& mm : cs->midiMapping()) {
-            const Channel* channel = mm.articulation();
-            for (const MidiCoreEvent& e : channel->initList()) {
-                  if (e.type() == ME_INVALID)
-                        continue;
-                  NPlayEvent event(e.type(), channel->channel(), e.dataA(), e.dataB());
-                  if (realTime)
-                        putEvent(event);
-                  else
-                        sendEvent(event);
-                  }
-            // Setting pitch bend sensitivity to 12 semitones for external synthesizers
-            if ((cachedPrefs.useJackMidi || cachedPrefs.useAlsaAudio) && mm.channel() != 9) {
-                  if (realTime) {
-                        putEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_LRPN, 0));
-                        putEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_HRPN, 0));
-                        putEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_HDATA,12));
-                        putEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_LRPN, 127));
-                        putEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_HRPN, 127));
-                        }
-                  else {
-                        sendEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_LRPN, 0));
-                        sendEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_HRPN, 0));
-                        sendEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_HDATA,12));
-                        sendEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_LRPN, 127));
-                        sendEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_HRPN, 127));
-                        }
-                  }
-            }
-#endif
-      }
+void Seq::initInstruments(int newMaxMidiOutPort, int numSevs, struct SparseMidiEvent *sevs) {
+    qDebug("Seq::initInstruments newMaxMidiOutPort=%i maxMidiOutPort=%i", newMaxMidiOutPort, maxMidiOutPort);
+    if (maxMidiOutPort < newMaxMidiOutPort) {
+        maxMidiOutPort = newMaxMidiOutPort;
+    }
+    if (! g_driver_running) {
+        return;
+    }
+    // Add midi out ports if necessary
+    //FIX: causes jack to register ports stuck-in-a-loop
+    muxseq_msg_to_audio(MsgTypeOutPortCount, maxMidiOutPort + 1);
+    for (int i = 0; i < numSevs; i++) {
+        struct SparseMidiEvent *sev = &sevs[i];
+        NPlayEvent event(sev->type, sev->channel, sev->dataA, sev->dataB);
+        sendEvent(event);
+        //qDebug("Seq::initInstruments sendEvent channel=%i type=%i dataA=%i dataB=%i", sev->channel, sev->type, sev->dataA, sev->dataB);
+    }
+    qDebug("Seq::initInstruments newMaxMidiOutPort=%i maxMidiOutPort=%i DONE", newMaxMidiOutPort, maxMidiOutPort);
+}
 
 void Seq::updateOutPortCount(const int portCount)
 {

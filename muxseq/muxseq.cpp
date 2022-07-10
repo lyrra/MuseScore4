@@ -34,6 +34,7 @@
 #include "muxseq.h"
 #include "muxseq_api.h"
 #include "seq.h"
+#include "muxqueue.h"
 
 namespace Ms {
 
@@ -53,12 +54,18 @@ int seq_create(int sampleRate); // FIX: move into seq.h
 
 /*
  * message queue, between audio and mux
- */ 
+ */
 
 #define MAILBOX_SIZE 256
 struct MuxaudioMsg g_msg_from_audio[MAILBOX_SIZE];
 int g_msg_from_audio_reader = 0;
 int g_msg_from_audio_writer = 0;
+
+/*
+ * message queue, between mscore and muxseq
+ */
+
+struct MuxQueue *queue_from_mscore;
 
 // audio-thread uses this function to send messages to mux/mscore
 int mux_mq_from_audio_writer_put (struct MuxaudioMsg msg) {
@@ -69,15 +76,52 @@ int mux_mq_from_audio_writer_put (struct MuxaudioMsg msg) {
     return 1;
 }
 
+
 int mux_mq_from_audio_reader_visit () {
     if (g_msg_from_audio_reader == g_msg_from_audio_writer) {
         return 0;
     }
     struct MuxaudioMsg msg = g_msg_from_audio[g_msg_from_audio_reader];
-    qDebug("MUXAUDIO q=> MUXSEQ msg %s", muxaudio_msg_type_info(msg.type));
+    LD("MUXAUDIO q=> MUXSEQ msg %s", muxaudio_msg_type_info(msg.type));
     int rc = 0; //FIX muxseq_mq_from_muxaudio_handle(msg);
     g_msg_from_audio_reader = (g_msg_from_audio_reader + 1) % MAILBOX_SIZE;
     return rc;
+}
+
+
+int muxseq_mq_from_mscore_handle (struct MuxseqMsg *msg) {
+    LD("muxseq_mq_from_mscore_handle msg %s", muxseq_msg_type_info(msg->type));
+    return 0;
+}
+
+int muxseq_from_mscore_reader_visit () {
+    unsigned char* msg = (unsigned char*) mux_mq_read(queue_from_mscore);
+    int type;
+    if (! msg) { // no message on queue
+        return 0;
+    }
+    memcpy(&type, msg, 4);
+    switch (type) {
+        case MsgTypeMasterSynthInitInstruments:
+            {
+                int maxMidiPorts;
+                int numSevs;
+                memcpy(&maxMidiPorts, msg+4, 4);
+                memcpy(&numSevs, msg+8, 4);
+                LD("MSCORE i=> MUXSEQ msg %s maxMidiPorts=%i numSevs=%i", muxseq_msg_type_info((MuxseqMsgType) type), maxMidiPorts, numSevs);
+                struct SparseMidiEvent *sevs = (struct SparseMidiEvent *) (msg + 12);
+                if (g_seq) {
+                    g_seq->initInstruments(maxMidiPorts, numSevs, sevs);
+                }
+                free(msg);
+                return 1;
+            }
+        break;
+        default:
+            LD("MSCORE i=> MUXSEQ msg %s UNKNOWN INTERNAL MESSAGE", muxseq_msg_type_info((MuxseqMsgType) type));
+    }
+    free(msg);
+    return 0;
 }
 
 /* message to/from audio helpers
@@ -198,7 +242,8 @@ void muxseq_muxaudioWorker_process() {
         bool workDone = false;
         if (g_muxseq_audio_process_run) {
             if (muxseq_audio_process_work() || // audio work was done,
-                mux_mq_from_audio_reader_visit()) { // got message from message-queue
+                mux_mq_from_audio_reader_visit() || // got message from audio via MQ
+                muxseq_from_mscore_reader_visit()) { // got message from mscore via MQ
                 workDone = true;
             }
         }
@@ -294,8 +339,33 @@ int muxseq_handle_musescore_msg_MsgTypeSeqSeek (Mux::MuxSocket &sock, struct Mux
     return muxseq_handle_musescore_reply_int(sock, msg, 0);
 }
 
-int muxseq_handle_musescore_msg(Mux::MuxSocket &sock, struct MuxseqMsg msg)
+int muxseq_handle_musescore_msg_MsgTypeMasterSynthInitInstruments(Mux::MuxSocket &sock, void *buf) {
+    unsigned char *ptr = (unsigned char*) buf;
+    int type;
+    int maxMidiPorts;
+    int numSevs;
+    memcpy(&type, buf, 4);
+    memcpy(&maxMidiPorts, ptr + 4, 4);
+    memcpy(&numSevs, ptr + 8, 4);
+    LD("MSCORE ==> MUXSEQ msg %s (%i) maxMidiPorts=%i numSevs=%i", muxseq_msg_type_info((MuxseqMsgType)type), type, maxMidiPorts, numSevs);
+    if (g_seq) {
+        int len = sizeof(struct SparseMidiEvent) * numSevs;
+        void* data = malloc(12 + len);
+        memcpy(data, buf, 12 + len);
+        if (mux_mq_write(queue_from_mscore, data) < 0) {
+            LE("ERROR MSCORE ==> MUXSEQ msg %s mailbox is full");
+        }
+    } else {
+        LD("cant initInstruments, no sequencer");
+    }
+    struct MuxseqMsg msg;
+    msg.type = (MuxseqMsgType) type;
+    return muxseq_handle_musescore_reply_int(sock, msg, 0);
+}
+
+int muxseq_handle_musescore_msg(Mux::MuxSocket &sock, void *buf)
 {
+    struct MuxseqMsg msg = *((struct MuxseqMsg *) buf);
     LD("MSCORE ==> MUXSEQ msg %s", muxseq_msg_type_info(msg.type));
     switch (msg.type) {
         case MsgTypeSeqAlive:
@@ -318,6 +388,8 @@ int muxseq_handle_musescore_msg(Mux::MuxSocket &sock, struct MuxseqMsg msg)
             return muxseq_handle_musescore_msg_MsgTypeSeqStart(sock, msg);
         case MsgTypeSeqSeek:
             return muxseq_handle_musescore_msg_MsgTypeSeqSeek(sock, msg);
+        case MsgTypeMasterSynthInitInstruments:
+            return muxseq_handle_musescore_msg_MsgTypeMasterSynthInitInstruments(sock, buf);
         default:
             LD("ERROR: Unknown message: %s", muxseq_msg_type_info(msg.type));
         break;
@@ -387,13 +459,17 @@ void muxseq_muxaudioQueryClient_mainloop(Mux::MuxSocket &sock)
 void muxseq_mscoreQueryServer_mainloop(Mux::MuxSocket &sock) {
     LD("MSCORE ==> MUXSEQ -- query server started");
     while(1){
-        struct MuxseqMsg msg;
-        if (zmq_recv(sock.socket, &msg, sizeof(struct MuxseqMsg), 0) < 0) {
+        zmq_msg_t msg;
+        int rc = zmq_msg_init (&msg);
+        if (rc != 0) break;
+        rc = zmq_msg_recv (&msg, sock.socket, 0);
+        if (rc == -1) {
             LE("mscoreQueryServer zmq-recv error: %s", strerror(errno));
             break;
         }
-        LD("MSCORE ==> MUXSEQ -- got message");
-        muxseq_handle_musescore_msg(sock, msg);
+        LD("MSCORE ==> MUXSEQ -- got message %i bytes", rc);
+        muxseq_handle_musescore_msg(sock, zmq_msg_data(&msg));
+        zmq_msg_close (&msg);
         std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
 }
