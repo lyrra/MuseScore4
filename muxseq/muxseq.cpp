@@ -349,7 +349,7 @@ int muxseq_handle_musescore_msg_MsgTypeMasterSynthInitInstruments(Mux::MuxSocket
     memcpy(&numSevs, ptr + 8, 4);
     LD("MSCORE ==> MUXSEQ msg %s (%i) maxMidiPorts=%i numSevs=%i", muxseq_msg_type_info((MuxseqMsgType)type), type, maxMidiPorts, numSevs);
     if (g_seq) {
-        int len = sizeof(struct SparseMidiEvent) * numSevs;
+        int len = sizeof(struct SparseEvent) * numSevs;
         void* data = malloc(12 + len);
         memcpy(data, buf, 12 + len);
         if (mux_mq_write(queue_from_mscore, data) < 0) {

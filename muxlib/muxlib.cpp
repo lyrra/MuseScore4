@@ -78,8 +78,6 @@ void muxseq_msg_set_NPlayEvent (MuxseqMsg msg, NPlayEvent event) {
     msg.payload.sparseEvent.channel = event.channel();
     msg.payload.sparseEvent.pitch   = event.pitch();
     msg.payload.sparseEvent.velo    = event.velo();
-    msg.payload.sparseEvent.cont    = event.controller();
-    msg.payload.sparseEvent.val     = event.value();
 }
 
 

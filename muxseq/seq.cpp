@@ -47,10 +47,10 @@
 //#define LD6(...) qDebug(__VA_ARGS__)
 //#define LD8(...) qDebug(__VA_ARGS__)
 
-#define LD(...) 0
-#define LD4(...) 0
-#define LD6(...) 0
-#define LD8(...) 0
+#define LD(...) (void)0
+#define LD4(...) (void)0
+#define LD6(...) (void)0
+#define LD8(...) (void)0
 
 namespace Ms {
 void* muxseq_mscore_query (MuxseqMsgType type, int i);
@@ -1211,7 +1211,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
 //---------------------------------------------------------
 
 void Seq::initInstruments(int newMaxMidiOutPort, int numSevs, struct SparseMidiEvent *sevs) {
-    qDebug("Seq::initInstruments newMaxMidiOutPort=%i maxMidiOutPort=%i", newMaxMidiOutPort, maxMidiOutPort);
+    LD4("Seq::initInstruments newMaxMidiOutPort=%i maxMidiOutPort=%i", newMaxMidiOutPort, maxMidiOutPort);
     if (maxMidiOutPort < newMaxMidiOutPort) {
         maxMidiOutPort = newMaxMidiOutPort;
     }
@@ -1224,10 +1224,11 @@ void Seq::initInstruments(int newMaxMidiOutPort, int numSevs, struct SparseMidiE
     for (int i = 0; i < numSevs; i++) {
         struct SparseMidiEvent *sev = &sevs[i];
         NPlayEvent event(sev->type, sev->channel, sev->dataA, sev->dataB);
-        sendEvent(event);
-        //qDebug("Seq::initInstruments sendEvent channel=%i type=%i dataA=%i dataB=%i", sev->channel, sev->type, sev->dataA, sev->dataB);
+        event.syntiIdx = _synti->index(QString(sev->synthName));
+        putEvent(event);
+        LD6("Seq::initInstruments putEvent channel=%i type=%i dataA=%i dataB=%i synthName=%s", sev->channel, sev->type, sev->dataA, sev->dataB, sev->synthName);
     }
-    qDebug("Seq::initInstruments newMaxMidiOutPort=%i maxMidiOutPort=%i DONE", newMaxMidiOutPort, maxMidiOutPort);
+    LD6("Seq::initInstruments newMaxMidiOutPort=%i maxMidiOutPort=%i DONE", newMaxMidiOutPort, maxMidiOutPort);
 }
 
 void Seq::updateOutPortCount(const int portCount)
@@ -1260,7 +1261,7 @@ void Seq::updateEventsEnd()
 void Seq::collectEvents(int utick)
       {
       //do not collect even while playing
-      LD("Seq::collectEvents utick=%i", utick);
+      LD4("Seq::collectEvents utick=%i", utick);
       if (state == Transport::PLAY && playlistChanged)
             return;
 
@@ -1297,12 +1298,13 @@ void Seq::collectEvents(int utick)
               nev.playPosSeconds = sev->playPosSeconds;
               nev.beatsPerSecond = sev->beatsPerSecond;
               nev.division = sev->division;
-              LD("Seq::collectEvents on framepos %i set playPosSeconds=%f", framepos, sev->playPosSeconds);
+              nev.syntiIdx = _synti->index(QString(sev->synthName)); //FIX: resolve at setup midimapping at start _synti->index(cs->midiMapping(channel)->articulation()->synti());
+              LD6("Seq::collectEvents on framepos %i set playPosSeconds=%f resolved synthName=%s to syntiIdx=%i", framepos, sev->playPosSeconds, sev->synthName, nev.syntiIdx);
               events.insert({framepos, nev});
           }
           free(meh);
       }
-      LD("Seq::collectEvents collected %i events", events.size());
+      LD4("Seq::collectEvents collected %i events", events.size());
       updateEventsEnd();
       //FIX: cant handle loops, need loop-tick from mscore: playPos = mscore->loop() ? events.find(cs->loopInTick().ticks()) : events.cbegin();
       playPos = events.cbegin();
@@ -1794,20 +1796,19 @@ void Seq::putEvent(const NPlayEvent& event, unsigned framePos)
 #endif
 
       // audio
-      int syntiIdx = 0; //FIX: setup midimapping at start _synti->index(cs->midiMapping(channel)->articulation()->synti());
+      int syntiIdx = event.syntiIdx;
+      LD4("Seq::putEvent chan=%i idx=%i", channel, syntiIdx);
       _synti->play(event, syntiIdx);
 
-      // midi
+      // send event to midi-output
       if (g_driver_running != 0 && (cachedPrefs.useJackMidi || cachedPrefs.useAlsaAudio || cachedPrefs.usePortAudio)) {
-
             // FIX: port and channel info must be stored in the event
-            int portIdx = 0; //score()->midiPort(event.channel());
-            int channel = 0; //score()->midiChannel(event.channel());
             struct MuxaudioMsg msg;
             msg.type = MsgTypeEventToMidi;
             msg.payload.sparseMidiEvent.framepos = framePos;
-            msg.payload.sparseMidiEvent.portIdx  = portIdx;
-            msg.payload.sparseMidiEvent.channel  = channel;
+            msg.payload.sparseMidiEvent.midiPort = event.midiPort;
+            msg.payload.sparseMidiEvent.synthName[0] = 0;
+            msg.payload.sparseMidiEvent.channel  = event.channel(); //score()->midiChannel(event.channel());
             msg.payload.sparseMidiEvent.type     = event.type();
             msg.payload.sparseMidiEvent.dataA    = event.dataA();
             msg.payload.sparseMidiEvent.dataB    = event.dataB();

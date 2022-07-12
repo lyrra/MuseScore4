@@ -77,10 +77,10 @@ struct SparseEvent {
     unsigned int framepos;
     unsigned char type;
     unsigned char channel;
+    char synthName[64];
+    int midiPort;
     int pitch;
     int velo;
-    int cont; // FIX: redundant with pitch
-    int val;  // FIX: redundant with velo
     int beatsPerSecond;
     int ticksPerSecond;
     double playPosSeconds;
@@ -89,11 +89,12 @@ struct SparseEvent {
 
 struct SparseMidiEvent {
     unsigned int framepos;
-    int portIdx;
+    char synthName[64];
+    int midiPort;
     int channel;
-    unsigned char type;
     int dataA;
     int dataB;
+    unsigned char type;
 };
 
 struct JackTransportPosition {
@@ -122,7 +123,6 @@ struct MuxseqMsg {
         bool b;
         double d;
         SparseEvent sparseEvent;
-        SparseMidiEvent sparseMidiEvent;
     } payload;
 };
 

@@ -32,6 +32,7 @@
 #define LW(...) qDebug(__VA_ARGS__)
 #define LD(...) qDebug(__VA_ARGS__)
 #define LD4(...) qDebug(__VA_ARGS__)
+#define LD6(...) qDebug(__VA_ARGS__)
 #define LD8(...) qDebug(__VA_ARGS__)
 #define LE(...) qError(__VA_ARGS__)
 #define LEX(...) qFatal(__VA_ARGS__)
@@ -93,13 +94,12 @@ int muxseq_send (MuxseqMsgType type, int maxMidiPorts, std::vector<struct Sparse
     int slen = sevs.size();
     int len = 12 + sizeof(struct SparseMidiEvent) * sevs.size() + sizeof(struct MuxseqMsg); // need atleast large enough to hold an generic struct MuxseqMsg
     unsigned char* buf = (unsigned char*) malloc(len);
+    memset(buf, 0, len);
     memcpy(buf,    &type, 4);
     memcpy(buf+4,  &maxMidiPorts, 4);
     memcpy(buf+8,  &slen, 4);
     struct SparseMidiEvent *sevs2 = (struct SparseMidiEvent *) (buf + 12);
-    for (int i = 0; i < slen; i++) {
-        memcpy(&sevs2[i], &sevs[i], sizeof(struct SparseMidiEvent));
-    }
+    memcpy(sevs2, &sevs[0], sizeof(struct SparseMidiEvent) * slen);
     int rc = Mux::mux_zmq_send(g_muxseq_query_client_socket, buf, len);
     free(buf);
     if (rc != len) {
@@ -194,9 +194,11 @@ unsigned char* eventMap_to_muxbuffer(MuxseqMsgType type, EventMap evm,
         sevs[i].pitch = nev.pitch();
         sevs[i].velo  = nev.velo();
         // derived
+        sevs[i].midiPort = g_cs->midiPort(nev.channel());
         sevs[i].playPosSeconds = g_cs->utick2utime(framepos);
         sevs[i].beatsPerSecond = (int) beatsPerSecond;
         sevs[i].division       = (int) MScore::division;
+        strcpy(sevs[i].synthName, qPrintable(g_cs->midiMapping(nev.channel())->articulation()->synti()));
         LD4("%i: storing event framepos=%i pitch=%i/%i channel=%i/%i playPosSeconds=%f",
             i, sevs[i].framepos,
             sevs[i].pitch, nev.pitch(),
@@ -438,12 +440,15 @@ void muxseq_seq_playMetronomeBeat(BeatType beatType) {
     //FIX: muxseq_send(MsgTypeSeqplayMetronomeBeat(beatType));
 }
 
-static void add_SparseMidiEvent (std::vector<SparseMidiEvent> &sevs, int type, int channel, int dataA, int dataB) {
+static void add_SparseMidiEvent (std::vector<SparseMidiEvent> &sevs, int type, int channel, int dataA, int dataB, const char *synthName) {
     struct SparseMidiEvent sev;
     sev.type = type;
     sev.channel = channel;
     sev.dataA = dataA;
     sev.dataB = dataB;
+    strcpy(sev.synthName, synthName);
+    sev.framepos = 0;
+    sev.midiPort = 0;
     sevs.push_back(std::move(sev));
 }
 
@@ -455,19 +460,23 @@ void muxseq_initInstruments () {
     std::vector<SparseMidiEvent> sevs;
     for (const MidiMapping& mm : g_cs->midiMapping()) {
         const Channel* channel = mm.articulation();
+        // g_cs->midiMapping(nev.channel())->articulation()->synti()
+        const char* synthName = channel->synti().isNull() ? "" :
+                                qPrintable(channel->synti());
         for (const MidiCoreEvent& e : channel->initList()) {
             if (e.type() == ME_INVALID) {
                 continue;
             }
-            add_SparseMidiEvent(sevs, e.type(), channel->channel(), e.dataA(), e.dataB());
+            add_SparseMidiEvent(sevs, e.type(), channel->channel(), e.dataA(), e.dataB(), synthName);
+            LD6("midi-event: type=%i chan=%i dataA=%i dataB=%i name=%s", e.type(), channel->channel(), e.dataA(), e.dataB(), synthName);
         }
         // Setting pitch bend sensitivity to 12 semitones for external synthesizers
         if (mm.channel() != 9) {
-            add_SparseMidiEvent(sevs, ME_CONTROLLER, channel->channel(), CTRL_LRPN, 0);
-            add_SparseMidiEvent(sevs, ME_CONTROLLER, channel->channel(), CTRL_HRPN, 0);
-            add_SparseMidiEvent(sevs, ME_CONTROLLER, channel->channel(), CTRL_HDATA,12);
-            add_SparseMidiEvent(sevs, ME_CONTROLLER, channel->channel(), CTRL_LRPN, 127);
-            add_SparseMidiEvent(sevs, ME_CONTROLLER, channel->channel(), CTRL_HRPN, 127);
+            add_SparseMidiEvent(sevs, ME_CONTROLLER, channel->channel(), CTRL_LRPN, 0, synthName);
+            add_SparseMidiEvent(sevs, ME_CONTROLLER, channel->channel(), CTRL_HRPN, 0, synthName);
+            add_SparseMidiEvent(sevs, ME_CONTROLLER, channel->channel(), CTRL_HDATA,12, synthName);
+            add_SparseMidiEvent(sevs, ME_CONTROLLER, channel->channel(), CTRL_LRPN, 127, synthName);
+            add_SparseMidiEvent(sevs, ME_CONTROLLER, channel->channel(), CTRL_HRPN, 127, synthName);
         }
     }
     int midiPortCount = g_cs->masterScore()->midiPortCount();
