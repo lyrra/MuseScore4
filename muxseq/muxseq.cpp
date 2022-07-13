@@ -36,6 +36,8 @@
 #include "seq.h"
 #include "muxqueue.h"
 
+#define SLEEP_USEC 100
+
 namespace Ms {
 
 void mux_send_event_to_gui(struct SparseEvent se);
@@ -156,7 +158,7 @@ void msgToAudioSeekTransport(int utick) {
  * Audio ringbuffer from mux to audio
  */
 #define MUX_CHAN 2
-#define MUX_RINGSIZE (8192*2)
+#define MUX_RINGSIZE (8192*2*2)
 #define MUX_CHUNKSIZE (2048*2)
 #define MUX_READER_USLEEP 100
 #define MUX_WRITER_USLEEP 100
@@ -237,7 +239,7 @@ int muxseq_audio_process_work() {
 }
 
 void muxseq_muxaudioWorker_process() {
-    int slept = MUX_WRITER_USLEEP; // we cant sleep longer than the jack-audio-period = (numFrames / SampleRate) seconds
+    int slept = MUX_WRITER_USLEEP;
     while (true) {
         bool workDone = false;
         if (g_muxseq_audio_process_run) {
@@ -470,7 +472,7 @@ void muxseq_mscoreQueryServer_mainloop(Mux::MuxSocket &sock) {
         LD("MSCORE ==> MUXSEQ -- got message %i bytes", rc);
         muxseq_handle_musescore_msg(sock, zmq_msg_data(&msg));
         zmq_msg_close (&msg);
-        std::this_thread::sleep_for(std::chrono::microseconds(100));
+        std::this_thread::sleep_for(std::chrono::microseconds(SLEEP_USEC));
     }
 }
 
@@ -483,7 +485,7 @@ void muxseq_mscoreQueryReqServer_mainloop(Mux::MuxSocket &sock) {
         // the other threads (who wants to send requests towards musescore)
         // will use the socket directly, but we could instead consider
         // going through an ringbuffer, and this thread would then be the single reader
-        std::this_thread::sleep_for(std::chrono::microseconds(100));
+        std::this_thread::sleep_for(std::chrono::microseconds(SLEEP_USEC));
     }
 }
 
