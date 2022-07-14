@@ -16,13 +16,13 @@ else (NOT MSVC)
 endif (NOT MSVC)
 
 include_directories (
+      ${QT_INCLUDES}
       ${PROJECT_SOURCE_DIR}
       ${CMAKE_CURRENT_BINARY_DIR}
       ${CMAKE_CURRENT_LIST_DIR}
       ${PROJECT_SOURCE_DIR}/mux
       ${PROJECT_SOURCE_DIR}/mscore
       ${PROJECT_SOURCE_DIR}/muxseq
-      #${QTSINGLEAPPLICATION_INCLUDE_DIRS}
       ${PROJECT_SOURCE_DIR}/thirdparty  # because include "mscore/musescore.h"
       )
 
@@ -39,8 +39,7 @@ add_library (${MODULE} STATIC
 
 target_link_libraries (${MODULE}
       mux
-      ${QT_LIBRARIES}
-      )
+      Qt5::Core)
 
 if (NOT MSVC)
    set_target_properties (

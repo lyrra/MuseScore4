@@ -83,6 +83,8 @@ endif (SCRIPT_INTERFACE)
 # Include modules
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/build" ${CMAKE_MODULE_PATH})
 include (FindQt5)
+include (CreatePrecompiledHeader)
+
 
 # For debugging the make system uncomment next line:
 # set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -610,6 +612,8 @@ if (NOT MSVC)
       WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
       )
 endif (NOT MSVC)
+
+precompiled_header(QT_INCLUDES all ${BUILD_PCH})
 
 # MSVC does not require these targets, as all.h is not copied and the
 #   PCH generation is done per-project

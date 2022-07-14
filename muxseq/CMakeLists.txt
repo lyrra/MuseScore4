@@ -6,11 +6,9 @@ find_package(Threads REQUIRED)
 include_directories(
       ${PROJECT_SOURCE_DIR}/global
       ${PROJECT_SOURCE_DIR}/mscore
-#      ${PROJECT_SOURCE_DIR}/thirdparty
       ${PROJECT_SOURCE_DIR}/mux
       ${PROJECT_SOURCE_DIR}/muxlib
       ${PROJECT_SOURCE_DIR}/muxtools
-#      ${QTSINGLEAPPLICATION_INCLUDE_DIRS}
       )
 set (FLUID_DIR ${CMAKE_CURRENT_LIST_DIR}/fluid)
 set (FLUID_SRC
@@ -91,10 +89,9 @@ if (MINGW)
    string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE)
    set_target_properties(muxseq
       PROPERTIES
-         #COMPILE_FLAGS "${PCH_INCLUDE} -g -Wall -Wextra -Winvalid-pch ${QT_DEFINITIONS} -DQT_CORE_LIB"
          COMPILE_FLAGS "${PCH_INCLUDE} -g -Wall -Wextra -Winvalid-pch"
-         #LINK_FLAGS "-L ${QT_INSTALL_LIBS} -mconsole"
-         #LINK_FLAGS "-L ${QT_INSTALL_LIBS} -municode -mconsole"
+         #LINK_FLAGS "-mconsole"
+         #LINK_FLAGS "-municode"
       )
 
    # Keep dependencies in alphabetical order. Changes made to this list
@@ -126,7 +123,6 @@ else (MINGW)
          muxseq
          PROPERTIES
             COMPILE_FLAGS "${PCH_INCLUDE} -g -Wall -Wno-overloaded-virtual -Winvalid-pch"
-            #LINK_FLAGS "-L ${QT_INSTALL_LIBS}"
          )
 
       if (APPLE)
