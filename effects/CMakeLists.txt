@@ -53,10 +53,14 @@ else (NOT MSVC)
       )
 endif (NOT MSVC)   
 
-xcode_pch(effects all)
+if (APPLE)
+      xcode_pch(effects all)
+endif (APPLE)
 
 # Use MSVC pre-compiled headers
+if (MSVC)
 vstudio_pch( effects )
+endif (MSVC)
 
 # MSVC does not depend on mops1 & mops2 for PCH
 if (NOT MSVC)

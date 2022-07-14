@@ -83,9 +83,6 @@ endif (SCRIPT_INTERFACE)
 # Include modules
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/build" ${CMAKE_MODULE_PATH})
 include (FindQt5)
-include (UsePkgConfig1) # Defines MACRO(PKGCONFIG1 _package _minVersion _include_DIR _link_DIR _link_FLAGS _cflags)
-include (GetCompilerVersion)
-include (CreatePrecompiledHeader)
 
 # For debugging the make system uncomment next line:
 # set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -238,17 +235,6 @@ if (BUILD_AUTOUPDATE STREQUAL "ON")
              message("Sparkle is not supported on your system.")
       endif (APPLE)
 endif(BUILD_AUTOUPDATE STREQUAL "ON")
-
-#
-#     Check for gcc compiler >= 4.8
-#
-if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
-      if (${CMAKE_CXX_COMPILER_MAJOR} LESS 4
-        OR ((${CMAKE_CXX_COMPILER_MAJOR} EQUAL 4) AND (${CMAKE_CXX_COMPILER_MINOR} LESS 8)))
-            message(FATAL_ERROR "bad gcc compiler version " ${CMAKE_CXX_COMPILER_VERSION}
-                  " >= 4.8 required")
-      endif()
-endif (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
 
 if (NOT MSVC)
    set(CMAKE_CXX_FLAGS_DEBUG   "-g")
@@ -624,8 +610,6 @@ if (NOT MSVC)
       WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
       )
 endif (NOT MSVC)
-
-precompiled_header(QT_INCLUDES all ${BUILD_PCH})
 
 # MSVC does not require these targets, as all.h is not copied and the
 #   PCH generation is done per-project
