@@ -61,15 +61,21 @@ else (NOT MSVC)
       )
 endif (NOT MSVC)   
 
-xcode_pch(awl all)
+if (APPLE)
+   xcode_pch(awl all)
+endif (APPLE)
 
 # Use MSVC pre-compiled headers
-vstudio_pch( awl )
+if (MSVC)
+   vstudio_pch( awl )
+endif (MSVC)
 
 # MSVC does not depend on mops1 & mops2 for PCH
 if (NOT MSVC)
    ADD_DEPENDENCIES(awl mops1 mops2)
 endif (NOT MSVC)
+
+include_directories(${QT_INCLUDES})
 
 add_library (
       awlplugin SHARED

@@ -1,18 +1,4 @@
-find_path(PORTMIDI_INCLUDE_DIR portmidi.h)
+pkg_check_modules(PORTMIDI "portmidi")
 
-if (MINGW)
-    set(CMAKE_FIND_LIBRARY_SUFFIXES ".dll.a")
-else (MINGW)
-    set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
-endif (MINGW)
-find_library(PORTMIDI_LIBRARY NAMES portmidi)
-
-if (PORTMIDI_INCLUDE_DIR AND PORTMIDI_LIBRARY)
-    set(PORTMIDI_FOUND TRUE)
-endif (PORTMIDI_INCLUDE_DIR AND PORTMIDI_LIBRARY)
-
-if (PORTMIDI_FOUND)
-    message(STATUS "Found PortMidi INC:[${PORTMIDI_INCLUDE_DIR}] LIB:[${PORTMIDI_LIBRARY}]")
-else (PORTMIDI _FOUND)
-    message (FATAL_ERROR "Could not find: PortMidi INC:[${PORTMIDI_INCLUDE_DIR}] LIB:[${PORTMIDI_LIBRARY}]")
-endif (PORTMIDI_FOUND)
+#find_path(PORTMIDI_INCLUDE_DIR portmidi.h)
+#find_library(PORTMIDI_LIBRARY NAMES portmidi)

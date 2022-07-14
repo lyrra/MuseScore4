@@ -10,8 +10,6 @@
 #  the file LICENSE.GPL
 #=============================================================================
 
-include (${PROJECT_SOURCE_DIR}/build/gch.cmake)
-
 if (APPLE)
         file(GLOB_RECURSE INCS "*.h")
 else (APPLE)
@@ -23,6 +21,8 @@ if (NOT MSVC)
 else (NOT MSVC)
    set(_all_h_file "${PROJECT_SOURCE_DIR}/all.h")
 endif (NOT MSVC)
+
+include_directories (${QT_INCLUDES})
 
 add_library(qzip STATIC
    qzip.cpp
@@ -46,10 +46,14 @@ else (NOT MSVC)
       include_directories("${PROJECT_SOURCE_DIR}/dependencies/include/zlib")
 endif (NOT MSVC)   
 
-xcode_pch(qzip all)
+if (APPLE)
+   xcode_pch(qzip all)
+endif (APPLE)
 
 # Use MSVC pre-compiled headers
-vstudio_pch( qzip )
+if (MSVC)
+   vstudio_pch( qzip )
+endif (MSVC)
 
 # MSVC does not depend on mops1 & mops2 for PCH
 if (NOT MSVC)

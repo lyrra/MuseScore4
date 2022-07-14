@@ -36,7 +36,9 @@
 #include "seq.h"
 #include "muxqueue.h"
 
-#define SLEEP_USEC 100
+#define SLEEP_USEC 500
+#define MUX_READER_USLEEP 500
+#define MUX_WRITER_USLEEP 500
 
 namespace Ms {
 
@@ -160,8 +162,6 @@ void msgToAudioSeekTransport(int utick) {
 #define MUX_CHAN 2
 #define MUX_RINGSIZE (8192*2*2)
 #define MUX_CHUNKSIZE (2048*2)
-#define MUX_READER_USLEEP 100
-#define MUX_WRITER_USLEEP 100
 
 unsigned int g_ringBufferWriterStart = 0;
 unsigned int g_ringBufferReaderStart = 0;

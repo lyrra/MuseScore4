@@ -80,10 +80,14 @@ else (NOT MSVC)
       )
 endif (NOT MSVC)   
 
-xcode_pch(${MODULE} all)
+if (APPLE)
+      xcode_pch(${MODULE} all)
+endif (APPLE)
 
 # Use MSVC pre-compiled headers
-vstudio_pch( ${MODULE} )
+if (MSVC)
+      vstudio_pch( ${MODULE} )
+endif (MSVC)
 
 # MSVC does not depend on mops1 & mops2 for PCH
 if (NOT MSVC)

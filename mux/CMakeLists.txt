@@ -44,7 +44,3 @@ add_library(mux STATIC
 #         COMPILE_FLAGS "${PCH_INCLUDE}"
 #      )
 #endif (NOT MSVC)   
-
-add_executable(mux-bin main.cpp)
-target_link_libraries (mux-bin mux ${ZMQ_LIBRARY})
-set_target_properties(mux-bin PROPERTIES OUTPUT_NAME mux)
