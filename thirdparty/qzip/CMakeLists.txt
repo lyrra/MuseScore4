@@ -46,10 +46,14 @@ else (NOT MSVC)
       include_directories("${PROJECT_SOURCE_DIR}/dependencies/include/zlib")
 endif (NOT MSVC)   
 
-xcode_pch(qzip all)
+if (APPLE)
+   xcode_pch(qzip all)
+endif (APPLE)
 
 # Use MSVC pre-compiled headers
-vstudio_pch( qzip )
+if (MSVC)
+   vstudio_pch( qzip )
+endif (MSVC)
 
 # MSVC does not depend on mops1 & mops2 for PCH
 if (NOT MSVC)

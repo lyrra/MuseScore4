@@ -24,10 +24,14 @@ else (NOT MSVC)
       )
 endif (NOT MSVC)   
 
-xcode_pch(beatroot all)
+if (APPLE)
+      xcode_pch(beatroot all)
+endif (APPLE)
 
 # Use MSVC pre-compiled headers
-vstudio_pch( beatroot )
+if (MSVC)
+      vstudio_pch( beatroot )
+endif (MSVC)
 
 # MSVC does not depend on mops1 & mops2 for PCH
 if (NOT MSVC)

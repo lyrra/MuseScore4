@@ -52,10 +52,14 @@ else (NOT MSVC)
       )
 endif (NOT MSVC)   
 
-xcode_pch(rtf2html all)
+if (APPLE)
+      xcode_pch(rtf2html all)
+endif (APPLE)
 
 # Use MSVC pre-compiled headers
+if (MSVC)
 vstudio_pch( rtf2html )
+endif (MSVC)
 
 # MSVC does not depend on mops1 & mops2 for PCH
 if (NOT MSVC)
