@@ -31,6 +31,8 @@ else (NOT MSVC)
    set(_all_h_file "${PROJECT_SOURCE_DIR}/all.h")
 endif (NOT MSVC)
 
+include_directories (${QT_INCLUDES})
+
 add_library(ofqf STATIC
    ${_all_h_file}
    ${PCH}

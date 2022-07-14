@@ -10,8 +10,6 @@
 #  the file LICENSE.GPL
 #=============================================================================
 
-include (${PROJECT_SOURCE_DIR}/build/gch.cmake)
-
 if (APPLE)
       file(GLOB_RECURSE INCS "*.h")
 else (APPLE)
@@ -27,6 +25,8 @@ if (NOT MSVC)
 else (NOT MSVC)
    set(_all_h_file "${PROJECT_SOURCE_DIR}/all.h")
 endif (NOT MSVC)
+
+include_directories (${QT_INCLUDES})
 
 add_library (effects STATIC
       ${qrc_effects_files}

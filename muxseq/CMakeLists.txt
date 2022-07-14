@@ -4,6 +4,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 include_directories(
+      ${QT_INCLUDES}
       ${PROJECT_SOURCE_DIR}/global
       ${PROJECT_SOURCE_DIR}/mscore
       ${PROJECT_SOURCE_DIR}/mux
