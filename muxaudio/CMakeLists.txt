@@ -1,5 +1,121 @@
 # GPL-2.0-or-later
 
+CMAKE_MINIMUM_REQUIRED(VERSION 3.3.0)
+
+SET(JACK_LONGNAME "JACK (Jack Audio Connection Kit)")
+SET(JACK_MIN_VERSION "0.98.0")
+
+option(BUILD_JACK    "Build with support for ${JACK_LONGNAME} audio backend. JACK >= ${JACK_MIN_VERSION} will be needed." ON)
+option(BUILD_PULSEAUDIO "Build with support for PulseAudio audio backend." OFF)
+option(BUILD_ALSA "Build with support for ALSA audio backend." OFF)
+option(BUILD_PORTAUDIO "Build with support for PortAudio audio backend." ON)
+option(BUILD_PORTMIDI "Build with support for PortAudio's MIDI features." ${BUILD_PORTAUDIO}) # PortAudio required
+
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(PkgConfig)
+find_package(Threads REQUIRED)
+find_package(Qt5 COMPONENTS Core REQUIRED)
+
+
+# Disable components not supported on Windows
+if (MSVC OR MINGW)
+    set(WIN_NOT_AVAIL "Not available on Windows")
+    option(BUILD_PULSEAUDIO ${WIN_NOT_AVAIL} OFF)
+    option(BUILD_ALSA ${WIN_NOT_AVAIL} OFF)
+endif (MSVC OR MINGW)
+
+# Disable components not supported on Mac
+if (APPLE)
+      set(MAC_NOT_AVAIL "Not available on Mac")
+      option(BUILD_PULSEAUDIO ${MAC_NOT_AVAIL} OFF)
+      option(BUILD_ALSA ${MAC_NOT_AVAIL} OFF)
+endif (APPLE)
+
+# Disable components not supported on Linux/BSD
+if (NOT APPLE AND NOT MINGW AND NOT MSVC)
+      set(NIX_NOT_AVAIL "Not available on Linux/BSD")
+      #option(BUILD_PORTMIDI "PortMidi disabled on Linux. (It uses ALSA but it's better to use ALSA directly)" OFF)
+endif (NOT APPLE AND NOT MINGW AND NOT MSVC)
+
+##
+## Find JACK >= JACK_MIN_VERSION
+##
+IF(BUILD_JACK)
+    set ( USE_JACK 1 )
+    pkg_check_modules(JACK "jack")
+ENDIF(BUILD_JACK)
+
+##
+## PortAudio
+##
+
+if (BUILD_PORTAUDIO)
+    set ( USE_PORTAUDIO 1 )
+    include(FindPortAudio)
+else (BUILD_PORTAUDIO)
+     message(STATUS "PortAudio support disabled")
+endif (BUILD_PORTAUDIO)
+
+##
+## PortMidi
+##
+
+if (BUILD_PORTMIDI)
+    if (NOT BUILD_PORTAUDIO)
+        message(SEND_ERROR "Error: PortMidi support requested (BUILD_PORTMIDI=${BUILD_PORTMIDI}), but PortAudio support is disabled (BUILD_PORTAUDIO=${BUILD_PORTAUDIO}). PortMidi requires PortAudio.")
+    endif (NOT BUILD_PORTAUDIO)
+    pkg_check_modules(PORTMIDI "portmidi")
+    set (USE_PORTMIDI 1)
+else (BUILD_PORTMIDI)
+    message(STATUS "PortMidi support disabled")
+endif (BUILD_PORTMIDI)
+
+##
+## ALSA >= 1.0.0
+##
+
+if (BUILD_ALSA)
+      PKGCONFIG1 (alsa 1.0.0 ALSA_INCDIR ALSA_LIBDIR ALSA_LIB ALSA_CPP )
+      if (NOT ALSA_INCDIR)
+            message(SEND_ERROR "Error: ALSA support requested (BUILD_ALSA=${BUILD_ALSA}), but ALSA >= 1.0.0 was not found.")
+      else (NOT ALSA_INCDIR)
+            message("ALSA >= 1.0.0 found. ALSA support enabled. INCDIR ${ALSA_INCDIR}, LIBDIR ${ALSA_LIBDIR}, LIB ${ALSA_LIB}, CPP ${ALSA_CPP}")
+            set (USE_ALSA 1)
+      endif (NOT ALSA_INCDIR)
+else (BUILD_ALSA)
+     message(STATUS "ALSA support disabled")
+endif (BUILD_ALSA)
+
+##
+## MIDI
+##
+
+if (APPLE OR MINGW OR MSVC)
+      set (HAS_MIDI 1)
+else (APPLE OR MINGW OR MSVC)
+      if (USE_ALSA)
+            set (HAS_MIDI 1)
+      endif (USE_ALSA)
+endif (APPLE OR MINGW OR MSVC)
+
+##
+## PulseAudio
+##
+
+if (BUILD_PULSEAUDIO)
+      include (FindPulseAudio)
+      if (PULSEAUDIO_FOUND)
+            set(USE_PULSEAUDIO 1)
+            message("PulseAudio found. PulseAudio support enabled.")
+      else (PULSEAUDIO_FOUND)
+            message(SEND_ERROR "Error: PulseAudio support requested (BUILD_PULSEAUDIO=${BUILD_PULSEAUDIO}), but PulseAudio was not found.")
+      endif (PULSEAUDIO_FOUND)
+else (BUILD_PULSEAUDIO)
+      message(STATUS "PulseAudio support disabled")
+endif (BUILD_PULSEAUDIO)
+
+
+
 include_directories(
       ${PROJECT_SOURCE_DIR}/global
       ${PROJECT_SOURCE_DIR}/mux
@@ -12,51 +128,52 @@ include_directories(
       ${QTSINGLEAPPLICATION_INCLUDE_DIRS}
       )
 
+if (USE_JACK)
+    add_compile_definitions(USE_JACK)
+    set(JACK_SOURCE "driver/jackaudio.h" "driver/jackaudio.cpp")
+    if (MINGW)
+        set(JACK_SOURCE "${JACK_SOURCE}" "driver/jackweakapi.cpp")
+    endif (MINGW)
+endif (USE_JACK)
+
+if (USE_PORTAUDIO)
+    add_compile_definitions(USE_PORTAUDIO)
+    set(PA_SOURCE "driver/pa.h" "driver/pa.cpp")
+endif (USE_PORTAUDIO)
+
+if (USE_PULSEAUDIO)
+    add_compile_definitions(USE_PULSEAUDIO)
+    set(PM_SOURCE "driver/pm.h" "driver/pm.cpp")
+endif (USE_PULSEAUDIO)
+
 add_executable(muxaudio
       muxaudio.h muxaudio.cpp
       control.h control.cpp
-#      event.h event.cpp
       driver/mididriver.h driver/mididriver.cpp
       driver/driver.h driver/driver.cpp
-      driver/jackaudio.h driver/jackaudio.cpp
-      driver/jackweakapi.cpp
-      driver/pa.h driver/pa.cpp
-      driver/pm.h driver/pm.cpp
+      ${JACK_SOURCE}
+      ${PA_SOURCE}
+      ${PM_SOURCE}
       )
 
-#if (MINGW OR MSVC)
-#      set(MSCORE_OUTPUT_NAME ${MUSESCORE_NAME}${MUSESCORE_VERSION_MAJOR})
-#elseif (MSCORE_INSTALL_SUFFIX)
-#      set(MSCORE_OUTPUT_NAME "${ExecutableName}${MSCORE_INSTALL_SUFFIX}")
-#endif (MINGW OR MSVC)
-
-# If MSCORE_OUTPUT_NAME is set (e.g, when cmake is called by the user), the output executable will be
-# called MSCORE_OUTPUT_NAME instead of 'mscore'. This can be used to have MuseScore stable and unstable
-# both installed in the same prefix on a Linux system.
-#if (MSCORE_OUTPUT_NAME)
-#  set_target_properties(
-#      ${ExecutableName}
-#      PROPERTIES
-#      OUTPUT_NAME ${MSCORE_OUTPUT_NAME}
-#      )
-#endif (MSCORE_OUTPUT_NAME)
-
 target_include_directories(muxaudio PRIVATE ${PROJECT_SOURCE_DIR}
-                                    PUBLIC ${PORTAUDIO_INCLUDE_DIR}
+                                    PUBLIC ${PORTAUDIO_INCLUDE_DIRS}
                                            ${PORTMIDI_INCLUDE_DIR}
+                                           ${JACK_INCLUDE_DIRS}
+                                           ${ZMQ_INCLUDE_DIRS}
                           )
 
-target_link_libraries(muxaudio
-                      mux
-                      muxlib
-                      ${ZMQ_LIBRARY}
-                      ${PORTAUDIO_LIBRARY} ${PORTMIDI_LIBRARY})
 
-message("muxaudio PORTAUDIO INC: ${PORTAUDIO_INCLUDE_DIR}")
-message("muxaudio PORTAUDIO LIB: ${PORTAUDIO_LIBRARY}")
-message("muxaudio PORTMIDI  INC: ${PORTMIDI_INCLUDE_DIR}")
-message("muxaudio PORTMIDI  LIB: ${PORTMIDI_LIBRARY}")
-message("muxaudio PORTMIDI  LIB: ${PORTMIDI_LIBRARY}")
+# APPLE: target_link_libraries ${OsxFrameworks}
+target_link_libraries(muxaudio
+    PRIVATE Threads::Threads
+            mux
+            muxlib
+            ${ZMQ_LIBRARIES}
+            ${PORTAUDIO_LIBRARIES} ${PORTAUDIO_LIBRARY} ${PORTMIDI_LIBRARY}
+            ${JACK_LIBRARIES}
+            Qt5::Core
+            )
 
 if (MINGW)
    string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE)
@@ -70,8 +187,6 @@ if (MINGW)
    # might need to be made in "build/Linux+BSD/portable/copy-libs" too.
    get_filename_component(COMPILER_DIR ${CMAKE_CXX_COMPILER} DIRECTORY)
    get_filename_component (MINGW_ROOT ${COMPILER_DIR} DIRECTORY)
-
-   target_link_libraries(muxaudio ${QT_LIBRARIES})
 
    install( TARGETS muxaudio RUNTIME DESTINATION bin )
 
@@ -92,8 +207,9 @@ if (MINGW)
       ${SNDFILE_LIBRARY}
       ${VORBIS_LIBRARY}
       ${VORBISFILE_LIBRARY}
-      ${PORTAUDIO_LIBRARY}
-      ${PORTMIDI_LIBRARY}
+      ${PORTAUDIO_LIBRARIES}
+      ${PORTMIDI_LIBRARIES}
+      ${JACK_LIBRARIES}
       DESTINATION bin)
 
 else (MINGW)
@@ -104,12 +220,6 @@ else (MINGW)
          PROPERTIES
             COMPILE_FLAGS "${PCH_INCLUDE} -g -Wall -Wno-overloaded-virtual -Winvalid-pch"
          )
-
-      if (APPLE)
-        target_link_libraries(muxaudio ${OsxFrameworks})
-      else (APPLE)
-          target_link_libraries(muxaudio rt)
-      endif (APPLE)
 
       if (APPLE)
          set_target_properties(muxaudio
