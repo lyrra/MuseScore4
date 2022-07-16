@@ -76,11 +76,6 @@
 #include "muxaudio.h"
 #include "driver.h"
 
-#define LW(...) fprintf(stderr, __VA_ARGS__)
-#define LD(...) fprintf(stderr, __VA_ARGS__)
-#define LE(...) fprintf(stderr, __VA_ARGS__)
-#define LEX(...) { fprintf(stderr, __VA_ARGS__); exit(1); }
-
 namespace Ms {
 
 #define MUX_SYNC_MSLEEP 100
@@ -233,16 +228,15 @@ void muxaudio_msg_from_audio(MuxaudioMsgType typ, int val)
  * Audio ringbuffer from mux to audio
  */
 #define MUX_CHAN 2
-#define MUX_RINGSIZE (8192*2)
-#define MUX_CHUNKSIZE (2048*2)
-#define MUX_READER_USLEEP 100
-#define MUX_WRITER_USLEEP 100
+#define MUX_RINGSIZE (8192*MUX_CHAN)
+#define MUX_READER_USLEEP 500
+#define MUX_WRITER_USLEEP 500
 
 unsigned int g_ringBufferWriterStart = 0;
 unsigned int g_ringBufferReaderStart = 0;
 float g_ringBufferStereo[MUX_RINGSIZE];
 // minimal amount of work considered feasible (performance-wise)
-float g_chunkBufferStereo[MUX_CHUNKSIZE];
+float g_chunkBufferStereo[MUX_CHUNKSIZE_NET];
 
 unsigned int g_readerCycle = 0;
 unsigned int g_writerCycle = 0;
@@ -253,17 +247,25 @@ bool g_buffer_initial_full = false;
 
 // this function is called by the realtime-context,
 // and is reading from the ring-buffer
-void mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
+int mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
+    int numFloats = numFrames * MUX_CHAN;
     if (! g_buffer_initial_full) {
-        memset(bufferStereo, 0, sizeof(float) * 2 * numFrames);
-        return;
+        memset(bufferStereo, 0, sizeof(float) * numFloats);
+        return -1;
     }
+
+    int diff = g_ringBufferWriterStart - g_ringBufferReaderStart;
+    if (diff < 2048 && diff > -2048) {
+        LD("BUFFER-STARVE: %i\n", diff);
+    }
+    // if diff is too close to zero, muxseq hasn't feed us enough buffers
+
     // we're in realtime-context, and shouldn't do any syscalls,
     // or sleep because there is no maximum sleep-amount guarantees,
     // if paranoid, just spin-loop
-    int i = 0;
-    for (;;i++) {
-        unsigned int newReaderPos = (g_ringBufferReaderStart + numFrames * MUX_CHAN) % MUX_RINGSIZE;
+    int r = 0;
+    for (;;r++) {
+        unsigned int newReaderPos = (g_ringBufferReaderStart + numFloats) % MUX_RINGSIZE;
         // ensure we dont read into writers buffer part
         if (// ringbuffer is empty
             g_ringBufferReaderStart == g_ringBufferWriterStart ||
@@ -276,7 +278,7 @@ void mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
             g_readerPause++;
             std::this_thread::sleep_for(std::chrono::microseconds(MUX_READER_USLEEP));
         } else { // there is enough room in reader-part of ring-buffer to use
-            for (unsigned int i = 0; i < numFrames * MUX_CHAN; i++) {
+            for (unsigned int i = 0; i < numFloats; i++) {
                 bufferStereo[i] =
                  g_ringBufferStereo[(i + g_ringBufferReaderStart) % MUX_RINGSIZE];
             }
@@ -287,13 +289,14 @@ void mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
             break;
         }
     }
-    if (i > 0) {
-        LW("WARNING: jack had to wait %i * %i usecs\n", i, MUX_READER_USLEEP);
+    if (r > 0) {
+        LW("WARNING: jack had to wait %i * %i usecs\n", r, MUX_READER_USLEEP);
     }
+    return r;
 }
 
 int muxaudio_audio_process_work() {
-    unsigned int newWriterPos = (g_ringBufferWriterStart + MUX_CHUNKSIZE) % MUX_RINGSIZE;
+    unsigned int newWriterPos = (g_ringBufferWriterStart + MUX_CHUNKSIZE_NET) % MUX_RINGSIZE;
 
     // ensure we dont overwrite part of buffer that is being read by reader
     // if writer wraps around and goes beyond reader
@@ -314,17 +317,17 @@ int muxaudio_audio_process_work() {
         return 0;
     }
 
-    // process a MUX_CHUNKSIZE number of Frames
-    //memset(g_chunkBufferStereo, 0, sizeof(float) * MUX_CHUNKSIZE);
+    // process a MUX_CHUNKSIZE_NET number of Frames
+    //memset(g_chunkBufferStereo, 0, sizeof(float) * MUX_CHUNKSIZE_NET);
     // Request a chunk over the network from mscore/seq
-    //seq->process(MUX_CHUNKSIZE >> 1, g_chunkBufferStereo);
+    //seq->process(MUX_CHUNKSIZE_NET >> 1, g_chunkBufferStereo);
     struct MuxaudioMsg msg;
     msg.type = MsgTypeAudioBufferFeed;
     if (zmq_send(g_socket_audio.socket, &msg, sizeof(struct MuxaudioMsg), 0) < 0) return -1;
-    if (zmq_recv(g_socket_audio.socket, g_chunkBufferStereo, sizeof(float) * MUX_CHUNKSIZE, 0) < 0) return -1;
+    if (zmq_recv(g_socket_audio.socket, g_chunkBufferStereo, sizeof(float) * MUX_CHUNKSIZE_NET, 0) < 0) return -1;
     //zmq_recv(g_socket_audio.socket, g_chunkBufferStereo, 1, 0);
     // copy over the chunk to the ringbuffer
-    for (unsigned int i = 0; i < MUX_CHUNKSIZE; i++) {
+    for (unsigned int i = 0; i < MUX_CHUNKSIZE_NET; i++) {
         g_ringBufferStereo[(i + g_ringBufferWriterStart) % (MUX_RINGSIZE)] =
          g_chunkBufferStereo[i];
     }
@@ -342,13 +345,13 @@ int muxaudio_audio_process_work() {
 void muxaudio_audio_process() {
     g_mux_audio_process_run = 1;
     while (g_mux_audio_process_run) {
-        bool workDone = true;
+        bool workDone = false;
         int rc = muxaudio_audio_process_work();
-        if (rc < 0) { // error, sleep longer
-            workDone = false;
+        if (rc >= 0) { // error, sleep longer
+            workDone = true;
         }
-        if (! muxaudio_mq_from_audio_reader_visit()) { // and message-queue is empty
-            workDone = false;
+        if (muxaudio_mq_from_audio_reader_visit()) { // and message-queue is empty
+            workDone = true;
         }
         if (! workDone) {
             g_writerPause++;
@@ -396,14 +399,14 @@ void mux_teardown_driver (JackAudio *driver) {
  */
 void mux_network_mainloop_audio()
 {
-    std::cerr << "MUX ZeroMQ audio entering main-loop\n";
+    LD("MUX ZeroMQ audio entering main-loop\n");
     g_driver = driverFactory("");
     while (1) {
         if (! muxaudio_mq_to_audio_visit()) {
-            std::this_thread::sleep_for(std::chrono::microseconds(100000));
+            std::this_thread::sleep_for(std::chrono::microseconds(10000));
         }
     }
-    fprintf(stderr, "mux_network_mainloop audio has exited\n");
+    LD("mux_network_mainloop audio has exited\n");
 }
 
 void muxaudio_network_server_audio()

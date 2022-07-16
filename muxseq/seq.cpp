@@ -23,7 +23,6 @@
 #include "seq.h"
 #include "event.h"
 #include "muxlib.h"
-#include "muxaudio/muxaudio.h"
 #include "muxseq.h"
 #include "muxseqsig.h"
 
@@ -831,7 +830,7 @@ void mux_set_jack_position(struct JackTransportPosition jackTransportPosition)
     jack_position_valid = jackTransportPosition.valid;
     jack_position_beats_per_minute = jackTransportPosition.beats_per_minute;
     jack_position_BBT = jackTransportPosition.bbt;
-    qDebug("--- mux_set_jack_position jack_transport state=%i frame=%i", (int)jack_transport, jack_position_frame);
+    //LD("mux_set_jack_position jack_transport state=%i frame=%i\n", (int)jack_transport, jack_position_frame);
 }
 
 //---------------------------------------------------------

@@ -1,6 +1,9 @@
 #ifndef __MUXLIB_H__
 #define __MUXLIB_H__
 
+/* both client and server needs to use the same chunk-size, so define it once, here */
+#define MUX_CHUNKSIZE_NET (4096)
+
 #define MUX_MUSESCORE_QUERY_CLIENT_URL "tcp://localhost:7701"
 #define MUX_MUSESCORE_QUERYREQ_CLIENT_URL "tcp://localhost:7704"
 #define MUX_MUSESCORE_BULLETIN_CLIENT_URL "tcp://localhost:7702"

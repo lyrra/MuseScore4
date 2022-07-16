@@ -3,12 +3,58 @@
 #include "mux.h"
 #include "muxlib.h"
 
-//FIX: muxlib shouldn't use QT
-#define LD(...) qDebug(__VA_ARGS__)
-#define LE(...) qCritical(__VA_ARGS__)
-#define LEX(...) qFatal(__VA_ARGS__)
-
 namespace Ms {
+
+thread_local char _logbuf[256];
+
+int overlap_strcat(char* dst, char* src) {
+    int i = 0, a = 0, f = 0;
+    while (1) {
+        if (! f) {
+            if (dst[i] == 0) {
+                f = 1; // found null-terminator
+            }
+        }
+        if (f) {
+            dst[i] = src[a++];
+            if (src[a] == 0) {
+                dst[++i] = 0;
+                i++;
+                break;
+            }
+        }
+        i++;
+    }
+    return i;
+}
+
+int get_timestamp (char *buf) {
+    struct timespec tp;
+    buf[0] = 0;
+    uint64_t d = 0;
+    if (! clock_gettime(CLOCK_MONOTONIC, &tp)) {
+        d = (tp.tv_sec & 0xfff) * 1000000;
+        d += tp.tv_nsec / 1000;
+    }
+    sprintf(buf, "%li ", d);
+}
+
+void _log_write () {
+    _logbuf[255] = 0; // ambiguous snprintf standard definition
+    char t[64+256];
+    get_timestamp(t);
+    int n = overlap_strcat(t, _logbuf);
+    if (n > 0) {
+        fwrite(t, n - 1, 1, stderr);
+    }
+//    fflush(stdout);
+//    int fd = fileno(stdout);
+//#ifdef WIN32
+//  _commit(fd);
+//#else
+//  fsync(fd);
+//#endif
+}
 
 const char* muxseq_msg_type_info (MuxseqMsgType type) {
     switch (type) {

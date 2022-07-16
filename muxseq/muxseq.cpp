@@ -160,14 +160,13 @@ void msgToAudioSeekTransport(int utick) {
  * Audio ringbuffer from mux to audio
  */
 #define MUX_CHAN 2
-#define MUX_RINGSIZE (8192*2*2)
-#define MUX_CHUNKSIZE (2048*2)
+#define MUX_RINGSIZE  (8192*8*MUX_CHAN)
 
 unsigned int g_ringBufferWriterStart = 0;
 unsigned int g_ringBufferReaderStart = 0;
 float g_ringBufferStereo[MUX_RINGSIZE];
 // minimal amount of work considered feasible (performance-wise)
-float g_chunkBufferStereo[MUX_CHUNKSIZE];
+float g_chunkBufferStereo[MUX_CHUNKSIZE_NET];
 
 unsigned int g_readerCycle = 0;
 unsigned int g_writerCycle = 0;
@@ -204,7 +203,7 @@ void mux_process_bufferStereo(unsigned int numFloats, float* frames) {
 }
 
 int muxseq_audio_process_work() {
-    unsigned int newWriterPos = (g_ringBufferWriterStart + MUX_CHUNKSIZE) % MUX_RINGSIZE;
+    unsigned int newWriterPos = (g_ringBufferWriterStart + MUX_CHUNKSIZE_NET) % MUX_RINGSIZE;
 
     // ensure we dont overwrite part of buffer that is being read by reader
     // if writer wraps around and goes beyond reader
@@ -222,12 +221,12 @@ int muxseq_audio_process_work() {
         return 0;
     }
 
-    // process a MUX_CHUNKSIZE number of Frames
-    memset(g_chunkBufferStereo, 0, sizeof(float) * MUX_CHUNKSIZE);
+    // process a MUX_CHUNKSIZE_NET number of Frames
+    memset(g_chunkBufferStereo, 0, sizeof(float) * MUX_CHUNKSIZE_NET);
     // fill the chunk with audio content
-    g_seq->process(MUX_CHUNKSIZE >> 1, g_chunkBufferStereo);
+    g_seq->process(MUX_CHUNKSIZE_NET >> 1, g_chunkBufferStereo); // >> 1: number of channels = 2
     // copy over the chunk to the ringbuffer
-    for (unsigned int i = 0; i < MUX_CHUNKSIZE; i++) {
+    for (unsigned int i = 0; i < MUX_CHUNKSIZE_NET; i++) {
         g_ringBufferStereo[(i + g_ringBufferWriterStart) % (MUX_RINGSIZE)] =
          g_chunkBufferStereo[i];
     }
@@ -401,10 +400,10 @@ int muxseq_handle_musescore_msg(Mux::MuxSocket &sock, void *buf)
 
 int muxseq_handle_muxaudioQueryClient_msg_AudioBufferFeed (Mux::MuxSocket &sock, struct MuxaudioMsg msg)
 {
-    // get MUX_CHUNKSIZE number of frames from the ringbuffer
-    float frames[MUX_CHUNKSIZE]; // count stereo, ie number of floats needed
-    mux_process_bufferStereo(MUX_CHUNKSIZE, frames);
-    zmq_send(sock.socket, frames, sizeof(float) * MUX_CHUNKSIZE, 0);
+    // get MUX_CHUNKSIZE_NET number of frames from the ringbuffer
+    float frames[MUX_CHUNKSIZE_NET]; // count stereo, ie number of floats needed
+    mux_process_bufferStereo(MUX_CHUNKSIZE_NET, frames);
+    zmq_send(sock.socket, frames, sizeof(float) * MUX_CHUNKSIZE_NET, 0);
     return 0;
 }
 
