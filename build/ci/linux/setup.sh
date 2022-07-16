@@ -49,6 +49,7 @@ apt_packages_standard=(
   libportmidi-dev
   libpulse-dev
   libsndfile1-dev
+  libzmq3-dev
   make
   portaudio19-dev
   wget
