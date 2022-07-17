@@ -56,102 +56,86 @@ bool alsaIsUsed = false, jackIsUsed = false, portAudioIsUsed = false, pulseAudio
 Driver* driverFactory(std::string driverName)
       {
       Driver* driver = 0;
-      bool useJackFlag       = (preferences.PREF_IO_JACK_USEJACKAUDIO || preferences.PREF_IO_JACK_USEJACKMIDI);
-      bool useAlsaFlag       = preferences.PREF_IO_ALSA_USEALSAAUDIO;
-      bool usePortaudioFlag  = preferences.PREF_IO_PORTAUDIO_USEPORTAUDIO;
-      bool usePulseAudioFlag = preferences.PREF_IO_PULSEAUDIO_USEPULSEAUDIO;
 
-      if (!driverName.empty()) {
-            driverName        = driverName; // FIX: do lowercase
-            useJackFlag       = false;
-            useAlsaFlag       = false;
-            usePortaudioFlag  = false;
-            usePulseAudioFlag = false;
-            if (driverName == "jack")
-                  useJackFlag = true;
-            else if (driverName == "alsa")
-                  useAlsaFlag = true;
-            else if (driverName == "pulse")
-                  usePulseAudioFlag = true;
-            else if (driverName == "portaudio")
-                  usePortaudioFlag = true;
-            }
+    if (driverName.empty()) {
+        return nullptr;
+    }
+    //FIX: driverName = lowercase(driverName);
 
-      alsaIsUsed       = false;
-      jackIsUsed       = false;
-      portAudioIsUsed  = false;
-      pulseAudioIsUsed = false;
+    bool useJackFlag       = false;
+    bool useAlsaFlag       = false;
+    bool usePortaudioFlag  = false;
+    bool usePulseAudioFlag = false;
+
+    if (driverName == "jack") {
+        useJackFlag = true;
+        preferences.PREF_IO_JACK_USEJACKAUDIO = true;
+        preferences.PREF_IO_JACK_USEJACKMIDI = true;
+    } else if (driverName == "alsa") {
+        useAlsaFlag = true;
+        preferences.PREF_IO_ALSA_USEALSAAUDIO = true;
+    } else if (driverName == "pulse") {
+        usePulseAudioFlag = true;
+        preferences.PREF_IO_PULSEAUDIO_USEPULSEAUDIO = true;
+    } else if (driverName == "portaudio") {
+        usePortaudioFlag = true;
+        preferences.PREF_IO_PORTAUDIO_USEPORTAUDIO = true;
+    }
 
 /*
-#ifdef USE_PULSEAUDIO
-      if (usePulseAudioFlag) {
-            driver = getPulseAudioDriver();
-            if (!driver->init()) {
-                  qDebug("init PulseAudio failed");
-                  delete driver;
-                  driver = 0;
-                  }
-            else
-                  pulseAudioIsUsed = true;
-            }
-#else
-      (void)usePulseAudioFlag; // avoid compiler warning
-#endif
+    if (usePulseAudioFlag) {
+        driver = getPulseAudioDriver();
+        if (!driver->init()) {
+            qDebug("init PulseAudio failed");
+            delete driver;
+            driver = 0;
+        } else {
+            pulseAudioIsUsed = true;
+        }
+    }
 */
-#ifdef USE_PORTAUDIO
-      if (usePortaudioFlag) {
-            driver = new Portaudio();
-            if (!driver->init()) {
-                  qDebug("init PortAudio failed");
-                  delete driver;
-                  driver = 0;
-                  }
-            else
-                  portAudioIsUsed = true;
-            }
-#else
-      (void)usePortaudioFlag; // avoid compiler warning
-#endif
+    if (usePortaudioFlag) {
+        driver = new Portaudio();
+        if (!driver->init()) {
+            qDebug("init PortAudio failed");
+            delete driver;
+            driver = 0;
+        } else {
+            portAudioIsUsed = true;
+        }
+    }
 /*
-#ifdef USE_ALSA
-      if (driver == 0 && useAlsaFlag) {
-            driver = new AlsaAudio();
-            if (!driver->init()) {
-                  qDebug("init ALSA driver failed");
-                  delete driver;
-                  driver = 0;
-                  }
-            else {
-                  alsaIsUsed = true;
-                  }
-            }
-#else
-      (void)useAlsaFlag; // avoid compiler warning
-#endif
+    if (driver == 0 && useAlsaFlag) {
+        driver = new AlsaAudio();
+        if (!driver->init()) {
+            qDebug("init ALSA driver failed");
+            delete driver;
+            driver = 0;
+        } else {
+            alsaIsUsed = true;
+        }
+    }
 */
-#ifdef USE_JACK
-      if (useJackFlag) {
-            useAlsaFlag      = false;
-            usePortaudioFlag = false;
-            driver = new JackAudio();
-            if (!driver->init()) {
-                  qDebug("no JACK server found");
-                  delete driver;
-                  driver = 0;
-                  }
-            else
-                  jackIsUsed = true;
-            }
-#else
-      qDebug("WARNING: JACK (https://jackaudio.org/) is not used (superior)");
-      (void)useJackFlag; // avoid compiler warning
-#endif
+    if (useJackFlag) {
+        useAlsaFlag      = false;
+        usePortaudioFlag = false;
+        driver = new JackAudio();
+        if (!driver->init()) {
+            qDebug("no JACK server found");
+            delete driver;
+            driver = 0;
+        } else {
+            jackIsUsed = true;
+        }
+    } else {
+        qDebug("WARNING: JACK (https://jackaudio.org/) is not used (superior)");
+    }
 
-      if (driver == 0)
-            qDebug("no audio driver found");
+    if (driver == 0)
+        qDebug("no audio driver found");
 
-      return driver;
-      }
+    return driver;
+}
 
 }
 
