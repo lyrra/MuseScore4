@@ -41,6 +41,8 @@
 
 namespace Ms {
 
+void mux_send_event (Event e);
+
 long g_jack_transport_position_time;
 int g_ctrl_audio_error = 0;
 int g_ctrl_audio_running = 0;
@@ -65,67 +67,6 @@ struct {
     bool PREF_IO_JACK_TIMEBASEMASTER = false;
     bool PREF_IO_JACK_USEJACKTRANSPORT = false;
 } preferences;
-
-//FIX: move to muxlib
-void mux_send_event (Event e) {
-    struct SparseEvent se;
-    se.type    = e.type();
-    se.channel = e.channel();
-    se.pitch   = e.pitch();
-    se.velo    = e.velo();
-    struct MuxaudioMsg msg;
-    msg.type = MsgTypeEventToGui;
-    memcpy(&msg.payload.sparseEvent, &se, sizeof(struct SparseEvent));
-    muxaudio_mq_from_audio_writer_put(msg);
-}
-
-void mux_audio_init(int hot)
-{
-    g_driver->init(hot);
-}
-
-void mux_audio_start(int hotPlug)
-{
-    g_driver->start(hotPlug);
-}
-
-void mux_audio_stop()
-{
-}
-
-void mux_audio_jack_transport_start() {
-    qDebug("--- mux_audio_jack_transport_start\n");
-    g_driver->startTransport();
-}
-
-void mux_audio_jack_transport_stop() {
-    g_driver->stopTransport();
-}
-
-void mux_audio_jack_transport_seek(int utick) {
-    g_driver->seekTransport(utick);
-}
-
-void mux_audio_handle_MsgTimeSigTempoChanged()
-{
-    g_driver->handleTimeSigTempoChanged();
-}
-
-void mux_audio_handle_updateOutPortCount(int portCount)
-{
-    g_driver->updateOutPortCount(portCount);
-}
-
-void mux_audio_send_event_to_midi(struct MuxaudioMsg msg) {
-    NPlayEvent event;
-    event.setType(msg.payload.sparseMidiEvent.type);
-    event.setDataA(msg.payload.sparseMidiEvent.dataA);
-    event.setDataB(msg.payload.sparseMidiEvent.dataB);
-    g_driver->putEvent(event, msg.payload.sparseMidiEvent.framepos,
-                              msg.payload.sparseMidiEvent.midiPort,
-                              msg.payload.sparseMidiEvent.channel);
-}
-
 
 //---------------------------------------------------------
 //   JackAudio

@@ -28,8 +28,6 @@
 
 #include "mididriver.h"
 
-#include "libmscore/score.h"
-
 #include "event.h"
 #include "muxcommon.h"
 #include "muxlib.h"
@@ -48,7 +46,12 @@ struct {
     bool debugMode;
 } preferences;
 
+extern int g_mux_is_score_open;
+extern Driver* g_driver;
 static PaStream* stream;
+extern int g_ctrl_audio_error;
+extern int g_ctrl_audio_running;
+extern int g_sampleRate;
 
 //---------------------------------------------------------
 //   paCallback
@@ -57,9 +60,17 @@ static PaStream* stream;
 int paCallback(const void*, void* out, long unsigned frames,
    const PaStreamCallbackTimeInfo*, PaStreamCallbackFlags, void *)
       {
+      if(! g_mux_is_score_open) {
+            return 0;
+            }
       //FIX20220503 portaudio support
       //seq->setInitialMillisecondTimestampWithLatency();
-      //seq->process((unsigned)frames, (float*)out);
+      int r = mux_process_bufferStereo((unsigned int)frames, (float*) out);
+      if (r < 0) {
+        memset(out, 0, frames);
+      } else {
+        LD("PA got buffer\n");
+      }
       return 0;
       }
 
@@ -102,6 +113,7 @@ Portaudio::~Portaudio()
 
 bool Portaudio::init(bool)
       {
+      g_driver = this;
       PaError err = Pa_Initialize();
       if (err != paNoError) {
             qDebug("Portaudio initialize failed: %s", Pa_GetErrorText(err));
@@ -168,6 +180,7 @@ bool Portaudio::init(bool)
             return false;
 #endif
             }
+      g_sampleRate = _sampleRate;
       return true;
       }
 
@@ -224,9 +237,11 @@ bool Portaudio::start(bool)
       {
       PaError err = Pa_StartStream(stream);
       if (err != paNoError) {
+            g_ctrl_audio_error = 1;
             qDebug("Portaudio: start stream failed: %s", Pa_GetErrorText(err));
             return false;
             }
+      muxaudio_msg_from_audio(MsgTypeAudioRunning, 1);
       return true;
       }
 
