@@ -354,7 +354,7 @@ int muxseq_handle_musescore_msg_MsgTypeMasterSynthInitInstruments(Mux::MuxSocket
         void* data = malloc(12 + len);
         memcpy(data, buf, 12 + len);
         if (mux_mq_write(queue_from_mscore, data) < 0) {
-            LE("ERROR MSCORE ==> MUXSEQ msg %s mailbox is full");
+            LE("ERROR MSCORE ==> MUXSEQ msg %s mailbox is full", muxseq_msg_type_info((MuxseqMsgType)type));
         }
     } else {
         LD("cant initInstruments, no sequencer");
