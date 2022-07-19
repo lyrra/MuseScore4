@@ -77,33 +77,57 @@ void muxseq_query(MuxseqMsgType type, bool b) {
     LD("muxseq msg query %i about bool %i (NOT IMPL)", type, b);
 }
 
-//FIX: handles only payload  'i'
-void* muxseq_mscore_query (MuxseqMsgType type, int i)
-{
-    LD("MUXSEQ ==> MSCORE query msg %s", muxseq_msg_type_info(type));
+int muxseq_mscore_send (MuxseqMsgType type, int i) {
     /* Create a new message, allocating 6 bytes for message content */
     struct MuxseqMsg msg;
     msg.type = type;
     msg.payload.i = i;
     strcpy(msg.label, "muxseq");
-    if (mux_query_send(g_muxsocket_mscoreQueryReqServer, &msg, sizeof(struct MuxseqMsg)) < 0) {
+    return mux_query_send(g_muxsocket_mscoreQueryReqServer, &msg, sizeof(struct MuxseqMsg));
+}
+
+void* muxseq_mscore_recv () {
+    int rlen2;
+    void *m = mux_query_recv(g_muxsocket_mscoreQueryReqServer, &rlen2);
+    LD8("muxseq => mscore got reply, bufSize=%i", rlen2);
+    if (! m) {
+        LE("muxseq_mscore_query recv failed");
+        return nullptr;
+    }
+    return m;
+}
+
+//FIX: handles only payload  'i'
+void* muxseq_mscore_query (MuxseqMsgType type, int i)
+{
+    LD("MUXSEQ ==> MSCORE query msg %s", muxseq_msg_type_info(type));
+    if (muxseq_mscore_send (type, i) < 0) {
         LE("muxseq_mscore_query send failed");
         return nullptr;
     }
     LD8("MUXSEQ ==> MSCORE query msg %s (done sending request)", muxseq_msg_type_info(type));
     // receive reply, which is a 'struct MuxseqEventsHeader' followed by an list of events
-    int rlen2;
-    void *m = mux_query_recv(g_muxsocket_mscoreQueryReqServer, &rlen2);
-    LD8("muxseq_mscore_query got reply, bufSize=%i", rlen2);
-    if (! m) {
-        LE("muxseq_mscore_query recv failed");
-        return nullptr;
-    }
+    void *m = muxseq_mscore_recv();
     struct MuxseqEventsHeader *meh;
     meh = (struct MuxseqEventsHeader *) m;
     meh->sevs = (struct SparseEvent *) (m + sizeof(struct MuxseqEventsHeader));
     /* Release message */
     return meh;
+}
+
+//FIX: should put on ringbuffer, which in turn uses zmq-network
+int muxseq_mscore_tell (MuxseqMsgType type, int i)
+{
+    LD("MUXSEQ ==> MSCORE query msg %s", muxseq_msg_type_info(type));
+    if (muxseq_mscore_send (type, i) < 0) {
+        LE("muxseq_mscore_query send failed");
+        return -1;
+    }
+    LD8("MUXSEQ ==> MSCORE query msg %s (done sending request)", muxseq_msg_type_info(type));
+    // receive reply, which is a 'struct MuxseqEventsHeader' followed by an list of events
+    void *m = muxseq_mscore_recv();
+    free(m);
+    return 0;
 }
 
 #define DEFMUXSEQVOID(name, sname) \

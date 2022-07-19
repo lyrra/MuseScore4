@@ -41,6 +41,7 @@
 
 namespace Ms {
 void* muxseq_mscore_query (MuxseqMsgType type, int i);
+int muxseq_mscore_tell (MuxseqMsgType type, int i);
 
 double g_sampleRate = 48000; //FIX: poll muxaudio
 int g_driver_running = 0;
@@ -517,6 +518,7 @@ void Seq::unmarkNotes()
 
 void Seq::guiStop()
       {
+      LD("Seq::guiStop");
 //FIX: send to mscore
 //      QAction* a = getAction("play");
 //      a->setChecked(false);
@@ -525,6 +527,7 @@ void Seq::guiStop()
 //      if (!cs)
 //            return;
 
+      muxseq_mscore_tell(MsgTypeSeqStopped, playFrame);
 //      int tck = cs->repeatList().utick2tick(cs->utime2utick(qreal(playFrame) / qreal(MScore::sampleRate)));
 //FIX: send to mscore
 //      cs->setPlayPos(Fraction::fromTicks(tck));
