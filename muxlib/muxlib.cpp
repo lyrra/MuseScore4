@@ -5,7 +5,9 @@
 
 namespace Ms {
 
+extern void _logstr (char *str);
 thread_local char _logbuf[256];
+
 
 int overlap_strcat(char* dst, char* src) {
     int i = 0, a = 0, f = 0;
@@ -45,7 +47,7 @@ void _log_write () {
     get_timestamp(t);
     int n = overlap_strcat(t, _logbuf);
     if (n > 0) {
-        fwrite(t, n - 1, 1, stderr);
+        _logstr(t);
     }
 //    fflush(stdout);
 //    int fd = fileno(stdout);

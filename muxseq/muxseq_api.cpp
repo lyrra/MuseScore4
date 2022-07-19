@@ -30,55 +30,57 @@ extern Ms::Synthesizer* createAeolus();
 extern Ms::Synthesizer* createZerberus();
 #endif
 
-#define LE(...) qDebug(__VA_ARGS__)
-#define LD8(...) qDebug(__VA_ARGS__)
 namespace Ms {
 extern struct Mux::MuxSocket g_muxsocket_mscoreQueryReqServer;
 extern Seq* g_seq;
 MasterSynthesizer* synti = 0;
 
+void _logstr (char *str) {
+    qDebug(str);
+}
+
 int  muxseq_send(MuxseqMsgType type) {
-    qDebug("muxseq msg %i (NOT IMPL)", type);
+    LD("muxseq msg %i (NOT IMPL)", type);
     return 0;
 }
 
 int  muxseq_send(MuxseqMsgType type, int i) {
-    qDebug("muxseq msg %i about int %i (NOT IMPL)", type, i);
+    LD("muxseq msg %i about int %i (NOT IMPL)", type, i);
     return 0;
 }
 int  muxseq_send(MuxseqMsgType type, double d) {
-    qDebug("muxseq msg %i about int %f (NOT IMPL)", type, d);
+    LD("muxseq msg %i about int %f (NOT IMPL)", type, d);
     return 0;
 }
 
 int  muxseq_send(MuxseqMsgType type, NPlayEvent event) {
-    qDebug("muxseq msg %i about event (NOT IMPL)", type);
+    LD("muxseq msg %i about event (NOT IMPL)", type);
     return 0;
 }
 
 int  muxseq_query(MuxseqMsgType type) {
-    qDebug("muxseq msg query %i (NOT IMPL)", type);
+    LD("muxseq msg query %i (NOT IMPL)", type);
     return 0;
 }
 
 bool muxseq_query_bool(MuxseqMsgType type) {
-    qDebug("muxseq msg query %i (NOT IMPL)", type);
+    LD("muxseq msg query %i (NOT IMPL)", type);
     return true;
 }
 
 double muxseq_query_float(MuxseqMsgType type) {
-    qDebug("muxseq msg query %i (NOT IMPL)", type);
+    LD("muxseq msg query %i (NOT IMPL)", type);
     return 0.0;
 }
 
 void muxseq_query(MuxseqMsgType type, bool b) {
-    qDebug("muxseq msg query %i about bool %i (NOT IMPL)", type, b);
+    LD("muxseq msg query %i about bool %i (NOT IMPL)", type, b);
 }
 
 //FIX: handles only payload  'i'
 void* muxseq_mscore_query (MuxseqMsgType type, int i)
 {
-    qDebug("MUXSEQ ==> MSCORE query msg %s", muxseq_msg_type_info(type));
+    LD("MUXSEQ ==> MSCORE query msg %s", muxseq_msg_type_info(type));
     /* Create a new message, allocating 6 bytes for message content */
     struct MuxseqMsg msg;
     msg.type = type;
@@ -135,7 +137,7 @@ bool muxseq_seq_init (bool hotPlug) {
 }
 
 void muxseq_seq_start () {
-    qDebug("muxseq_seq_start");
+    LD("muxseq_seq_start");
     muxseq_send(MsgTypeSeqStart);
 }
 
@@ -303,12 +305,12 @@ MasterSynthesizer* muxseq_synthesizerFactory() {
 }
 
 MasterSynthesizer* muxseq_create_synti(int sampleRate) {
-    qDebug("muxseq_create_synti initialize synthesizers");
+    LD("muxseq_create_synti initialize synthesizers");
     synti = muxseq_synthesizerFactory();
     synti->setSampleRate(sampleRate);
     synti->init();
     if (g_seq == nullptr) {
-        qWarning("muxseq_create_synti cant initialize synthesizers: sequencer is not initialized!");
+        LW("muxseq_create_synti cant initialize synthesizers: sequencer is not initialized!");
         return nullptr;
     }
     g_seq->setMasterSynthesizer(synti);

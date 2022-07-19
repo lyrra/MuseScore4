@@ -31,9 +31,6 @@ add_library (${MODULE} STATIC
       ${PCH}
       midi/midipatch.h
       event.h event.cpp
-      muxseq_client.h muxseq_client.cpp
-      muxseqsig.h muxseqsig.cpp
-      muxseqlib.h muxseqlib.cpp
       muxlib.h muxlib.cpp
       )
 

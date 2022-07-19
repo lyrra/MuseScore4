@@ -45,6 +45,7 @@ include_directories(
       ${PROJECT_SOURCE_DIR}/thirdparty
       ${PROJECT_SOURCE_DIR}/global
       ${PROJECT_SOURCE_DIR}/importexport
+      ${PROJECT_SOURCE_DIR}/mux
       ${PROJECT_SOURCE_DIR}/muxlib
       ${PROJECT_SOURCE_DIR}/muxseq
       ${PROJECT_SOURCE_DIR}/muxtools
@@ -290,6 +291,12 @@ add_library(mscoreapp STATIC
       gridcanvas.h tremolobarcanvas.h bendcanvas.h fretcanvas.h keycanvas.h harmonycanvas.h
 
       sparkle/autoUpdater.h sparkle/sparkleAutoUpdater.h sparkle/winSparkleAutoUpdater.h
+
+      # MUX
+      ../muxlib/muxseq_client.h ../muxlib/muxseq_client.cpp
+      ../muxlib/muxseqsig.h     ../muxlib/muxseqsig.cpp
+      ../muxlib/muxseqlib.h     ../muxlib/muxseqlib.cpp
+
       )
 
 if (MSVC OR MINGW)

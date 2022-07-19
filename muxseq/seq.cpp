@@ -39,18 +39,6 @@
 #endif
 #endif
 
-#define LW(...) qWarning(__VA_ARGS__)
-
-//#define LD(...) qDebug(__VA_ARGS__)
-//#define LD4(...) qDebug(__VA_ARGS__)
-//#define LD6(...) qDebug(__VA_ARGS__)
-//#define LD8(...) qDebug(__VA_ARGS__)
-
-#define LD(...) (void)0
-#define LD4(...) (void)0
-#define LD6(...) (void)0
-#define LD8(...) (void)0
-
 namespace Ms {
 void* muxseq_mscore_query (MuxseqMsgType type, int i);
 

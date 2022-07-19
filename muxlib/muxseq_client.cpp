@@ -17,6 +17,7 @@
 #include "libmscore/tempo.h"
 #include "synthesizer.h"
 #include "mux.h"
+#include "muxcommon.h"
 #include "muxlib.h"
 #include "muxseqsig.h"
 #include "scoreview.h"
@@ -28,13 +29,6 @@
 #include "libmscore/score.h"
 #include "muxtools/eventutils.h"
 
-//FIX: muxseq shouldn't use QT
-#define LW(...) qDebug(__VA_ARGS__)
-#define LD(...) qDebug(__VA_ARGS__)
-#define LD4(...) qDebug(__VA_ARGS__)
-#define LD6(...) qDebug(__VA_ARGS__)
-#define LD8(...) qDebug(__VA_ARGS__)
-#define LE(...) qError(__VA_ARGS__)
 #define LEX(...) qFatal(__VA_ARGS__)
 
 namespace Ms {
@@ -54,6 +48,10 @@ static std::vector<std::thread> muxseq_Threads;
 static ScoreView* g_cv = nullptr;
 static MasterScore* g_cs = nullptr;
 static MidiRenderer g_midi(nullptr);
+
+void _logstr (char *str) {
+    qDebug(str);
+}
 
 #define L_MUX_QUERY(type) \
   qDebug("muxseq_client query %s", muxseq_msg_type_info(type));

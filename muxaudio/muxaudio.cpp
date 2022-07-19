@@ -78,6 +78,13 @@
 
 namespace Ms {
 
+void _logstr (char *str) {
+    char *nl = "\n";
+    fwrite(str, strlen(str), 1, stdout);
+    fwrite(nl, 1, 1, stdout);
+    fflush(stdout);
+}
+
 #define MUX_SYNC_MSLEEP 100
 
 
@@ -196,7 +203,7 @@ int muxaudio_from_audio_handle_message(struct MuxaudioMsg msg) {
     //LD("muxaudio_from_audio_handle_message msg: %s\n", muxaudio_msg_type_info(msg.type));
     switch (msg.type) {
         case MsgTypeAudioRunning:
-            LD("    MsgTypeAudioRunning: g_driver_running is running? %i\n", msg.payload.i);
+            LD("    MsgTypeAudioRunning: g_driver_running is running? %i", msg.payload.i);
             muxaudio_from_audio_reply(msg);
         break;
         case MsgTypeJackTransportPosition:
@@ -225,7 +232,7 @@ int muxaudio_mq_from_audio_reader_visit () {
 }
 
 int muxaudio_mq_to_audio_handle_message(struct MuxaudioMsg msg) {
-    LD("MUX ctrl message, type: %i(%s)\n", msg.type, muxaudio_msg_type_info(msg.type));
+    LD("MUX ctrl message, type: %i(%s)", msg.type, muxaudio_msg_type_info(msg.type));
     switch (msg.type) {
         case MsgTypeAudioInit:
             mux_audio_init(msg.payload.i);
@@ -316,7 +323,7 @@ int mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
 
     int diff = g_ringBufferWriterStart - g_ringBufferReaderStart;
     if (diff < 2048 && diff > -2048) {
-        LD("BUFFER-STARVE: %i\n", diff);
+        LD("BUFFER-STARVE: %i", diff);
     }
     // if diff is too close to zero, muxseq hasn't feed us enough buffers
 
@@ -350,7 +357,7 @@ int mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
         }
     }
     if (r > 0) {
-        LW("WARNING: jack had to wait %i * %i usecs\n", r, MUX_READER_USLEEP);
+        LW("WARNING: jack had to wait %i * %i usecs", r, MUX_READER_USLEEP);
     }
     return r;
 }
@@ -418,7 +425,7 @@ void muxaudio_audio_process() {
             std::this_thread::sleep_for(std::chrono::milliseconds(MUX_WRITER_USLEEP));
         }
     }
-    std::cout << "MUX audio-process terminated.\n";
+    LD("MUX audio-process terminated.");
 }
 
 void muxaudio_audio_process_stop () {
@@ -427,21 +434,21 @@ void muxaudio_audio_process_stop () {
 
 void muxaudio_network_mainloop_ctrl()
 {
-    LD("MUXAUDIO ZeroMQ control entering main-loop\n");
+    LD("MUXAUDIO ZeroMQ control entering main-loop");
     while (1) {
         struct MuxaudioMsg msg;
         if (zmq_recv(g_socket_ctrl.socket, &msg, sizeof(struct MuxaudioMsg), 0) < 0) {
-            LE("zmq-recv control error: %s\n", strerror(errno));
+            LE("zmq-recv control error: %s", strerror(errno));
             break;
         }
-        LD("Received Control Message, type=(%i)%s\n", msg.type, muxaudio_msg_type_info(msg.type));
+        LD("Received Control Message, type=(%i)%s", msg.type, muxaudio_msg_type_info(msg.type));
         mux_mq_to_audio_writer_put(msg);
         if (zmq_send(g_socket_ctrl.socket, &msg, sizeof(struct MuxaudioMsg), 0) < 0) {
-            LE("zmq-send control error: %s\n", strerror(errno));
+            LE("zmq-send control error: %s", strerror(errno));
             break;
         }
     }
-    LD("mux_network_mainloop control has exited\n");
+    LD("mux_network_mainloop control has exited");
 }
 
 /*
@@ -459,14 +466,14 @@ void mux_teardown_driver (JackAudio *driver) {
  */
 void mux_network_mainloop_audio()
 {
-    LD("MUX ZeroMQ audio entering main-loop\n");
+    LD("MUX ZeroMQ audio entering main-loop");
     g_driver = driverFactory("jack");
     while (1) {
         if (! muxaudio_mq_to_audio_visit()) {
             std::this_thread::sleep_for(std::chrono::microseconds(10000));
         }
     }
-    LD("mux_network_mainloop audio has exited\n");
+    LD("mux_network_mainloop audio has exited");
 }
 
 void muxaudio_network_server_audio()
