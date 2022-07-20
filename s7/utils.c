@@ -24,6 +24,11 @@ static s7_pointer goo_to_string (s7_scheme *sc, s7_pointer args)
 static s7_pointer free_goo (s7_scheme *sc, s7_pointer obj)
 {
   (void) sc;
+  goo_t *o = (goo_t *)s7_c_object_value(obj);
+  //FIX: hook to g_user_free
+  //if (o->cd && g_user_free) {
+  //    user_free(o);
+  //}
   free(s7_c_object_value(obj));
   return(NULL);
 }
