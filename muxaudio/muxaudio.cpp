@@ -94,6 +94,7 @@ void mux_audio_send_event_to_midi(struct MuxaudioMsg msg);
 
 static std::vector<std::thread> seqThreads;
 int g_mux_audio_process_run = 0;
+bool g_state_play = false;
 
 struct Mux::MuxSocket g_socket_ctrl;
 struct Mux::MuxSocket g_socket_audio;
@@ -181,9 +182,11 @@ int muxaudio_mq_to_audio_handle_message(struct MuxaudioMsg msg) {
             mux_audio_stop();
         break;
         case MsgTypeTransportStart:
+            g_state_play = true;
             mux_audio_jack_transport_start();
         break;
         case MsgTypeTransportStop:
+            // g_state_play = false; // should be this easy, ie sequencer takes care of synthesizer fade outs (when stop is signalled from GUI)
             mux_audio_jack_transport_stop();
         break;
         case MsgTypeTransportSeek:
@@ -246,6 +249,7 @@ unsigned int g_writerCycle = 0;
 unsigned int g_readerPause = 0;
 unsigned int g_writerPause = 0;
 
+bool g_buffer_initial_full = false;
 
 // this function is called by the realtime-context,
 // and is reading from the ring-buffer
@@ -253,7 +257,12 @@ void mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
     // we're in realtime-context, and shouldn't do any syscalls,
     // or sleep because there is no maximum sleep-amount guarantees,
     // if paranoid, just spin-loop
-    while (1) {
+    if (! g_buffer_initial_full) {
+        memset(bufferStereo, 0, sizeof(float) * 2 * numFrames);
+        return;
+    }
+    int i = 0;
+    for (;;i++) {
         unsigned int newReaderPos = (g_ringBufferReaderStart + numFrames * MUX_CHAN) % MUX_RINGSIZE;
         // ensure we dont read into writers buffer part
         if (// ringbuffer is empty
@@ -278,6 +287,9 @@ void mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
             break;
         }
     }
+    if (i > 0) {
+        LW("WARNING: jack had to wait %i * %i usecs\n", i, MUX_READER_USLEEP);
+    }
 }
 
 int muxaudio_audio_process_work() {
@@ -288,14 +300,17 @@ int muxaudio_audio_process_work() {
     if (g_ringBufferReaderStart < g_ringBufferWriterStart &&
         g_ringBufferWriterStart > newWriterPos &&
         newWriterPos >= g_ringBufferReaderStart) {
+        if(g_state_play) g_buffer_initial_full = true;
         return 0;
     // wraps around, but goes beyond reader
     } else if (g_ringBufferWriterStart < g_ringBufferReaderStart &&
                newWriterPos < g_ringBufferWriterStart) {
+        if(g_state_play) g_buffer_initial_full = true;
         return 0;
     // no wrap, reader is at right side of writer, but new writer goes beyond reader
     } else if (g_ringBufferWriterStart < g_ringBufferReaderStart &&
                newWriterPos >= g_ringBufferReaderStart) {
+        if(g_state_play) g_buffer_initial_full = true;
         return 0;
     }
 
