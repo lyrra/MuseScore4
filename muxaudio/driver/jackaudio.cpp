@@ -42,12 +42,15 @@
 #define less128(__less) ((__less >=0 && __less <= 127) ? __less : 0)
 
 #define LL(str) std::cout << str << "\n"
+#define LD(...) printf(__VA_ARGS__)
 
 namespace Ms {
 
 long g_jack_transport_position_time;
 int g_ctrl_audio_error = 0;
 int g_ctrl_audio_running = 0;
+int g_muxseq_late = 0;
+int g_muxseq_late_time = 0;
 
 int debugMode = 1;
 extern Driver* g_driver;
@@ -519,19 +522,31 @@ int JackAudio::processAudio(jack_nframes_t frames, void* p)
                   jack_position_t pos;
                   jack_transport_query(g_client, &pos);
                   struct MuxaudioMsg msg;
+                  //FIX: put the wallclock in the jacktransport message
                   msg.type = MsgTypeJackTransportPosition;
                   msg.payload.jackTransportPosition.state = static_cast<unsigned int>(getStateRT());
                   msg.payload.jackTransportPosition.frame = pos.frame;
                   msg.payload.jackTransportPosition.valid = pos.valid;
                   msg.payload.jackTransportPosition.beats_per_minute = pos.beats_per_minute;
                   msg.payload.jackTransportPosition.bbt = JackPositionBBT;
-                  qDebug("--- jack_transport_query --- %lu state=%i", g_jack_transport_position_time, msg.payload.jackTransportPosition.state);
                   muxaudio_mq_from_audio_writer_put(msg);
               }
           }
       }
       // get audiochunk from mux/mscore-thread
-      mux_process_bufferStereo((unsigned int)frames, buffer);
+      {
+          struct timespec tp1, tp2;
+          clock_gettime(CLOCK_MONOTONIC, &tp1);
+          mux_process_bufferStereo((unsigned int)frames, buffer);
+          clock_gettime(CLOCK_MONOTONIC, &tp2);
+          unsigned int usec = (tp2.tv_sec - tp1.tv_sec) * 1000000;
+          usec += (tp2.tv_nsec - tp1.tv_nsec) / 1000;
+          if (usec > 1000) { // report significant delay trying to get an audio buffer
+              LD("AUDIO-DELAY %uus\n", usec);
+              g_muxseq_late++;
+              g_muxseq_late_time += usec;
+          }
+      }
       if (l && r) {
             float* sp = buffer;
             for (unsigned i = 0; i < frames; ++i) {
@@ -656,7 +671,6 @@ Transport JackAudio::getState()
 Transport getStateRT()
       {
       if (!preferences.PREF_IO_JACK_USEJACKTRANSPORT) {
-            qDebug("    -- getStateRT use transport g_fakeState");
             return g_fakeState;
             }
       int transportState = jack_transport_query(g_client, NULL);
