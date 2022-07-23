@@ -20,6 +20,12 @@ cmake -G "MinGW Makefiles" \
       -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
       -DCMAKE_MAKE_PROGRAM=mingw32-make.exe \
       -DBUILD_FOR_WINSTORE=OFF \
+      -DBUILD_TELEMETRY_MODULE=OFF \
+      -DBUILD_CRASH_REPORTER=OFF \
+      -DBUILD_PULSEAUDIO=OFF \
+      -DDOWNLOAD_SOUNDFONT=ON \
+      -DBUILD_WEBENGINE=OFF \
+      -DLOGLEVEL=9 \
       .. || exit 1
 
 echo "*** Running make ***"
