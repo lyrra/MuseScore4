@@ -7,10 +7,6 @@
 #ifndef __MUXSEQ_H__
 #define __MUXSEQ_H__
 
-#define LD(...) qDebug(__VA_ARGS__)
-#define LE(...) qCritical(__VA_ARGS__)
-#define LEX(...) qFatal(__VA_ARGS__)
-
 namespace Ms {
 
 /*** MUX public interface ***/

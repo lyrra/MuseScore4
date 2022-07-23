@@ -38,8 +38,6 @@
 // Prevent killing sequencer with wrong data
 #define less128(__less) ((__less >=0 && __less <= 127) ? __less : 0)
 
-#define LL(str) std::cout << str << "\n"
-#define LD(...) printf(__VA_ARGS__)
 
 namespace Ms {
 
@@ -528,11 +526,14 @@ int JackAudio::processAudio(jack_nframes_t frames, void* p)
               }
           }
       }
-      // get audiochunk from mux/mscore-thread
+      // get audiochunk from mux-sequencer
       {
           struct timespec tp1, tp2;
           clock_gettime(CLOCK_MONOTONIC, &tp1);
-          mux_process_bufferStereo((unsigned int)frames, buffer);
+          int r = mux_process_bufferStereo((unsigned int)frames, buffer);
+          if (r < 0) {
+            memset(buffer, 0, frames);
+          }
           clock_gettime(CLOCK_MONOTONIC, &tp2);
           unsigned int usec = (tp2.tv_sec - tp1.tv_sec) * 1000000;
           usec += (tp2.tv_nsec - tp1.tv_nsec) / 1000;
