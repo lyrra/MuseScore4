@@ -31,9 +31,6 @@
 #include <iostream>
 #include <jack/midiport.h>
 
-#include "libmscore/mscore.h"
-//#include "mscore/musescore.h"
-//#include "mscore/preferences.h"
 #include "muxcommon.h"
 #include "muxlib.h"
 #include "muxaudio.h"

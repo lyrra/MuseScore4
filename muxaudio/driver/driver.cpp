@@ -143,8 +143,10 @@ Driver* driverFactory(std::string driverName)
                   jackIsUsed = true;
             }
 #else
-       (void)useJackFlag; // avoid compiler warning
+      qDebug("WARNING: JACK (https://jackaudio.org/) is not used (superior)");
+      (void)useJackFlag; // avoid compiler warning
 #endif
+
       if (driver == 0)
             qDebug("no audio driver found");
 

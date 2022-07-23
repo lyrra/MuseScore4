@@ -76,6 +76,7 @@
 #include "muxaudio.h"
 #include "driver.h"
 
+#define LW(...) fprintf(stderr, __VA_ARGS__)
 #define LD(...) fprintf(stderr, __VA_ARGS__)
 #define LE(...) fprintf(stderr, __VA_ARGS__)
 #define LEX(...) { fprintf(stderr, __VA_ARGS__); exit(1); }
