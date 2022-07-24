@@ -74,17 +74,17 @@ endif (BUILD_PORTMIDI)
 ## ALSA >= 1.0.0
 ##
 
-if (BUILD_ALSA)
-      PKGCONFIG1 (alsa 1.0.0 ALSA_INCDIR ALSA_LIBDIR ALSA_LIB ALSA_CPP )
-      if (NOT ALSA_INCDIR)
-            message(SEND_ERROR "Error: ALSA support requested (BUILD_ALSA=${BUILD_ALSA}), but ALSA >= 1.0.0 was not found.")
-      else (NOT ALSA_INCDIR)
-            message("ALSA >= 1.0.0 found. ALSA support enabled. INCDIR ${ALSA_INCDIR}, LIBDIR ${ALSA_LIBDIR}, LIB ${ALSA_LIB}, CPP ${ALSA_CPP}")
-            set (USE_ALSA 1)
-      endif (NOT ALSA_INCDIR)
-else (BUILD_ALSA)
-     message(STATUS "ALSA support disabled")
-endif (BUILD_ALSA)
+#if (BUILD_ALSA)
+#      PKGCONFIG1 (alsa 1.0.0 ALSA_INCDIR ALSA_LIBDIR ALSA_LIB ALSA_CPP )
+#      if (NOT ALSA_INCDIR)
+#            message(SEND_ERROR "Error: ALSA support requested (BUILD_ALSA=${BUILD_ALSA}), but ALSA >= 1.0.0 was not found.")
+#      else (NOT ALSA_INCDIR)
+#            message("ALSA >= 1.0.0 found. ALSA support enabled. INCDIR ${ALSA_INCDIR}, LIBDIR ${ALSA_LIBDIR}, LIB ${ALSA_LIB}, CPP ${ALSA_CPP}")
+#            set (USE_ALSA 1)
+#      endif (NOT ALSA_INCDIR)
+#else (BUILD_ALSA)
+#     message(STATUS "ALSA support disabled")
+#endif (BUILD_ALSA)
 
 ##
 ## MIDI
