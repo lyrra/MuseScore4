@@ -79,9 +79,11 @@ const char* muxseq_msg_type_info (MuxseqMsgType type) {
     case MsgTypeSeqSetRelTempo: return "MsgTypeSeqSetRelTempo";
     case MsgTypeSeqPlaying: return "MsgTypeSeqPlaying";
     case MsgTypeSeqRunning: return "MsgTypeSeqRunning";
+    case MsgTypeSeqStarted: return "MsgTypeSeqStarted";
     case MsgTypeSeqStopped: return "MsgTypeSeqStopped";
     case MsgTypeSeqCanStart: return "MsgTypeSeqCanStart";
     case MsgTypeSeqCurTick: return "MsgTypeSeqCurTick";
+    case MsgTypeSeqUTick: return "MsgTypeSeqUTick";
     case MsgTypeSeqSeek: return "MsgTypeSeqSeek";
     case MsgTypeSeekEnd: return "MsgTypeSeekEnd";
     case MsgTypeNextMeasure: return "MsgTypeNextMeasure";

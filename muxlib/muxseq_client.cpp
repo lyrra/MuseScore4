@@ -12,6 +12,7 @@
 #include <thread>
 #include <chrono>
 #include "event.h"
+#include "libmscore/repeatlist.h"
 #include "libmscore/synthesizerstate.h"
 #include "libmscore/rendermidi.h"
 #include "libmscore/tempo.h"
@@ -209,6 +210,51 @@ unsigned char* eventMap_to_muxbuffer(MuxseqMsgType type, EventMap evm,
     return buf;
 }
 
+int handle_mscore_msg_SeqStarted (Mux::MuxSocket &sock, struct MuxseqMsg msg)
+{
+    LD("handle MsgTypeSeqStarted");
+    mscore->seqStarted();
+    strcpy(msg.label, "mscore");
+    if (mux_query_send(sock, &msg, sizeof(struct MuxseqMsg)) == -1) {
+        return -1;
+    }
+    return 0;
+}
+
+int handle_mscore_msg_SeqStopped (Mux::MuxSocket &sock, struct MuxseqMsg msg)
+{
+    LD("handle MsgTypeSeqStopped");
+    int playFrame = msg.payload.i;
+    int tck = g_cs->repeatList().utick2tick(g_cs->utime2utick(qreal(playFrame) / qreal(MScore::sampleRate)));
+    g_cs->setPlayPos(Fraction::fromTicks(tck));
+    g_cs->update();
+    mscore->seqStopped();
+    strcpy(msg.label, "mscore");
+    if (mux_query_send(sock, &msg, sizeof(struct MuxseqMsg)) == -1) {
+        return -1;
+    }
+    return 0;
+}
+
+int handle_mscore_msg_SeqUTick (Mux::MuxSocket &sock, struct MuxseqMsg msg)
+{
+    int utick = msg.payload.i;
+    int t = 0;
+    LD("handle MsgTypeSeqUTick utick=%i", utick);
+    if (g_cs) {
+      t = g_cs->repeatList().utick2tick(utick);
+      LD("handle MsgTypeSeqUTick tick=%i", t);
+      mscore->currentScoreView()->moveCursor(Fraction::fromTicks(t));
+      mscore->setPos(Fraction::fromTicks(t));
+    }
+    strcpy(msg.label, "mscore");
+    msg.payload.i = t;
+    if (mux_query_send(sock, &msg, sizeof(struct MuxseqMsg)) == -1) {
+        return -1;
+    }
+    return 0;
+}
+
 int handle_mscore_msg_SeqRenderEvents(Mux::MuxSocket &sock, struct MuxseqMsg msg)
 {
     maybe_update_midiRenderer();
@@ -246,12 +292,18 @@ int muxseq_network_mainloop_queryrep_recv(Mux::MuxSocket &sock) {
     if (mux_query_recv_Muxseq(sock, msg) < 0) {
         return -1;
     }
-    LD("MSCORE ==> MUXSEQ got query from muxseq, type=%i (%s) label=%s", msg.type, muxseq_msg_type_info(msg.type), msg.label);
+    LD("MSCORE ==> MUXSEQ got query from muxseq: %s label=%s", muxseq_msg_type_info(msg.type), msg.label);
     switch (msg.type) {
         case MsgTypeSeqRenderEvents:
             return handle_mscore_msg_SeqRenderEvents(sock, msg);
-        break;
+        case MsgTypeSeqStarted:
+            return handle_mscore_msg_SeqStarted(sock, msg);
+        case MsgTypeSeqStopped:
+            return handle_mscore_msg_SeqStopped(sock, msg);
+        //case MsgTypeSeqUTick:
+        //    return handle_mscore_msg_SeqUTick(sock, msg);
         default:
+            LD("MSCORE ==> MUXSEQ WARNING: message not handled: %s label=%s", muxseq_msg_type_info(msg.type), msg.label);
             strcpy(msg.label, "mscore");
             if (mux_query_send(sock, &msg, sizeof(struct MuxseqMsg)) == -1) {
                 return -1;
@@ -359,6 +411,7 @@ void muxseq_start_note(int channel, int pitch, int velocity, double nt) {
 }
 
 void muxseq_start_note_dur(int channel, int pitch, int velocity, int duration, double nt) {
+    //FIX: create an sparse midi event
     muxseq_send(MsgTypeSeqStartNoteDur);
 }
 

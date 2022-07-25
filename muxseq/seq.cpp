@@ -48,9 +48,9 @@ int g_driver_running = 0;
 int g_mscore_division = 1; // FIX: need to set this at start
 
 
-qreal g_utime;
-qreal g_utick;
-        
+uint64_t g_utime;
+uint64_t g_utick;
+
 void muxseq_stop_threads();
 extern int g_muxseq_audio_process_run;
 static Transport jack_transport;
@@ -220,8 +220,6 @@ Seq::Seq()
       connect(noteTimer, SIGNAL(timeout()), this, SLOT(stopNotes()));
       noteTimer->stop();
 
-      connect(this, SIGNAL(toGui(int, int)), this, SLOT(seqMessage(int, int)), Qt::QueuedConnection);
-
       prevTimeSig.setNumerator(0);
       prevTempo = 0;
       connect(this, SIGNAL(timeSigChanged()),this,SLOT(handleTimeSigTempoChanged()));
@@ -379,10 +377,11 @@ void Seq::loopStart()
 
 bool Seq::canStart()
       {
-      LD4("---- Seq::canStart ----");
+      LD4("Seq::canStart");
       if (! g_driver_running)
             return false;
       collectEvents(getPlayStartUtick());
+      LD2("Seq::canStart empty:%i endUTick=%i", events.empty(), endUTick);
       return (!events.empty() && endUTick != 0);
       }
 
@@ -528,11 +527,6 @@ void Seq::guiStop()
 //            return;
 
       muxseq_mscore_tell(MsgTypeSeqStopped, playFrame);
-//      int tck = cs->repeatList().utick2tick(cs->utime2utick(qreal(playFrame) / qreal(MScore::sampleRate)));
-//FIX: send to mscore
-//      cs->setPlayPos(Fraction::fromTicks(tck));
-//      cs->update();
-//      muxseqsig_seq_emit_stopped();
       }
 
 //---------------------------------------------------------
@@ -546,7 +540,8 @@ void Seq::seqMessage(int msg, int arg)
       switch(msg) {
             case '5': {
                   // Update the screen after seeking from the realtime thread
-#if 0 //FIX: send to mscore
+                  muxseq_mscore_tell(MsgTypeSeqSeek, arg);
+#if 0 //FIX: handle in muxseq_client
                   Segment* seg = cs->tick2segment(Fraction::fromTicks(arg));
                   if (seg)
                         mscore->currentScoreView()->moveCursor(seg->tick());
@@ -562,6 +557,7 @@ void Seq::seqMessage(int msg, int arg)
                   //FIX: send to mscore seek(cs->repeatList().tick2utick(cs->loopInTick().ticks()));
                   break;
             case '2':
+                  //FIX: muxseq mscore-zmq side of ringbuffer, should take MsgTypeSeqStopped messages, send to mscore, and do following code:
                   guiStop();
 //                  heartBeatTimer->stop();
                   if (g_driver_running /* FIX: && mscore->getSynthControl() */) {
@@ -590,12 +586,13 @@ void Seq::seqMessage(int msg, int arg)
                   break;
 
             case '1':         // PLAY
-//FIX: send to mscore                  muxseqsig_seq_emit_started();
+                    LD("Seq::seqMessage muxseq_mscore_tell MsgTypeSeqStarted");
+                    muxseq_mscore_tell(MsgTypeSeqStarted, 0);
 //                  heartBeatTimer->start(1000/guiRefresh);
                   break;
 
             default:
-                  qDebug("MScore::Seq:: unknown seq msg %d", msg);
+                  LD("Seq::seqMessage unknown seq msg %d", msg);
                   break;
             }
       }
@@ -928,7 +925,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
 //                        countInEvents.clear();
 //                        inCountIn = true;
 //                        }
-                  //FIX: emit toGui('1');
+                  muxseq_mscore_tell(MsgTypeSeqStarted, 0);
                   }
             // Got a message from JACK Transport panel: Stop
             else if (state == Transport::PLAY && driverState == Transport::STOP) {
@@ -944,12 +941,15 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                               return;
                               }
                         else {
-                              // FIX: emit toGui('2');
+                              LD("########## STATE STOPPING-PLAY ############")
+                              // FIX: see FIX-note in case '2' in seqMessage
+                              muxseq_mscore_tell(MsgTypeSeqStopped, playFrame);
                               }
 #endif
                         }
                   else {
-                     //FIX: emit toGui('0');
+                     // seqMessage case 0:
+                     muxseq_mscore_tell(MsgTypeSeqStopped, playFrame);
                      }
                   }
             else if (state != driverState) {
@@ -981,7 +981,6 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                   pPlayPos   = &countInPlayPos;
                   pPlayFrame = &countInPlayFrame;
                   }
-
             //
             // play events for one segment
             //
@@ -996,9 +995,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                       const NPlayEvent& event = (*pPlayPos)->second;
                       LD6("Seq::process -- playPosUTick=%i pitch=%i channel=%i", playPosUTick, event.pitch(), event.channel());
                   }
-                  //FIX: pass these to muxaudio?
-                  //g_utick = playPosUTick; // FIX: leaked to real-time thread, used to locate jack to utick
-                  //g_utime = score()->utick2utime(playPosUTick); // FIX: leaked to real-time thread
+                  g_utick = playPosUTick;
                   if (inCountIn) {
                         LD8("Seq::process -- #### WARNING inCountIn, NOT IMPL ####");
 #if 0
@@ -1023,6 +1020,9 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                         if (playPosFrame >= periodEndFrame)
                               break;
                         n = playPosFrame - *pPlayFrame;
+                        if (n > framesRemain) {
+                              LD6("Seq::process WARNING requested %i frames, only %i frames in buffer", n, framesRemain);
+                              }
                         if (n < 0) {
                               qDebug("%d:  %d - %d", playPosUTick, playPosFrame, *pPlayFrame);
                               n = 0;
@@ -1056,6 +1056,18 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
 #endif
                         }
                   LD8("Seq::process -- n=%i (n = playPosFrame - *pPlayFrame = 'amount of frames to produce') ", n);
+                  {
+                  float *p = (float*) pBuffer + sizeof(uint64_t);
+                  float *p1 = (float*) pBuffer + sizeof(uint64_t);
+                  float *p2 = (float*) pBuffer + sizeof(uint64_t) * 2;
+                  uint64_t utick = playPosUTick;
+                  uint64_t nn = n;
+                  memcpy(p, &utick, sizeof(uint64_t));
+                  memcpy(p1, &nn, sizeof(uint64_t));
+                  framesRemain -= sizeof(uint64_t)*2 / sizeof(float);
+                  LD8("Seq::process -- advance buffer by uint64_t: %p, %p, %p", pBuffer, p, p1, p2);
+                  pBuffer = p2;
+                  }
                   if (n) {
                         //if (cs->playMode() == PlayMode::SYNTHESIZER) {
                               metronome(n, pBuffer, inCountIn);
@@ -1088,6 +1100,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                   // buffer has now been processed up to the framePos point. Now emit the event, which will be processed going forward from framePos
                   const NPlayEvent& event = (*pPlayPos)->second;
                   playEvent(event, framePos);
+
 #if 0 //Disable metronome tick accent
                   if (event.type() == ME_TICK1) {
                         tickRemain = tickLength;

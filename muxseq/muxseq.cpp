@@ -42,9 +42,12 @@
 
 namespace Ms {
 
+int muxseq_mscore_tell (MuxseqMsgType type, int i);
+
 void mux_send_event_to_gui(struct SparseEvent se);
 void mux_audio_send_event_to_midi(struct MuxaudioMsg msg);
 extern int g_driver_running;
+extern uint64_t g_utick;
 
 static std::vector<std::thread> seqThreads;
 int g_muxseq_audio_process_run = 0;
@@ -173,8 +176,13 @@ unsigned int g_writerCycle = 0;
 unsigned int g_readerPause = 0;
 unsigned int g_writerPause = 0;
 
+// this is soo ugly, for every float we store which utick it belongs too
+// instead we should combine both ringbuffers and store structures of {utick, 256 floats}
+uint64_t g_ringBufferStereo_utick[MUX_RINGSIZE];
+
 // this function is called by the zmq-network audio connection towards muxaudio
 void mux_process_bufferStereo(unsigned int numFloats, float* frames) {
+    int utick;
     while (1) {
         unsigned int newReaderPos = (g_ringBufferReaderStart + numFloats) % MUX_RINGSIZE;
         // ensure we dont read into writers buffer part
@@ -189,6 +197,7 @@ void mux_process_bufferStereo(unsigned int numFloats, float* frames) {
             g_readerPause++;
             std::this_thread::sleep_for(std::chrono::microseconds(MUX_READER_USLEEP));
         } else { // there is enough room in reader-part of ring-buffer to use
+            utick = g_ringBufferStereo_utick[g_ringBufferReaderStart % MUX_RINGSIZE];
             for (unsigned int i = 0; i < numFloats; i++) {
                 frames[i] =
                  g_ringBufferStereo[(i + g_ringBufferReaderStart) % MUX_RINGSIZE];
@@ -200,6 +209,8 @@ void mux_process_bufferStereo(unsigned int numFloats, float* frames) {
             break;
         }
     }
+    // Fix: this function should push to ringbuffer, instead it does zmq work (wrong thread)
+    muxseq_mscore_tell(MsgTypeSeqUTick, utick);
 }
 
 int muxseq_audio_process_work() {
@@ -225,10 +236,12 @@ int muxseq_audio_process_work() {
     memset(g_chunkBufferStereo, 0, sizeof(float) * MUX_CHUNKSIZE_NET);
     // fill the chunk with audio content
     g_seq->process(MUX_CHUNKSIZE_NET >> 1, g_chunkBufferStereo); // >> 1: number of channels = 2
+    // process will update g_utick, which we store in the auxiliary ringbuffer
     // copy over the chunk to the ringbuffer
     for (unsigned int i = 0; i < MUX_CHUNKSIZE_NET; i++) {
         g_ringBufferStereo[(i + g_ringBufferWriterStart) % (MUX_RINGSIZE)] =
          g_chunkBufferStereo[i];
+        g_ringBufferStereo_utick[(i + g_ringBufferWriterStart) % (MUX_RINGSIZE)] = g_utick;
     }
     if (newWriterPos < g_ringBufferWriterStart) {
         g_writerCycle++;
@@ -335,6 +348,12 @@ int muxseq_handle_musescore_msg_MsgTypeSeqStart (Mux::MuxSocket &sock, struct Mu
     return muxseq_handle_musescore_reply_int(sock, msg, rc);
 }
 
+int muxseq_handle_musescore_msg_MsgTypeSeqStop (Mux::MuxSocket &sock, struct MuxseqMsg msg) {
+    int rc = 0;
+    // FIX: SEQ doesn't do anything on gui-initiated-playstop ?
+    return muxseq_handle_musescore_reply_int(sock, msg, rc);
+}
+
 int muxseq_handle_musescore_msg_MsgTypeSeqSeek (Mux::MuxSocket &sock, struct MuxseqMsg msg) {
     muxseq_msg_to_audio(MsgTypeTransportSeek, msg.payload.i);
     return muxseq_handle_musescore_reply_int(sock, msg, 0);
@@ -387,6 +406,8 @@ int muxseq_handle_musescore_msg(Mux::MuxSocket &sock, void *buf)
             return muxseq_handle_musescore_msg_MsgTypeSeqCanStart(sock, msg);
         case MsgTypeSeqStart:
             return muxseq_handle_musescore_msg_MsgTypeSeqStart(sock, msg);
+        case MsgTypeSeqStop:
+            return muxseq_handle_musescore_msg_MsgTypeSeqStop(sock, msg);
         case MsgTypeSeqSeek:
             return muxseq_handle_musescore_msg_MsgTypeSeqSeek(sock, msg);
         case MsgTypeMasterSynthInitInstruments:

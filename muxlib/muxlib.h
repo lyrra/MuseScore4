@@ -35,9 +35,11 @@ enum MuxseqMsgType {
     MsgTypeSeqSetRelTempo,
     MsgTypeSeqPlaying,
     MsgTypeSeqRunning,
+    MsgTypeSeqStarted,
     MsgTypeSeqStopped,
     MsgTypeSeqCanStart,
     MsgTypeSeqCurTick,
+    MsgTypeSeqUTick,
     MsgTypeSeqSeek,
     MsgTypeSeekEnd,
     MsgTypeNextMeasure,
@@ -133,6 +135,12 @@ struct MuxseqEventsHeader {
     int type;
     int numEvents;
     struct SparseEvent *sevs;
+};
+
+struct MuxaudioBuffer {
+    uint64_t utick;
+    uint8_t flags[8];
+    float buf[512];
 };
 
 const char*   muxseq_msg_type_info (MuxseqMsgType   type);

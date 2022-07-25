@@ -4,9 +4,6 @@
 
 namespace Ms {
 
-void handle_seqStarted();
-void handle_seqStopped();
-
 extern MuseScore* mscore;
 MuxSeqSig* muxseqsig;
 
