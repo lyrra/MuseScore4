@@ -163,28 +163,21 @@ void msgToAudioSeekTransport(int utick) {
  * Audio ringbuffer from mux to audio
  */
 #define MUX_CHAN 2
-#define MUX_RINGSIZE  (8192*8*MUX_CHAN)
+#define MUX_RINGSIZE  (128*MUX_CHAN)
 
 unsigned int g_ringBufferWriterStart = 0;
 unsigned int g_ringBufferReaderStart = 0;
-float g_ringBufferStereo[MUX_RINGSIZE];
-// minimal amount of work considered feasible (performance-wise)
-float g_chunkBufferStereo[MUX_CHUNKSIZE_NET];
+struct MuxaudioBuffer g_ringBufferStereo[MUX_RINGSIZE];
 
 unsigned int g_readerCycle = 0;
 unsigned int g_writerCycle = 0;
 unsigned int g_readerPause = 0;
 unsigned int g_writerPause = 0;
 
-// this is soo ugly, for every float we store which utick it belongs too
-// instead we should combine both ringbuffers and store structures of {utick, 256 floats}
-uint64_t g_ringBufferStereo_utick[MUX_RINGSIZE];
-
 // this function is called by the zmq-network audio connection towards muxaudio
-void mux_process_bufferStereo(unsigned int numFloats, float* frames) {
-    int utick;
+struct MuxaudioBuffer* mux_process_bufferStereo () {
     while (1) {
-        unsigned int newReaderPos = (g_ringBufferReaderStart + numFloats) % MUX_RINGSIZE;
+        unsigned int newReaderPos = (g_ringBufferReaderStart + 1) % MUX_RINGSIZE;
         // ensure we dont read into writers buffer part
         if (// ringbuffer is empty
             g_ringBufferReaderStart == g_ringBufferWriterStart ||
@@ -197,24 +190,21 @@ void mux_process_bufferStereo(unsigned int numFloats, float* frames) {
             g_readerPause++;
             std::this_thread::sleep_for(std::chrono::microseconds(MUX_READER_USLEEP));
         } else { // there is enough room in reader-part of ring-buffer to use
-            utick = g_ringBufferStereo_utick[g_ringBufferReaderStart % MUX_RINGSIZE];
-            for (unsigned int i = 0; i < numFloats; i++) {
-                frames[i] =
-                 g_ringBufferStereo[(i + g_ringBufferReaderStart) % MUX_RINGSIZE];
-            }
-            if (newReaderPos < g_ringBufferReaderStart) {
-                g_readerCycle++;
-            }
-            g_ringBufferReaderStart = newReaderPos;
-            break;
+            return g_ringBufferStereo + newReaderPos;
         }
     }
-    // Fix: this function should push to ringbuffer, instead it does zmq work (wrong thread)
-    muxseq_mscore_tell(MsgTypeSeqUTick, utick);
 }
 
-int muxseq_audio_process_work() {
-    unsigned int newWriterPos = (g_ringBufferWriterStart + MUX_CHUNKSIZE_NET) % MUX_RINGSIZE;
+void mux_advance_bufferStereo () {
+    unsigned int newReaderPos = (g_ringBufferReaderStart + 1) % MUX_RINGSIZE;
+    if (newReaderPos < g_ringBufferReaderStart) {
+        g_readerCycle++;
+    }
+    g_ringBufferReaderStart = newReaderPos;
+}
+
+int muxseq_audio_process_work () {
+    unsigned int newWriterPos = (g_ringBufferWriterStart + 1) % MUX_RINGSIZE;
 
     // ensure we dont overwrite part of buffer that is being read by reader
     // if writer wraps around and goes beyond reader
@@ -232,17 +222,12 @@ int muxseq_audio_process_work() {
         return 0;
     }
 
-    // process a MUX_CHUNKSIZE_NET number of Frames
-    memset(g_chunkBufferStereo, 0, sizeof(float) * MUX_CHUNKSIZE_NET);
-    // fill the chunk with audio content
-    g_seq->process(MUX_CHUNKSIZE_NET >> 1, g_chunkBufferStereo); // >> 1: number of channels = 2
-    // process will update g_utick, which we store in the auxiliary ringbuffer
-    // copy over the chunk to the ringbuffer
-    for (unsigned int i = 0; i < MUX_CHUNKSIZE_NET; i++) {
-        g_ringBufferStereo[(i + g_ringBufferWriterStart) % (MUX_RINGSIZE)] =
-         g_chunkBufferStereo[i];
-        g_ringBufferStereo_utick[(i + g_ringBufferWriterStart) % (MUX_RINGSIZE)] = g_utick;
-    }
+    struct MuxaudioBuffer* mabuf;
+    // process a chunk of frames, ie fill the chunk with audio content
+    mabuf = g_ringBufferStereo + newWriterPos;
+    memset(mabuf, 0, sizeof(struct MuxaudioBuffer));
+    g_seq->process(mabuf);
+
     if (newWriterPos < g_ringBufferWriterStart) {
         g_writerCycle++;
     }
@@ -421,10 +406,12 @@ int muxseq_handle_musescore_msg(Mux::MuxSocket &sock, void *buf)
 
 int muxseq_handle_muxaudioQueryClient_msg_AudioBufferFeed (Mux::MuxSocket &sock, struct MuxaudioMsg msg)
 {
-    // get MUX_CHUNKSIZE_NET number of frames from the ringbuffer
-    float frames[MUX_CHUNKSIZE_NET]; // count stereo, ie number of floats needed
-    mux_process_bufferStereo(MUX_CHUNKSIZE_NET, frames);
-    zmq_send(sock.socket, frames, sizeof(float) * MUX_CHUNKSIZE_NET, 0);
+    (void) msg;
+    struct MuxaudioBuffer* mabuf = mux_process_bufferStereo();
+    // FIX: this is not reporting correct position, but the write-ahead-position
+    muxseq_mscore_tell(MsgTypeSeqUTick, mabuf->utick);
+    zmq_send(sock.socket, mabuf, sizeof(struct MuxaudioBuffer), 0);
+    mux_advance_bufferStereo();
     return 0;
 }
 

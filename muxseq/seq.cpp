@@ -878,9 +878,12 @@ static void checkTransportSeek(int cur_frame, int nframes, bool inCountIn)
 //    includes memory allocation. The usual thread synchronisation
 //    methods like semaphores can also not be used.
 //-------------------------------------------------------------------
-void Seq::process(unsigned framesPerPeriod, float* buffer)
+void Seq::process(struct MuxaudioBuffer *mabuf)
       {
+      float *buffer = mabuf->buf;
+      unsigned int framesPerPeriod = MUX_CHUNK_NUMFLOATS / 2; // FIX: 2 = MUX_CHAN is fixed
       unsigned framesRemain = framesPerPeriod; // the number of frames remaining to be processed by this call to Seq::process
+      //FIX: store number of generated frames in the mabuf
       //Transport driverState = seq->isPlaying() ? jack_transport : Transport::STOP;
       Transport driverState = jack_transport;
       // Checking for the reposition from JACK Transport
@@ -1056,18 +1059,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
 #endif
                         }
                   LD8("Seq::process -- n=%i (n = playPosFrame - *pPlayFrame = 'amount of frames to produce') ", n);
-                  {
-                  float *p = (float*) pBuffer + sizeof(uint64_t);
-                  float *p1 = (float*) pBuffer + sizeof(uint64_t);
-                  float *p2 = (float*) pBuffer + sizeof(uint64_t) * 2;
-                  uint64_t utick = playPosUTick;
-                  uint64_t nn = n;
-                  memcpy(p, &utick, sizeof(uint64_t));
-                  memcpy(p1, &nn, sizeof(uint64_t));
-                  framesRemain -= sizeof(uint64_t)*2 / sizeof(float);
-                  LD8("Seq::process -- advance buffer by uint64_t: %p, %p, %p", pBuffer, p, p1, p2);
-                  pBuffer = p2;
-                  }
+                  mabuf->utick = playPosUTick;
                   if (n) {
                         //if (cs->playMode() == PlayMode::SYNTHESIZER) {
                               metronome(n, pBuffer, inCountIn);
@@ -1184,6 +1176,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
       //
       // metering / master gain
       //
+      // Store this stat in the mabuf, which muxaudio the can report back, or if muxseq caches it
       qreal lv = 0.0f;
       qreal rv = 0.0f;
       pBuffer = buffer;

@@ -295,15 +295,13 @@ void muxaudio_msg_from_audio(MuxaudioMsgType typ, int val)
  * Audio ringbuffer from mux to audio
  */
 #define MUX_CHAN 2
-#define MUX_RINGSIZE (8192*MUX_CHAN)
+#define MUX_RINGSIZE (128*MUX_CHAN)
 #define MUX_READER_USLEEP 500
 #define MUX_WRITER_USLEEP 500
 
 unsigned int g_ringBufferWriterStart = 0;
 unsigned int g_ringBufferReaderStart = 0;
-float g_ringBufferStereo[MUX_RINGSIZE];
-// minimal amount of work considered feasible (performance-wise)
-float g_chunkBufferStereo[MUX_CHUNKSIZE_NET];
+struct MuxaudioBuffer g_ringBufferStereo[MUX_RINGSIZE];
 
 unsigned int g_readerCycle = 0;
 unsigned int g_writerCycle = 0;
@@ -312,27 +310,14 @@ unsigned int g_writerPause = 0;
 
 bool g_buffer_initial_full = false;
 
-// this function is called by the realtime-context,
-// and is reading from the ring-buffer
-int mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
-    int numFloats = numFrames * MUX_CHAN;
-    if (! g_buffer_initial_full) {
-        memset(bufferStereo, 0, sizeof(float) * numFloats);
-        return -1;
-    }
+// the muxaudio-buffer number of floats might not
+// sum up to the number of floats requested by jack/audio
+// there for an counter is needed so we can consume a chunk piecewise
+int g_buffer_chunk_pos = 0;
 
-    int diff = g_ringBufferWriterStart - g_ringBufferReaderStart;
-    if (diff < 2048 && diff > -2048) {
-        LD("BUFFER-STARVE: %i", diff);
-    }
-    // if diff is too close to zero, muxseq hasn't feed us enough buffers
-
-    // we're in realtime-context, and shouldn't do any syscalls,
-    // or sleep because there is no maximum sleep-amount guarantees,
-    // if paranoid, just spin-loop
-    int r = 0;
-    for (;;r++) {
-        unsigned int newReaderPos = (g_ringBufferReaderStart + numFloats) % MUX_RINGSIZE;
+int peek_ringbuffer (unsigned int newReaderPos) {
+    int slept = 0;
+    for(;;) {
         // ensure we dont read into writers buffer part
         if (// ringbuffer is empty
             g_ringBufferReaderStart == g_ringBufferWriterStart ||
@@ -343,28 +328,87 @@ int mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
             (g_ringBufferWriterStart > g_ringBufferReaderStart &&
              newReaderPos > g_ringBufferWriterStart)) {
             g_readerPause++;
+            // we're in realtime-context, and shouldn't do any syscalls,
+            // or sleep because there is no maximum sleep-amount guarantees,
+            // if paranoid, just spin-loop
+            slept++;
             std::this_thread::sleep_for(std::chrono::microseconds(MUX_READER_USLEEP));
         } else { // there is enough room in reader-part of ring-buffer to use
-            for (unsigned int i = 0; i < numFloats; i++) {
-                bufferStereo[i] =
-                 g_ringBufferStereo[(i + g_ringBufferReaderStart) % MUX_RINGSIZE];
-            }
-            if (newReaderPos < g_ringBufferReaderStart) {
-                g_readerCycle++;
-            }
-            g_ringBufferReaderStart = newReaderPos;
-            break;
+                break;
         }
     }
-    if (r > 0) {
-        LW("WARNING: jack had to wait %i * %i usecs", r, MUX_READER_USLEEP);
+    return slept;
+}
+
+// this function is called by the realtime-context,
+// and is reading from the ring-buffer
+int mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
+    LD("mux_process_bufferStereo %i.%i / %i numFrames=%i", g_ringBufferReaderStart, g_buffer_chunk_pos, g_ringBufferWriterStart, numFrames);
+    int numFloats = numFrames * MUX_CHAN;
+    if (! g_buffer_initial_full) {
+        memset(bufferStereo, 0, sizeof(float) * numFloats);
+        return -1;
     }
-    return r;
+
+    // if diff is too close to zero, muxseq hasn't feed us enough buffers
+    int diff = (g_ringBufferWriterStart - g_ringBufferReaderStart) * MUX_CHUNK_NUMFLOATS;
+    if (diff < 2048 && diff > -2048) {
+        LD("BUFFER-LOW-WATER-MARK: %i (%i / %i)", diff, g_ringBufferReaderStart, g_ringBufferWriterStart);
+    }
+
+    int slept = 0;
+    int floatsLeft = numFloats;
+    while (floatsLeft) {
+        LD("------ floatsLeft: %i", floatsLeft);
+        if (g_buffer_chunk_pos == 0) { // no partial slot currently read
+            unsigned int newReaderPos = (g_ringBufferReaderStart + 1) % MUX_RINGSIZE;
+            slept += peek_ringbuffer(newReaderPos);
+            struct MuxaudioBuffer* mabuf = g_ringBufferStereo + newReaderPos;
+            // if copy from current slot is partial, update chunk position
+            if (floatsLeft < MUX_CHUNK_NUMFLOATS) {
+                g_buffer_chunk_pos = floatsLeft;
+            }
+            for (int i = 0; floatsLeft > 0 && i < MUX_CHUNK_NUMFLOATS; i++) {
+                bufferStereo[i] = mabuf->buf[i];
+                floatsLeft--;
+            }
+            if (! g_buffer_chunk_pos) { // only advance if slot is fully consumed
+                // advance ringbuffer read position
+                if (newReaderPos < g_ringBufferReaderStart) {
+                    g_readerCycle++;
+                }
+                g_ringBufferReaderStart = newReaderPos;
+            }
+        } else {
+            // get current partially slot (note, it isn't advance since that would mark it as read)
+            unsigned int newReaderPos = (g_ringBufferReaderStart + 1) % MUX_RINGSIZE;
+            struct MuxaudioBuffer* mabuf = g_ringBufferStereo + newReaderPos;
+            // copy from current slot, maybe leaving partial read slot
+            for (int i = 0; floatsLeft > 0 && i < MUX_CHUNK_NUMFLOATS; i++) {
+                bufferStereo[i] = mabuf->buf[g_buffer_chunk_pos + i];
+                floatsLeft--;
+                g_buffer_chunk_pos++;
+            }
+            if (g_buffer_chunk_pos == MUX_CHUNK_NUMFLOATS) { // consumed whole slot
+                g_buffer_chunk_pos = 0;
+            }
+            if (! g_buffer_chunk_pos) { // only advance if slot is fully consumed
+                // advance ringbuffer read position
+                if (newReaderPos < g_ringBufferReaderStart) {
+                    g_readerCycle++;
+                }
+                g_ringBufferReaderStart = newReaderPos;
+            }
+        }
+    }
+    if (slept > 0) {
+        LW("WARNING: jack had to wait %i * %i usecs", slept, MUX_READER_USLEEP);
+    }
+    return slept;
 }
 
 int muxaudio_audio_process_work() {
-    unsigned int newWriterPos = (g_ringBufferWriterStart + MUX_CHUNKSIZE_NET) % MUX_RINGSIZE;
-
+    unsigned int newWriterPos = (g_ringBufferWriterStart + 1) % MUX_RINGSIZE;
     // ensure we dont overwrite part of buffer that is being read by reader
     // if writer wraps around and goes beyond reader
     if (g_ringBufferReaderStart < g_ringBufferWriterStart &&
@@ -384,21 +428,12 @@ int muxaudio_audio_process_work() {
         return 0;
     }
 
-    // process a MUX_CHUNKSIZE_NET number of Frames
-    //memset(g_chunkBufferStereo, 0, sizeof(float) * MUX_CHUNKSIZE_NET);
-    // Request a chunk over the network from mscore/seq
-    //seq->process(MUX_CHUNKSIZE_NET >> 1, g_chunkBufferStereo);
+    // Request a chunk over the network from mux/seq
+    struct MuxaudioBuffer* mabuf = g_ringBufferStereo + newWriterPos;
     struct MuxaudioMsg msg;
     msg.type = MsgTypeAudioBufferFeed;
     if (zmq_send(g_socket_audio.socket, &msg, sizeof(struct MuxaudioMsg), 0) < 0) return -1;
-    if (zmq_recv(g_socket_audio.socket, g_chunkBufferStereo, sizeof(float) * MUX_CHUNKSIZE_NET, 0) < 0) return -1;
-    //zmq_recv(g_socket_audio.socket, g_chunkBufferStereo, 1, 0);
-    // copy over the chunk to the ringbuffer
-    for (unsigned int i = 0; i < MUX_CHUNKSIZE_NET; i++) {
-        g_ringBufferStereo[(i + g_ringBufferWriterStart) % (MUX_RINGSIZE)] =
-         g_chunkBufferStereo[i];
-    }
-
+    if (zmq_recv(g_socket_audio.socket, mabuf, sizeof(struct MuxaudioBuffer), 0) < 0) return -1;
     if (newWriterPos < g_ringBufferWriterStart) {
         g_writerCycle++;
     }

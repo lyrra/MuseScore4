@@ -248,7 +248,7 @@ class Seq : public QObject, public Sequencer {
       bool isStopped() const    { return state == Transport::STOP; }
 
       void processMessages();
-      void process(unsigned framesPerPeriod, float* buffer);
+      void process(struct MuxaudioBuffer *mabuf);
       int getEndUTick() const   { return endUTick;  }
       bool isRealtime() const   { return true;     }
       void sendMessage(SeqMsg&) const;

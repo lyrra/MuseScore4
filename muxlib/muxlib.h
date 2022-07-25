@@ -1,8 +1,6 @@
 #ifndef __MUXLIB_H__
 #define __MUXLIB_H__
 
-/* both client and server needs to use the same chunk-size, so define it once, here */
-#define MUX_CHUNKSIZE_NET (4096)
 
 #define MUX_MUSESCORE_QUERY_CLIENT_URL "tcp://localhost:7701"
 #define MUX_MUSESCORE_QUERYREQ_CLIENT_URL "tcp://localhost:7704"
@@ -137,11 +135,17 @@ struct MuxseqEventsHeader {
     struct SparseEvent *sevs;
 };
 
+#define MUX_CHUNK_NUMFLOATS 512
+
 struct MuxaudioBuffer {
     uint64_t utick;
     uint8_t flags[8];
-    float buf[512];
+    // minimal amount of work considered feasible (performance-wise)
+    float buf[MUX_CHUNK_NUMFLOATS];
 };
+
+/* both client and server needs to use the same chunk-size, so define it once, here */
+#define MUX_CHUNKSIZE_NET sizeof(struct MuxaudioBuffer)
 
 const char*   muxseq_msg_type_info (MuxseqMsgType   type);
 const char* muxaudio_msg_type_info (MuxaudioMsgType type);

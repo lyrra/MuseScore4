@@ -300,8 +300,8 @@ int muxseq_network_mainloop_queryrep_recv(Mux::MuxSocket &sock) {
             return handle_mscore_msg_SeqStarted(sock, msg);
         case MsgTypeSeqStopped:
             return handle_mscore_msg_SeqStopped(sock, msg);
-        //case MsgTypeSeqUTick:
-        //    return handle_mscore_msg_SeqUTick(sock, msg);
+        case MsgTypeSeqUTick:
+            return handle_mscore_msg_SeqUTick(sock, msg);
         default:
             LD("MSCORE ==> MUXSEQ WARNING: message not handled: %s label=%s", muxseq_msg_type_info(msg.type), msg.label);
             strcpy(msg.label, "mscore");
