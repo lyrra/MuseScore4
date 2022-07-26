@@ -512,8 +512,7 @@ void muxseq_initInstruments () {
     for (const MidiMapping& mm : g_cs->midiMapping()) {
         const Channel* channel = mm.articulation();
         // g_cs->midiMapping(nev.channel())->articulation()->synti()
-        const char* synthName = channel->synti().isNull() ? "" :
-                                qPrintable(channel->synti());
+        const char* synthName = strdup(channel->synti().isNull() ? "" : qPrintable(channel->synti()));
         for (const MidiCoreEvent& e : channel->initList()) {
             if (e.type() == ME_INVALID) {
                 continue;
