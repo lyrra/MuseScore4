@@ -1238,6 +1238,7 @@ void ScoreView::drawElements(QPainter& painter, QList<Element*>& el, Element* ed
       {
       std::stable_sort(el.begin(), el.end(), elementLessThan);
       for (const Element* e : el) {
+            if (!e) qFatal("no element");
             e->itemDiscovered = 0;
 
             // harmony element representation is different in edit mode, so don't
