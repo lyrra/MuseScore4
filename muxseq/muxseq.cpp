@@ -176,7 +176,7 @@ unsigned int g_writerPause = 0;
 
 // this function is called by the zmq-network audio connection towards muxaudio
 struct MuxaudioBuffer* mux_process_bufferStereo () {
-    while (1) {
+    for (int r = 0;; r++) {
         unsigned int newReaderPos = (g_ringBufferReaderStart + 1) % MUX_RINGSIZE;
         // ensure we dont read into writers buffer part
         if (// ringbuffer is empty
@@ -190,6 +190,9 @@ struct MuxaudioBuffer* mux_process_bufferStereo () {
             g_readerPause++;
             std::this_thread::sleep_for(std::chrono::microseconds(MUX_READER_USLEEP));
         } else { // there is enough room in reader-part of ring-buffer to use
+            if (r) {
+                LD("WARNING had to wait %i * %i, due to no available audio buffer", r, MUX_READER_USLEEP);
+            }
             return g_ringBufferStereo + newReaderPos;
         }
     }
@@ -408,9 +411,9 @@ int muxseq_handle_muxaudioQueryClient_msg_AudioBufferFeed (Mux::MuxSocket &sock,
 {
     (void) msg;
     struct MuxaudioBuffer* mabuf = mux_process_bufferStereo();
-    // FIX: this is not reporting correct position, but the write-ahead-position
-    muxseq_mscore_tell(MsgTypeSeqUTick, mabuf->utick);
     zmq_send(sock.socket, mabuf, sizeof(struct MuxaudioBuffer), 0);
+    g_utick = msg.payload.i;
+    muxseq_mscore_tell(MsgTypeSeqUTick, mabuf->utick);
     mux_advance_bufferStereo();
     return 0;
 }

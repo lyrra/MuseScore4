@@ -878,18 +878,22 @@ static void checkTransportSeek(int cur_frame, int nframes, bool inCountIn)
 //    includes memory allocation. The usual thread synchronisation
 //    methods like semaphores can also not be used.
 //-------------------------------------------------------------------
+#define MUX_CHAN 2
 void Seq::process(struct MuxaudioBuffer *mabuf)
       {
       float *buffer = mabuf->buf;
-      unsigned int framesPerPeriod = MUX_CHUNK_NUMFLOATS / 2; // FIX: 2 = MUX_CHAN is fixed
+      unsigned int framesPerPeriod = MUX_CHUNK_NUMFLOATS / MUX_CHAN;
       unsigned framesRemain = framesPerPeriod; // the number of frames remaining to be processed by this call to Seq::process
+      mabuf->flags[0] = framesPerPeriod - 1;
+      mabuf->flags[1] = MUX_CHAN;
       //FIX: store number of generated frames in the mabuf
       //Transport driverState = seq->isPlaying() ? jack_transport : Transport::STOP;
       Transport driverState = jack_transport;
       // Checking for the reposition from JACK Transport
       checkTransportSeek(playFrame, framesRemain, inCountIn);
 
-      LD4("Seq::process frames=%i driverState=%i state=%i", framesPerPeriod, (int) driverState, (int) state);
+      mabuf->utick = playFrame;
+      LD4("Seq::process frames=%i driverState=%i state=%i playFrame=%i", framesPerPeriod, (int) driverState, (int) state, playFrame);
       if (driverState != state) {
             // Got a message from JACK Transport panel: Play
             if (state == Transport::STOP && driverState == Transport::PLAY) {
@@ -994,11 +998,7 @@ void Seq::process(struct MuxaudioBuffer *mabuf)
             while (*pPlayPos != pEventsEnd) {
                   int playPosUTick = (*pPlayPos)->first;
                   int n; // current frame (relative to start of playback) that is being synthesized
-                  {
-                      const NPlayEvent& event = (*pPlayPos)->second;
-                      LD6("Seq::process -- playPosUTick=%i pitch=%i channel=%i", playPosUTick, event.pitch(), event.channel());
-                  }
-                  g_utick = playPosUTick;
+                  g_utick = mabuf->utick = playPosUTick;
                   if (inCountIn) {
                         LD8("Seq::process -- #### WARNING inCountIn, NOT IMPL ####");
 #if 0
@@ -1058,8 +1058,7 @@ void Seq::process(struct MuxaudioBuffer *mabuf)
                               }
 #endif
                         }
-                  LD8("Seq::process -- n=%i (n = playPosFrame - *pPlayFrame = 'amount of frames to produce') ", n);
-                  mabuf->utick = playPosUTick;
+                  LD8("Seq::process -- n=%i playPosUTick=%i (n = playPosFrame - *pPlayFrame = 'amount of frames to produce') ", n, playPosUTick);
                   if (n) {
                         //if (cs->playMode() == PlayMode::SYNTHESIZER) {
                               metronome(n, pBuffer, inCountIn);
@@ -1107,7 +1106,6 @@ void Seq::process(struct MuxaudioBuffer *mabuf)
                   ++(*pPlayPos);
                   mutex.unlock();
                   }
-            LD6("Seq::process --- framesRemain=%i", framesRemain);
             if (framesRemain) {
                   //if (cs->playMode() == PlayMode::SYNTHESIZER) {
                         metronome(framesRemain, pBuffer, inCountIn);
@@ -1189,7 +1187,6 @@ void Seq::process(struct MuxaudioBuffer *mabuf)
             rv = qMax(rv, qAbs(val));
             pBuffer++;
             }
-      LD8("Seq::process buffer amp=%f/%f", lv, rv);
       meterValue[0] = lv;
       meterValue[1] = rv;
       if (meterPeakValue[0] < lv) {

@@ -232,7 +232,6 @@ int handle_mscore_msg_SeqStarted (Mux::MuxSocket &sock, struct MuxseqMsg msg)
 
 int handle_mscore_msg_SeqStopped (Mux::MuxSocket &sock, struct MuxseqMsg msg)
 {
-    LD("handle MsgTypeSeqStopped");
     int playFrame = msg.payload.i;
     int tck = g_cs->repeatList().utick2tick(g_cs->utime2utick(qreal(playFrame) / qreal(MScore::sampleRate)));
     g_cs->setPlayPos(Fraction::fromTicks(tck));
@@ -249,10 +248,8 @@ int handle_mscore_msg_SeqUTick (Mux::MuxSocket &sock, struct MuxseqMsg msg)
 {
     int utick = msg.payload.i;
     int t = 0;
-    LD("handle MsgTypeSeqUTick utick=%i", utick);
     if (g_cs) {
       t = g_cs->repeatList().utick2tick(utick);
-      LD("handle MsgTypeSeqUTick tick=%i", t);
       mscore->currentScoreView()->moveCursor(Fraction::fromTicks(t));
       mscore->setPos(Fraction::fromTicks(t));
     }
@@ -286,12 +283,10 @@ int handle_mscore_msg_SeqRenderEvents(Mux::MuxSocket &sock, struct MuxseqMsg msg
                                                g_cs->tempomap()->relTempo(), // relTempo needed here to ensure that bps changes as we slide the tempo bar
                                                &rlen);
     // send events to muxseq
-    LD8("SeqRenderEvents -- done render-chunk, num-events-rendered: %i bufSize=%i\n", events.size(), rlen);
     if (mux_query_send(sock, buf, rlen) == -1) {
         free(buf);
         return -1;
     }
-    LD8("SeqRenderEvents -- done sending render-chunk to MUXSEQ");
     free(buf);
     return 0;
 }
