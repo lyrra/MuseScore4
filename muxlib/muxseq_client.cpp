@@ -50,8 +50,17 @@ static ScoreView* g_cv = nullptr;
 static MasterScore* g_cs = nullptr;
 static MidiRenderer g_midi(nullptr);
 
+FILE *g_logfp = NULL;
+
 void _logstr (char *str) {
     qDebug(str);
+    if (! g_logfp) g_logfp = fopen("ms.log", "w");
+    if (g_logfp) {
+        const char *nl = "\n";
+        fwrite(str, strlen(str), 1, g_logfp);
+        fwrite(nl, 1, 1, g_logfp);
+        fflush(g_logfp);
+    }
 }
 
 #define L_MUX_QUERY(type) \
