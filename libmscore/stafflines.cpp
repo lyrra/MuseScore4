@@ -50,7 +50,10 @@ StaffLines::StaffLines(Score* s)
 QPointF StaffLines::pagePos() const
       {
       System* system = measure()->system();
-      return QPointF(measure()->x() + system->x(), system->staff(staffIdx())->y() + system->y());
+      if (system) { // can be null
+            SysStaff* ss = system->staff(staffIdx());
+            return QPointF(measure()->x() + system->x(), ss->y() + system->y());
+            }
       }
 
 //---------------------------------------------------------

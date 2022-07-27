@@ -4970,6 +4970,10 @@ void MuseScore::setPos(const Fraction& t)
       TimeSigMap* s = cs->sigmap();
       int bar, beat, tick;
       s->tickValues(t.ticks(), &bar, &beat, &tick);
+      if (! _positionLabel) {
+            qWarning("MuseScore::setPos, no _positionLabel");
+            return;
+            }
       _positionLabel->setText(QString("%1:%2:%3")
          .arg(bar + 1,  3, 10, QLatin1Char(' '))
          .arg(beat + 1, 2, 10, QLatin1Char('0'))

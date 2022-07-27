@@ -627,7 +627,7 @@ void ScoreView::moveCursor(const Fraction& tick)
       System* system = measure->system();
       if (system == 0)
             return;
-      double y        = system->staffYpage(0) + system->page()->pos().y();
+      double y        = system->staffYpage(0) + (system->page() ? system->page()->pos().y() : 0.0);
       double _spatium = score()->spatium();
 
       update(_matrix.mapRect(_cursor->rect()).toRect().adjusted(-1,-1,1,1));
@@ -1427,7 +1427,7 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                               p.setBrush(Qt::NoBrush);
                               for (const System* system : page->systems()) {
                                     for (const MeasureBase* mb : system->measures()) {
-                                          if (mb->type() == ElementType::MEASURE) {
+                                          if (mb && mb->type() == ElementType::MEASURE) {
                                                 const Measure* m = static_cast<const Measure*>(mb);
                                                 for (int staffIdx = 0; staffIdx < m->score()->nstaves(); staffIdx++) {
                                                       if (m->corrupted(staffIdx)) {
