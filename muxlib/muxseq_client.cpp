@@ -237,6 +237,9 @@ int handle_mscore_msg_SeqStopped (Mux::MuxSocket &sock, struct MuxseqMsg msg)
     g_cs->setPlayPos(Fraction::fromTicks(tck));
     g_cs->update();
     mscore->seqStopped();
+    if (g_cv) {
+        g_cv->setCursorOn(false);
+    }
     strcpy(msg.label, "mscore");
     if (mux_query_send(sock, &msg, sizeof(struct MuxseqMsg)) == -1) {
         return -1;
@@ -455,8 +458,17 @@ bool muxseq_seq_can_start() {
     return muxseq_query_bool(MsgTypeSeqCanStart);
 }
 
-void muxseq_seq_seek(int ticks) {
-    muxseq_send(MsgTypeSeqSeek, ticks);
+void muxseq_seq_seek(int utick) {
+    LD4("muxseq_seq_seek utick=%i", utick);
+    muxseq_send(MsgTypeSeqSeek, utick);
+    if (g_cs) {
+        int t = g_cs->repeatList().utick2tick(utick);
+        Segment* seg = g_cs->tick2segment(Fraction::fromTicks(t));
+        if (seg)
+            mscore->currentScoreView()->moveCursor(seg->tick());
+        g_cs->setPlayPos(Fraction::fromTicks(t));
+        g_cs->update();
+    }
 }
 
 int muxseq_seq_curTick() {

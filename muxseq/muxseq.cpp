@@ -46,6 +46,7 @@ int muxseq_mscore_tell (MuxseqMsgType type, int i);
 
 void mux_send_event_to_gui(struct SparseEvent se);
 void mux_audio_send_event_to_midi(struct MuxaudioMsg msg);
+bool g_state_play = false;
 extern int g_driver_running;
 extern uint64_t g_utick;
 
@@ -229,7 +230,9 @@ int muxseq_audio_process_work () {
     // process a chunk of frames, ie fill the chunk with audio content
     mabuf = g_ringBufferStereo + newWriterPos;
     memset(mabuf, 0, sizeof(struct MuxaudioBuffer));
-    g_seq->process(mabuf);
+    if (g_state_play) {
+        g_seq->process(mabuf);
+    }
 
     if (newWriterPos < g_ringBufferWriterStart) {
         g_writerCycle++;
@@ -337,12 +340,21 @@ int muxseq_handle_musescore_msg_MsgTypeSeqStart (Mux::MuxSocket &sock, struct Mu
 }
 
 int muxseq_handle_musescore_msg_MsgTypeSeqStop (Mux::MuxSocket &sock, struct MuxseqMsg msg) {
+    LD4("handle MsgTypeSeqStop");
     int rc = 0;
     // FIX: SEQ doesn't do anything on gui-initiated-playstop ?
+    if (g_seq) {
+        g_seq->guiStop(); // FIX: really call seq from this thread?
+        g_seq->stop(); // FIX: really call seq from this thread?
+    }
     return muxseq_handle_musescore_reply_int(sock, msg, rc);
 }
 
 int muxseq_handle_musescore_msg_MsgTypeSeqSeek (Mux::MuxSocket &sock, struct MuxseqMsg msg) {
+    LD("MSCORE ==> MUXSEQ msg %s tick=%i", muxseq_msg_type_info(msg.type), msg.payload.i);
+    if (g_seq) {
+        g_seq->seek(msg.payload.i);
+    }
     muxseq_msg_to_audio(MsgTypeTransportSeek, msg.payload.i);
     return muxseq_handle_musescore_reply_int(sock, msg, 0);
 }

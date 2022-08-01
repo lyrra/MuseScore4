@@ -52,6 +52,7 @@ uint64_t g_utime;
 uint64_t g_utick;
 
 void muxseq_stop_threads();
+extern bool g_state_play;
 extern int g_muxseq_audio_process_run;
 static Transport jack_transport;
 
@@ -303,6 +304,7 @@ void Seq::startTransport()
       //FIX: cachedPrefs.update();
       qDebug("-- Seq::startTransport");
       muxseq_msg_to_audio(MsgTypeTransportStart, 0);
+      g_state_play = true;
       }
 
 //---------------------------------------------------------
@@ -312,6 +314,7 @@ void Seq::startTransport()
 void Seq::stopTransport()
       {
       muxseq_msg_to_audio(MsgTypeTransportStop, 0);
+      g_state_play = false;
       }
 
 //---------------------------------------------------------
@@ -1441,23 +1444,18 @@ void Seq::seekCommon(int utick)
 void Seq::seek(int utick)
       {
       qDebug("-- Seq::seek utick=%i", utick);
-#if 0 // FIX
+      playFrame = utick * g_sampleRate; // FIX: assert this is true utick: playFrame = cs->utick2utime(utick) * MScore::sampleRate;
+//#if 0 // FIX
       if (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT)) {
             if (utick > endUTick)
                   utick = 0;
-            msgToAudioSeekTransport(utick);
-            if (utick != 0)
-                  return;
+            //msgToAudioSeekTransport(utick);
+            //if (utick != 0)
+            //      return;
             }
       seekCommon(utick);
-      int t = cs->repeatList().utick2tick(utick);
-      Segment* seg = cs->tick2segment(Fraction::fromTicks(t));
-      if (seg)
-            mscore->currentScoreView()->moveCursor(seg->tick());
-      cs->setPlayPos(Fraction::fromTicks(t));
-      cs->update();
-      guiToSeq(SeqMsg(SeqMsgId::SEEK, utick));
-#endif
+      //guiToSeq(SeqMsg(SeqMsgId::SEEK, utick));
+//#endif
       }
 
 //---------------------------------------------------------

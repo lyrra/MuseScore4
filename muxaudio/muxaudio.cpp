@@ -98,7 +98,6 @@ static std::vector<std::thread> seqThreads;
 int g_utick_rt = 0;
 int g_mux_audio_process_run = 0;
 bool g_state_play = false;
-
 struct Mux::MuxSocket g_socket_ctrl;
 struct Mux::MuxSocket g_socket_audio;
 
@@ -249,7 +248,7 @@ int muxaudio_mq_to_audio_handle_message(struct MuxaudioMsg msg) {
             mux_audio_jack_transport_start();
         break;
         case MsgTypeTransportStop:
-            // g_state_play = false; // should be this easy, ie sequencer takes care of synthesizer fade outs (when stop is signalled from GUI)
+            g_state_play = false;
             mux_audio_jack_transport_stop();
         break;
         case MsgTypeTransportSeek:

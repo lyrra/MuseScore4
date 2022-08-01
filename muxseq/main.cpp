@@ -18,6 +18,8 @@ namespace Ms {
 
 #define MUX_SYNC_MSLEEP 100
 
+extern bool g_state_play;
+
 void muxseq_threads_start();
 
 //void muxseq_send_event_to_gui(struct SparseEvent se);
@@ -109,9 +111,11 @@ int muxseq_mq_to_audio_visit() {
             mux_audio_stop();
         break;
         case MsgTypeTransportStart:
+            g_state_play = true;
             mux_audio_jack_transport_start();
         break;
         case MsgTypeTransportStop:
+            g_state_play = false;
             mux_audio_jack_transport_stop();
         break;
         case MsgTypeTransportSeek:
