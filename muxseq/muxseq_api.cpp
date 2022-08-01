@@ -21,6 +21,7 @@
 #include "fluid/fluid.h"
 #include "synthesizer.h"
 //#include "synthesizergui.h"
+#include "muxseq.h"
 
 #ifdef AEOLUS
 extern Ms::Synthesizer* createAeolus();
@@ -86,12 +87,12 @@ int muxseq_mscore_send (MuxseqMsgType type, int i) {
     return mux_query_send(g_muxsocket_mscoreQueryReqServer, &msg, sizeof(struct MuxseqMsg));
 }
 
-void* muxseq_mscore_recv () {
+void* muxseq_mscore_recv (MuxseqMsgType type) {
     int rlen2;
     void *m = mux_query_recv(g_muxsocket_mscoreQueryReqServer, &rlen2);
     LD8("muxseq => mscore got reply, bufSize=%i", rlen2);
     if (! m) {
-        LE("muxseq_mscore_query recv failed");
+        LE("muxseq_mscore_query recv failed (expected reply to msg %s)", muxseq_msg_type_info(type));
         return nullptr;
     }
     return m;
@@ -100,14 +101,13 @@ void* muxseq_mscore_recv () {
 //FIX: handles only payload  'i'
 void* muxseq_mscore_query (MuxseqMsgType type, int i)
 {
-    LD("MUXSEQ ==> MSCORE query msg %s", muxseq_msg_type_info(type));
+    LD6("MUXSEQ ==> MSCORE query msg %s", muxseq_msg_type_info(type));
     if (muxseq_mscore_send (type, i) < 0) {
         LE("muxseq_mscore_query send failed");
         return nullptr;
     }
-    LD8("MUXSEQ ==> MSCORE query msg %s (done sending request)", muxseq_msg_type_info(type));
     // receive reply, which is a 'struct MuxseqEventsHeader' followed by an list of events
-    void *m = muxseq_mscore_recv();
+    void *m = muxseq_mscore_recv(type);
     struct MuxseqEventsHeader *meh;
     meh = (struct MuxseqEventsHeader *) m;
     meh->sevs = (struct SparseEvent *) (m + sizeof(struct MuxseqEventsHeader));
@@ -118,14 +118,13 @@ void* muxseq_mscore_query (MuxseqMsgType type, int i)
 //FIX: should put on ringbuffer, which in turn uses zmq-network
 int muxseq_mscore_tell (MuxseqMsgType type, int i)
 {
-    LD("MUXSEQ ==> MSCORE query msg %s", muxseq_msg_type_info(type));
+    LD6("MUXSEQ ==> MSCORE tell msg %s", muxseq_msg_type_info(type));
     if (muxseq_mscore_send (type, i) < 0) {
         LE("muxseq_mscore_query send failed");
         return -1;
     }
-    LD8("MUXSEQ ==> MSCORE query msg %s (done sending request)", muxseq_msg_type_info(type));
     // receive reply, which is a 'struct MuxseqEventsHeader' followed by an list of events
-    void *m = muxseq_mscore_recv();
+    void *m = muxseq_mscore_recv(type);
     free(m);
     return 0;
 }

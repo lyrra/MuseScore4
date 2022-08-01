@@ -561,6 +561,7 @@ void Seq::seqMessage(int msg, int arg)
                   break;
             case '2':
                   //FIX: muxseq mscore-zmq side of ringbuffer, should take MsgTypeSeqStopped messages, send to mscore, and do following code:
+                  LD4("Seq::seqMessage handle 2/stop_and_rewind");
                   guiStop();
 //                  heartBeatTimer->stop();
                   if (g_driver_running /* FIX: && mscore->getSynthControl() */) {
@@ -575,6 +576,7 @@ void Seq::seqMessage(int msg, int arg)
                   seek(0);
                   break;
             case '0':         // STOP
+                  LD4("Seq::seqMessage handle 2/stop");
                   guiStop();
 //                  heartBeatTimer->stop();
                   if (g_driver_running /* FIX: && mscore->getSynthControl() */) {

@@ -7,6 +7,11 @@
 #ifndef __MUXSEQ_H__
 #define __MUXSEQ_H__
 
+#undef  LD6
+#undef  LD8
+#define LD6(...) (void)0
+#define LD8(...) (void)0
+
 namespace Ms {
 
 /*** MUX public interface ***/

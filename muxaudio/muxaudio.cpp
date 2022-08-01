@@ -356,7 +356,7 @@ int mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
                g_ringBufferReaderStart - g_ringBufferWriterStart;
     diff = diff * MUX_CHUNK_NUMFLOATS - g_buffer_chunk_pos;
     if (diff < 2048 && diff > -2048) {
-        LD("BUFFER-LOW-WATER-MARK: %i (%i/%i)", diff, g_ringBufferReaderStart, g_ringBufferWriterStart);
+        LW("BUFFER-LOW-WATER-MARK: %i (%i/%i)", diff, g_ringBufferReaderStart, g_ringBufferWriterStart);
     }
 
     int slept = 0;

@@ -7,6 +7,10 @@
 #ifndef __MUXAUDIO_H__
 #define __MUXAUDIO_H__
 
+#undef LD6
+#undef LD8
+#define LD6(...) (void)0
+#define LD8(...) (void)0
 
 namespace Ms {
 

@@ -90,7 +90,7 @@ int mux_mq_from_audio_reader_visit () {
         return 0;
     }
     struct MuxaudioMsg msg = g_msg_from_audio[g_msg_from_audio_reader];
-    LD("MUXAUDIO q=> MUXSEQ msg %s", muxaudio_msg_type_info(msg.type));
+    LD2("MUXAUDIO q=> MUXSEQ msg %s", muxaudio_msg_type_info(msg.type));
     int rc = 0; //FIX muxseq_mq_from_muxaudio_handle(msg);
     g_msg_from_audio_reader = (g_msg_from_audio_reader + 1) % MAILBOX_SIZE;
     return rc;
@@ -98,7 +98,7 @@ int mux_mq_from_audio_reader_visit () {
 
 
 int muxseq_mq_from_mscore_handle (struct MuxseqMsg *msg) {
-    LD("muxseq_mq_from_mscore_handle msg %s", muxseq_msg_type_info(msg->type));
+    LD2("muxseq_mq_from_mscore_handle msg %s", muxseq_msg_type_info(msg->type));
     return 0;
 }
 
@@ -116,7 +116,7 @@ int muxseq_from_mscore_reader_visit () {
                 int numSevs;
                 memcpy(&maxMidiPorts, msg+4, 4);
                 memcpy(&numSevs, msg+8, 4);
-                LD("MSCORE i=> MUXSEQ msg %s maxMidiPorts=%i numSevs=%i", muxseq_msg_type_info((MuxseqMsgType) type), maxMidiPorts, numSevs);
+                LD4("MSCORE i=> MUXSEQ msg %s maxMidiPorts=%i numSevs=%i", muxseq_msg_type_info((MuxseqMsgType) type), maxMidiPorts, numSevs);
                 struct SparseMidiEvent *sevs = (struct SparseMidiEvent *) (msg + 12);
                 if (g_seq) {
                     g_seq->initInstruments(maxMidiPorts, numSevs, sevs);

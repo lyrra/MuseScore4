@@ -299,7 +299,7 @@ int muxseq_network_mainloop_queryrep_recv(Mux::MuxSocket &sock) {
     if (mux_query_recv_Muxseq(sock, msg) < 0) {
         return -1;
     }
-    LD("MSCORE ==> MUXSEQ got query from muxseq: %s label=%s", muxseq_msg_type_info(msg.type), msg.label);
+    LD6("MSCORE ==> MUXSEQ got query from muxseq: %s label=%s", muxseq_msg_type_info(msg.type), msg.label);
     switch (msg.type) {
         case MsgTypeSeqRenderEvents:
             return handle_mscore_msg_SeqRenderEvents(sock, msg);
@@ -310,7 +310,6 @@ int muxseq_network_mainloop_queryrep_recv(Mux::MuxSocket &sock) {
         case MsgTypeSeqUTick:
             return handle_mscore_msg_SeqUTick(sock, msg);
         default:
-            LD("MSCORE ==> MUXSEQ WARNING: message not handled: %s label=%s", muxseq_msg_type_info(msg.type), msg.label);
             strcpy(msg.label, "mscore");
             if (mux_query_send(sock, &msg, sizeof(struct MuxseqMsg)) == -1) {
                 return -1;
