@@ -39,8 +39,8 @@ int mux_mq_write (struct MuxQueue *queue, void* data) {
     int reader = queue->reader;
     int writer = queue->writer;
     int newPos  = (writer + 1) % queue->mailboxSize;
-    if (newPos == reader) return -1;
-    struct MuxQueueItem *qi = &queue->mailbox[newPos];
+    if (newPos == reader) return -1; // mailbox is full
+    struct MuxQueueItem *qi = &queue->mailbox[writer];
     qi->type = 0;
     qi->label[0] = 0;
     qi->data = data;
