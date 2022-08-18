@@ -1427,6 +1427,7 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                               p.setPen(pen);
                               p.setBrush(Qt::NoBrush);
                               for (const System* system : page->systems()) {
+                                    if (system) {
                                     for (const MeasureBase* mb : system->measures()) {
                                           if (mb && mb->type() == ElementType::MEASURE) {
                                                 const Measure* m = static_cast<const Measure*>(mb);
@@ -1437,6 +1438,7 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                                                       }
                                                 }
                                           }
+                                    } // if system
                                     }
                               }
                         }
