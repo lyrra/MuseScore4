@@ -353,7 +353,7 @@ int mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
     // if diff is too close to zero, muxseq hasn't feed us enough buffers
     int diff = g_ringBufferWriterStart > g_ringBufferReaderStart ?
                g_ringBufferWriterStart - g_ringBufferReaderStart :
-               g_ringBufferReaderStart - g_ringBufferWriterStart;
+               (g_ringBufferReaderStart - g_ringBufferWriterStart) + MAILBOX_SIZE;
     diff = diff * MUX_CHUNK_NUMFLOATS - g_buffer_chunk_pos;
     if (diff < 2048 && diff > -2048) {
         LW("BUFFER-LOW-WATER-MARK: %i (%i/%i)", diff, g_ringBufferReaderStart, g_ringBufferWriterStart);
