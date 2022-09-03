@@ -59,6 +59,8 @@ NoteHead::Group noteHeadNames[] = {
       NoteHead::Group::HEAD_FA,
       NoteHead::Group::HEAD_LA,
       NoteHead::Group::HEAD_TI,
+      NoteHead::Group::HEAD_SWISS_RUDIMENTS_FLAM,
+      NoteHead::Group::HEAD_SWISS_RUDIMENTS_DOUBLE,
       NoteHead::Group::HEAD_CUSTOM
       };
 
@@ -69,7 +71,7 @@ NoteHead::Group noteHeadNames[] = {
 bool EditDrumsetTreeWidgetItem::operator<(const QTreeWidgetItem & other) const
       {
       if (treeWidget()->sortColumn() == Column::PITCH)
-            return data(Column::PITCH, Qt::UserRole) < other.data(Column::PITCH, Qt::UserRole);
+            return data(Column::PITCH, Qt::UserRole).toInt() < other.data(Column::PITCH, Qt::UserRole).toInt();
       else
             return QTreeWidgetItem::operator<(other);
       }
@@ -137,7 +139,7 @@ EditDrumset::EditDrumset(const Drumset* ds, QWidget* parent)
       pitchList->setColumnWidth(1, 60);
       pitchList->setColumnWidth(2, 30);
 
-      QStringList validNoteheadRanges = { "Noteheads", "Round and square noteheads", "Slash noteheads", "Shape note noteheads", "Shape note noteheads supplement" };
+      QStringList validNoteheadRanges = { "Noteheads", "Round and square noteheads", "Slash noteheads", "Shape note noteheads", "Shape note noteheads supplement", "Techniques noteheads" };
       QSet<QString> excludeSym = {"noteheadParenthesisLeft", "noteheadParenthesisRight", "noteheadParenthesis", "noteheadNull"};
       QStringList primaryNoteheads = {
             "noteheadXOrnate",
@@ -598,8 +600,8 @@ void EditDrumset::save()
 
       QFile f(fname);
       if (!f.open(QIODevice::WriteOnly)) {
-            QString s = tr("Open File\n%1\nfailed: %1").arg(strerror(errno));
-            QMessageBox::critical(mscore, tr("Open File"), s.arg(f.fileName()));
+            QString s = tr("Open File\n%1\nfailed: %2").arg(f.fileName()).arg(strerror(errno));
+            QMessageBox::critical(mscore, tr("Open File"), s);
             return;
             }
       valueChanged();  //save last changes in name

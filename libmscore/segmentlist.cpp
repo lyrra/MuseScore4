@@ -84,9 +84,9 @@ void SegmentList::check()
       if (l != _last) {
             qFatal("SegmentList::check: bad last");
             }
-      if (f->prev())
+      if (f && f->prev())
             qFatal("SegmentList::check: first has prev");
-      if (l->next())
+      if (l && l->next())
             qFatal("SegmentList::check: last has next");
       if (n != _size) {
             qFatal("SegmentList::check: counted %d but _size is %d", n, _size);
@@ -217,6 +217,19 @@ Segment* SegmentList::first(SegmentType types) const
 Segment* SegmentList::first(ElementFlag flags) const
       {
       for (Segment* s = _first; s; s = s->next()) {
+            if (s->flag(flags))
+                  return s;
+            }
+      return nullptr;
+      }
+
+//---------------------------------------------------------
+//   last
+//---------------------------------------------------------
+
+Segment* SegmentList::last(ElementFlag flags) const
+      {
+      for (Segment* s = _last; s; s = s->prev()) {
             if (s->flag(flags))
                   return s;
             }

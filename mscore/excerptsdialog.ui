@@ -68,6 +68,9 @@
          </item>
          <item>
           <widget class="QToolButton" name="moveUpButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -91,6 +94,9 @@
          </item>
          <item>
           <widget class="QToolButton" name="moveDownButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -149,12 +155,12 @@
        <item>
         <layout class="QVBoxLayout" name="buttons">
          <item>
-          <widget class="QPushButton" name="newAllButton">
+          <widget class="QPushButton" name="allPartsButton">
            <property name="toolTip">
-            <string>Generate new part for each instrument</string>
+            <string>New part for each instrument</string>
            </property>
            <property name="text">
-            <string>New All</string>
+            <string>All Parts</string>
            </property>
           </widget>
          </item>
@@ -172,14 +178,20 @@
           </spacer>
          </item>
          <item>
-          <widget class="QPushButton" name="newButton">
+          <widget class="QPushButton" name="singlePartButton">
+           <property name="toolTip">
+            <string>New single part for selected voice(s)/instrument(s)</string>
+           </property>
            <property name="text">
-            <string>New</string>
+            <string>Single Part</string>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QPushButton" name="deleteButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="text">
             <string>Delete</string>
            </property>
@@ -238,6 +250,9 @@
           <layout class="QHBoxLayout" name="horizontalLayout_2">
            <item>
             <widget class="QListWidget" name="instrumentList">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="sizePolicy">
               <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                <horstretch>0</horstretch>
@@ -269,6 +284,9 @@
              </item>
              <item>
               <widget class="QPushButton" name="addButton">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="accessibleDescription">
                 <string>Add instrument</string>
                </property>
@@ -279,6 +297,9 @@
              </item>
              <item>
               <widget class="QPushButton" name="removeButton">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="accessibleDescription">
                 <string>Remove instrument</string>
                </property>
@@ -386,6 +407,16 @@
   </layout>
  </widget>
  <tabstops>
+  <tabstop>excerptList</tabstop>
+  <tabstop>moveUpButton</tabstop>
+  <tabstop>moveDownButton</tabstop>
+  <tabstop>allPartsButton</tabstop>
+  <tabstop>singlePartButton</tabstop>
+  <tabstop>deleteButton</tabstop>
+  <tabstop>title</tabstop>
+  <tabstop>instrumentList</tabstop>
+  <tabstop>addButton</tabstop>
+  <tabstop>removeButton</tabstop>
   <tabstop>partList</tabstop>
  </tabstops>
  <resources>

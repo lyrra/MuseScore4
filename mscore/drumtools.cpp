@@ -49,7 +49,7 @@ DrumTools::DrumTools(QWidget* parent)
 
       QWidget* w = new QWidget(this);
       w->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
-      w->setMaximumHeight(100);
+      w->setMaximumHeight(100 * Palette::guiMag());
       QHBoxLayout* layout = new QHBoxLayout;
       w->setLayout(layout);
 
@@ -60,11 +60,12 @@ DrumTools::DrumTools(QWidget* parent)
       pitchName->setWordWrap(true);
       pitchName->setContentsMargins(25, 0, 25, 0);
       layout1->addWidget(pitchName);
+
       QHBoxLayout* buttonLayout = new QHBoxLayout;
-      buttonLayout->setContentsMargins(25, 10, 25, 10);
+      buttonLayout->setContentsMargins(5, 5, 5, 5);
       editButton = new QToolButton;
-      editButton->setMinimumWidth(100);
-      editButton->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
+      editButton->setMinimumWidth(175);
+      editButton->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding));
       buttonLayout->addWidget(editButton);
       layout1->addLayout(buttonLayout);
       layout->addLayout(layout1);
@@ -72,6 +73,7 @@ DrumTools::DrumTools(QWidget* parent)
       drumPalette = new Palette;
       drumPalette->setMag(0.8);
       drumPalette->setSelectable(true);
+      drumPalette->setUseDoubleClickToActivate(true);
       drumPalette->setGrid(28, 60);
       PaletteScrollArea* sa = new PaletteScrollArea(drumPalette);
       sa->setFocusPolicy(Qt::NoFocus);
@@ -148,7 +150,7 @@ void DrumTools::updateDrumset(const Drumset* ds)
                   noteheadSym = drumset->noteHeads(pitch, NoteHead::Type::HEAD_QUARTER);
             else
                   noteheadSym = note->noteHead(true, noteHead, NoteHead::Type::HEAD_QUARTER);
-            
+
             note->setCachedNoteheadSym(noteheadSym); // we use the cached notehead so we don't recompute it at each layout
             chord->add(note);
             int sc = drumset->shortcut(pitch);
@@ -181,8 +183,10 @@ void DrumTools::editDrumset()
       {
       EditDrumset eds(drumset, this);
       if (eds.exec()) {
+            ChordRest* cr = _score->getSelectedChordRest();
+            Fraction tick = cr ? cr->tick() : Fraction(0,1);
             _score->startCmd();
-            _score->undo(new ChangeDrumset(staff->part()->instrument(), eds.drumset()));
+            _score->undo(new ChangeDrumset(staff->part()->instrument(tick), eds.drumset()));
             mscore->updateDrumTools(eds.drumset());
             if (_score->undoStack()->active()) {
                   _score->setLayoutAll();
@@ -203,7 +207,7 @@ void DrumTools::drumNoteSelected(int val)
             Note* note       = ch->downNote();
             int ticks        = MScore::defaultPlayDuration;
             int pitch        = note->pitch();
-            seq->startNote(staff->part()->instrument()->channel(0)->channel(), pitch, 80, ticks, 0.0);
+            seq->startNote(staff->part()->instrument()->channel(0)->channel(), pitch, 80, ticks, 0.0);  //tick?
 
             int track = (_score->inputState().track() / VOICES) * VOICES + element->track();
             _score->inputState().setTrack(track);

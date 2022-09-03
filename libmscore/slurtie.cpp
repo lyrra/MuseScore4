@@ -10,6 +10,8 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include "global/log.h"
+
 #include "measure.h"
 #include "score.h"
 #include "system.h"
@@ -17,6 +19,7 @@
 #include "slurtie.h"
 #include "tie.h"
 #include "chord.h"
+#include "page.h"
 
 namespace Ms {
 
@@ -41,33 +44,48 @@ SlurTieSegment::SlurTieSegment(const SlurTieSegment& b)
       }
 
 //---------------------------------------------------------
-//   gripAnchor
+//   gripAnchorLines
 //---------------------------------------------------------
 
-QPointF SlurTieSegment::gripAnchor(Grip grip) const
+QVector<QLineF> SlurTieSegment::gripAnchorLines(Grip grip) const
       {
+      QVector<QLineF> result;
+
       if (!system() || (grip != Grip::START && grip != Grip::END))
-            return QPointF();
+            return result;
 
       QPointF sp(system()->pagePos());
       QPointF pp(pagePos());
       QPointF p1(ups(Grip::START).p + pp);
       QPointF p2(ups(Grip::END).p + pp);
 
+      QPointF anchorPosition;
+      int gripIndex = static_cast<int>(grip);
+
       switch (spannerSegmentType()) {
             case SpannerSegmentType::SINGLE:
-                  return grip == Grip::START ? p1 : p2;
+                  anchorPosition = (grip == Grip::START ? p1 : p2);
+                  break;
 
             case SpannerSegmentType::BEGIN:
-                  return grip == Grip::START ? p1 : system()->abbox().topRight();
+                  anchorPosition = (grip == Grip::START ? p1 : system()->abbox().topRight());
+                  break;
 
             case SpannerSegmentType::MIDDLE:
-                  return grip == Grip::START ? sp : system()->abbox().topRight();
+                  anchorPosition = (grip == Grip::START ? sp : system()->abbox().topRight());
+                  break;
 
             case SpannerSegmentType::END:
-                  return grip == Grip::START ? sp : p2;
+                  anchorPosition = (grip == Grip::START ? sp : p2);
+                  break;
             }
-      return QPointF();
+
+      const Page* p = system()->page();
+      const QPointF pageOffset = p ? p->pos() : QPointF();
+
+      result << QLineF(anchorPosition, gripsPositions().at(gripIndex)).translated(pageOffset);
+
+      return result;
       }
 
 //---------------------------------------------------------
@@ -87,29 +105,26 @@ void SlurTieSegment::move(const QPointF& s)
 
 void SlurTieSegment::spatiumChanged(qreal oldValue, qreal newValue)
       {
+      Element::spatiumChanged(oldValue, newValue);
       qreal diff = newValue / oldValue;
       for (UP& u : _ups)
             u.off *= diff;
       }
 
 //---------------------------------------------------------
-//   startEdit
+//   gripsPositions
 //---------------------------------------------------------
 
-void SlurTieSegment::startEdit(EditData& ed)
+std::vector<QPointF> SlurTieSegment::gripsPositions(const EditData&) const
       {
-      Element::startEdit(ed);
-      ed.grips   = int(Grip::GRIPS);
-      ed.curGrip = Grip::END;
-      }
+      const int ngrips = gripsCount();
+      std::vector<QPointF> grips(ngrips);
 
-//---------------------------------------------------------
-//   endEdit
-//---------------------------------------------------------
+      const QPointF p(pagePos());
+      for (int i = 0; i < ngrips; ++i)
+            grips[i] = _ups[i].p + _ups[i].off + p;
 
-void SlurTieSegment::endEdit(EditData& ed)
-      {
-      Element::endEdit(ed);
+      return grips;
       }
 
 //---------------------------------------------------------
@@ -119,6 +134,9 @@ void SlurTieSegment::endEdit(EditData& ed)
 void SlurTieSegment::startEditDrag(EditData& ed)
       {
       ElementEditData* eed = ed.getData(this);
+      IF_ASSERT_FAILED(eed) {
+            return;
+            }
       for (auto i : { Pid::SLUR_UOFF1, Pid::SLUR_UOFF2, Pid::SLUR_UOFF3, Pid::SLUR_UOFF4, Pid::OFFSET })
             eed->pushProperty(i);
       }
@@ -237,7 +255,7 @@ bool SlurTieSegment::setProperty(Pid propertyId, const QVariant& v)
             default:
                   return SpannerSegment::setProperty(propertyId, v);
             }
-      score()->setLayoutAll();
+      triggerLayoutAll();
       return true;
       }
 
@@ -311,7 +329,7 @@ void SlurTieSegment::writeSlur(XmlWriter& xml, int no) const
 
       xml.stag(this, QString("no=\"%1\"").arg(no));
 
-      qreal _spatium = spatium();
+      qreal _spatium = score()->spatium();
       if (!ups(Grip::START).off.isNull())
             xml.tag("o1", ups(Grip::START).off / _spatium);
       if (!ups(Grip::BEZIER1).off.isNull())
@@ -330,7 +348,7 @@ void SlurTieSegment::writeSlur(XmlWriter& xml, int no) const
 
 void SlurTieSegment::read(XmlReader& e)
       {
-      qreal _spatium = spatium();
+      qreal _spatium = score()->spatium();
       while (e.readNextStartElement()) {
             const QStringRef& tag(e.name());
             if (tag == "o1")
@@ -341,7 +359,7 @@ void SlurTieSegment::read(XmlReader& e)
                   ups(Grip::BEZIER2).off = e.readPoint() * _spatium;
             else if (tag == "o4")
                   ups(Grip::END).off = e.readPoint() * _spatium;
-            else if (!Element::readProperties(e))
+            else if (!readProperties(e))
                   e.unknown();
             }
       }
@@ -372,7 +390,7 @@ void SlurTieSegment::drawEditMode(QPainter* p, EditData& ed)
             // Qt::NoBrush is a Qt::BrushStyle, however, so if it is passed in a ternary
             // operator with a QColor, a new QColor will be created from it, and from that
             // a QBrush. Instead, what we really want to do is pass Qt::NoBrush as a
-            // Qt::BrushStyle, therefore this requires two seperate function calls:
+            // Qt::BrushStyle, therefore this requires two separate function calls:
             if (Grip(i) == ed.curGrip)
                   p->setBrush(MScore::frameMarginColor);
             else
@@ -415,7 +433,7 @@ SlurTie::~SlurTie()
 
 void SlurTie::writeProperties(XmlWriter& xml) const
       {
-      Element::writeProperties(xml);
+      Spanner::writeProperties(xml);
       int idx = 0;
       for (const SpannerSegment* ss : spannerSegments())
             ((SlurTieSegment*)ss)->writeSlur(xml, idx++);
@@ -444,7 +462,7 @@ bool SlurTie::readProperties(XmlReader& e)
             s->read(e);
             add(s);
             }
-      else if (!Element::readProperties(e))
+      else if (!Spanner::readProperties(e))
             return false;
       return true;
       }
@@ -455,10 +473,7 @@ bool SlurTie::readProperties(XmlReader& e)
 
 void SlurTie::read(XmlReader& e)
       {
-      while (e.readNextStartElement()) {
-            if (!SlurTie::readProperties(e))
-                  e.unknown();
-            }
+      Spanner::read(e);
       }
 
 //---------------------------------------------------------
@@ -511,7 +526,7 @@ bool SlurTie::setProperty(Pid propertyId, const QVariant& v)
             default:
                   return Spanner::setProperty(propertyId, v);
             }
-      score()->setLayoutAll();
+      triggerLayoutAll();
       return true;
       }
 
@@ -529,44 +544,6 @@ QVariant SlurTie::propertyDefault(Pid id) const
             default:
                   return Spanner::propertyDefault(id);
             }
-      }
-
-//---------------------------------------------------------
-//   firstNoteRestSegmentX
-//    in System() coordinates
-//    returns the position just after the last non-chordrest segment
-//---------------------------------------------------------
-
-qreal SlurTie::firstNoteRestSegmentX(System* system)
-      {
-      for (const MeasureBase* mb : system->measures()) {
-            if (mb->isMeasure()) {
-                  const Measure* measure = static_cast<const Measure*>(mb);
-                  for (const Segment* seg = measure->first(); seg; seg = seg->next()) {
-                        if (seg->isChordRestType()) {
-                              // first CR found; back up to previous segment
-                              seg = seg->prev();
-                              if (seg) {
-                                    // find maximum width
-                                    qreal width = 0.0;
-                                    int n = score()->nstaves();
-                                    for (int i = 0; i < n; ++i) {
-                                          if (!system->staff(i)->show())
-                                                continue;
-                                          Element* e = seg->element(i * VOICES);
-                                          if (e)
-                                                width = qMax(width, e->width());
-                                          }
-                                    return seg->measure()->pos().x() + seg->pos().x() + width;
-                                    }
-                              else
-                                    return 0.0;
-                              }
-                        }
-                  }
-            }
-      qDebug("firstNoteRestSegmentX: did not find segment");
-      return 0.0;
       }
 
 //---------------------------------------------------------

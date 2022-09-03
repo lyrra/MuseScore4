@@ -79,7 +79,7 @@ Placement Fingering::calculatePlacement() const
       Staff* staff = chord->staff();
       Part* part   = staff->part();
       int nstaves  = part->nstaves();
-      bool voices  = chord->measure()->hasVoices(staff->idx());
+      bool voices  = chord->measure()->hasVoices(staff->idx(), chord->tick(), chord->actualTicks());
       bool below   = voices ? !chord->up() : (nstaves > 1) && (staff->rstaff() == nstaves - 1);
       return below ? Placement::BELOW : Placement::ABOVE;
       }
@@ -105,20 +105,21 @@ void Fingering::layout()
       if (autoplace() && note()) {
             Note* n      = note();
             Chord* chord = n->chord();
-            bool voices  = chord->measure()->hasVoices(chord->staffIdx());
+            bool voices  = chord->measure()->hasVoices(chord->staffIdx(), chord->tick(), chord->actualTicks());
             bool tight   = voices && chord->notes().size() == 1 && !chord->beam() && tid() != Tid::STRING_NUMBER;
 
             qreal headWidth = n->bboxRightPos();
 
             // update offset after drag
             qreal rebase = 0.0;
-            if (offsetChanged() != OffsetChange::NONE)
+            if (offsetChanged() != OffsetChange::NONE && !tight)
                   rebase = rebaseOffset();
 
             // temporarily exclude self from chord shape
             setAutoplace(false);
 
             if (layoutType() == ElementType::CHORD) {
+                  bool above = placeAbove();
                   Stem* stem = chord->stem();
                   Segment* s = chord->segment();
                   Measure* m = s->measure();
@@ -130,7 +131,7 @@ void Fingering::layout()
                   if (n->mirror())
                         rxpos() -= n->ipos().x();
                   rxpos() += headWidth * .5;
-                  if (placeAbove()) {
+                  if (above) {
                         if (tight) {
                               if (chord->stem())
                                     rxpos() -= 0.8 * sp;
@@ -160,8 +161,8 @@ void Fingering::layout()
                               if (offsetChanged() != OffsetChange::NONE) {
                                     // user moved element within the skyline
                                     // we may need to adjust minDistance, yd, and/or offset
-                                    bool inStaff = placeAbove() ? r.bottom() + rebase > 0.0 : r.top() + rebase < staff()->height();
-                                    rebaseMinDistance(md, yd, sp, rebase, inStaff);
+                                    bool inStaff = above ? r.bottom() + rebase > 0.0 : r.top() + rebase < staff()->height();
+                                    rebaseMinDistance(md, yd, sp, rebase, above, inStaff);
                                     }
                               rypos() += yd;
                               }
@@ -196,8 +197,8 @@ void Fingering::layout()
                               if (offsetChanged() != OffsetChange::NONE) {
                                     // user moved element within the skyline
                                     // we may need to adjust minDistance, yd, and/or offset
-                                    bool inStaff = placeAbove() ? r.bottom() + rebase > 0.0 : r.top() + rebase < staff()->height();
-                                    rebaseMinDistance(md, yd, sp, rebase, inStaff);
+                                    bool inStaff = above ? r.bottom() + rebase > 0.0 : r.top() + rebase < staff()->height();
+                                    rebaseMinDistance(md, yd, sp, rebase, above, inStaff);
                                     }
                               rypos() += yd;
                               }
@@ -241,7 +242,7 @@ QString Fingering::accessibleInfo() const
       QString rez = Element::accessibleInfo();
       if (tid() == Tid::STRING_NUMBER)
             rez += " " + QObject::tr("String number");
-      return QString("%1: %2").arg(rez).arg(plainText());
+      return QString("%1: %2").arg(rez, plainText());
       }
 
 //---------------------------------------------------------

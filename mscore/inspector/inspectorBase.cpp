@@ -26,9 +26,12 @@
 #include "scoreview.h"
 #include "script/script.h"
 #include "resetButton.h"
+#include "telemetrymanager.h"
 #include "tourhandler.h"
 
 namespace Ms {
+
+std::unique_ptr<InspectorEventObserver> InspectorEventObserver::i;
 
 //---------------------------------------------------------
 //   InspectorBase
@@ -45,6 +48,7 @@ InspectorBase::InspectorBase(QWidget* parent)
       _layout->setSpacing(0);
       _layout->setContentsMargins(0, 10, 0, 0);
       _layout->addStretch(100);
+      scrollPreventer = new InspectorScrollPreventer(this);
       }
 
 //---------------------------------------------------------
@@ -68,12 +72,13 @@ QVariant InspectorBase::getValue(const InspectorItem& ii) const
                   val = cb->itemData(val).toInt();
             v = val;
             }
-      else if (qobject_cast<QCheckBox*>(w) || qobject_cast<QPushButton*>(w) || qobject_cast<QToolButton*>(w))
+      else if (qobject_cast<Awl::ColorLabel*>(w))
+            v = static_cast<Awl::ColorLabel*>(w)->color();
+      else if (qobject_cast<QCheckBox*>(w) || qobject_cast<QPushButton*>(w) ||
+               qobject_cast<QToolButton*>(w) || qobject_cast<QRadioButton*>(w))
             v = w->property("checked");
       else if (qobject_cast<QLineEdit*>(w))
             v =  w->property("text");
-      else if (qobject_cast<Awl::ColorLabel*>(w))
-            v = static_cast<Awl::ColorLabel*>(w)->color();
       else if (qobject_cast<Ms::AlignSelect*>(w))
             v = int(static_cast<Ms::AlignSelect*>(w)->align());
       else if (qobject_cast<Ms::FontStyleSelect*>(w))
@@ -93,7 +98,7 @@ QVariant InspectorBase::getValue(const InspectorItem& ii) const
                   break;
             case P_TYPE::POINT_SP_MM: {
                   Element* e = inspector->element();
-                  if (e->sizeIsSpatiumDependent())
+                  if (e->offsetIsSpatiumDependent())
                         v = v.toPointF() * e->score()->spatium();
                   else
                         v = v.toPointF() * DPMM;
@@ -153,7 +158,7 @@ void InspectorBase::setValue(const InspectorItem& ii, QVariant val)
                   break;
             case P_TYPE::POINT_SP_MM: {
                   Element* e = inspector->element();
-                  if (e->sizeIsSpatiumDependent())
+                  if (e->offsetIsSpatiumDependent())
                         val = val.toPointF() / e->score()->spatium();
                   else
                         val = val.toPointF() / DPMM;
@@ -218,14 +223,16 @@ void InspectorBase::setValue(const InspectorItem& ii, QVariant val)
             }
       else if (qobject_cast<QCheckBox*>(w))
             static_cast<QCheckBox*>(w)->setChecked(val.toBool());
+      else if (qobject_cast<Awl::ColorLabel*>(w))
+            static_cast<Awl::ColorLabel*>(w)->setColor(val.value<QColor>());
+      else if (qobject_cast<QRadioButton*>(w))
+            static_cast<QRadioButton*>(w)->setChecked(val.toBool());
       else if (qobject_cast<QPushButton*>(w))
             static_cast<QPushButton*>(w)->setChecked(val.toBool());
       else if (qobject_cast<QToolButton*>(w))
             static_cast<QToolButton*>(w)->setChecked(val.toBool());
       else if (qobject_cast<QLineEdit*>(w))
             static_cast<QLineEdit*>(w)->setText(val.toString());
-      else if (qobject_cast<Awl::ColorLabel*>(w))
-            static_cast<Awl::ColorLabel*>(w)->setColor(val.value<QColor>());
       else if (qobject_cast<Ms::AlignSelect*>(w))
             static_cast<Ms::AlignSelect*>(w)->setAlign(Align(val.toInt()));
       else if (qobject_cast<Ms::FontStyleSelect*>(w))
@@ -328,7 +335,7 @@ void InspectorBase::setElement()
 void InspectorBase::checkDifferentValues(const InspectorItem& ii)
       {
       bool valuesAreDifferent = false;
-      QColor c(preferences.isThemeDark() ? Qt::yellow : Qt::darkCyan);
+      QColor c(Ms::preferences.getColor(preferences.isThemeDark() ? PREF_UI_INSPECTOR_STYLED_TEXT_COLOR_DARK : PREF_UI_INSPECTOR_STYLED_TEXT_COLOR_LIGHT));
 
       if (inspector->el()->size() > 1) {
             Pid id      = ii.t;
@@ -344,7 +351,7 @@ void InspectorBase::checkDifferentValues(const InspectorItem& ii)
                   if (valuesAreDifferent)
                         break;
                   }
-            ii.w->setStyleSheet(valuesAreDifferent ? QString("* { color: %1 }").arg(c.name()) : "");
+            ii.w->setStyleSheet(valuesAreDifferent ? QString("* { color: %1; } QToolTip { color: palette(tooltiptext); }").arg(c.name()) : " ");
             }
 
       //deal with reset if only one element, or if values are the same
@@ -355,16 +362,16 @@ void InspectorBase::checkDifferentValues(const InspectorItem& ii)
 
             switch (styledValue) {
                   case PropertyFlags::STYLED:
-                        ii.w->setStyleSheet(QString("* { color: %1 }").arg(c.name()));
+                        ii.w->setStyleSheet(QString("* { color: %1; } QToolTip { color: palette(tooltiptext); }").arg(c.name()));
                         enableReset = false;
                         break;
                   case PropertyFlags::UNSTYLED:
-                        ii.w->setStyleSheet("");
+                        ii.w->setStyleSheet(" ");
                         enableReset = true;
                         break;
                   case PropertyFlags::NOSTYLE:
                         enableReset = !isDefault(ii);
-                        ii.w->setStyleSheet("");
+                        ii.w->setStyleSheet(" ");
                         break;
                   }
             }
@@ -394,6 +401,7 @@ void InspectorBase::valueChanged(int idx, bool reset)
       if (ScriptRecorder* rec = mscore->getScriptRecorder())
             rec->recordInspectorValueChange(iElement, ii, val2);
 #endif
+      InspectorEventObserver::instance()->event(reset ? InspectorEventObserver::PropertyReset : InspectorEventObserver::PropertyChange, ii, iElement);
 
       if (ii.t == Pid::AUTOPLACE)
             TourHandler::startTour("autoplace-tour");
@@ -422,6 +430,12 @@ void InspectorBase::valueChanged(int idx, bool reset)
                   setValue(ii, val2);           // set UI, this may call valueChanged()
                   }
             e->undoChangeProperty(id, val2, ps);
+            if (e->isClef() && (id == Pid::SHOW_COURTESY)) {
+                  // copy into 'other clef' the ShowCourtesy set for this clef
+                  Clef* otherClef = toClef(e)->otherClef();
+                  if (otherClef)
+                        otherClef->undoChangeProperty(id, val2, ps);
+                  }
             }
       inspector->setInspectorEdit(true);
       checkDifferentValues(ii);
@@ -443,8 +457,7 @@ void InspectorBase::valueChanged(int idx, bool reset)
       recursion = false;
 
       ScoreView* cv = mscore->currentScoreView();
-      if (cv->editMode())
-            cv->updateGrips();
+      cv->updateGrips();
       }
 
 //---------------------------------------------------------
@@ -469,6 +482,8 @@ void InspectorBase::setStyleClicked(int i)
             e = delegate;
       Score* score = e->score();
 
+      InspectorEventObserver::instance()->event(InspectorEventObserver::PropertySetStyle, ii, e);
+
       Sid sidx = e->getPropertyStyle(ii.t);
       if (sidx == Sid::NOSTYLE)
             return;
@@ -479,7 +494,7 @@ void InspectorBase::setStyleClicked(int i)
       else if (t == P_TYPE::POINT_SP)
             val = val.toPointF() / score->spatium();
       else if (t == P_TYPE::POINT_SP_MM) {
-            if (e->sizeIsSpatiumDependent())
+            if (e->offsetIsSpatiumDependent())
                   val = val.toPointF() / score->spatium();
             else
                   val = val.toPointF() / DPMM;
@@ -544,7 +559,11 @@ void InspectorBase::mapSignals(const std::vector<InspectorItem>& il, const std::
                         resetButton->setIcon(*icons[int(Icons::reset_ICON)]);
                         connect(resetButton, &QToolButton::clicked, [=] { resetClicked(i); });
                         Sid sidx = inspector->element()->getPropertyStyle(ii.t);
-                        if (sidx != Sid::NOSTYLE) {
+                        // S button for fingering placement is bugged and proposed to be hidden
+                        // it can be brought back once the relevant design is fixed, 
+                        // for example changing values of fingering placement to "Auto, Above, Below", "Auto" as default
+                        // See https://musescore.org/en/node/288372 and https://musescore.org/en/node/297092
+                        if (sidx != Sid::NOSTYLE && sidx != Sid::fingeringPlacement) {
                               QMenu* menu = new QMenu(this);
                               resetButton->setMenu(menu);
                               resetButton->setPopupMode(QToolButton::MenuButtonPopup);
@@ -556,7 +575,8 @@ void InspectorBase::mapSignals(const std::vector<InspectorItem>& il, const std::
                         ResetButton* b = qobject_cast<ResetButton*>(rw);
                         connect(b, &ResetButton::resetClicked, [=] { resetClicked(i); });
                         Sid sidx = inspector->element()->getPropertyStyle(ii.t);
-                        if (sidx != Sid::NOSTYLE) {
+                        // Same, see comment above
+                        if (sidx != Sid::NOSTYLE && sidx != Sid::fingeringPlacement) {
                               b->enableSetStyle(true);
                               connect(b, &ResetButton::setStyleClicked, [=] { setStyleClicked(i); });
                               }
@@ -565,6 +585,16 @@ void InspectorBase::mapSignals(const std::vector<InspectorItem>& il, const std::
             QWidget* w = ii.w;
             if (!w)
                   continue;
+
+            if (qobject_cast<QAbstractSpinBox*>(w)
+                || qobject_cast<QComboBox*>(w)) {
+                  w->setFocusPolicy(Qt::StrongFocus);
+                  w->installEventFilter(scrollPreventer);
+                  }
+            else if (qobject_cast<OffsetSelect*>(w)) {
+                  qobject_cast<OffsetSelect*>(w)->installScrollPreventer(scrollPreventer);
+                  }
+
             if (qobject_cast<QDoubleSpinBox*>(w))
                   connect(qobject_cast<QDoubleSpinBox*>(w), QOverload<double>::of(&QDoubleSpinBox::valueChanged), [=] { valueChanged(i); });
             else if (qobject_cast<QSpinBox*>(w))
@@ -575,14 +605,16 @@ void InspectorBase::mapSignals(const std::vector<InspectorItem>& il, const std::
                   connect(qobject_cast<QComboBox*>(w), QOverload<int>::of(&QComboBox::currentIndexChanged), [=] { valueChanged(i); });
             else if (qobject_cast<QCheckBox*>(w))
                   connect(qobject_cast<QCheckBox*>(w), QOverload<bool>::of(&QCheckBox::toggled), [=] { valueChanged(i); });
+            else if (qobject_cast<Awl::ColorLabel*>(w))
+                  connect(qobject_cast<Awl::ColorLabel*>(w), QOverload<QColor>::of(&Awl::ColorLabel::colorChanged), [=] { valueChanged(i); });
+            else if (qobject_cast<QRadioButton*>(w))
+                  connect(qobject_cast<QRadioButton*>(w), QOverload<bool>::of(&QRadioButton::toggled), [=] { valueChanged(i); });
             else if (qobject_cast<QPushButton*>(w))
                   connect(qobject_cast<QPushButton*>(w), QOverload<bool>::of(&QPushButton::toggled), [=] { valueChanged(i); });
             else if (qobject_cast<QToolButton*>(w))
                   connect(qobject_cast<QToolButton*>(w), QOverload<bool>::of(&QToolButton::toggled), [=] { valueChanged(i); });
             else if (qobject_cast<QLineEdit*>(w))
                   connect(qobject_cast<QLineEdit*>(w), QOverload<const QString&>::of(&QLineEdit::textChanged), [=] { valueChanged(i); });
-            else if (qobject_cast<Awl::ColorLabel*>(w))
-                  connect(qobject_cast<Awl::ColorLabel*>(w), QOverload<QColor>::of(&Awl::ColorLabel::colorChanged), [=] { valueChanged(i); });
             else if (qobject_cast<Ms::AlignSelect*>(w))
                   connect(qobject_cast<Ms::AlignSelect*>(w), QOverload<Align>::of(&Ms::AlignSelect::alignChanged), [=] { valueChanged(i); });
             else if (qobject_cast<Ms::FontStyleSelect*>(w))
@@ -650,5 +682,63 @@ void InspectorBase::resetToStyle()
       score->endCmd();
       }
 
+//---------------------------------------------------------
+//   eventFilter
+///   This blocks scrolling on a scrollable thing when not in focus.
+///   `watched` should be a QComboBox or QAbstractSpinBox.
+///   If this event filter is on any non-QWidget, it will crash.
+//---------------------------------------------------------
+
+bool InspectorScrollPreventer::eventFilter(QObject* watched, QEvent* event)
+      {
+      if (event->type() != QEvent::Wheel)
+            return QObject::eventFilter(watched, event);
+
+      if (!qobject_cast<QWidget*>(watched)->hasFocus())
+            return true;
+
+      return QObject::eventFilter(watched, event);
+      }
+
+//---------------------------------------------------------
+//   event
+//---------------------------------------------------------
+
+void InspectorEventObserver::event(EventType evtType, const InspectorItem& ii, const Element* e)
+      {
+#ifndef TELEMETRY_DISABLED
+      //if inspector data IS the enabled telemetry data
+      if (Ms::enabledTelemetryDataTypes & Ms::TelemetryDataCollectionType::COLLECT_INSPECTOR_DATA) {
+            QString evtCategory;
+            switch (evtType) {
+                  case EventType::PropertyChange:
+                        evtCategory = QStringLiteral("inspector-property-change");
+                        break;
+                  case EventType::PropertyReset:
+                        evtCategory = QStringLiteral("inspector-property-reset");
+                        break;
+                  case EventType::PropertySetStyle:
+                        evtCategory = QStringLiteral("inspector-property-set-style");
+                        break;
+                  }
+
+            const QObject* w = ii.w;
+            const QObject* p = w->parent();
+            while (p && !qobject_cast<const InspectorBase*>(p)) {
+                  w = p;
+                  p = p->parent();
+                  }
+            const QString inspectorName = w->objectName();
+
+            const QString evtAction = QStringLiteral("%1/%2").arg(inspectorName).arg(propertyName(ii.t));
+            const QString evtLabel = e ? e->name() : "null";
+            TelemetryManager::telemetryService()->sendEvent(evtCategory, evtAction, evtLabel);
+            }
+#else
+      Q_UNUSED(evtType);
+      Q_UNUSED(ii);
+      Q_UNUSED(e);
+#endif
+      }
 }
 

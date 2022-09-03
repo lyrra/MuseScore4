@@ -8,7 +8,9 @@
 # OS X terminal build
 #MSCORE=../../../applebuild/mscore.app/Contents/MacOS/mscore
 # OS X Xcode build
-MSCORE=../../../build.xcode/mscore/Debug/mscore.app/Contents/MacOS/mscore
+#MSCORE=../../../build.xcode/mscore/Debug/mscore.app/Contents/MacOS/mscore
+# OS X Xcode build (since early 2020)
+MSCORE=../../../build.xcode/main/Debug/mscore.app/Contents/MacOS/mscore
 
 echo "----------------------------------------------"
 echo "Regression Tests for MuseScore MusicXML import"
@@ -20,6 +22,23 @@ echo
 
 testcount=0
 failures=0
+
+rwtestMscxRef() {
+      echo -n "testing load/save $1";
+      REF=`basename $1 .mscx`_ref.xml
+      $MSCORE $1 -d -o mops.xml &> /dev/null
+      if diff -q $REF mops.xml &> /dev/null; then
+            echo -e "\r\t\t\t\t\t\t...OK";
+      else
+            echo -e "\r\t\t\t\t\t\t...FAILED";
+            failures=$(($failures+1));
+            #echo "+++++++++DIFF++++++++++++++"
+            diff $REF mops.xml
+            #echo "+++++++++++++++++++++++++++"
+      fi
+      rm mops.xml
+      testcount=$(($testcount+1))
+      }
 
 rwtestXml() {
       echo -n "testing load/save $1";
@@ -55,13 +74,20 @@ rwtestXmlRef() {
       }
 
 usage() {
-      echo "usage: $0 <testfile.xml>"
+      echo "usage: $0 <testfile.[mscx|xml]>"
       echo
       exit 1
       }
 
 if [ $# -eq 1 ]; then
-      rwtestXml $1
+      if [[ $1 == *.mscx ]]; then
+            rwtestMscxRef $1
+            exit 0
+      elif [[ $1 == *.xml ]]; then
+            rwtestXml $1
+      else
+            usage
+      fi
 else
       usage
 fi

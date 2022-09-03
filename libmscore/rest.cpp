@@ -33,24 +33,38 @@
 namespace Ms {
 
 //---------------------------------------------------------
+//   restStyle
+//---------------------------------------------------------
+
+static const ElementStyle restStyle {
+      { Sid::mmRestNumberPos, Pid::MMREST_NUMBER_POS },
+      };
+
+//---------------------------------------------------------
 //    Rest
 //--------------------------------------------------------
 
 Rest::Rest(Score* s)
   : ChordRest(s)
       {
+      _mmWidth   = 0;
       _beamMode  = Beam::Mode::NONE;
       _sym       = SymId::restQuarter;
+      if (score())
+            initElementStyle(&restStyle);
       }
 
 Rest::Rest(Score* s, const TDuration& d)
   : ChordRest(s)
       {
+      _mmWidth   = 0;
       _beamMode  = Beam::Mode::NONE;
       _sym       = SymId::restQuarter;
       setDurationType(d);
       if (d.fraction().isValid())
             setTicks(d.fraction());
+      if (score())
+            initElementStyle(&restStyle);
       }
 
 Rest::Rest(const Rest& r, bool link)
@@ -74,10 +88,11 @@ Rest::Rest(const Rest& r, bool link)
 
 void Rest::draw(QPainter* painter) const
       {
+      const StaffType* stt = staff() ? staff()->staffTypeForElement(this) : nullptr;
       if (
-         (staff() && staff()->isTabStaff(tick())
+         (stt && stt->isTabStaff()
          // in tab staff, do not draw rests is rests are off OR if dur. symbols are on
-         && (!staff()->staffType(tick())->showRests() || staff()->staffType(tick())->genDurations())
+         && (!stt->showRests() || stt->genDurations())
          && (!measure() || !measure()->isMMRest()))        // show multi measure rest always
          || generated()
             )
@@ -90,29 +105,39 @@ void Rest::draw(QPainter* painter) const
             //only on voice 1
             if (track() % VOICES)
                   return;
-            Measure* m = measure();
-            int n      = m->mmRestCount();
-            qreal pw   = _spatium * .7;
+
+            // draw number
+            int n = measure()->mmRestCount();
+            std::vector<SymId>&& s = toTimeSigString(QString("%1").arg(n));
+            QRectF numberBox = symBbox(s);
+            qreal y = _mmRestNumberPos * spatium() - staff()->height() * .5;
+            qreal x = (_mmWidth - numberBox.width()) * .5;
+            drawSymbols(s, painter, QPointF(x, y));
+
+            // draw horizontal line
+            qreal pw = _spatium * .7; // line width
             QPen pen(painter->pen());
             pen.setWidthF(pw);
             painter->setPen(pen);
+            qreal x1 = pw * .5; // half of the line width
+            qreal x2 = _mmWidth - x1;
 
-            qreal w  = _mmWidth;
-            qreal x2 =  w;
-            pw *= .5;
-            painter->drawLine(QLineF(pw, 0.0, _mmWidth - pw, 0.0));
+            // avoid painting the line when it collides with the number.
+            if ((y + (numberBox.height() * .5 )) > -x1  && (y - (numberBox.height() * .5 )) < x1) {
+                  qreal gapDistance = numberBox.width() * .5 + _spatium;
+                  qreal midpoint = (x1 + x2) * .5;
+                  painter->drawLine(QLineF(x1, 0.0, midpoint - gapDistance, 0.0));
+                  painter->drawLine(QLineF(midpoint + gapDistance, 0.0, x2, 0.0));
+                  }
+            else {
+                  painter->drawLine(QLineF(x1, 0.0, x2, 0.0));
+                  }
 
-            // draw vertical lines:
+            // draw vertical lines
             pen.setWidthF(_spatium * .2);
             painter->setPen(pen);
             painter->drawLine(QLineF(0.0, -_spatium, 0.0, _spatium));
-            painter->drawLine(QLineF(x2,  -_spatium, x2,  _spatium));
-
-            std::vector<SymId>&& s = toTimeSigString(QString("%1").arg(n));
-            qreal y = -_spatium * 1.5 - staff()->height() *.5;
-            qreal x = x2 * .5;
-            x      -= symBbox(s).width() * .5;
-            drawSymbols(s, painter, QPointF(x, y));
+            painter->drawLine(QLineF(_mmWidth, -_spatium, _mmWidth,  _spatium));
             }
       else
             drawSymbol(_sym, painter);
@@ -193,7 +218,6 @@ bool Rest::acceptDrop(EditData& data) const
          || (type == ElementType::STAFF_STATE)
          || (type == ElementType::INSTRUMENT_CHANGE)
          || (type == ElementType::DYNAMIC)
-         || (type == ElementType::HAIRPIN)
          || (type == ElementType::HARMONY)
          || (type == ElementType::TEMPO_TEXT)
          || (type == ElementType::REHEARSAL_MARK)
@@ -205,7 +229,8 @@ bool Rest::acceptDrop(EditData& data) const
          ) {
             return true;
             }
-      return false;
+      // prevent 'hanging' slurs, avoid crash on tie
+      return type != ElementType::SLUR && type != ElementType::TIE && e->isSpanner();
       }
 
 //---------------------------------------------------------
@@ -240,7 +265,7 @@ Element* Rest::drop(EditData& data)
                         if (seg) {
                               ChordRest* cr = toChordRest(seg->element(track()));
                               if (cr)
-                                    score()->nextInputPos(cr, true);
+                                    score()->nextInputPos(cr, false);
                               }
                         }
                   delete e;
@@ -326,8 +351,25 @@ void Rest::layoutMMRest(qreal val)
       bbox().setRect(0.0, -_spatium, _mmWidth, _spatium * 2);
 
       // text
-//      qreal y  = -_spatium * 2.5 - staff()->height() *.5;
-//      addbbox(QRectF(0, y, w, _spatium * 2));         // approximation
+      addbbox(mmRestNumberRect());
+}
+
+//---------------------------------------------------------
+//   mmRestNumberRect
+///   returns the mmrest number's bounding rectangle
+//---------------------------------------------------------
+
+QRectF Rest::mmRestNumberRect() const
+      {
+      int n = measure()->mmRestCount();
+      std::vector<SymId>&& s = toTimeSigString(QString("%1").arg(n));
+
+      QRectF r = symBbox(s);
+      qreal y = _mmRestNumberPos * spatium() - staff()->height() * .5;
+      qreal x = (_mmWidth - r.width()) * .5;
+
+      r.translate(QPointF(x, y));
+      return r;
       }
 
 //---------------------------------------------------------
@@ -348,14 +390,14 @@ void Rest::layout()
             }
 
       rxpos() = 0.0;
-      if (staff() && staff()->isTabStaff(tick())) {
-            const StaffType* tab = staff()->staffType(tick());
+      const StaffType* stt = staffType();
+      if (stt && stt->isTabStaff()) {
             // if rests are shown and note values are shown as duration symbols
-            if (tab->showRests() && tab->genDurations()) {
+            if (stt->showRests() && stt->genDurations()) {
                   TDuration::DurationType type = durationType().type();
                   int                     dots = durationType().dots();
                   // if rest is whole measure, convert into actual type and dot values
-                  if (type == TDuration::DurationType::V_MEASURE) {
+                  if (type == TDuration::DurationType::V_MEASURE && measure()) {
                         Fraction ticks = measure()->ticks();
                         TDuration dur  = TDuration(ticks).type();
                         type           = dur.type();
@@ -363,9 +405,9 @@ void Rest::layout()
                         }
                   // symbol needed; if not exist, create, if exists, update duration
                   if (!_tabDur)
-                        _tabDur = new TabDurationSymbol(score(), tab, type, dots);
+                        _tabDur = new TabDurationSymbol(score(), stt, type, dots);
                   else
-                        _tabDur->setDuration(type, dots, tab);
+                        _tabDur->setDuration(type, dots, stt);
                   _tabDur->setParent(this);
 // needed?        _tabDur->setTrack(track());
                   _tabDur->layout();
@@ -386,7 +428,7 @@ void Rest::layout()
 
       qreal yOff       = offset().y();
       const Staff* stf = staff();
-      const StaffType*  st = stf->staffType(tick());
+      const StaffType*  st = stf ? stf->staffTypeForElement(this) : 0;
       qreal lineDist = st ? st->lineDistance().val() : 1.0;
       int userLine   = yOff == 0.0 ? 0 : lrint(yOff / (lineDist * _spatium));
       int lines      = st ? st->lines() : 5;
@@ -478,54 +520,58 @@ int Rest::getDotline(TDuration::DurationType durationType)
 int Rest::computeLineOffset(int lines)
       {
       Segment* s = segment();
-      bool offsetVoices = s && measure() && measure()->hasVoices(staffIdx());
+      bool offsetVoices = s && measure() && (voice() > 0 || measure()->hasVoices(staffIdx(), tick(), actualTicks()));
       if (offsetVoices && voice() == 0) {
             // do not offset voice 1 rest if there exists a matching invisible rest in voice 2;
             Element* e = s->element(track() + 1);
-            if (e && e->isRest() && (!e->visible() || toRest(e)->isGap())) {
+            if (e && e->isRest() && !e->visible() && !toRest(e)->isGap()) {
                   Rest* r = toRest(e);
                   if (r->globalTicks() == globalTicks()) {
                         offsetVoices = false;
                         }
                   }
             }
-#if 0
+
+      if (offsetVoices && voice() < 2) {
+            // in slash notation voices 1 and 2 are not offset outside the staff
+            // if the staff contains slash notation then only offset rests in voices 3 and 4
+            int baseTrack = staffIdx() * VOICES;
+            for (int v = 0; v < VOICES; ++v) {
+                  Element* e = s->element(baseTrack + v);
+                  if (e && e->isChord() && toChord(e)->slash()) {
+                        offsetVoices = false;
+                        break;
+                        }
+                  }
+            }
+
       if (offsetVoices && staff()->mergeMatchingRests()) {
-            // automatically merge matching rests in voices 1 & 2 if nothing in any other voice
+            // automatically merge matching rests if nothing in any other voice
             // this is not always the right thing to do do, but is useful in choral music
-            // and perhaps could be made enabled via a staff property
-            // so choral staves can be treated differently than others
+            // and can be enabled via a staff property
             bool matchFound = false;
-            bool nothingElse = true;
             int baseTrack = staffIdx() * VOICES;
             for (int v = 0; v < VOICES; ++v) {
                   if (v == voice())
                         continue;
                   Element* e = s->element(baseTrack + v);
-                  if (v <= 1) {
-                        // try to find match in other voice (1 or 2)
-                        if (e && e->type() == ElementType::REST) {
+                  // try to find match in any other voice
+                  if (e) {
+                        if (e->type() == ElementType::REST) {
                               Rest* r = toRest(e);
-                              if (r->globalDuration() == globalDuration()) {
+                              if (r->globalTicks() == globalTicks()) {
                                     matchFound = true;
                                     continue;
                                     }
                               }
                         // no match found; no sense looking for anything else
+                        matchFound = false;
                         break;
                         }
-                  else {
-                        // if anything in another voice, do not merge
-                        if (e) {
-                              nothingElse = false;
-                              break;
-                              }
-                        }
                   }
-            if (matchFound && nothingElse)
+            if (matchFound)
                   offsetVoices = false;
             }
-#endif
 
       int lineOffset    = 0;
       int assumedCenter = 4;
@@ -535,47 +581,103 @@ int Rest::computeLineOffset(int lines)
       if (offsetVoices) {
             // move rests in a multi voice context
             bool up = (voice() == 0) || (voice() == 2);     // TODO: use style values
+            
+            // Calculate extra offset to move rests above the highest resp. below the lowest note
+            // of this segment (for measure rests, of the whole measure) in all opposite voices. 
+            // Ignore stems and articulations, because which multi-voice they are at the opposite end.
+            int upOffset = up ? 1 : 0;
+            int line = up ? 10 : -10;
+
+            // For compatibility reasons apply automatic collision avoidance only if y-offset is unchanged 
+            if (qFuzzyIsNull(offset().y()) && autoplace()) {
+                  int firstTrack = staffIdx() * 4;
+                  int extraOffsetForFewLines = lines < 5 ? 2 : 0;
+                  bool isMeasureRest = durationType().type() == TDuration::DurationType::V_MEASURE;
+                  Segment* seg = isMeasureRest ? measure()->first() : s;
+                  while (seg) {
+                        for (const int& track : { firstTrack + upOffset, firstTrack + 2 + upOffset }) {
+                              Element* e = seg->element(track);
+                              if (e && e->isChord()) {
+                                    Chord* chord = toChord(e);
+                                    StaffGroup staffGroup = staff()->staffType(chord->tick())->group();
+                                    for (Note* note : chord->notes()) {
+                                          int nline = staffGroup == StaffGroup::TAB
+                                                ? note->string() * 2
+                                                : note->line();
+                                          nline = nline - centerDiff;
+                                          if (up && nline <= line) {
+                                                line = nline - extraOffsetForFewLines; 
+                                                if (note->accidentalType() != AccidentalType::NONE)
+                                                      line--;
+                                                }
+                                          else if (!up && nline >= line) {
+                                                line = nline + extraOffsetForFewLines;
+                                                if (note->accidentalType() != AccidentalType::NONE)
+                                                      line++;
+                                                }
+                                          }
+                                    }
+                              }
+                        seg = isMeasureRest ? seg->next() : nullptr;
+                        }
+                  }
+
             switch(durationType().type()) {
                   case TDuration::DurationType::V_LONG:
                         lineOffset = up ? -3 : 5;
+                        lineOffset += up ? (line < 5 ? line - 5 : 0) : (line > 5 ? line - 5 : 0);
                         break;
                   case TDuration::DurationType::V_BREVE:
                         lineOffset = up ? -3 : 5;
+                        lineOffset += up ? (line < 3 ? line - 3 : 0) : (line > 5 ? line - 5 : 0);
                         break;
                   case TDuration::DurationType::V_MEASURE:
-                        if (ticks() >= Fraction(2, 1))   // breve symbol
+                        if (ticks() >= Fraction(2, 1)) {  // breve symbol
                               lineOffset = up ? -3 : 5;
-                        else
+                              lineOffset += up ? (line < 3 ? line - 3 : 0) : (line > 5 ? line - 4 : 0);
+                              }
+                        else {
                               lineOffset = up ? -4 : 6;     // whole symbol
+                              lineOffset += up ? (line < 3 ? line - 2 : 0) : (line > 6 ? line - 5 : 0);
+                              }
                         break;
                   case TDuration::DurationType::V_WHOLE:
                         lineOffset = up ? -4 : 6;
+                        lineOffset += up ? (line < 3 ? line - 2 : 0) : (line > 6 ? line - 5 : 0);
                         break;
                   case TDuration::DurationType::V_HALF:
                         lineOffset = up ? -4 : 4;
+                        lineOffset += up ? (line < 2 ? line - 3 : 0) : (line > 5 ? line - 4 : 0);
                         break;
                   case TDuration::DurationType::V_QUARTER:
                         lineOffset = up ? -4 : 4;
+                        lineOffset += up ? (line < 5 ? line - 4 : 0) : (line > 3 ? line - 3 : 0);
                         break;
                   case TDuration::DurationType::V_EIGHTH:
                         lineOffset = up ? -4 : 4;
+                        lineOffset += up ? (line < 4 ? line - 4 : 0) : (line > 4 ? line - 4 : 0);
                         break;
                   case TDuration::DurationType::V_16TH:
                         lineOffset = up ? -6 : 4;
+                        lineOffset += up ? (line < 4 ? line - 4 : 0) : (line > 4 ? line - 4 : 0);
                         break;
                   case TDuration::DurationType::V_32ND:
                         lineOffset = up ? -6 : 6;
+                        lineOffset += up ? (line < 4 ? line - 4 : 0) : (line > 4 ? line - 4 : 0);
                         break;
                   case TDuration::DurationType::V_64TH:
                         lineOffset = up ? -8 : 6;
+                        lineOffset += up ? (line < 4 ? line - 4 : 0) : (line > 4 ? line - 4 : 0);
                         break;
                   case TDuration::DurationType::V_128TH:
                         lineOffset = up ? -8 : 8;
+                        lineOffset += up ? (line < 4 ? line - 4 : 0) : (line > 4 ? line - 4 : 0);
                         break;
                   case TDuration::DurationType::V_1024TH:
                   case TDuration::DurationType::V_512TH:
                   case TDuration::DurationType::V_256TH:
                         lineOffset = up ? -10 : 6;
+                        lineOffset += up ? (line < 4 ? line - 4 : 0) : (line > 4 ? line - 4 : 0);
                         break;
                   default:
                         break;
@@ -673,23 +775,13 @@ void Rest::setTrack(int val)
       }
 
 //---------------------------------------------------------
-//   reset
-//---------------------------------------------------------
-
-void Rest::reset()
-      {
-      undoChangeProperty(Pid::BEAM_MODE, int(Beam::Mode::NONE));
-      ChordRest::reset();
-      }
-
-//---------------------------------------------------------
 //   mag
 //---------------------------------------------------------
 
 qreal Rest::mag() const
       {
-      qreal m = staff()->mag(tick());
-      if (small())
+      qreal m = staff() ? staff()->mag(this) : 1.0;
+      if (isSmall())
             m *= score()->styleD(Sid::smallNoteMag);
       return m;
       }
@@ -753,12 +845,21 @@ qreal Rest::stemPosX() const
       }
 
 //---------------------------------------------------------
+//   rightEdge
+//---------------------------------------------------------
+
+qreal Rest::rightEdge() const
+      {
+      return x() + width();
+      }
+
+//---------------------------------------------------------
 //   accent
 //---------------------------------------------------------
 
 bool Rest::accent()
       {
-      return (voice() >= 2 && small());
+      return (voice() >= 2 && isSmall());
       }
 
 //---------------------------------------------------------
@@ -789,7 +890,7 @@ void Rest::setAccent(bool flag)
 QString Rest::accessibleInfo() const
       {
       QString voice = QObject::tr("Voice: %1").arg(QString::number(track() % VOICES + 1));
-      return QObject::tr("%1; Duration: %2; %3").arg(Element::accessibleInfo()).arg(durationUserName()).arg(voice);
+      return QObject::tr("%1; Duration: %2; %3").arg(Element::accessibleInfo(), durationUserName(), voice);
       }
 
 //---------------------------------------------------------
@@ -798,8 +899,10 @@ QString Rest::accessibleInfo() const
 
 QString Rest::screenReaderInfo() const
       {
-      QString voice = QObject::tr("Voice: %1").arg(QString::number(track() % VOICES + 1));
-      return QString("%1 %2 %3").arg(Element::accessibleInfo()).arg(durationUserName()).arg(voice);
+      Measure* m = measure();
+      bool voices = m ? m->hasVoices(staffIdx()) : false;
+      QString voice = voices ? QObject::tr("Voice: %1").arg(QString::number(track() % VOICES + 1)) : "";
+      return QString("%1 %2 %3").arg(Element::accessibleInfo(), durationUserName(), voice);
       }
 
 //---------------------------------------------------------
@@ -856,6 +959,7 @@ void Rest::write(XmlWriter& xml) const
             return;
       writeBeam(xml);
       xml.stag(this);
+      writeStyledProperties(xml);
       ChordRest::writeProperties(xml);
       el().write(xml);
       bool write_dots = false;
@@ -899,6 +1003,8 @@ void Rest::read(XmlReader& e)
                   dot->read(e);
                   add(dot);
                   }
+            else if (readStyledProperty(e, tag))
+                  ;
             else if (ChordRest::readProperties(e))
                   ;
             else
@@ -920,20 +1026,6 @@ void Rest::localSpatiumChanged(qreal oldValue, qreal newValue)
       }
 
 //---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
-
-QVariant Rest::getProperty(Pid propertyId) const
-      {
-      switch (propertyId) {
-            case Pid::GAP:
-                  return _gap;
-            default:
-                  return ChordRest::getProperty(propertyId);
-            }
-      }
-
-//---------------------------------------------------------
 //   propertyDefault
 //---------------------------------------------------------
 
@@ -942,8 +1034,47 @@ QVariant Rest::propertyDefault(Pid propertyId) const
       switch (propertyId) {
             case Pid::GAP:
                   return false;
+            case Pid::MMREST_NUMBER_POS:
+                  return score()->styleV(Sid::mmRestNumberPos);
             default:
                   return ChordRest::propertyDefault(propertyId);
+            }
+      }
+
+//————————————————————————————
+//   resetProperty
+//————————————————————————————
+
+void Rest::resetProperty(Pid id)
+      {
+      setProperty(id, propertyDefault(id));
+      return;
+      }
+
+//————————————————————————————
+//   getPropertyStyle
+//————————————————————————————
+
+Sid Rest::getPropertyStyle(Pid pid) const
+      {
+      if (pid == Pid::MMREST_NUMBER_POS)
+            return Sid::mmRestNumberPos;
+      return ChordRest::getPropertyStyle(pid);
+      }
+
+//---------------------------------------------------------
+//   getProperty
+//---------------------------------------------------------
+
+QVariant Rest::getProperty(Pid propertyId) const
+      {
+      switch (propertyId) {
+            case Pid::GAP:
+                  return _gap;
+            case Pid::MMREST_NUMBER_POS:
+                  return _mmRestNumberPos;
+            default:
+                  return ChordRest::getProperty(propertyId);
             }
       }
 
@@ -956,11 +1087,11 @@ bool Rest::setProperty(Pid propertyId, const QVariant& v)
       switch (propertyId) {
             case Pid::GAP:
                   _gap = v.toBool();
-                  score()->setLayout(tick());
+                  triggerLayout();
                   break;
             case Pid::VISIBLE:
                   setVisible(v.toBool());
-                  score()->setLayout(tick());
+                  triggerLayout();
                   break;
             case Pid::OFFSET:
                   score()->addRefresh(canvasBoundingRect());
@@ -969,7 +1100,11 @@ bool Rest::setProperty(Pid propertyId, const QVariant& v)
                   score()->addRefresh(canvasBoundingRect());
                   if (measure() && durationType().type() == TDuration::DurationType::V_MEASURE)
                          measure()->triggerLayout();
-                  score()->setLayout(tick());
+                  triggerLayout();
+                  break;
+            case Pid::MMREST_NUMBER_POS:
+                  _mmRestNumberPos = v.toDouble();
+                  triggerLayout();
                   break;
             default:
                   return ChordRest::setProperty(propertyId, v);
@@ -1018,14 +1153,7 @@ Shape Rest::shape() const
                   qreal _spatium = spatium();
                   shape.add(QRectF(0.0, -_spatium, _mmWidth, 2.0 * _spatium));
 
-                  int n    = measure()->mmRestCount();
-                  std::vector<SymId>&& s = toTimeSigString(QString("%1").arg(n));
-                  qreal x  = _mmWidth * .5;
-                  qreal y  = -_spatium * 1.5 - staff()->height() *.5;
-                  QRectF r = symBbox(s);
-                  x       -= r.width() * .5;
-                  r.translate(QPointF(x, y));
-                  shape.add(r);
+                  shape.add(mmRestNumberRect());
                   }
             else
 #ifndef NDEBUG
@@ -1041,6 +1169,24 @@ Shape Rest::shape() const
                   shape.add(e->shape().translated(e->pos()));
             }
       return shape;
+      }
+
+//---------------------------------------------------------
+//   editDrag
+//---------------------------------------------------------
+
+void Rest::editDrag(EditData& editData)
+      {
+      Segment* seg = segment();
+
+      if (editData.modifiers & Qt::ShiftModifier) {
+            const Spatium deltaSp = Spatium(editData.delta.x() / spatium());
+            seg->undoChangeProperty(Pid::LEADING_SPACE, seg->extraLeadingSpace() + deltaSp);
+            }
+      else {
+            setOffset(offset() + editData.evtDelta);
+            }
+      triggerLayout();
       }
 
 }

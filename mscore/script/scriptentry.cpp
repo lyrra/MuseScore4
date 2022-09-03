@@ -15,7 +15,7 @@
 #include "musescore.h"
 #include "inspector/inspector.h"
 #include "palette.h"
-#include "palettebox.h"
+#include "palette/paletteworkspace.h"
 #include "scoretab.h"
 #include "script.h"
 #include "testscript.h"
@@ -42,7 +42,7 @@ std::unique_ptr<ScriptEntry> ScriptEntry::deserialize(const QString& line)
       const QString& type = tokens[0];
       if (type == SCRIPT_CMD) {
             if (tokens.size() != 2) {
-                  qWarning("Unexpected number of tokens in command: %d", tokens.size());
+                  qDebug("Unexpected number of tokens in command: %d", tokens.size());
                   return nullptr;
                   }
             return std::unique_ptr<ScriptEntry>(new CommandScriptEntry(tokens[1]));
@@ -57,7 +57,7 @@ std::unique_ptr<ScriptEntry> ScriptEntry::deserialize(const QString& line)
             return InspectorScriptEntry::deserialize(tokens);
       if (type == SCRIPT_EXCERPT_CHANGE)
             return ExcerptChangeScriptEntry::deserialize(tokens);
-      qWarning() << "Unsupported action type:" << type;
+      qDebug() << "Unsupported action type:" << type;
       return nullptr;
       }
 
@@ -100,7 +100,7 @@ QString InitScriptEntry::serialize() const
 std::unique_ptr<ScriptEntry> InitScriptEntry::deserialize(const QStringList& tokens)
       {
       if (tokens.size() != 2) {
-            qWarning("init: unexpected number of tokens: %d", tokens.size());
+            qDebug("init: unexpected number of tokens: %d", tokens.size());
             return nullptr;
             }
       return std::unique_ptr<ScriptEntry>(new InitScriptEntry(tokens[1]));
@@ -120,7 +120,7 @@ bool CommandScriptEntry::execute(ScriptContext& ctx) const
 //   serializePropertyValue
 //---------------------------------------------------------
 
-static const QString whitespaceRepr("&#032");
+static const QString whitespaceRepr("&#032;");
 
 static QString serializePropertyValue(Pid pid, const QVariant& val)
       {
@@ -152,16 +152,6 @@ static Pid deserializePropertyId(ElementType type, const QString& name)
       }
 
 //---------------------------------------------------------
-//   PaletteCellInfo
-//---------------------------------------------------------
-
-struct PaletteCellInfo {
-      Palette* palette;
-      int idx;
-      const Element* e;
-      };
-
-//---------------------------------------------------------
 //   PaletteElementScriptEntry::_pids
 //    List of PIDs used to distinguish palette elements,
 //    sorted by their priority (PIDs from the beginning of
@@ -178,6 +168,8 @@ const std::initializer_list<Pid> PaletteElementScriptEntry::_pids {
       Pid::SUB_STYLE,
       Pid::ACTION, // Icons, e.g. grace notes, beam mode etc.
       Pid::BARLINE_TYPE,
+      Pid::BARLINE_SPAN_FROM,
+      Pid::BARLINE_SPAN_TO,
       Pid::LAYOUT_BREAK,
       Pid::ACCIDENTAL_TYPE,
       Pid::GLISS_TYPE,
@@ -190,6 +182,19 @@ const std::initializer_list<Pid> PaletteElementScriptEntry::_pids {
       Pid::OTTAVA_TYPE,
       Pid::CLEF_TYPE_CONCERT,
       Pid::KEY,
+      Pid::TRILL_TYPE,
+      Pid::VIBRATO_TYPE,
+      Pid::ARPEGGIO_TYPE,
+      Pid::CHORD_LINE_TYPE,
+      Pid::CHORD_LINE_STRAIGHT,
+      Pid::TREMOLO_TYPE,
+
+      // TextLineBase descendants
+      Pid::BEGIN_HOOK_TYPE,
+      Pid::END_HOOK_TYPE,
+      Pid::BEGIN_TEXT,
+      Pid::END_TEXT,
+      Pid::CONTINUE_TEXT,
 
       Pid::TEXT,
       };
@@ -198,21 +203,25 @@ const std::initializer_list<Pid> PaletteElementScriptEntry::_pids {
 //   PaletteElementScriptEntry::paletteElements
 //---------------------------------------------------------
 
-static std::vector<PaletteCellInfo> getPaletteCells(ElementType elType, ScriptContext& ctx)
+static std::vector<Element*> getPaletteElements(ElementType elType, ScriptContext& ctx)
       {
-      std::vector<PaletteCellInfo> cells;
-      const PaletteBox* box = ctx.mscore()->getPaletteBox();
-      if (!box)
-            return cells;
-      for (Palette* p : box->palettes()) {
-            const int n = p->size();
+      std::vector<Element*> elements;
+
+      PaletteWorkspace* pw = ctx.mscore()->getPaletteWorkspace();
+      if (!pw)
+          return elements;
+
+      const PaletteTree* tree = pw->userPaletteModel()->paletteTree();
+
+      for (auto& p : tree->palettes) {
+            const int n = p->ncells();
             for (int i = 0; i < n; ++i) {
-                  const Element* e = p->element(i);
+                  Element* e = p->cell(i)->element.get();
                   if (e && e->type() == elType)
-                        cells.push_back({ p, i, e });
+                        elements.push_back(e);
                   }
             }
-      return cells;
+      return elements;
       }
 
 //---------------------------------------------------------
@@ -221,13 +230,13 @@ static std::vector<PaletteCellInfo> getPaletteCells(ElementType elType, ScriptCo
 
 bool PaletteElementScriptEntry::execute(ScriptContext& ctx) const
       {
-      const auto cells(getPaletteCells(_type, ctx));
+      const auto elements(getPaletteElements(_type, ctx));
 
-      for (const PaletteCellInfo& c : cells) {
+      for (Element* e : elements) {
             bool match = true;
             for (const auto& p : _props) {
                   const Pid pid = p.first;
-                  const QVariant pVal = c.e->getProperty(pid);
+                  const QVariant pVal = e->getProperty(pid);
                   if (serializePropertyValue(pid, pVal) != p.second) {
                         match = false;
                         break;
@@ -235,8 +244,7 @@ bool PaletteElementScriptEntry::execute(ScriptContext& ctx) const
                   }
 
             if (match) {
-                  c.palette->setCurrentIdx(c.idx);
-                  c.palette->applyPaletteElement();
+                  Palette::applyPaletteElement(e);
                   return true;
                   }
             }
@@ -252,24 +260,25 @@ std::unique_ptr<ScriptEntry> PaletteElementScriptEntry::fromContext(const Elemen
       {
       const ElementType type = e->type();
       std::vector<std::pair<Pid, QString>> props;
-      auto cells(getPaletteCells(type, ctx));
+      auto paletteElements(getPaletteElements(type, ctx));
 
-      if (cells.empty())
+      if (paletteElements.empty())
             return nullptr;
 
-      if (cells.size() > 1) {
+      if (paletteElements.size() > 1) {
             for (Pid pid : PaletteElementScriptEntry::_pids) {
                   const QVariant val = e->getProperty(pid);
                   bool sameValue = false;
                   if (!val.isValid())
                         continue;
-                  for (PaletteCellInfo& c : cells) {
-                        if (c.e == e || !c.e)
+                  for (auto i = paletteElements.begin(); i != paletteElements.end(); ++i) {
+                        const Element* pe = *i;
+                        if (pe == e || !pe)
                               continue;
-                        if (c.e->getProperty(pid) == val)
+                        if (pe->getProperty(pid) == val)
                               sameValue = true;
                         else
-                              c.e = nullptr; // excude it from further comparisons
+                              (*i) = nullptr; // exclude it from further comparisons
                         }
 
                   props.emplace_back(pid, serializePropertyValue(pid, val));
@@ -301,7 +310,7 @@ std::unique_ptr<ScriptEntry> PaletteElementScriptEntry::deserialize(const QStrin
       {
       const int ntokens = tokens.size();
       if (ntokens < 2) {
-            qWarning("palette: unexpected number of tokens: %d", ntokens);
+            qDebug("palette: unexpected number of tokens: %d", ntokens);
             return nullptr;
             }
       const ElementType type = ScoreElement::name2type(QStringRef(&tokens[1]));
@@ -309,7 +318,7 @@ std::unique_ptr<ScriptEntry> PaletteElementScriptEntry::deserialize(const QStrin
       const int propTokenIdx = 2;
       if (ntokens > propTokenIdx) {
             if ((ntokens - propTokenIdx) % 2) {
-                  qWarning("palette: unexpected number of tokens: %d", ntokens);
+                  qDebug("palette: unexpected number of tokens: %d", ntokens);
                   return nullptr;
                   }
             for (int i = propTokenIdx; i < ntokens; i += 2) {
@@ -336,12 +345,12 @@ bool InspectorScriptEntry::execute(ScriptContext& ctx) const
             return false;
 
       const auto iiList = ib->iList;
-      for (int idx = 0; idx < int(iiList.size()); ++idx) {
+      for (unsigned idx = 0; idx < iiList.size(); ++idx) {
             const InspectorItem& ii = iiList[idx];
             if (ii.t == _pid && ii.parent == _parentLevel) {
                   const Score* score = ctx.mscore()->currentScore();
                   if (!score) {
-                        qWarning() << "InspectorScriptEntry: no score!";
+                        qDebug() << "InspectorScriptEntry: no score!";
                         return false;
                         }
                   const auto scoreState = score->state();
@@ -374,7 +383,7 @@ QString InspectorScriptEntry::serialize() const
 std::unique_ptr<ScriptEntry> InspectorScriptEntry::deserialize(const QStringList& tokens)
       {
       if (tokens.size() < 4) {
-            qWarning("palette: unexpected number of tokens: %d", tokens.size());
+            qDebug("palette: unexpected number of tokens: %d", tokens.size());
             return nullptr;
             }
 
@@ -425,14 +434,14 @@ QString ExcerptChangeScriptEntry::serialize() const
 std::unique_ptr<ScriptEntry> ExcerptChangeScriptEntry::deserialize(const QStringList& tokens)
       {
       if (tokens.size() < 2) {
-            qWarning("excerpt change: unexpected number of tokens: %d", tokens.size());
+            qDebug("excerpt change: unexpected number of tokens: %d", tokens.size());
             return nullptr;
             }
 
       bool ok = false;
       const int index = tokens[1].toInt(&ok);
       if (!ok) {
-            qWarning("excerpt change: argument is not a number");
+            qDebug("excerpt change: argument is not a number");
             return nullptr;
             }
 

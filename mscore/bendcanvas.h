@@ -20,7 +20,7 @@
 #ifndef __BENDCANVAS_H__
 #define __BENDCANVAS_H__
 
-#include "libmscore/pitchvalue.h"
+#include "gridcanvas.h"
 
 namespace Ms {
 
@@ -28,18 +28,11 @@ namespace Ms {
 //   BendCanvas
 //---------------------------------------------------------
 
-class BendCanvas : public QFrame {
+class BendCanvas : public GridCanvas {
       Q_OBJECT
-      QList<PitchValue> _points;
-
-      virtual void paintEvent(QPaintEvent*);
-      virtual void mousePressEvent(QMouseEvent*);
 
    public:
-      BendCanvas(QWidget* parent = 0);
-      const QList<PitchValue>& points() const { return _points; }
-      QList<PitchValue>& points()             { return _points; }
-      void setPoints(const QList<PitchValue>& p) { _points = p; }
+      BendCanvas(QWidget* parent = nullptr);
       };
 
 

@@ -1,14 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<museScore version="3.01">
-  <programVersion>3.0.0</programVersion>
-  <programRevision>3543170</programRevision>
+<museScore version="3.02">
   <Score>
     <LayerTag id="0" tag="default"></LayerTag>
     <currentLayer>0</currentLayer>
-    <Synthesizer>
-      </Synthesizer>
     <Division>480</Division>
     <Style>
+      <enableVerticalSpread>1</enableVerticalSpread>
       <Spatium>0.85</Spatium>
       </Style>
     <showInvisible>1</showInvisible>
@@ -26,6 +23,114 @@
     <metaTag name="translator"></metaTag>
     <metaTag name="workNumber"></metaTag>
     <metaTag name="workTitle"></metaTag>
+    <Order id="marching-band" customized="1">
+      <name>Marching Band</name>
+      <instrument id="alto-saxophone">
+        <family id="saxophones">Saxophones</family>
+        </instrument>
+      <instrument id="baritone-horn">
+        <family id="baritone-horns">Baritone Horns</family>
+        </instrument>
+      <instrument id="baritone-saxophone">
+        <family id="saxophones">Saxophones</family>
+        </instrument>
+      <instrument id="bass-clarinet">
+        <family id="clarinets">Clarinets</family>
+        </instrument>
+      <instrument id="bb-clarinet">
+        <family id="clarinets">Clarinets</family>
+        </instrument>
+      <instrument id="bb-trumpet">
+        <family id="trumpets">Trumpets</family>
+        </instrument>
+      <instrument id="flute">
+        <family id="flutes">Flutes</family>
+        </instrument>
+      <instrument id="glockenspiel">
+        <family id="keyboard-percussion">Keyboard Percussion</family>
+        </instrument>
+      <instrument id="horn">
+        <family id="horns">Horns</family>
+        </instrument>
+      <instrument id="marching-bass-drums">
+        <family id="batterie">Batterie</family>
+        </instrument>
+      <instrument id="marching-cymbals">
+        <family id="batterie">Batterie</family>
+        </instrument>
+      <instrument id="marching-snare">
+        <family id="batterie">Batterie</family>
+        </instrument>
+      <instrument id="marching-tenor-drums">
+        <family id="batterie">Batterie</family>
+        </instrument>
+      <instrument id="marimba">
+        <family id="marimbas">Marimbas</family>
+        </instrument>
+      <instrument id="marimba-single">
+        <family id="keyboard-percussion">Keyboard Percussion</family>
+        </instrument>
+      <instrument id="mellophone">
+        <family id="horns">Horns</family>
+        </instrument>
+      <instrument id="percussion">
+        <family id="other-percussion">Other Percussion</family>
+        </instrument>
+      <instrument id="piccolo">
+        <family id="flutes">Flutes</family>
+        </instrument>
+      <instrument id="sousaphone">
+        <family id="tubas">Tubas</family>
+        </instrument>
+      <instrument id="tenor-saxophone">
+        <family id="saxophones">Saxophones</family>
+        </instrument>
+      <instrument id="timpani">
+        <family id="timpani">Timpani</family>
+        </instrument>
+      <instrument id="trombone">
+        <family id="trombones">Trombones</family>
+        </instrument>
+      <instrument id="vibraphone">
+        <family id="keyboard-percussion">Keyboard Percussion</family>
+        </instrument>
+      <instrument id="xylophone">
+        <family id="keyboard-percussion">Keyboard Percussion</family>
+        </instrument>
+      <soloists/>
+      <section id="woodwind" brackets="true" showSystemMarkings="false" barLineSpan="true" thinBrackets="true">
+        <family>flutes</family>
+        <family>oboes</family>
+        <family>bassoons</family>
+        <family>clarinets</family>
+        </section>
+      <section id="saxophones" brackets="true" showSystemMarkings="false" barLineSpan="true" thinBrackets="true">
+        <family>saxophones</family>
+        </section>
+      <unsorted group="woodwinds"/>
+      <section id="brass" brackets="true" showSystemMarkings="false" barLineSpan="true" thinBrackets="true">
+        <family>cornets</family>
+        <family>trumpets</family>
+        <family>flugelhorns</family>
+        <family>horns</family>
+        <family>trombones</family>
+        <family>baritone-horns</family>
+        <family>tubas</family>
+        </section>
+      <unsorted group="brass"/>
+      <section id="pitched-percussion" brackets="true" showSystemMarkings="false" barLineSpan="true" thinBrackets="true">
+        <family>glockenspiel</family>
+        <family>xylophones</family>
+        <family>vibraphones</family>
+        <family>marimbas</family>
+        <family>timpani</family>
+        <family>percussion</family>
+        </section>
+      <section id="unpitched-percussion" brackets="true" showSystemMarkings="false" barLineSpan="true" thinBrackets="true">
+        <family>unpitched-percussion</family>
+        </section>
+      <unsorted/>
+      </Order>
     <Part>
       <Staff id="1">
         <StaffType group="pitched">
@@ -34,10 +139,10 @@
         <defaultConcertClef>G8va</defaultConcertClef>
         <defaultTransposingClef>G</defaultTransposingClef>
         <bracket type="0" span="5" col="0"/>
-        <barLineSpan>4</barLineSpan>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Piccolo</trackName>
-      <Instrument>
+      <Instrument id="piccolo">
         <longName>Piccolo</longName>
         <shortName>Picc.</shortName>
         <trackName>Piccolo</trackName>
@@ -75,12 +180,28 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="72"/>
           <synti>Fluid</synti>
+          <midiPort>0</midiPort>
+          <midiChannel>0</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -89,10 +210,10 @@
         <StaffType group="pitched">
           <name>stdNormal</name>
           </StaffType>
-        <barLineSpan>3</barLineSpan>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Flute</trackName>
-      <Instrument>
+      <Instrument id="flute">
         <longName>Flute</longName>
         <shortName>Fl.</shortName>
         <trackName>Flute</trackName>
@@ -126,24 +247,28 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
-            <velocity>150</velocity>
-            <gateTime>100</gateTime>
-        </Articulation>
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
         <Articulation name="sforzatoStaccato">
-              <velocity>150</velocity>
-              <gateTime>50</gateTime>
-        </Articulation>
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
         <Articulation name="marcatoStaccato">
-              <velocity>120</velocity>
-              <gateTime>50</gateTime>
-        </Articulation>
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
         <Articulation name="marcatoTenuto">
-              <velocity>120</velocity>
-              <gateTime>100</gateTime>
-        </Articulation>
+          <velocity>120</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
         <Channel>
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="73"/>
           <synti>Fluid</synti>
+          <midiPort>0</midiPort>
+          <midiChannel>1</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -153,10 +278,10 @@
           <name>stdNormal</name>
           </StaffType>
         <bracket type="2" span="2" col="1"/>
-        <barLineSpan>2</barLineSpan>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>B♭ Clarinets 1 &amp; 2</trackName>
-      <Instrument>
+      <Instrument id="bb-clarinet">
         <longName>Clarinet 1 &amp; 2</longName>
         <shortName>Cl. 1&amp;2</shortName>
         <trackName>B♭ Clarinet</trackName>
@@ -192,12 +317,28 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="71"/>
           <synti>Fluid</synti>
+          <midiPort>0</midiPort>
+          <midiChannel>2</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -209,7 +350,7 @@
         <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>B♭ Clarinets 3 &amp; 4</trackName>
-      <Instrument>
+      <Instrument id="bb-clarinet">
         <longName>Clarinet 3 &amp; 4</longName>
         <shortName>Cl. 3&amp;4</shortName>
         <trackName>B♭ Clarinet</trackName>
@@ -245,12 +386,28 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="71"/>
           <synti>Fluid</synti>
+          <midiPort>0</midiPort>
+          <midiChannel>3</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -263,7 +420,7 @@
         <defaultTransposingClef>G</defaultTransposingClef>
         </Staff>
       <trackName>Bass Clarinet</trackName>
-      <Instrument>
+      <Instrument id="bass-clarinet">
         <longName>Bass Clarinet</longName>
         <shortName>B. Cl.</shortName>
         <trackName>Bass Clarinet</trackName>
@@ -301,12 +458,28 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="71"/>
           <synti>Fluid</synti>
+          <midiPort>0</midiPort>
+          <midiChannel>4</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -317,17 +490,17 @@
           </StaffType>
         <bracket type="0" span="4" col="0"/>
         <bracket type="2" span="2" col="1"/>
-        <barLineSpan>3</barLineSpan>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Alto Saxophone 1 &amp; 2</trackName>
-      <Instrument>
+      <Instrument id="alto-saxophone">
         <longName>Alto Sax 1 &amp; 2</longName>
         <shortName>A. Sax. 1&amp;2</shortName>
         <trackName>Alto Saxophone</trackName>
         <minPitchP>49</minPitchP>
-        <maxPitchP>87</maxPitchP>
+        <maxPitchP>92</maxPitchP>
         <minPitchA>49</minPitchA>
-        <maxPitchA>82</maxPitchA>
+        <maxPitchA>80</maxPitchA>
         <transposeDiatonic>-5</transposeDiatonic>
         <transposeChromatic>-9</transposeChromatic>
         <instrumentId>wind.reed.saxophone.alto</instrumentId>
@@ -356,12 +529,28 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="65"/>
           <synti>Fluid</synti>
+          <midiPort>0</midiPort>
+          <midiChannel>5</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -370,17 +559,17 @@
         <StaffType group="pitched">
           <name>stdNormal</name>
           </StaffType>
-        <barLineSpan>2</barLineSpan>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Alto Saxophone 3 &amp; 4</trackName>
-      <Instrument>
+      <Instrument id="alto-saxophone">
         <longName>Alto Sax 3 &amp; 4</longName>
         <shortName>A. Sax. 3&amp;4</shortName>
         <trackName>Alto Saxophone</trackName>
         <minPitchP>49</minPitchP>
-        <maxPitchP>87</maxPitchP>
+        <maxPitchP>92</maxPitchP>
         <minPitchA>49</minPitchA>
-        <maxPitchA>82</maxPitchA>
+        <maxPitchA>80</maxPitchA>
         <transposeDiatonic>-5</transposeDiatonic>
         <transposeChromatic>-9</transposeChromatic>
         <instrumentId>wind.reed.saxophone.alto</instrumentId>
@@ -409,12 +598,28 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="65"/>
           <synti>Fluid</synti>
+          <midiPort>0</midiPort>
+          <midiChannel>6</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -428,14 +633,14 @@
         <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Tenor Saxophone</trackName>
-      <Instrument>
+      <Instrument id="tenor-saxophone">
         <longName>Tenor Sax</longName>
         <shortName>T. Sax.</shortName>
         <trackName>Tenor Saxophone</trackName>
         <minPitchP>44</minPitchP>
-        <maxPitchP>82</maxPitchP>
+        <maxPitchP>87</maxPitchP>
         <minPitchA>44</minPitchA>
-        <maxPitchA>77</maxPitchA>
+        <maxPitchA>75</maxPitchA>
         <transposeDiatonic>-8</transposeDiatonic>
         <transposeChromatic>-14</transposeChromatic>
         <instrumentId>wind.reed.saxophone.tenor</instrumentId>
@@ -466,12 +671,28 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="66"/>
           <synti>Fluid</synti>
+          <midiPort>0</midiPort>
+          <midiChannel>7</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -484,14 +705,14 @@
         <defaultTransposingClef>G</defaultTransposingClef>
         </Staff>
       <trackName>Baritone Saxophone</trackName>
-      <Instrument>
+      <Instrument id="baritone-saxophone">
         <longName>Baritone Sax</longName>
         <shortName>Bari. Sax.</shortName>
         <trackName>Baritone Saxophone</trackName>
         <minPitchP>36</minPitchP>
-        <maxPitchP>75</maxPitchP>
-        <minPitchA>37</minPitchA>
-        <maxPitchA>70</maxPitchA>
+        <maxPitchP>80</maxPitchP>
+        <minPitchA>36</minPitchA>
+        <maxPitchA>68</maxPitchA>
         <transposeDiatonic>-12</transposeDiatonic>
         <transposeChromatic>-21</transposeChromatic>
         <instrumentId>wind.reed.saxophone.baritone</instrumentId>
@@ -522,12 +743,28 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="67"/>
           <synti>Fluid</synti>
+          <midiPort>0</midiPort>
+          <midiChannel>8</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -538,10 +775,10 @@
           </StaffType>
         <bracket type="0" span="6" col="0"/>
         <bracket type="2" span="2" col="1"/>
-        <barLineSpan>5</barLineSpan>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>B♭ Trumpet 1 &amp; 2</trackName>
-      <Instrument>
+      <Instrument id="bb-trumpet">
         <longName>Trumpet 1 &amp; 2</longName>
         <shortName>Tpt. 1&amp;2</shortName>
         <trackName>B♭ Trumpet</trackName>
@@ -577,16 +814,36 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel name="open">
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="56"/>
           <synti>Fluid</synti>
+          <midiPort>0</midiPort>
+          <midiChannel>10</midiChannel>
           </Channel>
         <Channel name="mute">
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="59"/>
           <synti>Fluid</synti>
+          <midiPort>0</midiPort>
+          <midiChannel>11</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -595,10 +852,10 @@
         <StaffType group="pitched">
           <name>stdNormal</name>
           </StaffType>
-        <barLineSpan>4</barLineSpan>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>B♭ Trumpet 3 &amp; 4</trackName>
-      <Instrument>
+      <Instrument id="bb-trumpet">
         <longName>Trumpet 3 &amp; 4</longName>
         <shortName>Tpt. 3&amp;4</shortName>
         <trackName>B♭ Trumpet</trackName>
@@ -634,16 +891,36 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel name="open">
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="56"/>
           <synti>Fluid</synti>
+          <midiPort>0</midiPort>
+          <midiChannel>12</midiChannel>
           </Channel>
         <Channel name="mute">
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="59"/>
           <synti>Fluid</synti>
+          <midiPort>0</midiPort>
+          <midiChannel>13</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -652,10 +929,10 @@
         <StaffType group="pitched">
           <name>stdNormal</name>
           </StaffType>
-        <barLineSpan>3</barLineSpan>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Mellophone</trackName>
-      <Instrument>
+      <Instrument id="horn">
         <longName>Mellophone</longName>
         <shortName>Mph.</shortName>
         <trackName>Horn in F</trackName>
@@ -691,12 +968,28 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="60"/>
           <synti>Fluid</synti>
+          <midiPort>0</midiPort>
+          <midiChannel>14</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -706,17 +999,17 @@
           <name>stdNormal</name>
           </StaffType>
         <defaultClef>F</defaultClef>
-        <barLineSpan>2</barLineSpan>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Trombone</trackName>
-      <Instrument>
+      <Instrument id="trombone">
         <longName>Trombone</longName>
         <shortName>Tbn.</shortName>
         <trackName>Trombone</trackName>
-        <minPitchP>35</minPitchP>
+        <minPitchP>36</minPitchP>
         <maxPitchP>74</maxPitchP>
-        <minPitchA>35</minPitchA>
-        <maxPitchA>70</maxPitchA>
+        <minPitchA>40</minPitchA>
+        <maxPitchA>71</maxPitchA>
         <instrumentId>brass.trombone</instrumentId>
         <clef>F</clef>
         <Articulation>
@@ -744,12 +1037,34 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
-        <Channel>
+        <Channel name="open">
+          <controller ctrl="32" value="17"/>
           <program value="57"/>
           <synti>Fluid</synti>
+          <midiPort>0</midiPort>
+          <midiChannel>15</midiChannel>
+          </Channel>
+        <Channel name="mute">
+          <controller ctrl="32" value="17"/>
+          <program value="59"/>
+          <synti>Fluid</synti>
+          <midiPort>1</midiPort>
+          <midiChannel>1</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -762,7 +1077,7 @@
         <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Baritone</trackName>
-      <Instrument>
+      <Instrument id="baritone-horn">
         <longName>Baritone</longName>
         <shortName>Bar.</shortName>
         <trackName>Baritone Horn</trackName>
@@ -797,12 +1112,28 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="60"/>
           <synti>Fluid</synti>
+          <midiPort>1</midiPort>
+          <midiChannel>0</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -813,16 +1144,16 @@
           </StaffType>
         <defaultClef>F</defaultClef>
         </Staff>
-      <trackName>Tuba</trackName>
-      <Instrument>
+      <trackName>Sousaphone</trackName>
+      <Instrument id="sousaphone">
         <longName>Sousaphone</longName>
-        <shortName>Tba.</shortName>
-        <trackName>Tuba</trackName>
+        <shortName>Sphn.</shortName>
+        <trackName>Sousaphone</trackName>
         <minPitchP>22</minPitchP>
         <maxPitchP>72</maxPitchP>
         <minPitchA>28</minPitchA>
         <maxPitchA>58</maxPitchA>
-        <instrumentId>brass.tuba</instrumentId>
+        <instrumentId>brass.sousaphone</instrumentId>
         <clef>F</clef>
         <Articulation>
           <velocity>100</velocity>
@@ -849,12 +1180,28 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="58"/>
           <synti>Fluid</synti>
+          <midiPort>1</midiPort>
+          <midiChannel>8</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -866,10 +1213,10 @@
         <defaultConcertClef>G15ma</defaultConcertClef>
         <defaultTransposingClef>G</defaultTransposingClef>
         <bracket type="0" span="7" col="0"/>
-        <barLineSpan>6</barLineSpan>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Glockenspiel</trackName>
-      <Instrument>
+      <Instrument id="glockenspiel">
         <longName>Glockenspiel</longName>
         <shortName>Glk.</shortName>
         <trackName>Glockenspiel</trackName>
@@ -907,12 +1254,26 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
           <program value="9"/>
           <synti>Fluid</synti>
+          <midiPort>1</midiPort>
+          <midiChannel>2</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -923,10 +1284,10 @@
           </StaffType>
         <defaultConcertClef>G8va</defaultConcertClef>
         <defaultTransposingClef>G</defaultTransposingClef>
-        <barLineSpan>5</barLineSpan>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Xylophone</trackName>
-      <Instrument>
+      <Instrument id="xylophone">
         <longName>Xylophone</longName>
         <shortName>Xyl.</shortName>
         <trackName>Xylophone</trackName>
@@ -964,12 +1325,26 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
           <program value="13"/>
           <synti>Fluid</synti>
+          <midiPort>1</midiPort>
+          <midiChannel>3</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -978,10 +1353,10 @@
         <StaffType group="pitched">
           <name>stdNormal</name>
           </StaffType>
-        <barLineSpan>4</barLineSpan>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Vibraphone</trackName>
-      <Instrument>
+      <Instrument id="vibraphone">
         <longName>Vibraphone</longName>
         <shortName>Vib.</shortName>
         <trackName>Vibraphone</trackName>
@@ -1015,12 +1390,26 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
           <program value="11"/>
           <synti>Fluid</synti>
+          <midiPort>1</midiPort>
+          <midiChannel>4</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -1030,19 +1419,19 @@
           <name>stdNormal</name>
           </StaffType>
         <bracket type="2" span="2" col="1"/>
-        <barLineSpan>3</barLineSpan>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Marimba 1</trackName>
-      <Instrument>
+      <Instrument id="marimba-single">
         <longName>Marimba 1</longName>
         <shortName>Mrm. 1</shortName>
-        <trackName>Marimba</trackName>
+        <trackName>Marimba (Single Staff)</trackName>
         <minPitchP>36</minPitchP>
         <maxPitchP>96</maxPitchP>
         <minPitchA>45</minPitchA>
         <maxPitchA>96</maxPitchA>
         <instrumentId>pitched-percussion.marimba</instrumentId>
-        <clef staff="2">F</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1068,12 +1457,26 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
           <program value="12"/>
           <synti>Fluid</synti>
+          <midiPort>1</midiPort>
+          <midiChannel>5</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -1082,20 +1485,19 @@
         <StaffType group="pitched">
           <name>stdNormal</name>
           </StaffType>
-        <defaultClef>F</defaultClef>
-        <barLineSpan>2</barLineSpan>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Marimba 2</trackName>
-      <Instrument>
+      <Instrument id="marimba-single">
         <longName>Marimba 2</longName>
         <shortName>Mrm. 2</shortName>
-        <trackName>Marimba</trackName>
+        <trackName>Marimba (Single Staff)</trackName>
         <minPitchP>36</minPitchP>
         <maxPitchP>96</maxPitchP>
         <minPitchA>45</minPitchA>
         <maxPitchA>96</maxPitchA>
         <instrumentId>pitched-percussion.marimba</instrumentId>
-        <clef staff="2">F</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1121,12 +1523,26 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
           <program value="12"/>
           <synti>Fluid</synti>
+          <midiPort>1</midiPort>
+          <midiChannel>6</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -1139,7 +1555,7 @@
         <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Timpani</trackName>
-      <Instrument>
+      <Instrument id="timpani">
         <longName>Timpani</longName>
         <shortName>Timp.</shortName>
         <trackName>Timpani</trackName>
@@ -1174,12 +1590,26 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
           <program value="47"/>
           <synti>Fluid</synti>
+          <midiPort>1</midiPort>
+          <midiChannel>7</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -1192,9 +1622,9 @@
         <defaultClef>PERC</defaultClef>
         </Staff>
       <trackName>Auxiliary Percussion</trackName>
-      <Instrument>
+      <Instrument id="percussion">
         <longName>Auxiliary Percussion</longName>
-        <shortName>Aux. Perc.</shortName>
+        <shortName>Aux Perc.</shortName>
         <trackName>Percussion</trackName>
         <instrumentId>drum.group.set</instrumentId>
         <useDrumset>1</useDrumset>
@@ -1334,7 +1764,7 @@
           <head>diamond</head>
           <line>0</line>
           <voice>0</voice>
-          <name>Triangle</name>
+          <name>Open Triangle</name>
           <stem>1</stem>
           <shortcut>D</shortcut>
           </Drum>
@@ -1378,13 +1808,28 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
           <controller ctrl="0" value="1"/>
+          <controller ctrl="32" value="0"/>
           <program value="48"/>
           <synti>Fluid</synti>
+          <midiPort>0</midiPort>
+          <midiChannel>9</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -1396,10 +1841,10 @@
           </StaffType>
         <defaultClef>PERC</defaultClef>
         <bracket type="0" span="4" col="0"/>
-        <barLineSpan>3</barLineSpan>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Snare Drum</trackName>
-      <Instrument>
+      <Instrument id="marching-snare">
         <longName>Snare Drum</longName>
         <shortName>S.D.</shortName>
         <trackName>Snare Drum</trackName>
@@ -1479,14 +1924,14 @@
           <head>xcircle</head>
           <line>1</line>
           <voice>2</voice>
-          <name>Open High Hat</name>
+          <name>Open Hi-Hat</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="76">
           <head>cross</head>
           <line>1</line>
           <voice>2</voice>
-          <name>Closed High Hat</name>
+          <name>Closed Hi-Hat</name>
           <stem>1</stem>
           </Drum>
         <clef>PERC</clef>
@@ -1511,21 +1956,32 @@
           <gateTime>100</gateTime>
           </Articulation>
         <Articulation name="marcato">
-          <velocity>120</velocity>
-          <gateTime>67</gateTime>
+          <velocity>500</velocity>
+          <gateTime>100</gateTime>
           </Articulation>
         <Articulation name="sforzato">
           <velocity>130</velocity>
           <gateTime>100</gateTime>
           </Articulation>
-        <Articulation name="umarcato">
-          <velocity>500</velocity>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
+          <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
           <controller ctrl="0" value="1"/>
+          <controller ctrl="32" value="0"/>
           <program value="56"/>
           <synti>Fluid</synti>
+          <midiPort>1</midiPort>
+          <midiChannel>9</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -1536,57 +1992,64 @@
           <keysig>0</keysig>
           </StaffType>
         <defaultClef>PERC</defaultClef>
-        <barLineSpan>2</barLineSpan>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Tenor Drums</trackName>
-      <Instrument>
+      <Instrument id="marching-tenor-drums">
         <longName>Tenor Drums</longName>
         <shortName>T.D.</shortName>
         <trackName>Tenor Drums</trackName>
         <instrumentId>drum.tenor-drum</instrumentId>
         <useDrumset>1</useDrumset>
-        <Drum pitch="24">
+        <Drum pitch="36">
           <head>normal</head>
           <line>7</line>
           <voice>0</voice>
-          <name>Drum 4</name>
+          <name>Drum4</name>
           <stem>1</stem>
           <shortcut>A</shortcut>
           </Drum>
-        <Drum pitch="25">
+        <Drum pitch="37">
           <head>cross</head>
           <line>7</line>
           <voice>0</voice>
-          <name>Drum 4 Rim</name>
+          <name>Drum4 Rim</name>
           <stem>1</stem>
           <shortcut>B</shortcut>
           </Drum>
-        <Drum pitch="26">
+        <Drum pitch="38">
           <head>diamond</head>
           <line>7</line>
           <voice>0</voice>
-          <name>Drum 4 Buzz</name>
+          <name>Drum4 Buzz</name>
           <stem>1</stem>
           </Drum>
-        <Drum pitch="27">
+        <Drum pitch="39">
           <head>xcircle</head>
           <line>7</line>
           <voice>0</voice>
-          <name>Drum 4 Muted</name>
+          <name>Drum4 Muted</name>
           <stem>1</stem>
           </Drum>
-        <Drum pitch="28">
+        <Drum pitch="40">
           <head>slash</head>
           <line>7</line>
           <voice>0</voice>
-          <name>Drum 4 Shell</name>
+          <name>Drum4 Shell</name>
           <stem>1</stem>
+          </Drum>
+        <Drum pitch="43">
+          <head>triangle-down</head>
+          <line>-1</line>
+          <voice>0</voice>
+          <name>sticks</name>
+          <stem>2</stem>
           </Drum>
         <Drum pitch="48">
           <head>normal</head>
           <line>5</line>
           <voice>0</voice>
-          <name>Drum 3</name>
+          <name>Drum3</name>
           <stem>1</stem>
           <shortcut>C</shortcut>
           </Drum>
@@ -1594,7 +2057,7 @@
           <head>cross</head>
           <line>5</line>
           <voice>0</voice>
-          <name>Drum 3 Rim</name>
+          <name>Drum3 Rim</name>
           <stem>1</stem>
           <shortcut>D</shortcut>
           </Drum>
@@ -1602,111 +2065,126 @@
           <head>diamond</head>
           <line>5</line>
           <voice>0</voice>
-          <name>Drum 3 Buzz</name>
+          <name>Drum3 Buzz</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="51">
           <head>xcircle</head>
           <line>5</line>
           <voice>0</voice>
-          <name>Drum 3 Muted</name>
+          <name>Drum3 Muted</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="52">
           <head>slash</head>
           <line>5</line>
           <voice>0</voice>
-          <name>Drum 3 Shell</name>
+          <name>Drum3 Shell</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="60">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Drum2</name>
+          <stem>1</stem>
+          <shortcut>E</shortcut>
+          </Drum>
+        <Drum pitch="61">
+          <head>cross</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Drum2 Rim</name>
+          <stem>1</stem>
+          <shortcut>F</shortcut>
+          </Drum>
+        <Drum pitch="62">
+          <head>diamond</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Drum2 Buzz</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="63">
+          <head>xcircle</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Drum2 Muted</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="72">
           <head>normal</head>
-          <line>3</line>
+          <line>1</line>
           <voice>0</voice>
-          <name>Drum 2</name>
+          <name>Drum1</name>
           <stem>1</stem>
-          <shortcut>E</shortcut>
+          <shortcut>G</shortcut>
           </Drum>
         <Drum pitch="73">
           <head>cross</head>
-          <line>3</line>
+          <line>1</line>
           <voice>0</voice>
-          <name>Drum 2 Rim</name>
+          <name>Drum1 Rim</name>
           <stem>1</stem>
-          <shortcut>F</shortcut>
           </Drum>
         <Drum pitch="74">
           <head>diamond</head>
-          <line>3</line>
+          <line>1</line>
           <voice>0</voice>
-          <name>Drum 2 Buzz</name>
+          <name>Drum1 Buzz</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="75">
           <head>xcircle</head>
-          <line>3</line>
+          <line>1</line>
           <voice>0</voice>
-          <name>Drum 2 Muted</name>
+          <name>Drum1 Muted</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="84">
+          <head>normal</head>
+          <line>-1</line>
+          <voice>0</voice>
+          <name>Spock 1</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="85">
+          <head>cross</head>
+          <line>-1</line>
+          <voice>0</voice>
+          <name>Spock 1 Rim</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="86">
+          <head>diamond</head>
+          <line>-1</line>
+          <voice>0</voice>
+          <name>Spock 1 Buzz</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="96">
           <head>normal</head>
-          <line>1</line>
+          <line>-2</line>
           <voice>0</voice>
-          <name>Drum 1</name>
+          <name>Spock 2</name>
           <stem>1</stem>
-          <shortcut>G</shortcut>
           </Drum>
         <Drum pitch="97">
           <head>cross</head>
-          <line>1</line>
+          <line>-2</line>
           <voice>0</voice>
-          <name>Drum 1 Rim</name>
+          <name>Spock 2 Rim</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="98">
           <head>diamond</head>
-          <line>1</line>
+          <line>-2</line>
           <voice>0</voice>
-          <name>Drum 1 Buzz</name>
-          <stem>1</stem>
-          </Drum>
-        <Drum pitch="99">
-          <head>xcircle</head>
-          <line>1</line>
-          <voice>0</voice>
-          <name>Drum 1 Muted</name>
-          <stem>1</stem>
-          </Drum>
-        <Drum pitch="120">
-          <head>normal</head>
-          <line>-1</line>
-          <voice>0</voice>
-          <name>Spock</name>
-          <stem>1</stem>
-          </Drum>
-        <Drum pitch="121">
-          <head>cross</head>
-          <line>-1</line>
-          <voice>0</voice>
-          <name>Spock Rim</name>
-          <stem>1</stem>
-          </Drum>
-        <Drum pitch="122">
-          <head>diamond</head>
-          <line>-1</line>
-          <voice>0</voice>
-          <name>Spock Buzz</name>
-          <stem>1</stem>
-          </Drum>
-        <Drum pitch="123">
-          <head>cross</head>
-          <line>-1</line>
-          <voice>0</voice>
-          <name>Stick Click</name>
+          <name>Spock 2 Buzz</name>
           <stem>1</stem>
           </Drum>
         <clef>PERC</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1728,21 +2206,32 @@
           <gateTime>100</gateTime>
           </Articulation>
         <Articulation name="marcato">
-          <velocity>120</velocity>
-          <gateTime>67</gateTime>
+          <velocity>500</velocity>
+          <gateTime>100</gateTime>
           </Articulation>
         <Articulation name="sforzato">
           <velocity>130</velocity>
           <gateTime>100</gateTime>
           </Articulation>
-        <Articulation name="umarcato">
-          <velocity>500</velocity>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
+          <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
           <controller ctrl="0" value="1"/>
-          <program value="95"/>
+          <controller ctrl="32" value="0"/>
+          <program value="96"/>
           <synti>Fluid</synti>
+          <midiPort>2</midiPort>
+          <midiChannel>9</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -1756,13 +2245,13 @@
         <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Bass Drums</trackName>
-      <Instrument>
+      <Instrument id="marching-bass-drums">
         <longName>Bass Drums</longName>
         <shortName>B.D.</shortName>
         <trackName>Bass Drums</trackName>
         <instrumentId>drum.bass-drum</instrumentId>
         <useDrumset>1</useDrumset>
-        <Drum pitch="1">
+        <Drum pitch="37">
           <head>normal</head>
           <line>7</line>
           <voice>0</voice>
@@ -1770,7 +2259,7 @@
           <stem>1</stem>
           <shortcut>A</shortcut>
           </Drum>
-        <Drum pitch="2">
+        <Drum pitch="39">
           <head>cross</head>
           <line>7</line>
           <voice>0</voice>
@@ -1778,7 +2267,7 @@
           <stem>1</stem>
           <shortcut>B</shortcut>
           </Drum>
-        <Drum pitch="24">
+        <Drum pitch="49">
           <head>normal</head>
           <line>5</line>
           <voice>0</voice>
@@ -1786,7 +2275,7 @@
           <stem>1</stem>
           <shortcut>C</shortcut>
           </Drum>
-        <Drum pitch="26">
+        <Drum pitch="51">
           <head>cross</head>
           <line>5</line>
           <voice>0</voice>
@@ -1794,7 +2283,7 @@
           <stem>1</stem>
           <shortcut>D</shortcut>
           </Drum>
-        <Drum pitch="48">
+        <Drum pitch="61">
           <head>normal</head>
           <line>3</line>
           <voice>0</voice>
@@ -1802,7 +2291,7 @@
           <stem>1</stem>
           <shortcut>E</shortcut>
           </Drum>
-        <Drum pitch="50">
+        <Drum pitch="63">
           <head>cross</head>
           <line>3</line>
           <voice>0</voice>
@@ -1810,7 +2299,7 @@
           <stem>1</stem>
           <shortcut>F</shortcut>
           </Drum>
-        <Drum pitch="69">
+        <Drum pitch="73">
           <head>normal</head>
           <line>1</line>
           <voice>0</voice>
@@ -1818,28 +2307,36 @@
           <stem>1</stem>
           <shortcut>G</shortcut>
           </Drum>
-        <Drum pitch="71">
+        <Drum pitch="75">
           <head>cross</head>
           <line>1</line>
           <voice>0</voice>
           <name>Bass Drum 4 Rim Knock</name>
           <stem>1</stem>
           </Drum>
-        <Drum pitch="96">
+        <Drum pitch="85">
           <head>normal</head>
           <line>-1</line>
           <voice>0</voice>
           <name>Bass Drum 5</name>
           <stem>1</stem>
           </Drum>
-        <Drum pitch="98">
+        <Drum pitch="87">
           <head>cross</head>
           <line>-1</line>
           <voice>0</voice>
           <name>Bass Drum 5 Rim Knock</name>
           <stem>1</stem>
           </Drum>
+        <Drum pitch="90">
+          <head>slash</head>
+          <line>4</line>
+          <voice>0</voice>
+          <name>Simultaneous Hit</name>
+          <stem>1</stem>
+          </Drum>
         <clef>PERC</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1861,21 +2358,32 @@
           <gateTime>100</gateTime>
           </Articulation>
         <Articulation name="marcato">
-          <velocity>120</velocity>
-          <gateTime>67</gateTime>
+          <velocity>500</velocity>
+          <gateTime>100</gateTime>
           </Articulation>
         <Articulation name="sforzato">
           <velocity>130</velocity>
           <gateTime>100</gateTime>
           </Articulation>
-        <Articulation name="umarcato">
-          <velocity>500</velocity>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
+          <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
           <controller ctrl="0" value="1"/>
-          <program value="57"/>
+          <controller ctrl="32" value="0"/>
+          <program value="59"/>
           <synti>Fluid</synti>
+          <midiPort>3</midiPort>
+          <midiChannel>9</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -1888,7 +2396,7 @@
         <defaultClef>PERC</defaultClef>
         </Staff>
       <trackName>Cymbals</trackName>
-      <Instrument>
+      <Instrument id="marching-cymbals">
         <longName>Cymbals</longName>
         <shortName>Cym.</shortName>
         <trackName>Cymbals</trackName>
@@ -1993,6 +2501,7 @@
           <stem>1</stem>
           </Drum>
         <clef>PERC</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -2014,21 +2523,32 @@
           <gateTime>100</gateTime>
           </Articulation>
         <Articulation name="marcato">
-          <velocity>120</velocity>
-          <gateTime>67</gateTime>
+          <velocity>500</velocity>
+          <gateTime>100</gateTime>
           </Articulation>
         <Articulation name="sforzato">
           <velocity>130</velocity>
           <gateTime>100</gateTime>
           </Articulation>
-        <Articulation name="umarcato">
-          <velocity>500</velocity>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
+          <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
           <controller ctrl="0" value="1"/>
+          <controller ctrl="32" value="0"/>
           <program value="58"/>
           <synti>Fluid</synti>
+          <midiPort>4</midiPort>
+          <midiChannel>9</midiChannel>
           </Channel>
         </Instrument>
       </Part>
@@ -2043,7 +2563,6 @@
       <Measure>
         <voice>
           <BarLine>
-            <span>1</span>
             </BarLine>
           <TimeSig>
             <sigN>4</sigN>
@@ -2054,7 +2573,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2065,7 +2583,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2076,7 +2593,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2087,7 +2603,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2098,7 +2613,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2109,7 +2623,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2120,7 +2633,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2131,7 +2643,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2142,7 +2653,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2153,7 +2663,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2164,7 +2673,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2175,7 +2683,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2186,7 +2693,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2197,7 +2703,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2208,7 +2713,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2219,7 +2723,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2230,7 +2733,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2241,7 +2743,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2252,7 +2753,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2264,7 +2764,6 @@
             </Rest>
           <BarLine>
             <subtype>end</subtype>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2273,7 +2772,6 @@
       <Measure>
         <voice>
           <BarLine>
-            <span>1</span>
             </BarLine>
           <TimeSig>
             <sigN>4</sigN>
@@ -2284,7 +2782,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2295,7 +2792,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2306,7 +2802,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2317,7 +2812,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2328,7 +2822,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2339,7 +2832,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2350,7 +2842,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2361,7 +2852,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2372,7 +2862,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2383,7 +2872,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2394,7 +2882,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2405,7 +2892,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2416,7 +2902,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2427,7 +2912,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2438,7 +2922,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2449,7 +2932,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2460,7 +2942,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2471,7 +2952,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2482,7 +2962,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2494,7 +2973,6 @@
             </Rest>
           <BarLine>
             <subtype>end</subtype>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2503,7 +2981,6 @@
       <Measure>
         <voice>
           <BarLine>
-            <span>1</span>
             </BarLine>
           <KeySig>
             <accidental>2</accidental>
@@ -2517,7 +2994,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2528,7 +3004,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2539,7 +3014,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2550,7 +3024,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2561,7 +3034,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2572,7 +3044,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2583,7 +3054,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2594,7 +3064,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2605,7 +3074,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2616,7 +3084,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2627,7 +3094,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2638,7 +3104,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2649,7 +3114,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2660,7 +3124,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2671,7 +3134,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2682,7 +3144,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2693,7 +3154,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2704,7 +3164,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2715,7 +3174,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -2727,7 +3185,6 @@
             </Rest>
           <BarLine>
             <subtype>end</subtype>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3161,7 +3618,6 @@
       <Measure>
         <voice>
           <BarLine>
-            <span>1</span>
             </BarLine>
           <KeySig>
             <accidental>3</accidental>
@@ -3175,7 +3631,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3186,7 +3641,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3197,7 +3651,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3208,7 +3661,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3219,7 +3671,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3230,7 +3681,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3241,7 +3691,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3252,7 +3701,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3263,7 +3711,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3274,7 +3721,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3285,7 +3731,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3296,7 +3741,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3307,7 +3751,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3318,7 +3761,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3329,7 +3771,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3340,7 +3781,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3351,7 +3791,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3362,7 +3801,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3373,7 +3811,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3385,7 +3822,6 @@
             </Rest>
           <BarLine>
             <subtype>end</subtype>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3394,7 +3830,6 @@
       <Measure>
         <voice>
           <BarLine>
-            <span>1</span>
             </BarLine>
           <KeySig>
             <accidental>3</accidental>
@@ -3408,7 +3843,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3419,7 +3853,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3430,7 +3863,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3441,7 +3873,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3452,7 +3883,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3463,7 +3893,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3474,7 +3903,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3485,7 +3913,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3496,7 +3923,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3507,7 +3933,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3518,7 +3943,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3529,7 +3953,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3540,7 +3963,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3551,7 +3973,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3562,7 +3983,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3573,7 +3993,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3584,7 +4003,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3595,7 +4013,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3606,7 +4023,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -3618,7 +4034,6 @@
             </Rest>
           <BarLine>
             <subtype>end</subtype>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4052,7 +4467,6 @@
       <Measure>
         <voice>
           <BarLine>
-            <span>1</span>
             </BarLine>
           <KeySig>
             <accidental>2</accidental>
@@ -4066,7 +4480,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4077,7 +4490,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4088,7 +4500,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4099,7 +4510,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4110,7 +4520,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4121,7 +4530,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4132,7 +4540,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4143,7 +4550,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4154,7 +4560,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4165,7 +4570,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4176,7 +4580,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4187,7 +4590,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4198,7 +4600,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4209,7 +4610,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4220,7 +4620,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4231,7 +4630,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4242,7 +4640,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4253,7 +4650,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4264,7 +4660,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4276,7 +4671,6 @@
             </Rest>
           <BarLine>
             <subtype>end</subtype>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4285,7 +4679,6 @@
       <Measure>
         <voice>
           <BarLine>
-            <span>1</span>
             </BarLine>
           <KeySig>
             <accidental>2</accidental>
@@ -4299,7 +4692,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4310,7 +4702,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4321,7 +4712,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4332,7 +4722,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4343,7 +4732,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4354,7 +4742,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4365,7 +4752,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4376,7 +4762,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4387,7 +4772,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4398,7 +4782,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4409,7 +4792,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4420,7 +4802,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4431,7 +4812,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4442,7 +4822,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4453,7 +4832,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4464,7 +4842,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4475,7 +4852,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4486,7 +4862,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4497,7 +4872,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4509,7 +4883,6 @@
             </Rest>
           <BarLine>
             <subtype>end</subtype>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4518,7 +4891,6 @@
       <Measure>
         <voice>
           <BarLine>
-            <span>1</span>
             </BarLine>
           <KeySig>
             <accidental>1</accidental>
@@ -4532,7 +4904,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4543,7 +4914,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4554,7 +4924,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4565,7 +4934,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4576,7 +4944,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4587,7 +4954,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4598,7 +4964,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4609,7 +4974,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4620,7 +4984,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4631,7 +4994,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4642,7 +5004,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4653,7 +5014,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4664,7 +5024,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4675,7 +5034,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4686,7 +5044,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4697,7 +5054,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4708,7 +5064,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4719,7 +5074,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4730,7 +5084,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4742,7 +5095,6 @@
             </Rest>
           <BarLine>
             <subtype>end</subtype>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4751,7 +5103,6 @@
       <Measure>
         <voice>
           <BarLine>
-            <span>1</span>
             </BarLine>
           <TimeSig>
             <sigN>4</sigN>
@@ -4762,7 +5113,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4773,7 +5123,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4784,7 +5133,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4795,7 +5143,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4806,7 +5153,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4817,7 +5163,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4828,7 +5173,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4839,7 +5183,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4850,7 +5193,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4861,7 +5203,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4872,7 +5213,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4883,7 +5223,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4894,7 +5233,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4905,7 +5243,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4916,7 +5253,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4927,7 +5263,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4938,7 +5273,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4949,7 +5283,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4960,7 +5293,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -4972,7 +5304,6 @@
             </Rest>
           <BarLine>
             <subtype>end</subtype>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5189,9 +5520,6 @@
     <Staff id="15">
       <Measure>
         <voice>
-          <BarLine>
-            <span>1</span>
-            </BarLine>
           <TimeSig>
             <sigN>4</sigN>
             <sigD>4</sigD>
@@ -5400,7 +5728,6 @@
       <Measure>
         <voice>
           <BarLine>
-            <span>1</span>
             </BarLine>
           <TimeSig>
             <sigN>4</sigN>
@@ -5411,7 +5738,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5422,7 +5748,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5433,7 +5758,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5444,7 +5768,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5455,7 +5778,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5466,7 +5788,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5477,7 +5798,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5488,7 +5808,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5499,7 +5818,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5510,7 +5828,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5521,7 +5838,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5532,7 +5848,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5543,7 +5858,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5554,7 +5868,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5565,7 +5878,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5576,7 +5888,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5587,7 +5898,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5598,7 +5908,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5609,7 +5918,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5621,7 +5929,6 @@
             </Rest>
           <BarLine>
             <subtype>end</subtype>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5630,7 +5937,6 @@
       <Measure>
         <voice>
           <BarLine>
-            <span>1</span>
             </BarLine>
           <TimeSig>
             <sigN>4</sigN>
@@ -5641,7 +5947,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5652,7 +5957,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5663,7 +5967,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5674,7 +5977,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5685,7 +5987,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5696,7 +5997,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5707,7 +6007,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5718,7 +6017,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5729,7 +6027,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5740,7 +6037,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5751,7 +6047,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5762,7 +6057,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5773,7 +6067,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5784,7 +6077,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5795,7 +6087,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5806,7 +6097,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5817,7 +6107,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5828,7 +6117,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5839,7 +6127,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5851,7 +6138,6 @@
             </Rest>
           <BarLine>
             <subtype>end</subtype>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5860,7 +6146,6 @@
       <Measure>
         <voice>
           <BarLine>
-            <span>1</span>
             </BarLine>
           <TimeSig>
             <sigN>4</sigN>
@@ -5871,7 +6156,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5882,7 +6166,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5893,7 +6176,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5904,7 +6186,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5915,7 +6196,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5926,7 +6206,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5937,7 +6216,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5948,7 +6226,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5959,7 +6236,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5970,7 +6246,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5981,7 +6256,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -5992,7 +6266,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6003,7 +6276,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6014,7 +6286,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6025,7 +6296,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6036,7 +6306,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6047,7 +6316,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6058,7 +6326,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6069,7 +6336,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6081,7 +6347,6 @@
             </Rest>
           <BarLine>
             <subtype>end</subtype>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6089,9 +6354,6 @@
     <Staff id="19">
       <Measure>
         <voice>
-          <BarLine>
-            <span>1</span>
-            </BarLine>
           <TimeSig>
             <sigN>4</sigN>
             <sigD>4</sigD>
@@ -6101,7 +6363,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6112,7 +6373,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6123,7 +6383,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6134,7 +6393,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6145,7 +6403,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6156,7 +6413,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6167,7 +6423,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6178,7 +6433,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6189,7 +6443,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6200,7 +6453,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6211,7 +6463,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6222,7 +6473,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6233,7 +6483,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6244,7 +6493,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6255,7 +6503,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6266,7 +6513,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6277,7 +6523,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6288,7 +6533,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6299,7 +6543,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6311,7 +6554,6 @@
             </Rest>
           <BarLine>
             <subtype>end</subtype>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6319,9 +6561,6 @@
     <Staff id="20">
       <Measure>
         <voice>
-          <BarLine>
-            <span>1</span>
-            </BarLine>
           <TimeSig>
             <sigN>4</sigN>
             <sigD>4</sigD>
@@ -6331,7 +6570,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6342,7 +6580,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6353,7 +6590,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6364,7 +6600,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6375,7 +6610,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6386,7 +6620,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6397,7 +6630,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6408,7 +6640,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6419,7 +6650,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6430,7 +6660,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6441,7 +6670,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6452,7 +6680,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6463,7 +6690,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6474,7 +6700,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6485,7 +6710,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6496,7 +6720,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6507,7 +6730,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6518,7 +6740,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6529,7 +6750,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6541,7 +6761,6 @@
             </Rest>
           <BarLine>
             <subtype>end</subtype>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6758,9 +6977,6 @@
     <Staff id="22">
       <Measure>
         <voice>
-          <BarLine>
-            <span>1</span>
-            </BarLine>
           <TimeSig>
             <sigN>4</sigN>
             <sigD>4</sigD>
@@ -6968,9 +7184,6 @@
     <Staff id="23">
       <Measure>
         <voice>
-          <BarLine>
-            <span>1</span>
-            </BarLine>
           <TimeSig>
             <sigN>4</sigN>
             <sigD>4</sigD>
@@ -6980,7 +7193,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -6991,7 +7203,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7002,7 +7213,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7013,7 +7223,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7024,7 +7233,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7035,7 +7243,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7046,7 +7253,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7057,7 +7263,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7068,7 +7273,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7079,7 +7283,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7090,7 +7293,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7101,7 +7303,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7112,7 +7313,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7123,7 +7323,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7134,7 +7333,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7145,7 +7343,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7156,7 +7353,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7167,7 +7363,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7178,7 +7373,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7190,7 +7384,6 @@
             </Rest>
           <BarLine>
             <subtype>end</subtype>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7198,9 +7391,6 @@
     <Staff id="24">
       <Measure>
         <voice>
-          <BarLine>
-            <span>1</span>
-            </BarLine>
           <TimeSig>
             <sigN>4</sigN>
             <sigD>4</sigD>
@@ -7210,7 +7400,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7221,7 +7410,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7232,7 +7420,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7243,7 +7430,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7254,7 +7440,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7265,7 +7450,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7276,7 +7460,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7287,7 +7470,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7298,7 +7480,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7309,7 +7490,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7320,7 +7500,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7331,7 +7510,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7342,7 +7520,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7353,7 +7530,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7364,7 +7540,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7375,7 +7550,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7386,7 +7560,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7397,7 +7570,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7408,7 +7580,6 @@
             <duration>4/4</duration>
             </Rest>
           <BarLine>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7420,7 +7591,6 @@
             </Rest>
           <BarLine>
             <subtype>end</subtype>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -7428,8 +7598,6 @@
     <Staff id="25">
       <Measure>
         <voice>
-          <BarLine>
-            </BarLine>
           <TimeSig>
             <sigN>4</sigN>
             <sigD>4</sigD>
@@ -7637,9 +7805,6 @@
     <Staff id="26">
       <Measure>
         <voice>
-          <BarLine>
-            <span>1</span>
-            </BarLine>
           <TimeSig>
             <sigN>4</sigN>
             <sigD>4</sigD>

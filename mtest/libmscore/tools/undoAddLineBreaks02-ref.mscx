@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<museScore version="3.01">
+<museScore version="3.02">
   <Score>
     <LayerTag id="0" tag="default"></LayerTag>
     <currentLayer>0</currentLayer>
@@ -31,7 +31,7 @@
           </StaffType>
         </Staff>
       <trackName>Piano</trackName>
-      <Instrument>
+      <Instrument id="piano">
         <longName>Piano</longName>
         <shortName>Pno.</shortName>
         <trackName>Piano</trackName>
@@ -973,8 +973,7 @@
           <BarLine>
             <subtype>end</subtype>
             <span>1</span>
-            <linked>
-              </linked>
+            <linkedMain/>
             </BarLine>
           </voice>
         </Measure>
@@ -987,7 +986,9 @@
           <BarLine>
             <subtype>end</subtype>
             <span>1</span>
-            <linkedMain/>
+            <linked>
+              <indexDiff>-1</indexDiff>
+              </linked>
             </BarLine>
           </voice>
         </Measure>

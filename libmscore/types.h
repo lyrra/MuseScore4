@@ -41,6 +41,7 @@ enum class ElementType {
       SYMBOL,
       TEXT,
       MEASURE_NUMBER,
+      MMREST_RANGE,
       INSTRUMENT_NAME,
       SLUR_SEGMENT,
       TIE_SEGMENT,
@@ -138,6 +139,7 @@ enum class ElementType {
       ICON,
       OSSIA,
       BAGPIPE_EMBELLISHMENT,
+      STICKING,
 
       MAXTYPE
       ///\}
@@ -146,8 +148,9 @@ enum class ElementType {
 //---------------------------------------------------------
 //   AccidentalType
 //---------------------------------------------------------
-// NOTE: keep this in sync with with accList array
-enum class AccidentalType : char {
+// NOTE: keep this in sync with with accList array in accidentals.cpp
+
+enum class AccidentalType {
       ///.\{
       NONE,
       FLAT,
@@ -155,8 +158,8 @@ enum class AccidentalType : char {
       SHARP,
       SHARP2,
       FLAT2,
-      //SHARP3,
-      //FLAT3,
+      SHARP3,
+      FLAT3,
       NATURAL_FLAT,
       NATURAL_SHARP,
       SHARP_SHARP,
@@ -172,6 +175,8 @@ enum class AccidentalType : char {
       SHARP2_ARROW_DOWN,
       FLAT2_ARROW_UP,
       FLAT2_ARROW_DOWN,
+      ARROW_DOWN,
+      ARROW_UP,
 
       // Stein-Zimmermann
       MIRRORED_FLAT,
@@ -239,12 +244,117 @@ enum class AccidentalType : char {
       QUARTER_FLAT_EQUAL_TEMPERED,
       QUARTER_SHARP_EQUAL_TEMPERED,
 
+      FLAT_17,
+      SHARP_17,
+      FLAT_19,
+      SHARP_19,
+      FLAT_23,
+      SHARP_23,
+      FLAT_31,
+      SHARP_31,
+      FLAT_53,
+      SHARP_53,
+      //EQUALS_ALMOST,
+      //EQUALS,
+      //TILDE,
+
       // Persian
       SORI,
       KORON,
+
+      // Wyschnegradsky
+      TEN_TWELFTH_FLAT,
+      TEN_TWELFTH_SHARP,
+      ELEVEN_TWELFTH_FLAT,
+      ELEVEN_TWELFTH_SHARP,
+      ONE_TWELFTH_FLAT,
+      ONE_TWELFTH_SHARP,
+      TWO_TWELFTH_FLAT,
+      TWO_TWELFTH_SHARP,
+      THREE_TWELFTH_FLAT,
+      THREE_TWELFTH_SHARP,
+      FOUR_TWELFTH_FLAT,
+      FOUR_TWELFTH_SHARP,
+      FIVE_TWELFTH_FLAT,
+      FIVE_TWELFTH_SHARP,
+      SIX_TWELFTH_FLAT,
+      SIX_TWELFTH_SHARP,
+      SEVEN_TWELFTH_FLAT,
+      SEVEN_TWELFTH_SHARP,
+      EIGHT_TWELFTH_FLAT,
+      EIGHT_TWELFTH_SHARP,
+      NINE_TWELFTH_FLAT,
+      NINE_TWELFTH_SHARP,
+
+      // (Spartan) Sagittal
+      SAGITTAL_5V7KD,
+      SAGITTAL_5V7KU,
+      SAGITTAL_5CD,
+      SAGITTAL_5CU,
+      SAGITTAL_7CD,
+      SAGITTAL_7CU,
+      SAGITTAL_25SDD,
+      SAGITTAL_25SDU,
+      SAGITTAL_35MDD,
+      SAGITTAL_35MDU,
+      SAGITTAL_11MDD,
+      SAGITTAL_11MDU,
+      SAGITTAL_11LDD,
+      SAGITTAL_11LDU,
+      SAGITTAL_35LDD,
+      SAGITTAL_35LDU,
+      SAGITTAL_FLAT25SU,
+      SAGITTAL_SHARP25SD,
+      SAGITTAL_FLAT7CU,
+      SAGITTAL_SHARP7CD,
+      SAGITTAL_FLAT5CU,
+      SAGITTAL_SHARP5CD,
+      SAGITTAL_FLAT5V7KU,
+      SAGITTAL_SHARP5V7KD,
+      SAGITTAL_FLAT,
+      SAGITTAL_SHARP,
+
+      // Turkish folk music
+      ONE_COMMA_FLAT,
+      ONE_COMMA_SHARP,
+      TWO_COMMA_FLAT,
+      TWO_COMMA_SHARP,
+      THREE_COMMA_FLAT,
+      THREE_COMMA_SHARP,
+      FOUR_COMMA_FLAT,
+      //FOUR_COMMA_SHARP,
+      FIVE_COMMA_SHARP,
+
       END
       ///\}
       };
+
+//---------------------------------------------------------
+//   NoteType
+//---------------------------------------------------------
+
+enum class NoteType {
+      ///.\{
+      NORMAL        = 0,
+      ACCIACCATURA  = 0x1,
+      APPOGGIATURA  = 0x2,       // grace notes
+      GRACE4        = 0x4,
+      GRACE16       = 0x8,
+      GRACE32       = 0x10,
+      GRACE8_AFTER  = 0x20,
+      GRACE16_AFTER = 0x40,
+      GRACE32_AFTER = 0x80,
+      INVALID       = 0xFF
+      ///\}
+      };
+
+constexpr NoteType operator| (NoteType t1, NoteType t2) {
+      return static_cast<NoteType>(static_cast<int>(t1) | static_cast<int>(t2));
+      }
+constexpr bool operator& (NoteType t1, NoteType t2) {
+      return static_cast<int>(t1) & static_cast<int>(t2);
+      }
+
 
 //---------------------------------------------------------
 //   Direction
@@ -272,7 +382,19 @@ enum class GlissandoType {
 
 enum class GlissandoStyle {
       ///.\{
-      CHROMATIC, WHITE_KEYS, BLACK_KEYS, DIATONIC
+      CHROMATIC, WHITE_KEYS, BLACK_KEYS, DIATONIC, PORTAMENTO
+      ///\}
+      };
+
+//---------------------------------------------------------
+//   HarmonyType
+//---------------------------------------------------------
+
+enum class HarmonyType {
+      ///.\{
+      STANDARD,
+      ROMAN,
+      NASHVILLE
       ///\}
       };
 
@@ -285,6 +407,27 @@ enum class Placement {
       ABOVE, BELOW
       ///\}
       };
+
+//---------------------------------------------------------
+//   HPlacement
+//---------------------------------------------------------
+
+enum class HPlacement {
+      ///.\{
+      LEFT, CENTER, RIGHT
+      ///\}
+      };
+
+//---------------------------------------------------------
+//   MMRestRangeBracketType
+//---------------------------------------------------------
+
+enum class MMRestRangeBracketType {
+      ///.\{
+      BRACKETS, PARENTHESES, NONE
+      ///\}
+      };
+
 
 //---------------------------------------------------------
 //   OffsetType
@@ -309,8 +452,8 @@ enum class SegmentType {
       KeySig             = 0x4,
       Ambitus            = 0x8,
       TimeSig            = 0x10,
-      Clef               = 0x20,
-      StartRepeatBarLine = 0x40,
+      StartRepeatBarLine = 0x20,
+      Clef               = 0x40,
       BarLine            = 0x80,
       Breath             = 0x100,
       //--
@@ -346,57 +489,77 @@ enum class Tid {
       SUBTITLE,
       COMPOSER,
       POET,
+      TRANSLATOR,
+      FRAME,
+      INSTRUMENT_EXCERPT,
+      INSTRUMENT_LONG,
+      INSTRUMENT_SHORT,
+      INSTRUMENT_CHANGE,
+      HEADER,
+      FOOTER,
+      MEASURE_NUMBER,
+      MMREST_RANGE,
+      TEMPO,
+      METRONOME,
+      REPEAT_LEFT,       // align to start of measure
+      REPEAT_RIGHT,      // align to end of measure
+      REHEARSAL_MARK,
+      SYSTEM,
+      STAFF,
+      EXPRESSION,
+      DYNAMICS,
+      HAIRPIN,
       LYRICS_ODD,
       LYRICS_EVEN,
+      HARMONY_A,
+      HARMONY_B,
+      HARMONY_ROMAN,
+      HARMONY_NASHVILLE,
+      TUPLET,
+      STICKING,
       FINGERING,
       LH_GUITAR_FINGERING,
       RH_GUITAR_FINGERING,
       STRING_NUMBER,
-      INSTRUMENT_LONG,
-      INSTRUMENT_SHORT,
-      INSTRUMENT_EXCERPT,
-      DYNAMICS,
-      EXPRESSION,
-      TEMPO,
-      METRONOME,
-      MEASURE_NUMBER,
-      TRANSLATOR,
-      TUPLET,
-      SYSTEM,
-      STAFF,
-      HARMONY_A,
-      HARMONY_B,
-      REHEARSAL_MARK,
-      REPEAT_LEFT,       // align to start of measure
-      REPEAT_RIGHT,      // align to end of measure
-      FRAME,
       TEXTLINE,
-      GLISSANDO,
-      OTTAVA,
       VOLTA,
+      OTTAVA,
+      GLISSANDO,
       PEDAL,
+      BEND,
       LET_RING,
       PALM_MUTE,
-      HAIRPIN,
-      BEND,
-      HEADER,
-      FOOTER,
-      INSTRUMENT_CHANGE,
       USER1,
       USER2,
       USER3,
       USER4,
       USER5,
       USER6,
-      TEXT_STYLES
+      USER7,
+      USER8,
+      USER9,
+      USER10,
+      USER11,
+      USER12,
+      // special, no-contents, styles used while importing older scores
+      TEXT_STYLES,           // used for user-defined styles
+      IGNORED_STYLES         // used for styles no longer relevant (mainly Figured bass text style)
       ///.\}
       };
 
 //---------------------------------------------------------
-//   Align
+///   Align
+///   Because the Align enum has Top = 0 and Left = 0,
+///   align() & Align::Top will always return false.
+///   @warning Do not use if (align() & Align::Top) { doSomething(); }
+///   because doSomething() will never be executed!
+///   use this instead:
+///   `if ((static_cast<char>(align()) & static_cast<char>(Align::VMASK)) == Align::Top) { doSomething(); }`
+///   Same applies to Align::Left.
 //---------------------------------------------------------
 
 enum class Align : char {
+      ///.\{
       LEFT     = 0,
       RIGHT    = 1,
       HCENTER  = 2,
@@ -407,6 +570,7 @@ enum class Align : char {
       CENTER = Align::HCENTER | Align::VCENTER,
       HMASK  = Align::LEFT    | Align::RIGHT    | Align::HCENTER,
       VMASK  = Align::TOP     | Align::BOTTOM   | Align::VCENTER | Align::BASELINE
+      ///.\}
       };
 
 constexpr Align operator| (Align a1, Align a2) {
@@ -424,7 +588,11 @@ constexpr Align operator~ (Align a) {
 //---------------------------------------------------------
 
 enum class FontStyle : char {
-      Normal = 0, Bold = 1, Italic = 2, Underline = 4
+      Normal = 0,
+      Bold = 1 << 0,
+      Italic = 1 << 1,
+      Underline = 1 << 2,
+      Strike = 1 << 3
       };
 
 constexpr FontStyle operator+ (FontStyle a1, FontStyle a2) {
@@ -438,6 +606,20 @@ constexpr bool operator& (FontStyle a1, FontStyle a2) {
       }
 
 //---------------------------------------------------------
+//   PlayEventType
+/// Determines whether oranaments are automatically generated
+/// when playing a score and whether the PlayEvents are saved
+/// in the score file.
+//---------------------------------------------------------
+
+enum class PlayEventType : char {
+      ///.\{
+      Auto,       ///< Play events for all notes are calculated by MuseScore.
+      User,       ///< Some play events are modified by user. Those events are written into the mscx file.
+      ///.\}
+      };
+
+//---------------------------------------------------------
 //   Tuplets
 //---------------------------------------------------------
 
@@ -445,14 +627,19 @@ enum class TupletNumberType  : char { SHOW_NUMBER, SHOW_RELATION, NO_TEXT       
 enum class TupletBracketType : char { AUTO_BRACKET, SHOW_BRACKET, SHOW_NO_BRACKET };
 
 #ifdef SCRIPT_INTERFACE
-Q_ENUM_NS(ElementType)
-Q_ENUM_NS(AccidentalType)
-Q_ENUM_NS(Direction)
-Q_ENUM_NS(GlissandoType)
-Q_ENUM_NS(GlissandoStyle)
-Q_ENUM_NS(Placement)
-Q_ENUM_NS(SegmentType)
-Q_ENUM_NS(Tid)
+Q_ENUM_NS(ElementType);
+Q_ENUM_NS(Direction);
+Q_ENUM_NS(GlissandoType);
+Q_ENUM_NS(GlissandoStyle);
+Q_ENUM_NS(Placement);
+Q_ENUM_NS(HPlacement);
+Q_ENUM_NS(SegmentType);
+Q_ENUM_NS(Tid);
+Q_ENUM_NS(Align);
+Q_ENUM_NS(NoteType);
+Q_ENUM_NS(PlayEventType);
+Q_ENUM_NS(AccidentalType);
+Q_ENUM_NS(HarmonyType);
 #endif
 
 //hack: to force the build system to run moc on this file
@@ -469,8 +656,16 @@ extern void fillComboBoxDirection(QComboBox*);
 
 } // namespace Ms
 
-Q_DECLARE_METATYPE(Ms::Align)
+Q_DECLARE_METATYPE(Ms::Align);
 
 Q_DECLARE_METATYPE(Ms::Direction);
+
+Q_DECLARE_METATYPE(Ms::NoteType);
+
+Q_DECLARE_METATYPE(Ms::PlayEventType);
+
+Q_DECLARE_METATYPE(Ms::AccidentalType);
+
+Q_DECLARE_METATYPE(Ms::HPlacement);
 
 #endif

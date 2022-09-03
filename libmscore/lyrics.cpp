@@ -113,7 +113,8 @@ void Lyrics::read(XmlReader& e)
       if (!isStyled(Pid::OFFSET) && !e.pasteMode()) {
             // fix offset for pre-3.1 scores
             // 3.0: y offset was meaningless if autoplace is set
-            if (autoplace() && score()->mscoreVersion() < "3.1") {
+            QString version = masterScore()->mscoreVersion();
+            if (autoplace() && !version.isEmpty() && version < "3.1") {
                   QPointF off = propertyDefault(Pid::OFFSET).toPointF();
                   ryoffset() = off.y();
                   }
@@ -177,6 +178,18 @@ void Lyrics::remove(Element* el)
       if (el->isLyricsLine()) {
             // only if separator still exists and is the right one
             if (_separator && el == _separator) {
+#if 0
+                  // clear melismaEnd flag from end cr
+                  // find end cr from melisma itself, as ticks for lyrics may not be accurate at this point
+                  // note this clearing this might be premature, as there may be other lyrics that still end there
+                  // also, at this point we can't be sure if this is a melisma or a dash
+                  // but the flag will be regenerated on next layout
+                  Element* e = _separator->endElement();
+                  if (!e)
+                        e = score()->findCRinStaff(_separator->tick2(), track());
+                  if (e && e->isChordRest())
+                        toChordRest(e)->setMelismaEnd(false);
+#endif
                   // Lyrics::remove() and LyricsLine::removeUnmanaged() call each other;
                   // be sure each finds a clean context
                   LyricsLine* separ = _separator;
@@ -234,8 +247,6 @@ void Lyrics::layout()
       // parse leading verse number and/or punctuation, so we can factor it into layout separately
       //
       bool hasNumber     = false; // _verseNumber;
-      qreal centerAdjust = 0.0;
-      qreal leftAdjust   = 0.0;
 
       // find:
       // 1) string of numbers and non-word characters at start of syllable
@@ -243,39 +254,30 @@ void Lyrics::layout()
       // 3) string of non-word characters at end of syllable
       //QRegularExpression leadingPattern("(^[\\d\\W]+)([^\\d\\W]+)");
 
+      const QString text = plainText();
+      QString leading;
+      QString trailing;
+
       if (score()->styleB(Sid::lyricsAlignVerseNumber)) {
-            QString s = plainText();
             QRegularExpression punctuationPattern("(^[\\d\\W]*)([^\\d\\W].*?)([\\d\\W]*$)", QRegularExpression::UseUnicodePropertiesOption);
-            QRegularExpressionMatch punctuationMatch = punctuationPattern.match(s);
+            QRegularExpressionMatch punctuationMatch = punctuationPattern.match(text);
             if (punctuationMatch.hasMatch()) {
                   // leading and trailing punctuation
-                  QString lp = punctuationMatch.captured(1);
-                  QString tp = punctuationMatch.captured(3);
-                  // actual lyric
+                  leading = punctuationMatch.captured(1);
+                  trailing = punctuationMatch.captured(3);
                   //QString actualLyric = punctuationMatch.captured(2);
-                  if (!lp.isEmpty() || !tp.isEmpty()) {
-//                        qDebug("create leading, trailing <%s> -- <%s><%s>", qPrintable(s), qPrintable(lp), qPrintable(tp));
-                        Lyrics leading(*this);
-                        leading.setPlainText(lp);
-                        leading.layout1();
-                        Lyrics trailing(*this);
-                        trailing.setPlainText(tp);
-                        trailing.layout1();
-                        leftAdjust = leading.width();
-                        centerAdjust = leading.width() - trailing.width();
-                        if (!lp.isEmpty() && lp[0].isDigit())
-                              hasNumber = true;
-                        }
+                  if (!leading.isEmpty() && leading[0].isDigit())
+                        hasNumber = true;
                   }
             }
 
       bool styleDidChange = false;
-      if ((_no & 1) && !_even) {
+      if (isEven() && !_even) {
             initTid(Tid::LYRICS_EVEN, /* preserveDifferent */ true);
             _even             = true;
             styleDidChange    = true;
             }
-      if (!(_no & 1) && _even) {
+      if (!isEven() && _even) {
             initTid(Tid::LYRICS_ODD, /* preserveDifferent */ true);
             _even             = false;
             styleDidChange    = true;
@@ -284,14 +286,40 @@ void Lyrics::layout()
       if (styleDidChange)
             styleChanged();
 
-      if (isMelisma() || hasNumber)
-            if (isStyled(Pid::ALIGN)) {
+      if (isMelisma() || hasNumber) {
+            // use the melisma style alignment setting
+            if (isStyled(Pid::ALIGN))
                   setAlign(score()->styleV(Sid::lyricsMelismaAlign).value<Align>());
+            }
+      else {
+            // use the text style alignment setting
+            if (isStyled(Pid::ALIGN))
+                  setAlign(propertyDefault(Pid::ALIGN).value<Align>());
             }
       QPointF o(propertyDefault(Pid::OFFSET).toPointF());
       rxpos() = o.x();
       qreal x = pos().x();
       TextBase::layout1();
+
+      qreal centerAdjust = 0.0;
+      qreal leftAdjust   = 0.0;
+
+      if (score()->styleB(Sid::lyricsAlignVerseNumber)) {
+            // Calculate leading and trailing parts widths. Lyrics
+            // should have text layout to be able to do it correctly.
+            Q_ASSERT(rows() != 0);
+            if (!leading.isEmpty() || !trailing.isEmpty()) {
+//                   qDebug("create leading, trailing <%s> -- <%s><%s>", qPrintable(text), qPrintable(leading), qPrintable(trailing));
+                  const TextBlock& tb = textBlock(0);
+
+                  const qreal leadingWidth = tb.xpos(leading.length(), this) - tb.boundingRect().x();
+                  const int trailingPos = text.length() - trailing.length();
+                  const qreal trailingWidth = tb.boundingRect().right() - tb.xpos(trailingPos, this);
+
+                  leftAdjust = leadingWidth;
+                  centerAdjust = leadingWidth - trailingWidth;
+                  }
+            }
 
       ChordRest* cr = chordRest();
 
@@ -335,6 +363,14 @@ void Lyrics::layout()
                   _separator = 0;
                   }
             }
+
+      if (_ticks.isNotZero()) {
+            // set melisma end
+            ChordRest* ecr = score()->findCR(endTick(), track());
+            if (ecr)
+                  ecr->setMelismaEnd(true);
+            }
+
       }
 
 //---------------------------------------------------------
@@ -476,7 +512,7 @@ Element* Lyrics::drop(EditData& data)
 void Lyrics::endEdit(EditData& ed)
       {
       TextBase::endEdit(ed);
-      score()->setLayoutAll();
+      triggerLayoutAll();
       }
 
 //---------------------------------------------------------
@@ -485,6 +521,12 @@ void Lyrics::endEdit(EditData& ed)
 
 void Lyrics::removeFromScore()
       {
+      if (_ticks.isNotZero()) {
+            // clear melismaEnd flag from end cr
+            ChordRest* ecr = score()->findCR(endTick(), track());
+            if (ecr)
+                  ecr->setMelismaEnd(false);
+            }
       if (_separator) {
             _separator->removeUnmanaged();
             delete _separator;
@@ -524,6 +566,18 @@ bool Lyrics::setProperty(Pid propertyId, const QVariant& v)
                   _syllabic = Syllabic(v.toInt());
                   break;
             case Pid::LYRIC_TICKS:
+                  if (_ticks.isNotZero()) {
+                        // clear melismaEnd flag from previous end cr
+                        // this might be premature, as there may be other melismas ending there
+                        // but flag will be generated correctly on layout
+                        // TODO: after inserting a measure,
+                        // endTick info is wrong.
+                        // Somehow we need to fix this.
+                        // See https://musescore.org/en/node/285304 and https://musescore.org/en/node/311289
+                        ChordRest* ecr = score()->findCR(endTick(), track());
+                        if (ecr)
+                              ecr->setMelismaEnd(false);
+                        }
                   _ticks = v.value<Fraction>();
                   break;
             case Pid::VERSE:
@@ -546,7 +600,7 @@ QVariant Lyrics::propertyDefault(Pid id) const
       {
       switch (id) {
             case Pid::SUB_STYLE:
-                  return int((_no & 1) ? Tid::LYRICS_EVEN : Tid::LYRICS_ODD);
+                  return int(isEven() ? Tid::LYRICS_EVEN : Tid::LYRICS_ODD);
             case Pid::PLACEMENT:
                   return score()->styleV(Sid::lyricsPlacement);
             case Pid::SYLLABIC:
@@ -562,17 +616,6 @@ QVariant Lyrics::propertyDefault(Pid id) const
             default:
                   return TextBase::propertyDefault(id);
             }
-      }
-
-//---------------------------------------------------------
-//   getPropertyStyle
-//---------------------------------------------------------
-
-Sid Lyrics::getPropertyStyle(Pid pid) const
-      {
-      if (pid == Pid::OFFSET)
-            return placeAbove() ? Sid::lyricsPosAbove : Sid::lyricsPosBelow;
-      return TextBase::getPropertyStyle(pid);
       }
 
 //---------------------------------------------------------

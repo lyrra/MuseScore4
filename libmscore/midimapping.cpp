@@ -143,7 +143,7 @@ void MasterScore::rebuildExcerptsMidiMapping()
             for (Part* p : ex->partScore()->parts()) {
                   const Part* masterPart = p->masterPart();
                   if (!masterPart->score()->isMaster()) {
-                        qWarning("reorderMidiMapping: no part in master score is linked");
+                        qDebug() << "rebuildExcerptsMidiMapping: no part in master score is linked with " << p->partName();
                         continue;
                         }
                   Q_ASSERT(p->instruments()->size() == masterPart->instruments()->size());
@@ -253,7 +253,7 @@ int MasterScore::updateMidiMapping()
       for (const MidiMapping& mm :_midiMapping) {
             if (mm.port() == -1 || mm.channel() == -1)
                   continue;
-            occupiedMidiChannels.insert((int)(mm.port())*16+(int)mm.channel());
+            occupiedMidiChannels.insert(static_cast<int>(mm.port())*16+(int)mm.channel());
             if (maxport < mm.port())
                   maxport = mm.port();
             }

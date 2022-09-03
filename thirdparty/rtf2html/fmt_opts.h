@@ -19,11 +19,6 @@ struct color {
    {
       return !(*this==clr);
    }
-   color &operator=(const color &clr)
-   {
-      r=clr.r; g=clr.g; b=clr.b;
-      return *this;
-   }
 };
 
 typedef std::vector<color> colorvect;
@@ -44,22 +39,19 @@ struct font {
    {
       return !(*this==f);
    }
-   font &operator=(const font &f)
-   {
-      family=f.family; name=f.name; pitch=f.pitch; charset=f.charset;
-      return *this;
-   }
 };
 
 typedef std::map<int, font> fontmap;
+typedef std::map<std::string, std::string> strmap;
 
 struct formatting_options
 {
+   static strmap styles;
    enum halign {align_left, align_right, align_center, align_justify, align_error};
    enum valign {va_normal, va_sub, va_sup};
-   bool chpBold, chpItalic, chpUnderline;
+   bool chpBold, chpAllCaps, chpItalic, chpUnderline;
    valign chpVAlign;
-   int chpFontSize, chpHighlight;
+   int chpFontSize, chpHighlight, chpVShift;
    color chpFColor, chpBColor;
    font chpFont;
    int papLeft, papRight, papFirst;
@@ -68,38 +60,30 @@ struct formatting_options
    bool papInTbl;
    formatting_options()
    {
-      chpBold=chpItalic=chpUnderline=false;
+      chpBold=chpAllCaps=chpItalic=chpUnderline=false;
       chpVAlign=va_normal;
-      chpFontSize=chpHighlight=0;
+      chpFontSize=chpHighlight=chpVShift=0;
       papLeft=papRight=papFirst=papBefore=papAfter=0;
       papAlign=align_left;
       papInTbl=false;
    }
    bool operator==(const formatting_options &opt) // tests only for character options
    {
-      return chpBold==opt.chpBold && chpItalic==opt.chpItalic 
+      return chpBold==opt.chpBold && chpAllCaps == opt.chpAllCaps
+             && chpItalic==opt.chpItalic 
              && chpUnderline==opt.chpUnderline && chpVAlign==opt.chpVAlign
              && chpFontSize==opt.chpFontSize
              && chpFColor==opt.chpFColor && chpBColor==opt.chpBColor
-             && chpHighlight==opt.chpHighlight && chpFont==opt.chpFont;
+             && chpHighlight==opt.chpHighlight && chpFont==opt.chpFont
+             && chpVShift==opt.chpVShift;
    }
    bool operator!=(const formatting_options &opt) // tests only for character options
    {
       return !(*this==opt);
    }
-   formatting_options &operator=(const formatting_options &opt)
-   {
-      chpBold=opt.chpBold; chpItalic=opt.chpItalic;
-      chpUnderline=opt.chpUnderline; chpVAlign=opt.chpVAlign;
-      chpFontSize=opt.chpFontSize; 
-      chpFColor=opt.chpFColor; chpBColor=opt.chpBColor;
-      chpHighlight=opt.chpHighlight; chpFont=opt.chpFont;
-      papLeft=opt.papLeft; papRight=opt.papRight;
-      papFirst=opt.papFirst; papBefore=opt.papBefore; papAfter=opt.papAfter;
-      papAlign=opt.papAlign; papInTbl=opt.papInTbl;
-      return *this;
-   }
    std::string get_par_str() const;
+   static std::string get_style_id(const std::string &style);
+   static std::string get_styles();
 };
 
 typedef std::stack<formatting_options> fo_stack;

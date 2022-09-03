@@ -18,13 +18,17 @@
  Definition of class Accidental
 */
 
+#include <QString>
+#include <QList>
+#include <QVariant>
+
 #include "config.h"
 #include "element.h"
+#include "sym.h"
 
 namespace Ms {
 
 class Note;
-enum class SymId;
 enum class AccidentalVal : signed char;
 
 //---------------------------------------------------------
@@ -43,7 +47,8 @@ enum class AccidentalRole : char {
 enum class AccidentalBracket : char {
       NONE,
       PARENTHESIS,
-      BRACKET
+      BRACKET,
+      BRACE,
       };
 
 //---------------------------------------------------------
@@ -53,26 +58,28 @@ enum class AccidentalBracket : char {
 struct SymElement {
       SymId sym;
       qreal x;
-      SymElement(SymId _sym, qreal _x) : sym(_sym), x(_x) {}
+      qreal y;
+      SymElement(SymId _sym, qreal _x, qreal _y) : sym(_sym), x(_x), y(_y) {}
       };
 
 //---------------------------------------------------------
 //   @@ Accidental
 //   @P role        enum  (Accidental.AUTO, .USER) (read only)
-//   @P small       bool
+//   @P isSmall     bool
 //---------------------------------------------------------
 
 class Accidental final : public Element {
       QList<SymElement> el;
       AccidentalType _accidentalType { AccidentalType::NONE };
-      bool _small                    { false                   };
+      bool m_isSmall                 { false                   };
       AccidentalBracket _bracket     { AccidentalBracket::NONE };
       AccidentalRole _role           { AccidentalRole::AUTO    };
 
    public:
       Accidental(Score* s = 0);
-      virtual Accidental* clone() const override  { return new Accidental(*this); }
-      virtual ElementType type() const override   { return ElementType::ACCIDENTAL; }
+
+      Accidental* clone() const override  { return new Accidental(*this); }
+      ElementType type() const override   { return ElementType::ACCIDENTAL; }
 
       QString subtypeUserName() const;
       void setSubtype(const QString& s);
@@ -81,15 +88,17 @@ class Accidental final : public Element {
       AccidentalType accidentalType() const        { return _accidentalType; }
       AccidentalRole role() const                  { return _role;           }
 
-      virtual int subtype() const override         { return (int)_accidentalType; }
-      virtual QString subtypeName() const override { return QString(subtype2name(_accidentalType)); }
+      int subtype() const override         { return (int)_accidentalType; }
+      QString subtypeName() const override { return QString(subtype2name(_accidentalType)); }
 
-      virtual bool acceptDrop(EditData&) const override;
-      virtual Element* drop(EditData&) override;
-      virtual void layout() override;
-      virtual void draw(QPainter*) const override;
-      virtual bool isEditable() const override               { return true; }
-      virtual void startEdit(EditData&) override { setGenerated(false); }
+      bool acceptDrop(EditData&) const override;
+      Element* drop(EditData&) override;
+      void layout() override;
+      void layoutMultiGlyphAccidental();
+      void layoutSingleGlyphAccidental();
+      void draw(QPainter*) const override;
+      bool isEditable() const override               { return true; }
+      void startEdit(EditData&) override { setGenerated(false); }
 
       SymId symbol() const;
       Note* note() const                        { return (parent() && parent()->isNote()) ? toNote(parent()) : 0; }
@@ -99,25 +108,26 @@ class Accidental final : public Element {
 
       void setRole(AccidentalRole r)            { _role = r;              }
 
-      bool small() const                        { return _small;          }
-      void setSmall(bool val)                   { _small = val;           }
+      bool isSmall() const                      { return m_isSmall;       }
+      void setSmall(bool val)                   { m_isSmall = val;        }
 
       void undoSetSmall(bool val);
 
-      virtual void read(XmlReader&) override;
-      virtual void write(XmlWriter& xml) const override;
+      void read(XmlReader&) override;
+      void write(XmlWriter& xml) const override;
 
-      virtual QVariant getProperty(Pid propertyId) const override;
-      virtual bool setProperty(Pid propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(Pid propertyId) const override;
-      virtual Pid propertyId(const QStringRef& xmlName) const override;
-      virtual QString propertyUserValue(Pid) const override;
+      QVariant getProperty(Pid propertyId) const override;
+      bool setProperty(Pid propertyId, const QVariant&) override;
+      QVariant propertyDefault(Pid propertyId) const override;
+      Pid propertyId(const QStringRef& xmlName) const override;
+      QString propertyUserValue(Pid) const override;
 
       static AccidentalVal subtype2value(AccidentalType);             // return effective pitch offset
+      static SymId subtype2symbol(AccidentalType);
       static const char* subtype2name(AccidentalType);
       static AccidentalType value2subtype(AccidentalVal);
       static AccidentalType name2subtype(const QString&);
-      static bool isMicrotonal(AccidentalType t)  { return t > AccidentalType::FLAT2; }
+      static bool isMicrotonal(AccidentalType t)  { return t > AccidentalType::FLAT3; }
 
       QString accessibleInfo() const override;
       };
@@ -127,8 +137,6 @@ extern AccidentalVal sym2accidentalVal(SymId id);
 }     // namespace Ms
 
 Q_DECLARE_METATYPE(Ms::AccidentalRole);
-Q_DECLARE_METATYPE(Ms::AccidentalType);
 
 
 #endif
-

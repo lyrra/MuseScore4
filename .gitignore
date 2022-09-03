@@ -13,6 +13,8 @@ win64build
 win64install
 build.xcode
 applebuild
+build.artifacts
+MuseScorePortable
 /*.config
 /*.creator
 /*.files
@@ -27,17 +29,19 @@ build.qt5
 *.sfd~
 /.project
 mscore/revision.h
+local_build_revision.env
 .DS_Store
 CMakeLists.txt.user.*
 *.qmlc
+*.jsc
 vtest/html
+vtest/compare
 thirdparty/mupdf-qt
 vtest/LOG
 vtest/META-INF
 vtest/Thumbnails
 vtest/Pictures
 .vs
-.vscode
 dependencies
 
 # Downloaded files during build process
@@ -46,5 +50,10 @@ MuseScore_General_License.md
 MuseScore_General_Changelog.txt
 MuseScore_General_Readme.md
 VERSION
+SF_VERSION
 /mscore/data/mscore.aps
 /msvc.*
+
+# Created during (master) build
+thirdparty/lame/config.h
+thirdparty/flac/flac-1.3.4/config.h

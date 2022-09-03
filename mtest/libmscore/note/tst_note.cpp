@@ -48,6 +48,7 @@ class TestNote : public QObject, public MTest
       void tpcTranspose2();
       void noteLimits();
       void tpcDegrees();
+      void alteredUnison();
       void LongNoteAfterShort_183746();
       };
 
@@ -93,7 +94,7 @@ void TestNote::note()
    // small
       note->setSmall(true);
       n = static_cast<Note*>(writeReadElement(note));
-      QVERIFY(n->small());
+      QVERIFY(n->isSmall());
       delete n;
 
    // mirror
@@ -209,12 +210,12 @@ void TestNote::note()
    // small
       note->setProperty(Pid::SMALL, false);
       n = static_cast<Note*>(writeReadElement(note));
-      QVERIFY(!n->small());
+      QVERIFY(!n->isSmall());
       delete n;
 
       note->setProperty(Pid::SMALL, true);
       n = static_cast<Note*>(writeReadElement(note));
-      QVERIFY(n->small());
+      QVERIFY(n->isSmall());
       delete n;
 
    // mirror
@@ -486,6 +487,22 @@ void TestNote::noteLimits()
             score->cmdAddInterval(8, nl);
             }
       QVERIFY(saveCompareScore(score, "notelimits-test.mscx", DIR + "notelimits-ref.mscx"));
+      }
+
+void TestNote::alteredUnison()
+      {
+      MasterScore* score = readScore(DIR + "altered-unison.mscx");
+      Measure* m = score->firstMeasure();
+#ifdef __MINGW32__ // apparently defined for 64bit too. Needed to avoid a conflict with windows.h and its declaration of `Chord`
+      Ms::Chord* c = m->findChord(Fraction(0, 1), 0);
+#else
+      Chord* c = m->findChord(Fraction(0, 1), 0);
+#endif
+      QVERIFY(c->downNote()->accidental() && c->downNote()->accidental()->accidentalType() == Ms::AccidentalType::FLAT);
+      QVERIFY(c->upNote()->accidental() && c->upNote()->accidental()->accidentalType() == Ms::AccidentalType::NATURAL);
+      c = m->findChord(Fraction(1, 4), 0);
+      QVERIFY(c->downNote()->accidental() && c->downNote()->accidental()->accidentalType() == Ms::AccidentalType::NATURAL);
+      QVERIFY(c->upNote()->accidental() && c->upNote()->accidental()->accidentalType() == Ms::AccidentalType::SHARP);
       }
 
 void TestNote::tpcDegrees()

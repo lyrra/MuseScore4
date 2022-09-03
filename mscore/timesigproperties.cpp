@@ -51,7 +51,7 @@ TimeSigProperties::TimeSigProperties(TimeSig* t, QWidget* parent)
       nText->setText(timesig->denominatorString());
       // set validators for numerator and denominator strings
       // which only accept '+', '(', ')', digits and some time symb conventional representations
-      QRegExp rx("[0-9+CO()\\x00A2\\x00D8]*");
+      QRegExp rx("[0-9+CO()\\x00A2\\x00D8\\x00BD\\x00BC]*");
       QValidator *validator = new QRegExpValidator(rx, this);
       zText->setValidator(validator);
       nText->setValidator(validator);
@@ -66,7 +66,7 @@ TimeSigProperties::TimeSigProperties(TimeSig* t, QWidget* parent)
       zNominal->setEnabled(false);
       nNominal->setEnabled(false);
 
-       // TODO: fix http://musescore.org/en/node/42341
+      // TODO: fix https://musescore.org/en/node/42341
       // for now, editing of actual (local) time sig is disabled in dialog
       // but more importantly, the dialog should make it clear that this is "local" change only
       // and not normally the right way to add 7/4 to a score
@@ -81,6 +81,12 @@ TimeSigProperties::TimeSigProperties(TimeSig* t, QWidget* parent)
                   break;
             case TimeSigType::ALLA_BREVE:
                   allaBreveButton->setChecked(true);
+                  break;
+            case TimeSigType::CUT_BACH:
+//                  cutBachButton->setChecked(true);
+//                  break;
+            case TimeSigType::CUT_TRIPLE:
+//                  cutTripleButton->setChecked(true);
                   break;
             }
 
@@ -114,6 +120,10 @@ TimeSigProperties::TimeSigProperties(TimeSig* t, QWidget* parent)
                         textButton->setChecked(false);
                         otherButton->setChecked(true);
                         otherCombo->setCurrentIndex(idx);
+
+                        // set the custom text fields to empty
+                        zText->setText(QString());
+                        nText->setText(QString());
                         }
                   }
             idx++;
@@ -134,21 +144,12 @@ TimeSigProperties::TimeSigProperties(TimeSig* t, QWidget* parent)
 void TimeSigProperties::accept()
       {
       TimeSigType ts = TimeSigType::NORMAL;
-      if (textButton->isChecked())
+      if (textButton->isChecked() || otherButton->isChecked())
             ts = TimeSigType::NORMAL;
       else if (fourfourButton->isChecked())
             ts = TimeSigType::FOUR_FOUR;
       else if (allaBreveButton->isChecked())
             ts = TimeSigType::ALLA_BREVE;
-      else if (otherButton->isChecked()) {
-            // if other symbol, set as normal text...
-            ts = TimeSigType::NORMAL;
-            ScoreFont* scoreFont = timesig->score()->scoreFont();
-            SymId symId = (SymId)( otherCombo->itemData(otherCombo->currentIndex()).toInt() );
-            // ...and set numerator to font string for symbol and denominator to empty string
-            timesig->setNumeratorString(scoreFont->toString(symId));
-            timesig->setDenominatorString(QString());
-            }
 
       Fraction actual(zActual->value(), nActual->value());
       Fraction nominal(zNominal->value(), nNominal->value());
@@ -159,6 +160,14 @@ void TimeSigProperties::accept()
             timesig->setNumeratorString(zText->text());
       if (nText->text() != timesig->denominatorString())
             timesig->setDenominatorString(nText->text());
+
+      if (otherButton->isChecked()) {
+            ScoreFont* scoreFont = timesig->score()->scoreFont();
+            SymId symId = (SymId)( otherCombo->itemData(otherCombo->currentIndex()).toInt() );
+            // ...and set numerator to font string for symbol and denominator to empty string
+            timesig->setNumeratorString(scoreFont->toString(symId));
+            timesig->setDenominatorString(QString());
+            }
 
       Groups g = groups->groups();
       timesig->setGroups(g);

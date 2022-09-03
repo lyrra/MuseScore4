@@ -39,20 +39,25 @@ class Excerpt : public QObject {
     /** The title of this part */
     Q_PROPERTY(QString               title     READ title)
 
-    /// \cond MS_INTERNAL
  protected:
+    /// \cond MS_INTERNAL
     Ms::Excerpt* const e;
+    /// \endcond
 
  public:
+    /// \cond MS_INTERNAL
     Excerpt(Ms::Excerpt* _e = nullptr)
        : QObject(), e(_e) {}
     Excerpt(const Excerpt&) = delete;
     Excerpt& operator=(const Excerpt&) = delete;
-    virtual ~Excerpt() {};
+    virtual ~Excerpt() {}
 
     Score* partScore();
     QString title() { return e->title(); }
     /// \endcond
+
+    /// Checks whether two variables represent the same object. \since MuseScore 3.3
+    Q_INVOKABLE bool is(Ms::PluginAPI::Excerpt* other) { return other && e == other->e; }
 };
 
 //---------------------------------------------------------
@@ -86,7 +91,7 @@ template <typename T, class Container>
 class QmlExcerptsListAccess : public QQmlListProperty<T> {
 public:
       QmlExcerptsListAccess(QObject* obj, Container& container)
-            : QQmlListProperty<T>(obj, &container, &count, &at) {};
+            : QQmlListProperty<T>(obj, &container, &count, &at) {}
 
       static int count(QQmlListProperty<T>* l)     { return int(static_cast<Container*>(l->data)->size()); }
       static T* at(QQmlListProperty<T>* l, int i)  { return excerptWrap<T>(static_cast<Container*>(l->data)->at(i)); }

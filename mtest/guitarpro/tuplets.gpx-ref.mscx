@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<museScore version="3.01">
+<museScore version="3.02">
   <Score>
     <LayerTag id="0" tag="default"></LayerTag>
     <currentLayer>0</currentLayer>
     <Division>480</Division>
     <Style>
       <ArpeggioHiddenInStdIfTab>1</ArpeggioHiddenInStdIfTab>
-      <Spatium>1.76389</Spatium>
+      <Spatium>1.74978</Spatium>
       </Style>
     <showInvisible>1</showInvisible>
     <showUnprintable>1</showUnprintable>
@@ -29,8 +29,8 @@
           <name>stdNormal</name>
           </StaffType>
         </Staff>
-      <trackName>s.guit.</trackName>
-      <Instrument>
+      <trackName>Steel Guitar</trackName>
+      <Instrument id="guitar-steel-treble-clef">
         <longName>Guitar</longName>
         <shortName>Guit.</shortName>
         <trackName>Acoustic Guitar (Treble Clef)</trackName>
@@ -279,7 +279,6 @@
         <voice>
           <Tuplet>
             <linkedMain/>
-            <numberType>1</numberType>
             <normalNotes>8</normalNotes>
             <actualNotes>15</actualNotes>
             <baseNote>16th</baseNote>
@@ -287,6 +286,7 @@
               <style>Tuplet</style>
               <text>15:8</text>
               </Number>
+            <numberType>1</numberType>
             </Tuplet>
           <Beam>
             <l1>19</l1>
@@ -537,7 +537,7 @@
       <Division>480</Division>
       <Style>
         <ArpeggioHiddenInStdIfTab>1</ArpeggioHiddenInStdIfTab>
-        <Spatium>1.76389</Spatium>
+        <Spatium>1.74978</Spatium>
         </Style>
       <showInvisible>1</showInvisible>
       <showUnprintable>1</showUnprintable>
@@ -576,7 +576,7 @@
             </StaffType>
           </Staff>
         <trackName></trackName>
-        <Instrument>
+        <Instrument id="guitar-steel-treble-clef">
           <longName>Guitar</longName>
           <shortName>Guit.</shortName>
           <trackName>Acoustic Guitar (Treble Clef)</trackName>
@@ -858,7 +858,6 @@
             <Tuplet>
               <linked>
                 </linked>
-              <numberType>1</numberType>
               <normalNotes>8</normalNotes>
               <actualNotes>15</actualNotes>
               <baseNote>16th</baseNote>
@@ -866,6 +865,7 @@
                 <style>Tuplet</style>
                 <text>15:8</text>
                 </Number>
+              <numberType>1</numberType>
               </Tuplet>
             <Beam>
               <l1>19</l1>
@@ -1337,7 +1337,6 @@
             <Tuplet>
               <linked>
                 </linked>
-              <numberType>1</numberType>
               <normalNotes>8</normalNotes>
               <actualNotes>15</actualNotes>
               <baseNote>16th</baseNote>
@@ -1345,6 +1344,7 @@
                 <style>Tuplet</style>
                 <text>15:8</text>
                 </Number>
+              <numberType>1</numberType>
               </Tuplet>
             <Beam>
               <l1>46</l1>
@@ -1631,7 +1631,7 @@
             </voice>
           </Measure>
         </Staff>
-      <name>s.guit.</name>
+      <name>Steel Guitar</name>
       </Score>
     </Score>
   </museScore>

@@ -13,6 +13,8 @@
 #ifndef __XML_H__
 #define __XML_H__
 
+#include <QMultiMap>
+
 #include "connector.h"
 #include "stafftype.h"
 #include "interval.h"
@@ -67,10 +69,6 @@ class LinksIndexer {
 class XmlReader : public QXmlStreamReader {
       QString docName;  // used for error reporting
 
-      // For readahead possibility.
-      // If needed, must be explicitly set by setReadAheadDevice.
-      QIODevice* _readAheadDevice = nullptr;
-
       // Score read context (for read optimizations):
       Fraction _tick             { Fraction(0, 1) };
       Fraction _tickOffset       { Fraction(0, 1) };
@@ -104,6 +102,8 @@ class XmlReader : public QXmlStreamReader {
       void addConnectorInfo(std::unique_ptr<ConnectorInfoReader>);
       void removeConnector(const ConnectorInfoReader*); // Removes the whole ConnectorInfo chain from the connectors list.
 
+      qint64 _offsetLines { 0 };
+
    public:
       XmlReader(QFile* f) : QXmlStreamReader(f), docName(f->fileName()) {}
       XmlReader(const QByteArray& d, const QString& st = QString()) : QXmlStreamReader(d), docName(st)  {}
@@ -113,7 +113,7 @@ class XmlReader : public QXmlStreamReader {
       XmlReader& operator=(const XmlReader&) = delete;
       ~XmlReader();
 
-      bool hasAccidental;                     // used for userAccidental backward compatibility
+      bool hasAccidental { false };                     // used for userAccidental backward compatibility
       void unknown();
 
       // attribute helper routines:
@@ -146,6 +146,7 @@ class XmlReader : public QXmlStreamReader {
 
       Fraction tick()  const            { return _tick + _tickOffset; }
       Fraction rtick()  const ;
+      Fraction tickOffset() const       { return _tickOffset; }
       void setTick(const Fraction& f);
       void incTick(const Fraction& f);
       void setTickOffset(const Fraction& val) { _tickOffset = val; }
@@ -201,14 +202,14 @@ class XmlReader : public QXmlStreamReader {
 
       void checkTuplets();
       Tid addUserTextStyle(const QString& name);
-      Tid lookupUserTextStyle(const QString& name);
-
-      // Ownership on read ahead device is NOT transfered to XmlReader.
-      void setReadAheadDevice(QIODevice* dev) { if (!dev->isSequential()) _readAheadDevice = dev; }
-      bool readAheadAvailable() const { return bool(_readAheadDevice); }
-      void performReadAhead(std::function<void(QIODevice&)> readAheadRoutine);
+      Tid lookupUserTextStyle(const QString& name) const;
+      void clearUserTextStyles() { userTextStyles.clear(); }
 
       QList<std::pair<Element*, QPointF>>& fixOffsets() { return  _fixOffsets; }
+
+      // for reading old files (< 3.01)
+      QMap<int, QList<QPair<LinkedElements*, Location>>>& staffLinkedElements() { return _staffLinkedElements; }
+      void setOffsetLines(qint64 val) { _offsetLines = val; }
       };
 
 //---------------------------------------------------------

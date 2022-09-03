@@ -20,7 +20,6 @@
 #ifndef __TIMELINE_H__
 #define __TIMELINE_H__
 
-
 #include "libmscore/select.h"
 #include "scoreview.h"
 #include <vector>
@@ -44,6 +43,7 @@ class TDockWidget : public QDockWidget {
       QSplitter* _grid;
 
       virtual void closeEvent(QCloseEvent* event);
+      virtual void changeEvent(QEvent*);
 
    signals:
       void closed(bool);
@@ -73,16 +73,16 @@ class TRowLabels : public QGraphicsView {
             };
 
    private:
-      TDockWidget* scrollArea;
-      Timeline* parent;
+      TDockWidget* _scrollArea { nullptr };
+      Timeline* parent { nullptr };
 
-      QPoint old_loc;
+      QPoint _oldLoc;
 
-      bool dragging = false;
+      bool _dragging = false;
 
-      std::vector<std::pair<QGraphicsItem*, int>> meta_labels;
-      std::map<MouseOverValue, QPixmap*> mouseover_map;
-      std::tuple<QGraphicsPixmapItem*, MouseOverValue, unsigned int> old_item_info;
+      std::vector<std::pair<QGraphicsItem*, int>> _metaLabels;
+      std::map<MouseOverValue, QPixmap*> _mouseoverMap;
+      std::tuple<QGraphicsPixmapItem*, MouseOverValue, unsigned> _oldItemInfo;
 
       virtual void resizeEvent(QResizeEvent*);
       virtual void mousePressEvent(QMouseEvent* event);
@@ -92,20 +92,30 @@ class TRowLabels : public QGraphicsView {
       virtual void leaveEvent(QEvent*);
 
    private slots:
-      void restrict_scroll(int value);
+      void restrictScroll(int value);
 
    public slots:
-      void mouseOver(QPointF scene_pt);
+      void mouseOver(QPointF scenePt);
 
    signals:
       void moved(QPointF p);
-      void swapMeta(unsigned int r, bool up);
+      void swapMeta(unsigned r, bool up);
       void requestContextMenu(QContextMenuEvent*);
 
    public:
-      TRowLabels(TDockWidget* dock_widget, Timeline* time, QGraphicsView* w = 0);
+      TRowLabels(TDockWidget* dockWidget, Timeline* time, QGraphicsView* w = 0);
       void updateLabels(std::vector<std::pair<QString, bool>> labels, int height);
       QString cursorIsOn();
+      };
+
+//---------------------------------------------------------
+//   TimelineTheme
+//---------------------------------------------------------
+
+struct TimelineTheme {
+      QColor backgroundColor, labelsColor1, labelsColor2, labelsColor3, gridColor1, gridColor2;
+      QColor measureMetaColor, selectionColor, nonVisiblePenColor, nonVisibleBrushColor, colorBoxColor;
+      QColor metaValuePenColor, metaValueBrushColor;
       };
 
 //---------------------------------------------------------
@@ -115,52 +125,72 @@ class TRowLabels : public QGraphicsView {
 class Timeline : public QGraphicsView {
       Q_OBJECT
 
-      int grid_width = 20;
-      int grid_height = 20;
-      int max_zoom = 50;
-      int min_zoom = 5;
-      int spacing = 5;
+   public:
+      enum class ItemType {
+            TYPE_UNKNOWN = 0,
+            TYPE_MEASURE,
+            TYPE_META,
+            };
+      Q_ENUM(ItemType);
 
-      std::tuple<int, qreal, Element*, Element*, bool> repeat_info;
-      std::tuple<QGraphicsItem*, int, QColor> old_hover_info;
+   private:
+      static constexpr int keyItemType = 15;
 
-      std::map<QString, QPixmap*> barlines;
-      bool is_barline = false;
+      int _gridWidth = 20;
+      int _gridHeight = 20;
+      int _maxZoom = 50;
+      int _minZoom = 5;
+      int _spacing = 5;
 
-      TDockWidget* scrollArea;
-      TRowLabels* row_names;
+      TimelineTheme _lightTheme, _darkTheme;
 
-      Score* _score;
-      ScoreView* _cv = nullptr;
+      std::tuple<int, qreal, Element*, Element*, bool> _repeatInfo;
+      std::tuple<QGraphicsItem*, int, QColor> _oldHoverInfo;
 
-      QGraphicsRectItem* selection_box;
-      std::vector<std::pair<QGraphicsItem*, int>> meta_rows;
+      std::map<BarLineType, QPixmap*> _barlines;
+      bool _isBarline { false };
 
-      QPainterPath selection_path;
-      QRectF old_selection_rect;
-      bool mouse_pressed = false;
-      QPoint old_loc;
+      TDockWidget* _scrollArea { nullptr };
+      TRowLabels* _rowNames { nullptr };
 
-      bool collapsed_meta = false;
+      Score* _score { nullptr };
+      ScoreView* _cv { nullptr };
 
-      std::vector<std::tuple<QString, void (Timeline::*)(Segment*, int*, int), bool>> metas;
-      void tempo_meta(Segment* seg, int* stagger, int pos);
-      void time_meta(Segment* seg, int* stagger, int pos);
-      void measure_meta(Segment*, int*, int pos);
-      void rehearsal_meta(Segment* seg, int* stagger, int pos);
-      void key_meta(Segment* seg, int* stagger, int pos);
-      void barline_meta(Segment* seg, int* stagger, int pos);
-      void jump_marker_meta(Segment* seg, int* stagger, int pos);
+      int gridRows = 0;
+      int gridCols = 0;
 
-      bool addMetaValue(int x, int pos, QString meta_text, int row, ElementType element_type, Element* element, Segment* seg, Measure* measure, QString tooltip = "");
-      void setMetaData(QGraphicsItem* gi, int staff, ElementType et, Measure* m, bool full_measure, Element* e, QGraphicsItem* pair_item = nullptr, Segment* seg = nullptr);
-      unsigned int getMetaRow(QString target_text);
+      QGraphicsPathItem* nonVisiblePathItem = nullptr;
+      QGraphicsPathItem* visiblePathItem = nullptr;
+      QGraphicsPathItem* selectionItem = nullptr;
 
-      int global_measure_number { 0 };
-      int global_z_value        { 0 };
+      QGraphicsRectItem* _selectionBox { nullptr };
+      std::vector<std::pair<QGraphicsItem*, int>> _metaRows;
 
-      //True if meta value was last clicked
-      bool meta_value = false;
+      QPainterPath _selectionPath;
+      QRectF _oldSelectionRect;
+      bool _mousePressed { false };
+      QPoint _oldLoc;
+
+      bool _collapsedMeta { false };
+
+      std::vector<std::tuple<QString, void (Timeline::*)(Segment*, int*, int), bool>> _metas;
+      void tempoMeta(Segment* seg, int* stagger, int pos);
+      void timeMeta(Segment* seg, int* stagger, int pos);
+      void measureMeta(Segment*, int*, int pos);
+      void rehearsalMeta(Segment* seg, int* stagger, int pos);
+      void keyMeta(Segment* seg, int* stagger, int pos);
+      void barlineMeta(Segment* seg, int* stagger, int pos);
+      void jumpMarkerMeta(Segment* seg, int* stagger, int pos);
+
+      bool addMetaValue(int x, int pos, QString metaText, int row, ElementType elementType, Element* element, Segment* seg, Measure* measure, QString tooltip = "");
+      void setMetaData(QGraphicsItem* gi, int staff, ElementType et, Measure* m, bool full_measure, Element* e, QGraphicsItem* pairItem = nullptr, Segment* seg = nullptr);
+      unsigned getMetaRow(QString targetText);
+
+      int _globalMeasureNumber { 0 };
+      int _globalZValue        { 0 };
+
+      // True if meta value was last clicked
+      bool _metaValue = false;
       ViewState state = ViewState::NORMAL;
 
       virtual void mousePressEvent(QMouseEvent* event);
@@ -168,53 +198,64 @@ class Timeline : public QGraphicsView {
       virtual void mouseReleaseEvent(QMouseEvent*);
       virtual void wheelEvent(QWheelEvent *event);
       virtual void leaveEvent(QEvent*);
+      void showEvent(QShowEvent*) override;
+      virtual void changeEvent(QEvent*);
 
-      unsigned int correctMetaRow(unsigned int row);
+      unsigned correctMetaRow(unsigned row);
       int correctStave(int stave);
 
       QList<Part*> getParts();
 
+      QRectF getMeasureRect(int measureIndex, int row, int numMetas) { return QRectF(measureIndex * _gridWidth, _gridHeight * (row + numMetas) + 3, _gridWidth, _gridHeight); }
+      void clearScene();
+
+      void updateGrid(int startMeasure = -1, int endMeasure = -1);
+
    private slots:
-      void handle_scroll(int value);
+      void handleScroll(int value);
       void updateView();
       void objectDestroyed(QObject*);
 
    public slots:
       void changeSelection(SelState);
       void mouseOver(QPointF pos);
-      void swapMeta(unsigned int row, bool switch_up);
+      void swapMeta(unsigned row, bool switchUp);
       virtual void contextMenuEvent(QContextMenuEvent* event) override;
       void requestInstrumentDialog();
       void toggleMetaRow();
+      void updateTimelineTheme();
 
    signals:
       void moved(QPointF);
 
    public:
-      Timeline(TDockWidget* dock_widget, QWidget* parent = 0);
+      Timeline(TDockWidget* dockWidget, QWidget* parent = nullptr);
       int correctPart(int stave);
 
       void drawSelection();
-      void drawGrid(int global_rows, int global_cols);
+      void drawGrid(int globalRows, int globalCols, int startMeasure = 0, int endMeasure = -1);
 
       void setScore(Score* s);
       void setScoreView(ScoreView* sv);
 
-      int nstaves();
+      int nstaves() const;
 
-      int getWidth();
-      int getHeight();
+      int getWidth() const;
+      int getHeight() const;
+      const TimelineTheme& activeTheme() const;
 
-      void updateGrid();
+      void updateGridFull() { updateGrid(0, -1); }
+      void updateGridView() { updateGrid(-1, -1); }
+      void updateGridFromCmdState();
 
       QColor colorBox(QGraphicsRectItem* item);
 
       std::vector<std::pair<QString, bool>> getLabels();
 
-      unsigned int nmetas();
+      unsigned nmetas() const;
 
-      bool collapsed() { return collapsed_meta; }
-      void setCollapsed(bool st) { collapsed_meta = st; }
+      bool collapsed() { return _collapsedMeta; }
+      void setCollapsed(bool st) { _collapsedMeta = st; }
 
       Staff* numToStaff(int staff);
       void toggleShow(int staff);

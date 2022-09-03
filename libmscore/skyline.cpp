@@ -250,10 +250,10 @@ void Skyline::paint(QPainter& p) const
       p.save();
 
       p.setBrush(Qt::NoBrush);
-      QMatrix matrix = p.matrix();
-      p.setPen(QPen(QBrush(Qt::darkYellow), 2.0 / matrix.m11()));
+      QTransform transform = p.worldTransform();
+      p.setPen(QPen(QBrush(Qt::darkYellow), 2.0 / transform.m11()));
       _north.paint(p);
-      p.setPen(QPen(QBrush(Qt::green), 2.0 / matrix.m11()));
+      p.setPen(QPen(QBrush(Qt::green), 2.0 / transform.m11()));
       _south.paint(p);
       p.restore();
       }
@@ -278,6 +278,11 @@ void SkylineLine::paint(QPainter& p) const
                   pvalid = false;
             x1 = x2;
             }
+      }
+
+bool SkylineLine::valid() const
+      {
+      return !seg.empty();
       }
 
 bool SkylineLine::valid(const SkylineSegment& s) const

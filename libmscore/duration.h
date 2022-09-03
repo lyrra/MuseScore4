@@ -35,12 +35,6 @@ class DurationElement : public Element {
       Fraction _duration;
       Tuplet* _tuplet;
 
-// #ifdef SCRIPT_INTERFACE
-//       void setDurationW(FractionWrapper* f)  { _duration = f->fraction(); }
-//       FractionWrapper* durationW() const     { return new FractionWrapper(_duration); }
-//       FractionWrapper* globalDurW() const    { return new FractionWrapper(globalDuration()); }
-// #endif
-
    public:
       DurationElement(Score* = 0, ElementFlags = ElementFlag::MOVABLE | ElementFlag::ON_STAFF);
       DurationElement(const DurationElement& e);
@@ -59,6 +53,7 @@ class DurationElement : public Element {
 
       Fraction actualTicks() const;
 
+      //Length expressed as a fraction of a whole note
       virtual Fraction ticks() const { return _duration; }
       Fraction globalTicks() const;
       void setTicks(const Fraction& f) { _duration = f;    }

@@ -40,6 +40,9 @@
 ****************************************************************************/
 
 #include "svggenerator.h"
+#include "libmscore/element.h"
+#include "libmscore/image.h"
+#include "libmscore/imageStore.h"
 #include "libmscore/mscore.h"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -185,7 +188,7 @@ public:
 
     QBrush brush;
     QPen pen;
-    QMatrix matrix;
+    QTransform transform;
 //    QFont font;  // UNUSED
 
 // GRADIENTS NOT IMPLEMENTED (YET)
@@ -234,12 +237,14 @@ private:
     SvgPaintEnginePrivate *d_ptr;
 
 // Qt translates everything. These help avoid SVG transform="translate()".
-    qreal _dx;
-    qreal _dy;
+    qreal _dx { 0.0 };
+    qreal _dy { 0.0 };
 
 protected:
 // The Ms::Element being generated right now
     const Ms::Element* _element = NULL;
+
+    void writeImage(const QRectF& r, const QByteArray& imageData, const QString& mimeFormat);
 
 // SVG strings as constants
 #define SVG_SPACE    ' '
@@ -404,7 +409,7 @@ public:
 //    }
 //    void saveConicalGradientBrush(const QGradient *)
 //    {
-//        qWarning("svg's don't support conical gradients!");
+//        qDebug("svg's don't support conical gradients!");
 //    }
 //
 //    void saveGradientStops(QTextStream &str, const QGradient *g) {
@@ -517,7 +522,7 @@ public:
             qts << SVG_STROKE_DASHOFFSET << dashOffset  << SVG_QUOTE;
             break; }
         default:
-            qWarning("Unsupported pen style");
+            qDebug("Unsupported pen style");
             break;
         }
         // Set stroke-width attribute, unless it's zero or 1 (default is 1)
@@ -541,7 +546,7 @@ public:
             qts << SVG_STROKE_LINECAP << SVG_ROUND << SVG_QUOTE;
             break;
         default:
-            qWarning("Unhandled cap style");
+            qDebug("Unhandled cap style");
             break;
         }
         // Set stroke-linejoin, stroke-miterlimit attributes
@@ -558,7 +563,7 @@ public:
             qts << SVG_STROKE_LINEJOIN   << SVG_ROUND << SVG_QUOTE;
             break;
         default:
-            qWarning("Unhandled join style");
+            qDebug("Unhandled join style");
             break;
         }
         // An uncommon, possibly non-existent in MuseScore, effect
@@ -807,7 +812,7 @@ void SvgGenerator::setSize(const QSize &size)
 {
     Q_D(SvgGenerator);
     if (d->engine->isActive()) {
-        qWarning("SvgGenerator::setSize(), cannot set size while SVG is being generated");
+        qDebug("SvgGenerator::setSize(), cannot set size while SVG is being generated");
         return;
     }
     d->engine->setSize(size);
@@ -850,7 +855,7 @@ void SvgGenerator::setViewBox(const QRectF &viewBox)
 {
     Q_D(SvgGenerator);
     if (d->engine->isActive()) {
-        qWarning("SvgGenerator::setViewBox(), cannot set viewBox while SVG is being generated");
+        qDebug("SvgGenerator::setViewBox(), cannot set viewBox while SVG is being generated");
         return;
     }
     d->engine->setViewBox(viewBox);
@@ -878,7 +883,7 @@ void SvgGenerator::setFileName(const QString &fileName)
 {
     Q_D(SvgGenerator);
     if (d->engine->isActive()) {
-        qWarning("SvgGenerator::setFileName(), cannot set file name while SVG is being generated");
+        qDebug("SvgGenerator::setFileName(), cannot set file name while SVG is being generated");
         return;
     }
 
@@ -912,7 +917,7 @@ void SvgGenerator::setOutputDevice(QIODevice *outputDevice)
 {
     Q_D(SvgGenerator);
     if (d->engine->isActive()) {
-        qWarning("SvgGenerator::setOutputDevice(), cannot set output device while SVG is being generated");
+        qDebug("SvgGenerator::setOutputDevice(), cannot set output device while SVG is being generated");
         return;
     }
     d->owns_iodevice = false;
@@ -983,7 +988,7 @@ int SvgGenerator::metric(QPaintDevice::PaintDeviceMetric metric) const
     case QPaintDevice::PdmDevicePixelRatioScaled:
         return 1;
     default:
-        qWarning("SvgGenerator::metric(), unhandled metric %d\n", metric);
+        qDebug("SvgGenerator::metric(), unhandled metric %d\n", metric);
         break;
     }
     return 0;
@@ -1008,17 +1013,17 @@ bool SvgPaintEngine::begin(QPaintDevice *)
 
     // Check for errors
     if (!d->outputDevice) {
-        qWarning("SvgPaintEngine::begin(), no output device");
+        qDebug("SvgPaintEngine::begin(), no output device");
         return false;
     }
     if (!d->outputDevice->isOpen()) {
         if (!d->outputDevice->open(QIODevice::WriteOnly | QIODevice::Text)) {
-            qWarning("SvgPaintEngine::begin(), could not open output device: '%s'",
+            qDebug("SvgPaintEngine::begin(), could not open output device: '%s'",
                      qPrintable(d->outputDevice->errorString()));
             return false;
         }
     } else if (!d->outputDevice->isWritable()) {
-        qWarning("SvgPaintEngine::begin(), could not write to read-only output device: '%s'",
+        qDebug("SvgPaintEngine::begin(), could not write to read-only output device: '%s'",
                  qPrintable(d->outputDevice->errorString()));
         return false;
     }
@@ -1092,13 +1097,6 @@ void SvgPaintEngine::drawImage(const QRectF  &r, const QImage &image,
     Q_UNUSED(sr);
     Q_UNUSED(flags);
 
-    stream() << SVG_IMAGE           << stateString
-             << SVG_X << SVG_QUOTE  << r.x() + _dx << SVG_QUOTE
-             << SVG_Y << SVG_QUOTE  << r.y() + _dy << SVG_QUOTE
-             << SVG_WIDTH           << r.width()   << SVG_QUOTE
-             << SVG_HEIGHT          << r.height()  << SVG_QUOTE
-             << SVG_PRESERVE_ASPECT << SVG_NONE    << SVG_QUOTE;
-
     QByteArray      data;
     QBuffer buffer(&data);
 
@@ -1106,8 +1104,43 @@ void SvgPaintEngine::drawImage(const QRectF  &r, const QImage &image,
     image.save(&buffer, "PNG");
     buffer.close();
 
-    stream() << " xlink:href=\"data:image/png;base64,"
-             << data.toBase64() << SVG_QUOTE << SVG_ELEMENT_END << endl;
+
+    // check whether we can just use the original raster image
+    // to reduce the resulting file size
+    if (_element && _element->isImage()) {
+        static const QList<QString> allowedImageTypes {
+            "image/jpeg",
+            "image/png"
+        };
+
+        const Ms::Image* img = Ms::toImage(_element);
+        const Ms::ImageStoreItem* storeItem = img->storeItem(); // holds the original image file content
+        if (img->getImageType() == Ms::ImageType::RASTER && storeItem) {
+            const QByteArray& imgData = storeItem->buffer();
+            const QMimeType type = QMimeDatabase().mimeTypeForData(imgData);
+            if (type.isValid() && allowedImageTypes.contains(type.name())
+                && imgData.size() < data.size()) {
+                // this really can save space, save the original image
+                writeImage(r, imgData, type.name());
+                return;
+            }
+        }
+    }
+
+    writeImage(r, data, "image/png");
+}
+
+void SvgPaintEngine::writeImage(const QRectF& r, const QByteArray& imageData, const QString& mimeFormat)
+{
+    stream() << SVG_IMAGE           << stateString
+             << SVG_X << SVG_QUOTE  << r.x() + _dx << SVG_QUOTE
+             << SVG_Y << SVG_QUOTE  << r.y() + _dy << SVG_QUOTE
+             << SVG_WIDTH           << r.width()   << SVG_QUOTE
+             << SVG_HEIGHT          << r.height()  << SVG_QUOTE
+             << SVG_PRESERVE_ASPECT << SVG_NONE    << SVG_QUOTE;
+
+    stream() << " xlink:href=\"data:" << mimeFormat << ";base64,"
+             << imageData.toBase64() << SVG_QUOTE << SVG_ELEMENT_END << endl;
 }
 
 void SvgPaintEngine::updateState(const QPaintEngineState &s)

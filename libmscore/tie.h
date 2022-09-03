@@ -24,33 +24,36 @@ namespace Ms {
 
 class TieSegment final : public SlurTieSegment {
       QPointF autoAdjustOffset;
+      qreal shoulderHeightMin = 0.4;
+      qreal shoulderHeightMax = 1.3;
 
       void setAutoAdjust(const QPointF& offset);
       void setAutoAdjust(qreal x, qreal y)      { setAutoAdjust(QPointF(x, y)); }
       QPointF getAutoAdjust() const             { return autoAdjustOffset; }
 
    protected:
-      virtual void changeAnchor(EditData&, Element*) override;
+      void changeAnchor(EditData&, Element*) override;
 
    public:
       TieSegment(Score* s) : SlurTieSegment(s) { autoAdjustOffset = QPointF(); }
       TieSegment(const TieSegment& s) : SlurTieSegment(s) { autoAdjustOffset = QPointF(); }
-      virtual TieSegment* clone() const override   { return new TieSegment(*this); }
-      virtual ElementType type() const override    { return ElementType::TIE_SEGMENT; }
-      virtual int subtype() const override         { return static_cast<int>(spanner()->type()); }
-      virtual QString subtypeName() const override { return name(spanner()->type()); }
-      virtual void draw(QPainter*) const override;
+
+      TieSegment* clone() const override   { return new TieSegment(*this); }
+      ElementType type() const override    { return ElementType::TIE_SEGMENT; }
+      int subtype() const override         { return static_cast<int>(spanner()->type()); }
+      void draw(QPainter*) const override;
 
       void layoutSegment(const QPointF& p1, const QPointF& p2);
+      void adjustX();
+      void finalizeSegment();
 
       bool isEdited() const;
-      virtual void editDrag(EditData&) override;
-      virtual bool edit(EditData&) override;
-      virtual void updateGrips(EditData&) const override;
+      void editDrag(EditData&) override;
+      bool edit(EditData&) override;
 
       Tie* tie() const { return (Tie*)spanner(); }
 
-      virtual void computeBezier(QPointF so = QPointF());
+      void computeBezier(QPointF so = QPointF()) override;
       };
 
 //---------------------------------------------------------
@@ -62,20 +65,25 @@ class Tie final : public SlurTie {
       static Note* editStartNote;
       static Note* editEndNote;
 
+   private:
+      bool _isInside{ false };
+
    public:
       Tie(Score* = 0);
-      virtual Tie* clone() const override         { return new Tie(*this);  }
-      virtual ElementType type() const override { return ElementType::TIE; }
+
+      Tie* clone() const override       { return new Tie(*this);  }
+      ElementType type() const override { return ElementType::TIE; }
 
       void setStartNote(Note* note);
       void setEndNote(Note* note)                 { setEndElement((Element*)note); }
       Note* startNote() const;
       Note* endNote() const;
 
+      bool isInside() const { return _isInside; }
+
       void calculateDirection();
-      virtual void write(XmlWriter& xml) const override;
-//      virtual void layout() override;
-      virtual void slurPos(SlurPos*) override;
+      void write(XmlWriter& xml) const override;
+      void slurPos(SlurPos*) override;
 
       TieSegment* layoutFor(System*);
       TieSegment* layoutBack(System*);
@@ -87,7 +95,7 @@ class Tie final : public SlurTie {
       TieSegment* segmentAt(int n)             { return toTieSegment(Spanner::segmentAt(n));   }
       const TieSegment* segmentAt(int n) const { return toTieSegment(Spanner::segmentAt(n));   }
 
-      virtual SlurTieSegment* newSlurTieSegment() override { return new TieSegment(score()); }
+      SlurTieSegment* newSlurTieSegment() override { return new TieSegment(score()); }
       };
 
 }     // namespace Ms

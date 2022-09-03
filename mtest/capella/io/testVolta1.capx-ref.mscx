@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<museScore version="3.01">
+<museScore version="3.02">
   <Score>
     <LayerTag id="0" tag="default"></LayerTag>
     <currentLayer>0</currentLayer>
@@ -59,11 +59,9 @@
             <sigD>4</sigD>
             </TimeSig>
           <StaffText>
-            <autoplace>0</autoplace>
             <text>Volta 1</text>
             </StaffText>
           <StaffText>
-            <autoplace>0</autoplace>
             <text>MuseScore testfile</text>
             </StaffText>
           <Chord>
@@ -134,7 +132,6 @@
           </LayoutBreak>
         <voice>
           <StaffText>
-            <autoplace>0</autoplace>
             <text>Leon Vinken</text>
             </StaffText>
           <Spanner type="Volta">

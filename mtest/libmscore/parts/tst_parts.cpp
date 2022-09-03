@@ -95,6 +95,8 @@ class TestParts : public QObject, public MTest
       void undoRemoveChordline();
       void undoRedoRemoveChordline();
 
+      void createPartStemless();
+
 //      void createPartImage();
 //      void addImage();
 //      void undoAddImage();
@@ -112,6 +114,8 @@ class TestParts : public QObject, public MTest
 //      void staffStyles();
 
       void measureProperties();
+
+      void textLines();
 
  // second part has system text on empty chordrest segment
       void createPart3() {
@@ -214,6 +218,26 @@ void TestParts::voicesExcerpt()
 
       trackList.clear();
       trackList.insert(11, 0);
+
+      ex = new Excerpt(score);
+      ex->setPartScore(nscore);
+      nscore->setExcerpt(ex);
+      score->excerpts().append(ex);
+      ex->setTitle(parts.front()->longName());
+      ex->setParts(parts);
+      ex->setTracks(trackList);
+      Excerpt::createExcerpt(ex);
+      QVERIFY(nscore);
+
+      //
+      // create second part
+      //
+      parts.clear();
+      parts.append(score->parts().at(1));
+      nscore = new Score(score);
+
+      trackList.clear();
+      trackList.insert(8, 0);
 
       ex = new Excerpt(score);
       ex->setPartScore(nscore);
@@ -387,6 +411,11 @@ void TestParts::createPartSymbol()
 void TestParts::createPartChordline()
       {
       testPartCreation("part-chordline");
+      }
+
+void TestParts::createPartStemless()
+      {
+      testPartCreation("part-stemless");
       }
 
 #if 0
@@ -1046,6 +1075,14 @@ void TestParts::measureProperties()
       {
       }
 
+//---------------------------------------------------------
+//   textLines
+//---------------------------------------------------------
+
+void TestParts::textLines()
+      {
+      testPartCreation("part-textlines");
+      }
 
 QTEST_MAIN(TestParts)
 

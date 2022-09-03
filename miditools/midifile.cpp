@@ -104,9 +104,9 @@ bool MidiFile::readTrack()
                   break;
             }
       if (curPos != endPos) {
-            qWarning("bad track len: %lld != %lld, %lld bytes too much\n", endPos, curPos, endPos - curPos);
+            qDebug("bad track len: %lld != %lld, %lld bytes too much\n", endPos, curPos, endPos - curPos);
             if (curPos < endPos) {
-                  qWarning("  skip %lld\n", endPos-curPos);
+                  qDebug("  skip %lld\n", endPos-curPos);
                   skip(endPos - curPos);
                   }
             }
@@ -401,8 +401,15 @@ void MidiFile::writeEvent(const MidiEvent& event)
             case MidieEventType::META:
                   put(MidiEventType::META);
                   put(event.metaType());
-                  putvl(event.len());
-                  write(event.edata(), event.len());
+                  // Don't null terminate text meta events
+                  if (event.metaType() >= 0x1 && event.metaType() <= 0x14) {
+                        putvl(event.len() - 1);
+                        write(event.edata(), event.len() - 1);
+                        }
+                  else {
+                        putvl(event.len());
+                        write(event.edata(), event.len());
+                        }
                   resetRunningStatus();     // really ?!
                   break;
 

@@ -53,6 +53,15 @@ QString ScoreElement::userName() const
       }
 
 //---------------------------------------------------------
+//   ScoreElement::spatium
+//---------------------------------------------------------
+
+qreal ScoreElement::spatium() const
+      {
+      return e->isElement() ? toElement(e)->spatium() : e->score()->spatium();
+      }
+
+//---------------------------------------------------------
 //   ScoreElement::get
 //---------------------------------------------------------
 
@@ -61,9 +70,20 @@ QVariant ScoreElement::get(Ms::Pid pid) const
       if (!e)
             return QVariant();
       const QVariant val = e->getProperty(pid);
-      if (propertyType(pid) == P_TYPE::FRACTION) {
-            const Fraction f(val.value<Fraction>());
-            return QVariant::fromValue(wrap(f));
+      switch (propertyType(pid)) {
+            case P_TYPE::FRACTION: {
+                  const Fraction f(val.value<Fraction>());
+                  return QVariant::fromValue(wrap(f));
+                  }
+            case P_TYPE::POINT_SP:
+            case P_TYPE::POINT_SP_MM:
+                  return val.toPointF() / spatium();
+            case P_TYPE::SP_REAL:
+                  return val.toReal() / spatium();
+            case P_TYPE::SPATIUM:
+                  return val.value<Spatium>().val();
+            default:
+                  break;
             }
       return val;
       }
@@ -77,22 +97,39 @@ void ScoreElement::set(Ms::Pid pid, QVariant val)
       if (!e)
             return;
 
-      if (propertyType(pid) == P_TYPE::FRACTION) {
-            FractionWrapper* f = val.value<FractionWrapper*>();
-            if (!f) {
-                  qWarning("ScoreElement::set: trying to assing value of wrong type to fractional property");
-                  return;
+      switch (propertyType(pid)) {
+            case P_TYPE::FRACTION: {
+                  FractionWrapper* f = val.value<FractionWrapper*>();
+                  if (!f) {
+                        qDebug("ScoreElement::set: trying to assign value of wrong type to fractional property");
+                        return;
+                        }
+                  val = QVariant::fromValue(f->fraction());
                   }
-            val = QVariant::fromValue(f->fraction());
+                  break;
+            case P_TYPE::POINT_SP:
+            case P_TYPE::POINT_SP_MM:
+                  val = val.toPointF() * spatium();
+                  break;
+            case P_TYPE::SP_REAL:
+                  val = val.toReal() * spatium();
+                  break;
+            case P_TYPE::SPATIUM:
+                  val = QVariant::fromValue(Spatium(val.toReal()));
+                  break;
+            default:
+                  break;
             }
 
+      const PropertyFlags f = e->propertyFlags(pid);
+      const PropertyFlags newFlags = (f == PropertyFlags::NOSTYLE) ? f : PropertyFlags::UNSTYLED;
+
       if (_ownership == Ownership::SCORE) {
-            const PropertyFlags f = e->propertyFlags(pid);
-            const PropertyFlags newFlags = (f == PropertyFlags::NOSTYLE) ? f : PropertyFlags::UNSTYLED;
             e->undoChangeProperty(pid, val, newFlags);
             }
       else { // not added to a score so no need (and dangerous) to deal with undo stack
             e->setProperty(pid, val);
+            e->setPropertyFlags(pid, newFlags);
             }
       }
 
@@ -105,6 +142,8 @@ void ScoreElement::set(Ms::Pid pid, QVariant val)
 
 ScoreElement* wrap(Ms::ScoreElement* se, Ownership own)
       {
+      if (!se)
+            return nullptr;
       if (se->isElement())
             return wrap(toElement(se), own);
 
@@ -114,6 +153,8 @@ ScoreElement* wrap(Ms::ScoreElement* se, Ownership own)
                   return wrap<Score>(toScore(se), own);
             case ElementType::PART:
                   return wrap<Part>(toPart(se), own);
+            case ElementType::STAFF:
+                  return wrap<Staff>(toStaff(se), own);
             default:
                   break;
             }

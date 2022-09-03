@@ -143,7 +143,7 @@ void MeasureBase::add(Element* e)
                         setSectionBreak(true);
                         setNoBreak(false);
       //does not work with repeats: score()->tempomap()->setPause(endTick(), b->pause());
-                        score()->setLayoutAll();
+                        triggerLayoutAll();
                         break;
                   case LayoutBreak::NOBREAK:
                         setPageBreak(false);
@@ -153,8 +153,8 @@ void MeasureBase::add(Element* e)
                         break;
                   }
             if (next())
-                  score()->setLayout(next()->endTick());
-//            score()->setLayoutAll();     // TODO
+                  next()->triggerLayout();
+//            triggerLayoutAll();     // TODO
             }
       triggerLayout();
       _el.push_back(e);
@@ -179,7 +179,7 @@ void MeasureBase::remove(Element* el)
                   case LayoutBreak::SECTION:
                         setSectionBreak(false);
                         score()->setPause(endTick(), 0);
-                        score()->setLayoutAll();
+                        triggerLayoutAll();
                         break;
                   case LayoutBreak::NOBREAK:
                         setNoBreak(false);
@@ -259,6 +259,22 @@ Measure* MeasureBase::prevMeasureMM() const
       }
 
 //---------------------------------------------------------
+//   findPotentialSectionBreak
+//---------------------------------------------------------
+
+const MeasureBase *MeasureBase::findPotentialSectionBreak() const
+      {
+      // we're trying to find the MeasureBase that determines
+      // if the next one after this starts a new section
+      // if this is a measure, it's the one that determines this
+      // but if it is a frame, we may need to look backwards
+      const MeasureBase* mb = this;
+      while (mb && !mb->isMeasure() && !mb->sectionBreak())
+            mb = mb->prev();
+      return mb;
+      }
+
+//---------------------------------------------------------
 //   pause
 //---------------------------------------------------------
 
@@ -299,6 +315,45 @@ void MeasureBase::layout()
             else
                   element->layout();
             }
+      }
+
+//---------------------------------------------------------
+//   top
+//---------------------------------------------------------
+
+MeasureBase* MeasureBase::top() const
+      {
+      const MeasureBase* mb = this;
+      while (mb->parent()) {
+            if (mb->parent()->isMeasureBase())
+                  mb = toMeasureBase(mb->parent());
+            else
+                  break;
+            }
+      return const_cast<MeasureBase*>(mb);
+      }
+
+//---------------------------------------------------------
+//   tick
+//---------------------------------------------------------
+
+Fraction MeasureBase::tick() const
+      {
+      const MeasureBase* mb = top();
+      return mb ? mb->_tick : Fraction(-1, 1);
+      }
+
+//---------------------------------------------------------
+//   triggerLayout
+//---------------------------------------------------------
+
+void MeasureBase::triggerLayout() const
+      {
+      // for measurebases within other measurebases (e.g., hbox within vbox), use top level
+      const MeasureBase* mb = top();
+      // avoid triggering layout before getting added to a score
+      if (mb->prev() || mb->next())
+            score()->setLayout(mb->tick(), -1, mb);
       }
 
 //---------------------------------------------------------
@@ -368,7 +423,8 @@ bool MeasureBase::setProperty(Pid id, const QVariant& value)
                         return false;
                   break;
             }
-      score()->setLayoutAll();
+      triggerLayoutAll();
+      score()->setPlaylistDirty();
       return true;
       }
 
@@ -492,6 +548,20 @@ MeasureBase* MeasureBase::nextMM() const
       }
 
 //---------------------------------------------------------
+//   prevMM
+//---------------------------------------------------------
+
+MeasureBase* MeasureBase::prevMM() const
+      {
+      if (_prev
+         && _prev->isMeasure()
+         && score()->styleB(Sid::createMultiMeasureRests)) {
+            return const_cast<Measure*>(toMeasure(_prev)->mmRest1());
+            }
+      return _prev;
+      }
+
+//---------------------------------------------------------
 //   writeProperties
 //---------------------------------------------------------
 
@@ -578,7 +648,7 @@ int MeasureBase::index() const
 int MeasureBase::measureIndex() const
       {
       int idx = 0;
-      MeasureBase* m = score()->first();
+      MeasureBase* m = score()->firstMeasure();
       while (m) {
             if (m == this)
                   return idx;

@@ -20,7 +20,6 @@
 #include "musescore.h"
 #include "libmscore/mscore.h"
 #include "shortcut.h"
-#include "workspace.h"
 
 namespace Ms {
 
@@ -80,7 +79,7 @@ StartupWizardPage1::StartupWizardPage1(QWidget* parent)
       QLabel* label = new QLabel(tr("Choose your language"), this);
       _languages = new QComboBox(this);
       int index = 0;
-      for (auto language : Ms::mscore->languages()) {
+      for (const auto &language : Ms::mscore->languages()) {
             _languages->addItem(qApp->translate("language", language.name.toUtf8().constData()));
             _languages->setItemData(index, language.key);
             index++;
@@ -115,7 +114,7 @@ StartupWizardPage2::StartupWizardPage2(QWidget* parent)
       QLabel* label = new QLabel(tr("Enter your keyboard layout"), this);
       QStringList layoutList;
       QList<QString> keyboardLayouts = layoutToShortcut.keys();
-      for (auto layout : keyboardLayouts)
+      for (const auto &layout : qAsConst(keyboardLayouts))
             layoutList.append(qApp->translate("keyboard-layout", layout.toUtf8().constData()));
       _keyLayouts = new QComboBox(this);
       _keyLayouts->addItems(layoutList);
@@ -134,26 +133,10 @@ void StartupWizardPage2::setCurrentLayout(QString langCode)
       QString bestLayout = langToLayout.value(langCode, "US - International");
       QStringList layoutList;
       QList<QString> keyboardLayouts = layoutToShortcut.keys();
-      for (auto layout : keyboardLayouts)
+      for (const auto &layout : qAsConst(keyboardLayouts))
             layoutList.append(qApp->translate("keyboard-layout", layout.toUtf8().constData()));
       int targetIndex = layoutList.indexOf(bestLayout);
       _keyLayouts->setCurrentIndex(targetIndex);
-      }
-
-StartupWizardPage3::StartupWizardPage3(QWidget* parent)
-      : QWizardPage(parent)
-      {
-      setTitle(tr("Workspace"));
-      QLabel* label = new QLabel(tr("Choose your workspace"), this);
-      QStringList workspaceList;
-      for (auto workspace : Workspace::workspaces())
-            workspaceList.append(qApp->translate("workspace", workspace->name().toUtf8().constData()));
-      _workspaces = new QComboBox(this);
-      _workspaces->addItems(workspaceList);
-      QVBoxLayout* layout = new QVBoxLayout(this);
-      layout->addWidget(label);
-      layout->addWidget(_workspaces);
-      setLayout(layout);
       }
 
 StartupWizardPage4::StartupWizardPage4(QWidget* parent)
@@ -199,14 +182,12 @@ StartupWizard::StartupWizard(QWidget* parent)
       p0 = new StartupWizardIntroPage(this);
       p1 = new StartupWizardPage1(this);
       p2 = new StartupWizardPage2(this);
-      p3 = new StartupWizardPage3(this);
       p4 = new StartupWizardPage4(this);
       p5 = new StartupWizardFinalPage(this);
 
       addPage(p0);
       addPage(p1);
       addPage(p2);
-      addPage(p3);
       addPage(p4);
       addPage(p5);
 

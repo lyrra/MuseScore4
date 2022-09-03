@@ -186,7 +186,7 @@ int transposeTpcDiatonicByKey(int tpc, int steps, Key key, bool keepAlteredDegre
 
       // get step for tpc with alteration for key
       int alter;
-      int step = tpc2stepByKey(tpc, key, &alter);
+      int step = tpc2stepByKey(tpc, key, alter);
 
       // transpose step and get tpc for step/key
       step += steps;
@@ -253,8 +253,8 @@ bool Score::transpose(TransposeMode mode, TransposeDirection direction, Key trKe
 
       Interval interval;
       if (mode != TransposeMode::DIATONICALLY) {
-            if (mode == TransposeMode::BY_KEY) {
-                  // calculate interval from "transpose by key"
+            if (mode == TransposeMode::TO_KEY) {
+                  // calculate interval from "transpose to key"
                   // find the key of the first pitched staff
                   Key key = Key::C;
                   for (int i = startStaffIdx; i < endStaffIdx; ++i) {
@@ -264,7 +264,7 @@ bool Score::transpose(TransposeMode mode, TransposeDirection direction, Key trKe
                               if (!styleB(Sid::concertPitch)) {
                                     int diff = s->part()->instrument(startTick)->transpose().chromatic;
                                     if (diff)
-                                          key = transposeKey(key, diff);
+                                          key = transposeKey(key, diff, s->part()->preferSharpFlat());
                                     }
                               // remember this staff to use as basis in transposing key signatures
                               st = s;
@@ -293,7 +293,7 @@ bool Score::transpose(TransposeMode mode, TransposeDirection direction, Key trKe
                   trKeys = false;
                   }
             bool fullOctave = (interval.chromatic % 12) == 0;
-            if (fullOctave && (mode != TransposeMode::BY_KEY)) {
+            if (fullOctave && (mode != TransposeMode::TO_KEY)) {
                   trKeys = false;
                   transposeChordNames = false;
                   }
@@ -338,6 +338,9 @@ bool Score::transpose(TransposeMode mode, TransposeDirection direction, Key trKe
                         undoTransposeHarmony(h, rootTpc, baseTpc);
                         }
                   else if (e->isKeySig() && mode != TransposeMode::DIATONICALLY && trKeys) {
+                        // TODO: this currently is disabled in dialog
+                        // if we enabled it, then it will need work
+                        // probably the code should look more like the range selection code
                         KeySig* ks     = toKeySig(e);
                         if (!ks->isCustom() && !ks->isAtonal()) {
                               Key key        = st->key(ks->tick());
@@ -381,7 +384,7 @@ bool Score::transpose(TransposeMode mode, TransposeDirection direction, Key trKe
       Segment* s1 = _selection.startSegment();
       // if range start on mmRest, get the actual segment instead
       if (s1->measure()->isMMRest())
-      	s1 = tick2segment(s1->tick(), true, s1->segmentType(), false);
+            s1 = tick2segment(s1->tick(), true, s1->segmentType(), false);
       // if range starts with first CR of measure
       // then start looping from very beginning of measure
       // so we include key signature and can transpose that if requested
@@ -421,17 +424,29 @@ bool Score::transpose(TransposeMode mode, TransposeDirection direction, Key trKe
                               }
                         }
                   else if (e->isKeySig() && trKeys && mode != TransposeMode::DIATONICALLY) {
-                        bool startKey = segment->tick() == s1->tick();
-                        QList<ScoreElement*> ll = e->linkList();
-                        for (ScoreElement* scoreElement : ll) {
-                              KeySig* ks = toKeySig(scoreElement);
-                              bool addKey = ks->isChange();
-                              if (!ks->isCustom() && !ks->isAtonal()) {
-                                    Key nKey = transposeKey(ks->key(), interval);
-                                    KeySigEvent ke = ks->keySigEvent();
-                                    ke.setKey(nKey);
-                                    undo(new ChangeKeySig(ks, ke, ks->showCourtesy(), startKey || addKey));
+                        KeySig* ks = toKeySig(e);
+                        Fraction tick = segment->tick();
+                        bool startKey = tick == s1->tick();
+                        bool addKey = ks->isChange();
+                        if ((startKey || addKey) && !ks->isCustom() && !ks->isAtonal()) {
+                              Staff* staff = ks->staff();
+                              Key oKey = ks->key();
+                              if (!styleB(Sid::concertPitch)) {
+                                    Interval i = staff->part()->instrument(tick)->transpose();
+                                    // TODO: here we are converting the instrument-transposed key to concert pitch
+                                    // ideally, we would figure out how to get the original concert pitch key,
+                                    // since the current key may be affected by preferSharpsFlats() setting
+                                    // but ultimately it should not matter,
+                                    // because undoChangeKeySig() is going to change this again
+                                    oKey = transposeKey(oKey, i);
                                     }
+                              Key nKey = transposeKey(oKey, interval);
+                              KeySigEvent ke = ks->keySigEvent();
+                              ke.setKey(nKey);
+                              // undoChangeKey handles linked staves/parts and generating new keysigs as needed
+                              // it always sets the keysig non-generated
+                              // so only call it when needed
+                              undoChangeKeySig(staff, tick, ke);
                               }
                         }
                   }
@@ -467,7 +482,6 @@ bool Score::transpose(TransposeMode mode, TransposeDirection direction, Key trKe
       // create missing key signatures
       //
       if (trKeys && (mode != TransposeMode::DIATONICALLY) && (s1->tick() == Fraction(0,1))) {
-            Key nKey = transposeKey(Key::C, interval);
             for (int track : tracks) {
                   if (track % VOICES)
                         continue;
@@ -476,6 +490,7 @@ bool Score::transpose(TransposeMode mode, TransposeDirection direction, Key trKe
                   if (!ks) {
                         ks = new KeySig(this);
                         ks->setTrack(track);
+                        Key nKey = transposeKey(Key::C, interval, ks->part()->preferSharpFlat());
                         ks->setKey(nKey);
                         ks->setParent(seg);
                         undoAddElement(ks);
@@ -519,8 +534,27 @@ void Score::transposeKeys(int staffStart, int staffEnd, const Fraction& ts, cons
                   if (s->tick().isZero())
                         createKey = false;
                   if (!ks->isCustom() && !ks->isAtonal()) {
-                        Key key  = st->key(s->tick());
-                        Key nKey = transposeKey(key, segmentInterval);
+                        KeySigEvent ke = st->keySigEvent(s->tick());
+                        PreferSharpFlat pref = ks->part()->preferSharpFlat();
+                        // TODO: if we are transposing to concert pitch,
+                        // then instead of using the part preferSharpFlat() setting,
+                        // we should somehow determine the actual concert pitch key
+                        // eg, if concert pitch for the score as a whole is B, Eb instruments transpose to Ab
+                        // it would be nice if when toggling concert pitch, those instruments were B, not Cb
+                        // the code below makes a bold but unwarranted assumption:
+                        // if you are using the prefer flats option,
+                        // it's because you have sharps in your concert key signatures
+                        // (and vice versa)
+                        // better would be to check other non-transposing staves,
+                        // but ideally we would record and save transposed and concert keys separately
+                        // (like we do tpc1 & tpc2 for notes)
+                        //if (useInstrument && !flip) {
+                        //      if (pref == PreferSharpFlat::FLATS)
+                        //            pref = PreferSharpFlat::SHARPS;
+                        //      else if (pref == PreferSharpFlat::SHARPS)
+                        //            pref = PreferSharpFlat::FLATS;
+                        //      }
+                        Key nKey = transposeKey(ke.key(), segmentInterval, pref);
                         // remove initial C major key signatures
                         if (nKey == Key::C && s->tick().isZero()) {
                               undo(new RemoveElement(ks));
@@ -528,19 +562,17 @@ void Score::transposeKeys(int staffStart, int staffEnd, const Fraction& ts, cons
                                     undo(new RemoveElement(s));
                               }
                         else {
-                              KeySigEvent ke;
                               ke.setKey(nKey);
                               undo(new ChangeKeySig(ks, ke, ks->showCourtesy()));
                               }
                         }
                   }
             if (createKey && firstMeasure()) {
-                  Key key  = Key::C;
-                  Key nKey = transposeKey(key, firstInterval);
-                  KeySigEvent ke;
-                  ke.setKey(nKey);
                   KeySig* ks = new KeySig(this);
                   ks->setTrack(staffIdx * VOICES);
+                  Key nKey = transposeKey(Key::C, firstInterval, ks->part()->preferSharpFlat());
+                  KeySigEvent ke;
+                  ke.setKey(nKey);
                   ks->setKeySigEvent(ke);
                   Segment* seg = firstMeasure()->undoGetSegmentR(SegmentType::KeySig, Fraction(0,1));
                   seg->setHeader(true);
@@ -588,14 +620,11 @@ void Score::transposeSemitone(int step)
 
       const int interval = intervalListArray[keyType][step > 0 ? 0 : 1];
 
-      cmdSelectAll();
       if (!transpose(TransposeMode::BY_INTERVAL, dir, Key::C, interval, true, true, false)) {
             qDebug("Score::transposeSemitone: failed");
             // TODO: set error message
             }
-      else {
-            deselectAll();
-            }
+      else setSelectionChanged(true);
       }
 
 //---------------------------------------------------------
@@ -608,7 +637,7 @@ void Note::transposeDiatonic(int interval, bool keepAlterations, bool useDoubleA
       int alter;
       Fraction tick = chord()->segment()->tick();
       Key key       = staff() ? staff()->key(tick) : Key::C;
-      int absStep   = pitch2absStepByKey(epitch(), tpc(), key, &alter);
+      int absStep   = pitch2absStepByKey(epitch(), tpc(), key, alter);
 
       // get pitch and tcp corresponding to unaltered degree for this key
       int newPitch = absStep2pitchByKey(absStep + interval, key);
@@ -663,6 +692,21 @@ void Note::transposeDiatonic(int interval, bool keepAlterations, bool useDoubleA
 
       // store new data
       score()->undoChangePitch(this, newPitch, newTpc1, newTpc2);
+      }
+
+//---------------------------------------------------------
+//   transposeDiatonicAlterations
+//---------------------------------------------------------
+
+void Score::transposeDiatonicAlterations(TransposeDirection direction)
+      {
+      // Transpose current selection diatonically (up/down) while keeping degree alterations
+      // Note: Score::transpose() absolutely requires valid selection before invocation.
+      if (!selection().isNone()) {
+            transpose(TransposeMode::DIATONICALLY, direction, Key::C, 1, true, true, true);
+            setPlayNote(true); // For when selection is a single note, also playback that note
+            setSelectionChanged(true); // This will update the on-screen keyboard
+            }
       }
 
 //---------------------------------------------------------

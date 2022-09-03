@@ -2773,22 +2773,22 @@
         },
         "ornamentMordent": {
             "bBoxNE": [
-                2.064,
-                0.648
-            ],
-            "bBoxSW": [
-                0.0,
-                0.0
-            ]
-        },
-        "ornamentMordentInverted": {
-            "bBoxNE": [
                 2.48,
                 0.984
             ],
             "bBoxSW": [
                 0.0,
                 -0.552
+            ]
+        },
+        "ornamentShortTrill": {
+            "bBoxNE": [
+                2.064,
+                0.648
+            ],
+            "bBoxSW": [
+                0.0,
+                0.0
             ]
         },
         "ornamentPrecompAppoggTrill": {
@@ -4162,7 +4162,28 @@
             ]
         }
     },
-    "glyphsWithAlternates": {},
+    "glyphsWithAlternates": {
+        "brace":{
+            "alternates":[
+                {
+                    "codepoint":"U+F400",
+                    "name":"braceSmall"
+                },
+                {
+                    "codepoint":"U+F401",
+                    "name":"braceLarge"
+                },
+                {
+                    "codepoint":"U+F402",
+                    "name":"braceLarger"
+                },
+                {
+                    "codepoint":"U+F403",
+                    "name":"braceFlat"
+                }
+            ]
+        }
+    },
     "glyphsWithAnchors": {
         "accidentalBakiyeFlat": {
             "cutOutNE": [

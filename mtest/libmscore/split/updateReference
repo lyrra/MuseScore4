@@ -3,7 +3,7 @@
 if [ "`uname`" = 'Darwin' ]; then
    S=../../../build.xcode/mtest/libmscore/split/Debug
 else
-   S=../../../build.debug/mtest/libmscore/split
+   S=/home/presario/build-MuseScore-Desktop_Qt_5_9_9_GCC_64bit-Debug/mtest/libmscore/split
 fi
 
 cp $S/split08.mscx split08-ref.mscx
@@ -26,5 +26,6 @@ cp $S/split184061-keep-tie-before-break-voice-4.mscx split184061-keep-tie-before
 cp $S/split184061-keep-tie.mscx split184061-keep-tie-ref.mscx
 cp $S/split184061-no-tie.mscx split184061-no-tie-ref.mscx
 cp $S/split184061-other-inst-only-one-tie.mscx split184061-other-inst-only-one-tie-ref.mscx
+cp $S/split295207.mscx split295207-ref.mscx
 
 

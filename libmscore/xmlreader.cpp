@@ -11,17 +11,12 @@
 //=============================================================================
 
 #include "xml.h"
-#include "layoutbreak.h"
 #include "measure.h"
 #include "score.h"
 #include "spanner.h"
 #include "staff.h"
 #include "beam.h"
 #include "tuplet.h"
-#include "sym.h"
-#include "note.h"
-#include "barline.h"
-#include "style.h"
 
 namespace Ms {
 
@@ -190,12 +185,11 @@ Fraction XmlReader::readFraction()
       if (!s.isEmpty()) {
             int i = s.indexOf('/');
             if (i == -1) {
-                  qDebug("reading ticks <%s>", qPrintable(s));
                   return Fraction::fromTicks(s.toInt());
                   }
             else {
-                  z = s.left(i).toInt();
-                  n = s.mid(i+1).toInt();
+                  z = s.leftRef(i).toInt();
+                  n = s.midRef(i+1).toInt();
                   }
             }
       return Fraction(z, n);
@@ -212,9 +206,9 @@ void XmlReader::unknown()
             qDebug("%s ", qPrintable(errorString()));
       if (!docName.isEmpty())
             qDebug("tag in <%s> line %lld col %lld: %s",
-               qPrintable(docName), lineNumber(), columnNumber(), name().toUtf8().data());
+               qPrintable(docName), lineNumber() + _offsetLines, columnNumber(), name().toUtf8().data());
       else
-            qDebug("line %lld col %lld: %s", lineNumber(), columnNumber(), name().toUtf8().data());
+            qDebug("line %lld col %lld: %s", lineNumber() + _offsetLines, columnNumber(), name().toUtf8().data());
       skipCurrentElement();
       }
 
@@ -359,7 +353,7 @@ void XmlReader::htmlToString(int level, QString* s)
       {
       *s += QString("<%1").arg(name().toString());
       for (const QXmlStreamAttribute& a : attributes())
-            *s += QString(" %1=\"%2\"").arg(a.name().toString()).arg(a.value().toString());
+            *s += QString(" %1=\"%2\"").arg(a.name().toString(), a.value().toString());
       *s += ">";
       ++level;
       for (;;) {
@@ -463,7 +457,7 @@ void XmlReader::addSpanner(int id, Spanner* s)
 
 void XmlReader::removeSpanner(const Spanner* s)
       {
-      for (auto i : _spanner) {
+      for (auto i : qAsConst(_spanner)) {
             if (i.second == s) {
                   _spanner.removeOne(i);
                   return;
@@ -477,7 +471,7 @@ void XmlReader::removeSpanner(const Spanner* s)
 
 Spanner* XmlReader::findSpanner(int id)
       {
-      for (auto i : _spanner) {
+      for (auto i : qAsConst(_spanner)) {
             if (i.first == id)
                   return i.second;
             }
@@ -490,7 +484,7 @@ Spanner* XmlReader::findSpanner(int id)
 
 int XmlReader::spannerId(const Spanner* s)
       {
-      for (auto i : _spanner) {
+      for (auto i : qAsConst(_spanner)) {
             if (i.second == s)
                   return i.first;
             }
@@ -520,6 +514,18 @@ Tid XmlReader::addUserTextStyle(const QString& name)
             id = Tid::USER5;
       else if (userTextStyles.size() == 5)
             id = Tid::USER6;
+      else if (userTextStyles.size() == 6)
+            id = Tid::USER7;
+      else if (userTextStyles.size() == 7)
+            id = Tid::USER8;
+      else if (userTextStyles.size() == 8)
+            id = Tid::USER9;
+      else if (userTextStyles.size() == 9)
+            id = Tid::USER10;
+      else if (userTextStyles.size() == 10)
+            id = Tid::USER11;
+      else if (userTextStyles.size() == 11)
+            id = Tid::USER12;
       else
             qDebug("too many user defined textstyles");
       if (id != Tid::TEXT_STYLES)
@@ -531,34 +537,13 @@ Tid XmlReader::addUserTextStyle(const QString& name)
 //   lookupUserTextStyle
 //---------------------------------------------------------
 
-Tid XmlReader::lookupUserTextStyle(const QString& name)
+Tid XmlReader::lookupUserTextStyle(const QString& name) const
       {
       for (const auto& i : userTextStyles) {
             if (i.name == name)
                   return i.ss;
             }
       return Tid::TEXT_STYLES;       // not found
-      }
-
-//---------------------------------------------------------
-//   performReadAhead
-//    If f is called, the device will be non-sequential and
-//    open. Reading position equals to the current value of
-//    characterOffset(), but it is possible to seek for any
-//    other position inside f.
-//---------------------------------------------------------
-
-void XmlReader::performReadAhead(std::function<void(QIODevice&)> f)
-      {
-      if (!_readAheadDevice || _readAheadDevice->isSequential())
-            return;
-      if (!_readAheadDevice->isOpen())
-            _readAheadDevice->open(QIODevice::ReadOnly);
-
-      const auto pos = _readAheadDevice->pos();
-      _readAheadDevice->seek(characterOffset());
-      f(*_readAheadDevice);
-      _readAheadDevice->seek(pos);
       }
 
 //---------------------------------------------------------
@@ -631,8 +616,8 @@ void XmlReader::reconnectBrokenConnectors()
             return;
       qDebug("Reconnecting broken connectors (%d nodes)", int(_connectors.size()));
       QList<QPair<int, QPair<ConnectorInfoReader*, ConnectorInfoReader*>>> brokenPairs;
-      for (int i = 1; i < int(_connectors.size()); ++i) {
-            for (int j = 0; j < i; ++j) {
+      for (size_t i = 1; i < _connectors.size(); ++i) {
+            for (size_t j = 0; j < i; ++j) {
                   ConnectorInfoReader* c1 = _connectors[i].get();
                   ConnectorInfoReader* c2 = _connectors[j].get();
                   int d = c1->connectionDistance(*c2);
@@ -699,6 +684,14 @@ LinkedElements* XmlReader::getLink(bool masterScore, const Location& l, int loca
             staff *= -1;
       const int localIndex = _linksIndexer.assignLocalIndex(l) + localIndexDiff;
       QList<QPair<LinkedElements*, Location>>& staffLinks = _staffLinkedElements[staff];
+
+      if (!staffLinks.isEmpty() && staffLinks.constLast().second == l) {
+            // This element potentially affects local index for "main"
+            // elements that may go afterwards at the same tick, so
+            // append it to staffLinks as well.
+            staffLinks.push_back(staffLinks.constLast()); // nothing should reference exactly this local index, so it shouldn't matter what to append
+            }
+
       for (int i = 0; i < staffLinks.size(); ++i) {
             if (staffLinks[i].second == l) {
                   if (localIndex == 0)

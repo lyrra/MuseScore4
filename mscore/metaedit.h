@@ -28,26 +28,36 @@ class Score;
 
 //---------------------------------------------------------
 //   MetaEditDialog
+///   Dialog for editing metatags.
+///   NOTE: Right now, builtin metatags cannot be deleted by the user,
+///   because they are automatically created when a MasterScore is instantiated.
+///   This means that if they get deleted, they are simply readded (but empty)
+///   when the score is reopened.
+///   see also MasterScore::MasterScore()
 //---------------------------------------------------------
 
 class MetaEditDialog : public QDialog, public Ui::MetaEditDialog {
       Q_OBJECT
 
-      Score* score;
+      Score* m_score; /// the current score
+      bool m_dirty;   /// whether the editor has unsaved changes or not
 
-      bool dirty;
+      virtual void closeEvent(QCloseEvent*) override;
 
-      virtual void hideEvent(QHideEvent*);
+      bool isBuiltinTag(const QString& tag) const;
+      QPair<QLineEdit*, QLineEdit*> addTag(const QString& key, const QString& value, const bool builtinTag);
 
-   private slots:
+      bool save();
       void newClicked();
-      void setDirty() { dirty = true; }
-
-   public slots:
+      void setDirty(const bool dirty = true);
+      void openFileLocation();
       virtual void accept();
 
+   private slots:
+      void buttonBoxClicked(QAbstractButton*);
+
    public:
-      MetaEditDialog(Score*, QWidget* parent = 0);
+      MetaEditDialog(Score* score, QWidget* parent = nullptr);
       };
 
 

@@ -82,11 +82,11 @@ class FileIO : public QObject {
       Q_INVOKABLE QString homePath() {QDir dir; return dir.homePath();}
       /** Returns a path suitable for a temporary file */
       Q_INVOKABLE QString tempPath() {QDir dir; return dir.tempPath();}
-      /** Returns the file modification time */
+      /** Returns the file's last modification time */
       Q_INVOKABLE int modifiedTime();
 
       /// \cond MS_INTERNAL
-      QString source() { return mSource; };
+      QString source() { return mSource; }
 
    public slots:
       void setSource(const QString& source) { mSource = source; }
@@ -104,12 +104,13 @@ class FileIO : public QObject {
       QString mSource;
       };
 
-// These classes usage in plugins is anyway disabled
-// so exclude them from documentation too
-///   \cond MS_INTERNAL
 //---------------------------------------------------------
 //   MsProcess
 //   @@ QProcess
+///   \brief Start an external program.\ Available in QML
+///   as \p QProcess.
+///   \details Using this will most probably result in the
+///   plugin to be platform dependant. \since MuseScore 3.2
 //---------------------------------------------------------
 
 class MsProcess : public QProcess {
@@ -129,10 +130,10 @@ class MsProcess : public QProcess {
 
 //---------------------------------------------------------
 //   @@ ScoreView
-///    This is an GUI element to show a score.
+///    This is an GUI element to show a score. \since MuseScore 3.2
 //---------------------------------------------------------
 
-class MsScoreView : public QQuickPaintedItem, public MuseScoreView {
+class ScoreView : public QQuickPaintedItem, public MuseScoreView {
       Q_OBJECT
       /** Background color */
       Q_PROPERTY(QColor color READ color WRITE setColor)
@@ -147,6 +148,8 @@ class MsScoreView : public QQuickPaintedItem, public MuseScoreView {
       QRectF _boundingRect;
 
       QNetworkAccessManager* networkManager;
+
+      virtual void setScore(Ms::Score*) override;
 
       virtual void dataChanged(const QRectF&) override { update(); }
       virtual void updateAll() override                { update(); }
@@ -168,8 +171,8 @@ class MsScoreView : public QQuickPaintedItem, public MuseScoreView {
 
    public:
       /// \cond MS_INTERNAL
-      MsScoreView(QQuickItem* parent = 0);
-      virtual ~MsScoreView() {}
+      ScoreView(QQuickItem* parent = 0);
+      virtual ~ScoreView() {}
       QColor color() const            { return _color;        }
       void setColor(const QColor& c)  { _color = c;           }
       qreal scale() const             { return mag;        }
@@ -177,7 +180,6 @@ class MsScoreView : public QQuickPaintedItem, public MuseScoreView {
       virtual const QRect geometry() const override { return QRect(QQuickPaintedItem::x(), y(), width(), height()); }
       /// \endcond
       };
-/// \endcond //MS_INTERNAL
 } // namespace PluginAPI
 } // namespace Ms
 #endif

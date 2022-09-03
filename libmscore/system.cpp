@@ -44,6 +44,7 @@
 #include "textframe.h"
 #include "stafflines.h"
 #include "bracketItem.h"
+#include "global/log.h"
 
 namespace Ms {
 
@@ -54,6 +55,35 @@ namespace Ms {
 SysStaff::~SysStaff()
       {
       qDeleteAll(instrumentNames);
+      }
+
+//---------------------------------------------------------
+//   yBottom
+//---------------------------------------------------------
+
+qreal SysStaff::yBottom() const
+      {
+      return skyline().south().valid() ? skyline().south().max() : _height;
+      }
+
+//---------------------------------------------------------
+//   saveLayout
+//---------------------------------------------------------
+
+void SysStaff::saveLayout()
+      {
+      _height =  bbox().height();
+      _yPos = bbox().y();
+      }
+
+//---------------------------------------------------------
+//   saveLayout
+//---------------------------------------------------------
+
+void SysStaff::restoreLayout()
+      {
+      bbox().setY(_yPos);
+      bbox().setHeight(_height);
       }
 
 //---------------------------------------------------------
@@ -97,7 +127,7 @@ void System::clear()
                   mb->setSystem(nullptr);
             }
       ml.clear();
-      for (SpannerSegment* ss : _spannerSegments) {
+      for (SpannerSegment* ss : qAsConst(_spannerSegments)) {
             if (ss->system() == this)
                   ss->setParent(0);       // assume parent() is System
             }
@@ -180,11 +210,24 @@ void System::removeStaff(int idx)
       }
 
 //---------------------------------------------------------
+//   adjustStavesNumber
+//---------------------------------------------------------
+
+void System::adjustStavesNumber(int nstaves)
+      {
+      for (int i = _staves.size(); i < nstaves; ++i)
+            insertStaff(i);
+      const int dn = _staves.size() - nstaves;
+      for (int i = 0; i < dn; ++i)
+            removeStaff(_staves.size() - 1);
+      }
+
+//---------------------------------------------------------
 //   layoutSystem
 ///   Layout the System
 //---------------------------------------------------------
 
-void System::layoutSystem(qreal xo1)
+void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemIndent)
       {
       if (_staves.empty())                 // ignore vbox
             return;
@@ -195,10 +238,28 @@ void System::layoutSystem(qreal xo1)
 
       //---------------------------------------------------
       //  find x position of staves
-      //    create brackets
       //---------------------------------------------------
+      qreal xoff2 = 0.0; // x offset for instrument name
 
-      qreal xoff2 = 0.0;         // x offset for instrument name
+      for (const Part* p : score()->parts()) {
+            if (firstVisibleSysStaffOfPart(p) < 0)
+                  continue;
+            for (int staffIdx = firstSysStaffOfPart(p); staffIdx <= lastSysStaffOfPart(p); ++staffIdx) {
+                  for (InstrumentName* t : qAsConst(_staves[staffIdx]->instrumentNames)) {
+                        t->layout();
+                        qreal w = t->width() + point(instrumentNameOffset);
+                        if (w > xoff2)
+                              xoff2 = w;
+                        }
+                  }
+            }
+
+      if (isFirstSystem && firstSystemIndent)
+            xoff2 = qMax(xoff2, styleP(Sid::firstSystemIndentationValue) * mag());
+
+      //---------------------------------------------------
+      //  create brackets
+      //---------------------------------------------------
 
       int columns = getBracketsColumnsCount();
 
@@ -225,17 +286,9 @@ void System::layoutSystem(qreal xo1)
                         if (b != nullptr) bracketWidth[i] = qMax(bracketWidth[i], b->width());
                         }
                   }
-            if (!staff(staffIdx)->show())
-                  continue;
-            for (InstrumentName* t : _staves[staffIdx]->instrumentNames) {
-                  t->layout();
-                  qreal w = t->width() + point(instrumentNameOffset);
-                  if (w > xoff2)
-                        xoff2 = w;
-                  }
             }
 
-      for (Bracket* b : bl)
+      for (Bracket* b : qAsConst(bl))
             delete b;
 
       //---------------------------------------------------
@@ -261,7 +314,7 @@ void System::layoutSystem(qreal xo1)
             ++nVisible;
             qreal staffMag = staff->mag(Fraction(0,1));     // ??? TODO
             int staffLines = staff->lines(Fraction(0,1));
-            if (staffLines == 1) {
+            if (staffLines <= 1) {
                   qreal h = staff->lineDistance(Fraction(0,1)) * staffMag * spatium();
                   s->bbox().setRect(_leftMargin + xo1, -h, 0.0, 2 * h);
                   }
@@ -280,29 +333,159 @@ void System::layoutSystem(qreal xo1)
 
       //---------------------------------------------------
       //  layout instrument names x position
+      //     at this point it is not clear which staves will
+      //     be hidden, so layout all instrument names
       //---------------------------------------------------
 
-      int idx = 0;
-      for (const Part* p : score()->parts()) {
-            SysStaff* s = staff(idx);
-            if (s->show() && p->show()) {
-                  for (InstrumentName* t : s->instrumentNames) {
-                        switch (int(t->align()) & int(Align::HMASK)) {
-                              case int(Align::LEFT):
-                                    t->rxpos() = 0;
-                                    break;
-                              case int(Align::HCENTER):
-                                    t->rxpos() = (xoff2 - point(instrumentNameOffset) + xo1) * .5;
-                                    break;
-                              case int(Align::RIGHT):
-                              default:
-                                    t->rxpos() = xoff2 - point(instrumentNameOffset) + xo1;
-                                    break;
-                              }
-//                        t->rxpos() += t->offset(t->spatium()).x();
+      for (SysStaff* s : qAsConst(_staves)) {
+            for (InstrumentName* t : qAsConst(s->instrumentNames)) {
+                  switch (int(t->align()) & int(Align::HMASK)) {
+                        case int(Align::LEFT):
+                              t->rxpos() = 0;
+                              break;
+                        case int(Align::HCENTER):
+                              t->rxpos() = (xoff2 - point(instrumentNameOffset) + xo1) * .5;
+                              break;
+                        case int(Align::RIGHT):
+                        default:
+                              t->rxpos() = xoff2 - point(instrumentNameOffset) + xo1;
+                              break;
                         }
                   }
-            idx += p->nstaves();
+            }
+      }
+
+//---------------------------------------------------------
+//   setMeasureHeight
+//---------------------------------------------------------
+
+void System::setMeasureHeight(qreal height)
+      {
+      qreal _spatium { spatium() };
+      for (MeasureBase* m : ml) {
+            if (m->isMeasure()) {
+                  // note that the factor 2 * _spatium must be corrected for when exporting
+                  // system distance in MusicXML (issue #24733)
+                  m->bbox().setRect(0.0, -_spatium, m->width(), height + 2.0 * _spatium);
+                  }
+            else if (m->isHBox()) {
+                  m->bbox().setRect(0.0, 0.0, m->width(), height);
+                  toHBox(m)->layout2();
+                  }
+            else if (m->isTBox()) {
+                  toTBox(m)->layout();
+                  }
+            else
+                  qDebug("unhandled measure type %s", m->name());
+            }
+      }
+
+//---------------------------------------------------------
+//   layoutBracketsVertical
+//---------------------------------------------------------
+
+void System::layoutBracketsVertical()
+      {
+      for (Bracket* b : qAsConst(_brackets)) {
+            int staffIdx1 = b->firstStaff();
+            int staffIdx2 = b->lastStaff();
+            qreal sy = 0;                       // assume bracket not visible
+            qreal ey = 0;
+            // if start staff not visible, try next staff
+            while (staffIdx1 <= staffIdx2 && !_staves[staffIdx1]->show())
+                  ++staffIdx1;
+            // if end staff not visible, try prev staff
+            while (staffIdx1 <= staffIdx2 && !_staves[staffIdx2]->show())
+                  --staffIdx2;
+            // if the score doesn't have "alwaysShowBracketsWhenEmptyStavesAreHidden" as true,
+            // the bracket will be shown IF:
+            // it spans at least 2 visible staves (staffIdx1 < staffIdx2) OR
+            // it spans just one visible staff (staffIdx1 == staffIdx2) but it is required to do so
+            // (the second case happens at least when the bracket is initially dropped)
+            bool notHidden = score()->styleB(Sid::alwaysShowBracketsWhenEmptyStavesAreHidden)
+                        ? (staffIdx1 <= staffIdx2) : (staffIdx1 < staffIdx2) || (b->span() == 1 && staffIdx1 == staffIdx2);
+            if (notHidden) {                    // set vert. pos. and height to visible spanned staves
+                  sy = _staves[staffIdx1]->bbox().top();
+                  ey = _staves[staffIdx2]->bbox().bottom();
+                  }
+            b->rypos() = sy;
+            b->setHeight(ey - sy);
+            b->layout();
+            }
+      }
+
+//---------------------------------------------------------
+//   layoutInstrumentNames
+//---------------------------------------------------------
+
+void System::layoutInstrumentNames()
+      {
+      int staffIdx = 0;
+
+      for (Part* p : score()->parts()) {
+            SysStaff* s = staff(staffIdx);
+            SysStaff* s2;
+            int nstaves = p->nstaves();
+
+            int visible = firstVisibleSysStaffOfPart(p);
+            if (visible >= 0) {
+                  // The top staff might be invisible but this top staff contains the instrument names.
+                  // To make sure these instrument name are drawn, even when the top staff is invisible,
+                  // move the InstrumentName elements to the the first visible staff of the part.
+                  if (visible != staffIdx) {
+                        SysStaff* vs = staff(visible);
+                        for (InstrumentName* t : qAsConst(s->instrumentNames)) {
+                              t->setTrack(visible * VOICES);
+                              vs->instrumentNames.append(t);
+                              }
+                        s->instrumentNames.clear();
+                        s = vs;
+                        }
+
+                  for (InstrumentName* t : qAsConst(s->instrumentNames)) {
+                        //
+                        // override Text->layout()
+                        //
+                        qreal y1, y2;
+                        switch (t->layoutPos()) {
+                              default:
+                              case 0:           // center at part
+                                    y1 = s->bbox().top();
+                                    s2 = staff(staffIdx);
+                                    for (int i = staffIdx + nstaves - 1; i > 0; --i) {
+                                          SysStaff* s3 = staff(i);
+                                          if (s3->show()) {
+                                                s2 = s3;
+                                                break;
+                                                }
+                                          }
+                                    y2 = s2->bbox().bottom();
+                                    break;
+                              case 1:           // center at first staff
+                                    y1 = s->bbox().top();
+                                    y2 = s->bbox().bottom();
+                                    break;
+                              case 2:           // center between first and second staff
+                                    y1 = s->bbox().top();
+                                    y2 = staff(staffIdx + 1)->bbox().bottom();
+                                    break;
+                              case 3:           // center at second staff
+                                    y1 = staff(staffIdx + 1)->bbox().top();
+                                    y2 = staff(staffIdx + 1)->bbox().bottom();
+                                    break;
+                              case 4:           // center between first and second staff
+                                    y1 = staff(staffIdx + 1)->bbox().top();
+                                    y2 = staff(staffIdx + 2)->bbox().bottom();
+                                    break;
+                              case 5:           // center at third staff
+                                    y1 = staff(staffIdx + 2)->bbox().top();
+                                    y2 = staff(staffIdx + 2)->bbox().bottom();
+                                    break;
+                              }
+                        t->rypos() = y1 + (y2 - y1) * .5 + t->offset().y();
+                        }
+                  }
+            staffIdx += nstaves;
             }
       }
 
@@ -366,11 +549,11 @@ Bracket* System::createBracket(Ms::BracketItem* bi, int column, int staffIdx, QL
             lastStaff = nstaves - 1;
 
       for (; firstStaff <= lastStaff; ++firstStaff) {
-            if (score()->staff(firstStaff)->show())
+            if (staff(firstStaff)->show())
                   break;
             }
       for (; lastStaff >= firstStaff; --lastStaff) {
-            if (score()->staff(lastStaff)->show())
+            if (staff(lastStaff)->show())
                   break;
             }
       int span = lastStaff - firstStaff + 1;
@@ -378,7 +561,9 @@ Bracket* System::createBracket(Ms::BracketItem* bi, int column, int staffIdx, QL
       // do not show bracket if it only spans one
       // system due to some invisible staves
       //
-      if ((span > 1) || (bi->bracketSpan() == span)) {
+      if ((span > 1)
+          || (bi->bracketSpan() == span)
+          || (span == 1 && score()->styleB(Sid::alwaysShowBracketsWhenEmptyStavesAreHidden))) {
             //
             // this bracket is visible
             //
@@ -419,12 +604,12 @@ int System::getBracketsColumnsCount()
 void System::setBracketsXPosition(const qreal xPosition)
       {
       qreal bracketDistance = score()->styleP(Sid::bracketDistance);
-      for (Bracket* b1 : _brackets) {
+      for (Bracket* b1 : qAsConst(_brackets)) {
             qreal xOffset = 0;
-            for (const Bracket* b2 : _brackets) {
+            for (const Bracket* b2 : qAsConst(_brackets)) {
                   bool b1FirstStaffInB2 = (b1->firstStaff() >= b2->firstStaff() && b1->firstStaff() <= b2->lastStaff());
                   bool b1LastStaffInB2 = (b1->lastStaff() >= b2->firstStaff() && b1->lastStaff() <= b2->lastStaff());
-                  if (b1->column() > b2->column() && 
+                  if (b1->column() > b2->column() &&
                         (b1FirstStaffInB2 || b1LastStaffInB2))
                         xOffset += b2->width() + bracketDistance;
                   }
@@ -489,6 +674,10 @@ void System::layout2()
       qreal minVerticalDistance = score()->styleP(Sid::minVerticalDistance);
       qreal staffDistance       = score()->styleP(Sid::staffDistance);
       qreal akkoladeDistance    = score()->styleP(Sid::akkoladeDistance);
+      if (score()->enableVerticalSpread()) {
+            staffDistance       = score()->styleP(Sid::minStaffSpread);
+            akkoladeDistance    = score()->styleP(Sid::minStaffSpread);
+            }
 
       if (visibleStaves.empty()) {
             qDebug("====no visible staves, staves %d, score staves %d", _staves.size(), score()->nstaves());
@@ -501,17 +690,27 @@ void System::layout2()
             Staff* staff  = score()->staff(si1);
             auto ni       = i + 1;
 
-            qreal h = staff->height();
+            qreal dist = staff->height();
+            qreal yOffset;
+            qreal h;
+            if (staff->lines(Fraction(0, 1)) == 1) {
+                  yOffset = _spatium * BARLINE_SPAN_1LINESTAFF_TO * 0.5;
+                  h = _spatium * (BARLINE_SPAN_1LINESTAFF_TO - BARLINE_SPAN_1LINESTAFF_FROM) * 0.5;
+                  }
+            else {
+                  yOffset = 0.0;
+                  h = staff->height();
+                  }
             if (ni == visibleStaves.end()) {
 //                  ss->setYOff(staff->lines(0) == 1 ? _spatium * staff->mag(0) : 0.0);
-                  ss->setYOff(0.0);
-                  ss->bbox().setRect(_leftMargin, y, width() - _leftMargin, h);
+                  ss->setYOff(yOffset);
+                  ss->bbox().setRect(_leftMargin, y - yOffset, width() - _leftMargin, h);
+                  ss->saveLayout();
                   break;
                   }
 
             int si2        = ni->first;
             Staff* staff2  = score()->staff(si2);
-            qreal dist     = h;
 
 #if 1
             if (staff->part() == staff2->part()) {
@@ -579,130 +778,71 @@ void System::layout2()
                         }
                   sp = m->vspacerUp(si2);
                   if (sp)
-                        dist = qMax(dist, sp->gap() + h);
+                        dist = qMax(dist, sp->gap() + staff->height());
                   }
             if (!fixedSpace) {
-                  qreal d = score()->lineMode() ? 0.0 : ss->skyline().minDistance(System::staff(si2)->skyline());
+#if 1
+                  // check minimum distance to next staff
+                  // note that in continuous view, we normally only have a partial skyline for the system
+                  // a full one is only built when triggering a full layout
+                  // therefore, we don't know the value we get from minDistance will actually be enough
+                  // so we remember the value between layouts and increase it when necessary
+                  // (the first layout on switching to continuous view gives us good initial values)
+                  // the result is space is good to start and grows as needed
+                  // it does not, however, shrink when possible - only by trigger a full layout
+                  // (such as by toggling to page view and back)
+                  qreal d = ss->skyline().minDistance(System::staff(si2)->skyline());
+                  if (score()->lineMode()) {
+                        qreal previousDist = ss->continuousDist();
+                        if (d > previousDist)
+                              ss->setContinuousDist(d);
+                        else
+                              d = previousDist;
+                        }
+#else
+                  // the code above does do a partial skyline comparison in continuous view
+                  // we hope this does not come at too high a performance penalty for large scores
+                  // if necessary, we can replace the code above with this
+                  // the principle is the same, but we skip the skyline calculation on all but full layout
+                  // the result is space between staves is correct to start but does not grow as needed
+                  qreal d;
+                  if (score()->lineMode()) {
+                        d = ss->continuousDist();
+                        if (d < 0.0) {
+                              d = ss->skyline().minDistance(System::staff(si2)->skyline());
+                              ss->setContinuousDist(d);
+                              }
+                        }
+                  else
+                        d = ss->skyline().minDistance(System::staff(si2)->skyline());
+#endif
                   dist = qMax(dist, d + minVerticalDistance);
                   }
 #endif
 
 //            ss->setYOff(staff->lines(0) == 1 ? _spatium * staff->mag(0) : 0.0);
-            ss->setYOff(0.0);
-            ss->bbox().setRect(_leftMargin, y, width() - _leftMargin, h);
+            ss->setYOff(yOffset);
+            ss->bbox().setRect(_leftMargin, y - yOffset, width() - _leftMargin, h);
+            ss->saveLayout();
             y += dist;
             }
 
-      qreal systemHeight = staff(visibleStaves.back().first)->bbox().bottom();
-      setHeight(systemHeight);
+      _systemHeight = staff(visibleStaves.back().first)->bbox().bottom();
+      setHeight(_systemHeight);
 
-      for (MeasureBase* m : ml) {
-            if (m->isMeasure()) {
-                  // note that the factor 2 * _spatium must be corrected for when exporting
-                  // system distance in MusicXML (issue #24733)
-                  m->bbox().setRect(0.0, -_spatium, m->width(), systemHeight + 2.0 * _spatium);
-                  }
-            else if (m->isHBox()) {
-                  m->bbox().setRect(0.0, 0.0, m->width(), systemHeight);
-                  toHBox(m)->layout2();
-                  }
-            else if (m->isTBox()) {
-//                  m->bbox().setRect(0.0, 0.0, m->width(), systemHeight);
-                  toTBox(m)->layout();
-                  }
-            else
-                  qDebug("unhandled measure type %s", m->name());
-            }
+      setMeasureHeight(_systemHeight);
 
       //---------------------------------------------------
       //  layout brackets vertical position
       //---------------------------------------------------
 
-      for (Bracket* b : _brackets) {
-            int staffIdx1 = b->firstStaff();
-            int staffIdx2 = b->lastStaff();
-            qreal sy = 0;                       // assume bracket not visible
-            qreal ey = 0;
-            // if start staff not visible, try next staff
-            while (staffIdx1 <= staffIdx2 && !_staves[staffIdx1]->show())
-                  ++staffIdx1;
-            // if end staff not visible, try prev staff
-            while (staffIdx1 <= staffIdx2 && !_staves[staffIdx2]->show())
-                  --staffIdx2;
-            // the bracket will be shown IF:
-            // it spans at least 2 visible staves (staffIdx1 < staffIdx2) OR
-            // it spans just one visible staff (staffIdx1 == staffIdx2) but it is required to do so
-            // (the second case happens at least when the bracket is initially dropped)
-            bool notHidden = (staffIdx1 < staffIdx2) || (b->span() == 1 && staffIdx1 == staffIdx2);
-            if (notHidden) {                    // set vert. pos. and height to visible spanned staves
-                  sy = _staves[staffIdx1]->bbox().top();
-                  ey = _staves[staffIdx2]->bbox().bottom();
-                  }
-            b->rypos() = sy;
-            b->setHeight(ey - sy);
-            b->layout();
-            }
+      layoutBracketsVertical();
 
       //---------------------------------------------------
       //  layout instrument names
       //---------------------------------------------------
 
-      int staffIdx = 0;
-
-      for (Part* p : score()->parts()) {
-            SysStaff* s = staff(staffIdx);
-            SysStaff* s2;
-            int nstaves = p->nstaves();
-            if (s->show()) {
-                  for (InstrumentName* t : s->instrumentNames) {
-                        //
-                        // override Text->layout()
-                        //
-                        qreal y1, y2;
-                        switch (t->layoutPos()) {
-                              default:
-                              case 0:           // center at part
-                                    y1 = s->bbox().top();
-                                    s2 = staff(staffIdx);
-                                    for (int i = staffIdx + nstaves - 1; i > 0; --i) {
-                                          SysStaff* s3 = staff(i);
-                                          if (s3->show()) {
-                                                s2 = s3;
-                                                break;
-                                                }
-                                          }
-                                    y2 = s2->bbox().bottom();
-                                    break;
-                              case 1:           // center at first staff
-                                    y1 = s->bbox().top();
-                                    y2 = s->bbox().bottom();
-                                    break;
-
-                              // TODO:
-                              // sort out invisible staves
-
-                              case 2:           // center between first and second staff
-                                    y1 = s->bbox().top();
-                                    y2 = staff(staffIdx + 1)->bbox().bottom();
-                                    break;
-                              case 3:           // center at second staff
-                                    y1 = staff(staffIdx + 1)->bbox().top();
-                                    y2 = staff(staffIdx + 1)->bbox().bottom();
-                                    break;
-                              case 4:           // center between first and second staff
-                                    y1 = staff(staffIdx + 1)->bbox().top();
-                                    y2 = staff(staffIdx + 2)->bbox().bottom();
-                                    break;
-                              case 5:           // center at third staff
-                                    y1 = staff(staffIdx + 2)->bbox().top();
-                                    y2 = staff(staffIdx + 2)->bbox().bottom();
-                                    break;
-                              }
-                        t->rypos() = y1 + (y2 - y1) * .5 + t->offset().y();
-                        }
-                  }
-            staffIdx += nstaves;
-            }
+      layoutInstrumentNames();
 
       //---------------------------------------------------
       //  layout cross-staff slurs and ties
@@ -729,6 +869,22 @@ void System::layout2()
       }
 
 //---------------------------------------------------------
+//   restoreLayout2
+//---------------------------------------------------------
+
+void System::restoreLayout2()
+      {
+      if (vbox())
+            return;
+
+      for (SysStaff* s : _staves)
+            s->restoreLayout();
+
+      setHeight(_systemHeight);
+      setMeasureHeight(_systemHeight);
+      }
+
+//---------------------------------------------------------
 //   setInstrumentNames
 //---------------------------------------------------------
 
@@ -742,7 +898,7 @@ void System::setInstrumentNames(bool longName, Fraction tick)
             return;
       if (!score()->showInstrumentNames()
               || (score()->styleB(Sid::hideInstrumentNameIfOneInstrument) && score()->parts().size() == 1)) {
-            for (SysStaff* staff : _staves) {
+            for (SysStaff* staff : qAsConst(_staves)) {
                   foreach (InstrumentName* t, staff->instrumentNames)
                         score()->removeElement(t);
                   }
@@ -750,10 +906,10 @@ void System::setInstrumentNames(bool longName, Fraction tick)
             }
 
       int staffIdx = 0;
-      for (SysStaff* staff : _staves) {
+      for (SysStaff* staff : qAsConst(_staves)) {
             Staff* s = score()->staff(staffIdx);
             if (!s->isTop() || !s->show()) {
-                  for (InstrumentName* t : staff->instrumentNames)
+                  for (InstrumentName* t : qAsConst(staff->instrumentNames))
                         score()->removeElement(t);
                   ++staffIdx;
                   continue;
@@ -772,7 +928,8 @@ void System::setInstrumentNames(bool longName, Fraction tick)
                         iname->setTrack(staffIdx * VOICES);
                         iname->setInstrumentNameType(longName ? InstrumentNameType::LONG : InstrumentNameType::SHORT);
                         iname->setLayoutPos(sn.pos());
-                        score()->addElement(iname);
+                        iname->setColor(part->namesColor(tick));
+                        score()->addElement(iname); // Add the instrument name to the score.
                         }
                   iname->setXmlText(sn.name());
                   ++idx;
@@ -808,6 +965,56 @@ int System::y2staff(qreal y) const
             ++idx;
             }
       return -1;
+      }
+
+//---------------------------------------------------------
+//   searchStaff
+///   Finds a staff which y position is most close to the
+///   given \p y.
+///   \param y The y coordinate in system coordinates.
+///   \param preferredStaff If not -1, will give more space
+///   to a staff with the given number when searching it by
+///   coordinate.
+///   \returns Number of the found staff.
+//---------------------------------------------------------
+
+int System::searchStaff(qreal y, int preferredStaff /* = -1 */, qreal spacingFactor) const
+      {
+      int i = 0;
+      const int nstaves = score()->nstaves();
+      for (; i < nstaves;) {
+            SysStaff* stff = staff(i);
+            if (!stff->show() || !score()->staff(i)->show()) {
+                  ++i;
+                  continue;
+                  }
+            int ni = i;
+            for (;;) {
+                  ++ni;
+                  if (ni == nstaves || (staff(ni)->show() && score()->staff(ni)->show()))
+                        break;
+                  }
+
+            qreal sy2;
+            if (ni != nstaves) {
+                  SysStaff* nstaff = staff(ni);
+                  qreal s1y2       = stff->bbox().y() + stff->bbox().height();
+                  if (i == preferredStaff)
+                        sy2 = s1y2 + (nstaff->bbox().y() - s1y2);
+                  else if (ni == preferredStaff)
+                        sy2 = s1y2;
+                  else
+                        sy2 = s1y2 + (nstaff->bbox().y() - s1y2) * spacingFactor;
+                  }
+            else
+                  sy2 = page()->height() - pos().y();
+            if (y > sy2) {
+                  i   = ni;
+                  continue;
+                  }
+            break;
+            }
+      return i;
       }
 
 //---------------------------------------------------------
@@ -1036,7 +1243,7 @@ void System::scanElements(void* data, void (*func)(void*, Element*), bool all)
       {
       if (vbox())
             return;
-      for (Bracket* b : _brackets)
+      for (Bracket* b : qAsConst(_brackets))
             func(data, b);
 
       if (_systemDividerLeft)
@@ -1045,14 +1252,14 @@ void System::scanElements(void* data, void (*func)(void*, Element*), bool all)
             func(data, _systemDividerRight);
 
       int idx = 0;
-      for (const SysStaff* st : _staves) {
+      for (const SysStaff* st : qAsConst(_staves)) {
             if (all || st->show()) {
                   for (InstrumentName* t : st->instrumentNames)
                         func(data, t);
                   }
             ++idx;
             }
-      for (SpannerSegment* ss : _spannerSegments) {
+      for (SpannerSegment* ss : qAsConst(_spannerSegments)) {
             int staffIdx = ss->spanner()->staffIdx();
             if (staffIdx == -1) {
                   qDebug("System::scanElements: staffIDx == -1: %s %p", ss->spanner()->name(), ss->spanner());
@@ -1077,7 +1284,9 @@ void System::scanElements(void* data, void (*func)(void*, Element*), bool all)
                         }
                   v = v1 || v2; // hide spanner if both chords are hidden
                   }
-            if (all || (score()->staff(staffIdx)->show() && _staves[staffIdx]->show() && v) || spanner->isVolta())
+            if (all || (score()->staff(staffIdx)->show() && _staves[staffIdx]->show() && v)
+                    || spanner->isVolta()
+                    || (spanner->isTextLine() && spanner->systemFlag()))
                   ss->scanElements(data, func, all);
             }
       }
@@ -1089,8 +1298,7 @@ void System::scanElements(void* data, void (*func)(void*, Element*), bool all)
 
 qreal System::staffYpage(int staffIdx) const
       {
-      if (_staves.size() <= staffIdx || staffIdx < 0) {
-            qFatal("staffY: staves %d: bad staffIdx %d", _staves.size(), staffIdx);
+      IF_ASSERT_FAILED(!(_staves.size() <= staffIdx || staffIdx < 0)) {
             return pagePos().y();
             }
       return _staves[staffIdx]->y() + y();
@@ -1150,7 +1358,7 @@ Element* System::nextSegmentElement()
             if (firstSeg)
                   return firstSeg->element(0);
             }
-      return score()->firstElement();
+      return score()->lastElement();
       }
 
 //---------------------------------------------------------
@@ -1164,10 +1372,10 @@ Element* System::prevSegmentElement()
       while (!re) {
             seg = seg->prev1MM();
             if (!seg)
-                  return score()->lastElement();
+                  return score()->firstElement();
 
             if (seg->segmentType() == SegmentType::EndBarLine)
-                  score()->inputState().setTrack((score()->staves().size() - 1) * VOICES); //corection
+                  score()->inputState().setTrack((score()->staves().size() - 1) * VOICES); //correction
 
             re = seg->lastElement(score()->staves().size() - 1);
             }
@@ -1193,7 +1401,7 @@ qreal System::minDistance(System* s2) const
             return s2->vbox()->topGap() + vbox()->bottomGap();
 
       qreal minVerticalDistance = score()->styleP(Sid::minVerticalDistance);
-      qreal dist                = score()->styleP(Sid::minSystemDistance);
+      qreal dist = score()->enableVerticalSpread() ? styleP(Sid::minSystemSpread) : styleP(Sid::minSystemDistance);
       int firstStaff;
       int lastStaff;
 
@@ -1250,6 +1458,10 @@ qreal System::topDistance(int staffIdx, const SkylineLine& s) const
       {
       Q_ASSERT(!vbox());
       Q_ASSERT(!s.isNorth());
+      // in continuous view, we only build a partial skyline for performance reasons
+      // this means we cannot expect the minDistance calculation to produce meaningful results
+      // so just give up on autoplace for spanners in continuous view
+      // (or any other calculations that rely on this value)
       if (score()->lineMode())
             return 0.0;
       return s.minDistance(staff(staffIdx)->skyline().north());
@@ -1263,6 +1475,7 @@ qreal System::bottomDistance(int staffIdx, const SkylineLine& s) const
       {
       Q_ASSERT(!vbox());
       Q_ASSERT(s.isNorth());
+      // see note on topDistance() above
       if (score()->lineMode())
             return 0.0;
       return staff(staffIdx)->skyline().south().minDistance(s);
@@ -1272,28 +1485,30 @@ qreal System::bottomDistance(int staffIdx, const SkylineLine& s) const
 //   firstVisibleSysStaff
 //---------------------------------------------------------
 
-SysStaff* System::firstVisibleSysStaff() const
+int System::firstVisibleSysStaff() const
       {
-      for (SysStaff* s : _staves) {
-            if (s->show())
-                  return s;
+      int nstaves = _staves.size();
+      for (int i = 0; i < nstaves; ++i) {
+            if (_staves[i]->show())
+                  return i;
             }
       qDebug("no sys staff");
-      return 0;
+      return -1;
       }
 
 //---------------------------------------------------------
 //   lastVisibleSysStaff
 //---------------------------------------------------------
 
-SysStaff* System::lastVisibleSysStaff() const
+int System::lastVisibleSysStaff() const
       {
-      for (int i = _staves.size() - 1; i >= 0; --i) {
+      int nstaves = _staves.size();
+      for (int i = nstaves - 1; i >= 0; --i) {
             if (_staves[i]->show())
-                  return _staves[i];
+                  return i;
             }
       qDebug("no sys staff");
-      return 0;
+      return -1;
       }
 
 //---------------------------------------------------------
@@ -1303,7 +1518,8 @@ SysStaff* System::lastVisibleSysStaff() const
 
 qreal System::minTop() const
       {
-      SysStaff* s = firstVisibleSysStaff();
+      int si = firstVisibleSysStaff();
+      SysStaff* s = si < 0 ? nullptr : staff(si);
       if (s)
             return -s->skyline().north().max();
       return 0.0;
@@ -1318,7 +1534,8 @@ qreal System::minBottom() const
       {
       if (vbox())
             return vbox()->bottomGap();
-      SysStaff* s = lastVisibleSysStaff();
+      int si = lastVisibleSysStaff();
+      SysStaff* s = si < 0 ? nullptr : staff(si);
       if (s)
             return s->skyline().south().max() - s->bbox().height();
       return 0.0;
@@ -1331,11 +1548,10 @@ qreal System::minBottom() const
 
 qreal System::spacerDistance(bool up) const
       {
-      SysStaff* ss = up ? firstVisibleSysStaff() : lastVisibleSysStaff();
-      if (!ss)
+      int staff = up ? firstVisibleSysStaff() : lastVisibleSysStaff();
+      if (staff < 0)
             return 0.0;
       qreal dist = 0.0;
-      int staff = ss->idx;
       for (MeasureBase* mb : measures()) {
             if (mb->isMeasure()) {
                   Measure* m = toMeasure(mb);
@@ -1351,6 +1567,145 @@ qreal System::spacerDistance(bool up) const
                   }
             }
       return dist;
+      }
+
+//---------------------------------------------------------
+//   upSpacer
+//    Return largest upSpacer for this system. This can
+//    be a downSpacer of the previous system.
+//---------------------------------------------------------
+
+Spacer* System::upSpacer(int staffIdx, Spacer* prevDownSpacer) const
+      {
+      if (staffIdx < 0)
+            return nullptr;
+
+      if (prevDownSpacer && (prevDownSpacer->spacerType() == SpacerType::FIXED))
+            return prevDownSpacer;
+
+      Spacer* spacer { prevDownSpacer };
+      for (MeasureBase* mb : measures()) {
+            if (!(mb && mb->isMeasure()))
+                  continue;
+            Spacer* sp { toMeasure(mb)->vspacerUp(staffIdx)} ;
+            if (sp) {
+                  if (!spacer || ((spacer->spacerType() == SpacerType::UP) && (sp->gap() > spacer->gap()))) {
+                        spacer = sp;
+                        }
+                  continue;
+                  }
+            }
+      return spacer;
+      }
+
+//---------------------------------------------------------
+//   downSpacer
+//    Return the largest downSpacer for this system.
+//---------------------------------------------------------
+
+Spacer* System::downSpacer(int staffIdx) const
+      {
+      if (staffIdx < 0)
+            return nullptr;
+
+      Spacer* spacer { nullptr };
+      for (MeasureBase* mb : measures()) {
+            if (!(mb && mb->isMeasure()))
+                  continue;
+            Spacer* sp { toMeasure(mb)->vspacerDown(staffIdx) };
+            if (sp) {
+                  if (sp->spacerType() == SpacerType::FIXED) {
+                        return sp;
+                        }
+                  else {
+                        if (!spacer || (sp->gap() > spacer->gap()))
+                              spacer = sp;
+                        }
+                  }
+            }
+      return spacer;
+      }
+
+//---------------------------------------------------------
+//   firstNoteRestSegmentX
+//    in System() coordinates
+//    returns the position of the first note or rest,
+//    or the position just after the last non-chordrest segment
+//---------------------------------------------------------
+
+qreal System::firstNoteRestSegmentX(bool leading)
+      {
+      qreal margin = score()->spatium();
+      for (const MeasureBase* mb : measures()) {
+            if (mb->isMeasure()) {
+                  const Measure* measure = static_cast<const Measure*>(mb);
+                  for (const Segment* seg = measure->first(); seg; seg = seg->next()) {
+                        if (seg->isChordRestType()) {
+                              qreal noteRestPos = seg->measure()->pos().x() + seg->pos().x();
+                              if (!leading)
+                                    return noteRestPos;
+
+                              // first CR found; back up to previous segment
+                              seg = seg->prevActive();
+                              while (seg && seg->allElementsInvisible())
+                                    seg = seg->prevActive();
+                              if (seg) {
+                                    // find maximum width
+                                    qreal width = 0.0;
+                                    int n = score()->nstaves();
+                                    for (int i = 0; i < n; ++i) {
+                                          if (!staff(i)->show())
+                                                continue;
+                                          Element* e = seg->element(i * VOICES);
+                                          if (e && e->addToSkyline())
+                                                width = qMax(width, e->pos().x() + e->bbox().right());
+                                          }
+                                    return qMin(seg->measure()->pos().x() + seg->pos().x() + width + margin, noteRestPos);
+                                    }
+                              else
+                                    return margin;
+                              }
+                        }
+                  }
+            }
+      qDebug("firstNoteRestSegmentX: did not find segment");
+      return margin;
+      }
+
+//---------------------------------------------------------
+//   lastNoteRestSegmentX
+//    in System() coordinates
+//    returns the position of the last note or rest,
+//    or the position just before the first non-chordrest segment
+//---------------------------------------------------------
+
+qreal System::lastNoteRestSegmentX(bool trailing)
+      {
+      qreal margin = score()->spatium() / 4;  // TODO: this can be parameterizable
+      //for (const MeasureBase* mb : measures()) {
+      for (auto measureBaseIter = measures().rbegin(); measureBaseIter != measures().rend(); measureBaseIter++) {
+            if ((*measureBaseIter)->isMeasure()) {
+                  const Measure* measure = static_cast<const Measure*>(*measureBaseIter);
+                  for (const Segment* seg = measure->last(); seg; seg = seg->prev()) {
+                        if (seg->isChordRestType()) {
+                              qreal noteRestPos = seg->measure()->pos().x() + seg->pos().x();
+                              if (!trailing)
+                                    return noteRestPos;
+
+                              // last CR found; find next segment after this one
+                              seg = seg->nextActive();
+                              while (seg && seg->allElementsInvisible())
+                                    seg = seg->nextActive();
+                              if (seg)
+                                    return qMax(seg->measure()->pos().x() + seg->pos().x() - margin, noteRestPos);
+                              else
+                                    return bbox().x() - margin;
+                              }
+                        }
+                  }
+            }
+      qDebug("lastNoteRestSegmentX: did not find segment");
+      return margin;
       }
 
 //---------------------------------------------------------
@@ -1387,5 +1742,58 @@ Fraction System::endTick() const
       {
       return measures().back()->endTick();
       }
-}
 
+//---------------------------------------------------------
+//   firstSysStaffOfPart
+//---------------------------------------------------------
+
+int System::firstSysStaffOfPart(const Part* part) const
+      {
+      int staffIdx { 0 };
+      for (const Part* p : score()->parts()) {
+            if (p == part)
+                  return staffIdx;
+            staffIdx += p->nstaves();
+            }
+      return -1; // Part not found.
+      }
+
+//---------------------------------------------------------
+//   firstVisibleSysStaffOfPart
+//---------------------------------------------------------
+
+int System::firstVisibleSysStaffOfPart(const Part* part) const
+      {
+      int firstIdx = firstSysStaffOfPart(part);
+      for (int idx = firstIdx ; idx < firstIdx + part->nstaves(); ++idx) {
+            if (staff(idx)->show())
+                  return idx;
+            }
+      return -1; // No visible staves on this part.
+      }
+
+//---------------------------------------------------------
+//   lastSysStaffOfPart
+//---------------------------------------------------------
+
+int System::lastSysStaffOfPart(const Part* part) const
+      {
+      int firstIdx = firstSysStaffOfPart(part);
+      if (firstIdx < 0)
+            return -1; // Part not found.
+      return firstIdx + part->nstaves() - 1;
+      }
+
+//---------------------------------------------------------
+//   lastVisibleSysStaffOfPart
+//---------------------------------------------------------
+
+int System::lastVisibleSysStaffOfPart(const Part* part) const
+      {
+      for (int idx = lastSysStaffOfPart(part); idx >= firstSysStaffOfPart(part); --idx) {
+            if (staff(idx)->show())
+                  return idx;
+      }
+      return -1; // No visible staves on this part.
+      }
+}

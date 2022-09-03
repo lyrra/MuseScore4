@@ -40,9 +40,11 @@ struct ElementPattern {
       int staffStart;
       int staffEnd; // exclusive
       int voice;
-      const System* system;
+      const System* system = nullptr;
       bool subtypeValid;
       Fraction durationTicks;
+      Fraction beat {0,0};
+      const Measure* measure = nullptr;
       };
 
 //---------------------------------------------------------
@@ -52,15 +54,18 @@ struct ElementPattern {
 struct NotePattern {
       QList<Note*> el;
       int pitch = -1;
-      int string = STRING_NONE;
-      int tpc = Tpc::TPC_INVALID;;
+      int string = INVALID_STRING_INDEX;
+      int tpc = Tpc::TPC_INVALID;
       NoteHead::Group notehead = NoteHead::Group::HEAD_INVALID;
-      TDuration duration = TDuration();
+      TDuration durationType = TDuration();
+      Fraction durationTicks;
       NoteType type = NoteType::INVALID;
       int staffStart;
       int staffEnd; // exclusive
       int voice;
-      const System* system;
+      Fraction beat {0,0};
+      const Measure* measure = nullptr;
+      const System* system = nullptr;
       };
 
 //---------------------------------------------------------
@@ -76,6 +81,8 @@ enum class SelState : char {
 
 //---------------------------------------------------------
 //   SelectionFilterType
+//   see also `static const char* labels[]` in mscore/selectionwindow.cpp
+//   need to keep those in sync!
 //---------------------------------------------------------
 
 enum class SelectionFilterType {
@@ -85,22 +92,24 @@ enum class SelectionFilterType {
       THIRD_VOICE             = 1 << 2,
       FOURTH_VOICE            = 1 << 3,
       DYNAMIC                 = 1 << 4,
-      FINGERING               = 1 << 5,
-      LYRICS                  = 1 << 6,
-      CHORD_SYMBOL            = 1 << 7,
-      OTHER_TEXT              = 1 << 8,
-      ARTICULATION            = 1 << 9,
-      SLUR                    = 1 << 10,
-      FIGURED_BASS            = 1 << 11,
-      OTTAVA                  = 1 << 12,
-      PEDAL_LINE              = 1 << 13,
-      OTHER_LINE              = 1 << 14,
-      ARPEGGIO                = 1 << 15,
-      GLISSANDO               = 1 << 16,
-      FRET_DIAGRAM            = 1 << 17,
-      BREATH                  = 1 << 18,
-      TREMOLO                 = 1 << 19,
-      GRACE_NOTE              = 1 << 20,
+      HAIRPIN                 = 1 << 5,
+      FINGERING               = 1 << 6,
+      LYRICS                  = 1 << 7,
+      CHORD_SYMBOL            = 1 << 8,
+      OTHER_TEXT              = 1 << 9,
+      ARTICULATION            = 1 << 10,
+      ORNAMENT                = 1 << 11,
+      SLUR                    = 1 << 12,
+      FIGURED_BASS            = 1 << 13,
+      OTTAVA                  = 1 << 14,
+      PEDAL_LINE              = 1 << 15,
+      OTHER_LINE              = 1 << 16,
+      ARPEGGIO                = 1 << 17,
+      GLISSANDO               = 1 << 18,
+      FRET_DIAGRAM            = 1 << 19,
+      BREATH                  = 1 << 20,
+      TREMOLO                 = 1 << 21,
+      GRACE_NOTE              = 1 << 22,
       ALL                     = -1
       };
 
@@ -148,6 +157,11 @@ class Selection {
       Segment* _activeSegment;
       int _activeTrack;
 
+      Fraction _currentTick;  // tracks the most recent selection
+      int _currentTrack;
+
+      QString _lockReason;
+
       QByteArray staffMimeData() const;
       QByteArray symbolListMimeData() const;
       SelectionFilter selectionFilter() const;
@@ -165,6 +179,12 @@ class Selection {
       bool isRange() const             { return _state == SelState::RANGE; }
       bool isList() const              { return _state == SelState::LIST; }
       void setState(SelState s);
+
+      //! NOTE If locked, the selected items should not be changed.
+      void lock(const QString& reason)    { _lockReason = reason; }
+      void unlock(const QString& reason)  { Q_UNUSED(reason); _lockReason.clear(); } // reason for clarity
+      bool isLocked() const               { return  !_lockReason.isEmpty(); }
+      const QString& lockReason() const   { return _lockReason; }
 
       const QList<Element*>& elements() const { return _el; }
       std::vector<Note*> noteList(int track = -1) const;
@@ -201,6 +221,7 @@ class Selection {
       ChordRest* activeCR() const;
       bool isStartActive() const;
       bool isEndActive() const;
+      ChordRest* currentCR() const;
       Fraction tickStart() const;
       Fraction tickEnd() const;
       int staffStart() const            { return _staffStart;  }

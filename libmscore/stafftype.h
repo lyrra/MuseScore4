@@ -17,6 +17,7 @@
 #include "spatium.h"
 #include "mscore.h"
 #include "durationtype.h"
+#include "note.h"
 
 namespace Ms {
 
@@ -115,6 +116,8 @@ enum class TabVal : char {
       VAL_64,
       VAL_128,
       VAL_256,
+      VAL_512,
+      VAL_1024,
       NUM_OF
       };
 
@@ -156,7 +159,8 @@ enum class StaffTypes : signed char {
       TAB_6SIMPLE, TAB_6COMMON, TAB_6FULL,
       TAB_4SIMPLE, TAB_4COMMON, TAB_4FULL,
       TAB_5SIMPLE, TAB_5COMMON, TAB_5FULL,
-      TAB_UKULELE, TAB_BALALAJKA, TAB_ITALIAN, TAB_FRENCH,
+      TAB_UKULELE, TAB_BALALAJKA, TAB_DULCIMER,
+      TAB_ITALIAN, TAB_FRENCH,
       TAB_7COMMON, TAB_8COMMON,
       STAFF_TYPES,
       // some useful shorthands:
@@ -181,20 +185,23 @@ class StaffType {
       qreal _userMag           { 1.0   };       // allowed 0.1 - 10.0
       Spatium _yoffset         { 0.0   };
       bool _small              { false };
+      bool _invisible          { false };
+      QColor _color            { QColor(Qt::black) };
+
       int _lines            = 5;
       int _stepOffset       = 0;
       Spatium _lineDistance = Spatium(1);
 
       bool _showBarlines    = true;
       bool _showLedgerLines = true;
-      bool _slashStyle      = false;      // do not show stems
+      bool _stemless        = false;      // do not show stems
 
       bool _genClef         = true;       // create clef at beginning of system
       bool _genTimesig      = true;       // whether time signature is shown or not
       bool _genKeysig       = true;       // create key signature at beginning of system
 
       // Standard: configurable properties
-      NoteHeadScheme _noteHeadScheme = NoteHeadScheme::HEAD_NORMAL;
+      NoteHead::Scheme _noteHeadScheme = NoteHead::Scheme::HEAD_NORMAL;
 
       // TAB: configurable properties
       qreal _durationFontSize = 15.0;     // the size (in points) for the duration symbol font
@@ -258,10 +265,10 @@ class StaffType {
       StaffType();
       StaffType(StaffGroup sg, const QString& xml, const QString& name, int lines, int stpOff, qreal lineDist,
             bool genClef, bool showBarLines, bool stemless, bool genTimeSig,
-            bool genKeySig, bool showLedgerLines);
+            bool genKeySig, bool showLedgerLines, bool invisible, const QColor& color);
 
       StaffType(StaffGroup sg, const QString& xml, const QString& name, int lines, int stpOff, qreal lineDist,
-            bool genClef, bool showBarLines, bool stemless, bool genTimesig,
+            bool genClef, bool showBarLines, bool stemless, bool genTimesig, bool invisible, const QColor& color,
             const QString& durFontName, qreal durFontSize, qreal durFontUserY, qreal genDur,
             const QString& fretFontName, qreal fretFontSize, qreal fretFontUserY, TablatureSymbolRepeat symRepeat,
             bool linesThrough, TablatureMinimStyle minimStyle, bool onLines, bool showRests,
@@ -290,9 +297,13 @@ class StaffType {
       void setShowBarlines(bool val)           { _showBarlines = val;     }
       bool showBarlines() const                { return _showBarlines;    }
       qreal userMag() const                    { return _userMag;         }
-      bool small() const                       { return _small;           }
+      bool isSmall() const                     { return _small;           }
+      bool invisible() const                   { return _invisible;       }
+      const QColor& color() const              { return _color;           }
       void setUserMag(qreal val)               { _userMag = val;          }
       void setSmall(bool val)                  { _small = val;            }
+      void setInvisible(bool val)              { _invisible = val;        }
+      void setColor(const QColor& val)         { _color = val;            }
       Spatium yoffset() const                  { return _yoffset;         }
       void setYoffset(Spatium val)             { _yoffset = val;          }
       qreal spatium(Score*) const;
@@ -300,8 +311,8 @@ class StaffType {
       void write(XmlWriter& xml) const;
       void read(XmlReader&);
 
-      void setSlashStyle(bool val)             { _slashStyle = val;       }
-      bool slashStyle() const                  { return _slashStyle;      }
+      void setStemless(bool val)               { _stemless = val;       }
+      bool stemless() const                    { return _stemless;      }
       bool genTimesig() const                  { return _genTimesig;      }
       void setGenTimesig(bool val)             { _genTimesig = val;       }
       qreal doty1() const;
@@ -316,8 +327,8 @@ class StaffType {
       bool genKeysig() const                   { return _genKeysig;         }
       void setShowLedgerLines(bool val)        { _showLedgerLines = val;    }
       bool showLedgerLines() const             { return _showLedgerLines;   }
-      void setNoteHeadScheme(NoteHeadScheme s) { _noteHeadScheme = s;       }
-      NoteHeadScheme noteHeadScheme() const    { return _noteHeadScheme;    }
+      void setNoteHeadScheme(NoteHead::Scheme s) { _noteHeadScheme = s;     }
+      NoteHead::Scheme noteHeadScheme() const    { return _noteHeadScheme;  }
 
       QString fretString(int fret, int string, bool ghost) const;   // returns a string with the text for fret
       QString durationString(TDuration::DurationType type, int dots) const;
@@ -400,9 +411,6 @@ class StaffType {
 
       static void initStaffTypes();
       static const std::vector<StaffType>& presets() { return _presets; }
-      static QString scheme2userName(NoteHeadScheme ns);
-      static QString scheme2name(NoteHeadScheme ns);
-      static NoteHeadScheme name2scheme(QString name);
       };
 
 //---------------------------------------------------------
@@ -418,28 +426,31 @@ enum class TabBeamGrid : char {
       };
 
 class TabDurationSymbol final : public Element {
-      qreal       _beamLength;      // if _grid==MEDIALFINAL, length of the beam toward previous grid element
-      int         _beamLevel;       // if _grid==MEDIALFINAL, the number of beams
-      TabBeamGrid _beamGrid;        // value for special 'English' grid display
-      const StaffType*  _tab;
+      qreal       _beamLength { 0.0 };      // if _grid==MEDIALFINAL, length of the beam toward previous grid element
+      int         _beamLevel  { 0 };       // if _grid==MEDIALFINAL, the number of beams
+      TabBeamGrid _beamGrid   { TabBeamGrid::NONE };        // value for special 'English' grid display
+      const StaffType*  _tab  { nullptr};
       QString     _text;
+      bool        _repeat     { false };
 
    public:
       TabDurationSymbol(Score* s);
       TabDurationSymbol(Score* s, const StaffType* tab, TDuration::DurationType type, int dots);
       TabDurationSymbol(const TabDurationSymbol&);
-      virtual TabDurationSymbol* clone() const  { return new TabDurationSymbol(*this); }
-      virtual void draw(QPainter*) const;
-      virtual bool isEditable() const           { return false; }
-      virtual void layout();
-      virtual ElementType type() const        { return ElementType::TAB_DURATION_SYMBOL; }
+      TabDurationSymbol* clone() const override  { return new TabDurationSymbol(*this); }
+      void draw(QPainter*) const override;
+      bool isEditable() const override           { return false; }
+      void layout() override;
+      ElementType type() const override          { return ElementType::TAB_DURATION_SYMBOL; }
 
-      TabBeamGrid beamGrid()                    { return _beamGrid; }
+      TabBeamGrid beamGrid()                     { return _beamGrid; }
       void layout2();               // second step of layout: after horiz. pos. are defined, compute width of 'grid beams'
       void setDuration(TDuration::DurationType type, int dots, const StaffType* tab) {
             _tab = tab;
             _text = tab->durationString(type, dots);
             }
+      bool isRepeat() const                     { return _repeat; }
+      void setRepeat(bool val)                  { _repeat = val;  }
       };
 
 }     // namespace Ms

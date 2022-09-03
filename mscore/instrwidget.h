@@ -15,6 +15,7 @@
 
 #include "ui_instrwidget.h"
 #include "libmscore/clef.h"
+#include "libmscore/instrtemplate.h"
 
 class QTreeWidgetItem;
 
@@ -28,15 +29,55 @@ class Staff;
 class StaffType;
 class Score;
 class InstrumentGenre;
+class ScoreOrder;
+class ScoreOrderList;
 
 enum class ListItemOp : char { KEEP, I_DELETE, ADD, UPDATE };
 enum { PART_LIST_ITEM = QTreeWidgetItem::UserType, STAFF_LIST_ITEM };
+
+//---------------------------------------------------------
+//   ScoreOrderListModel
+//---------------------------------------------------------
+
+class ScoreOrderListModel : public QAbstractListModel {
+      Q_OBJECT
+
+   private:
+      ScoreOrderList* _scoreOrders;
+
+   public:
+      ScoreOrderListModel(ScoreOrderList* data, QObject* parent=nullptr);
+      QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
+      int rowCount(const QModelIndex& parent = QModelIndex()) const;
+      QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const;
+      void rebuildData();
+      };
+
+//---------------------------------------------------------
+//   ScoreOrderFilterProxyModel
+//---------------------------------------------------------
+
+class ScoreOrderFilterProxyModel : public QSortFilterProxyModel {
+   private:
+      ScoreOrderList* _scoreOrders;
+      ScoreOrder* _customizedOrder { nullptr };
+
+   public:
+      ScoreOrderFilterProxyModel(ScoreOrderList* data, QObject* parent=nullptr);
+      void setCustomizedOrder(ScoreOrder* order);
+
+   protected:
+      virtual bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;
+      };
 
 //---------------------------------------------------------
 //   PartListItem
 //---------------------------------------------------------
 
 class PartListItem : public QTreeWidgetItem {
+   private:
+      QString _name;
+      bool soloist;
 
    public:
       ListItemOp op;
@@ -44,10 +85,16 @@ class PartListItem : public QTreeWidgetItem {
       const InstrumentTemplate* it;
 
       PartListItem(Part* p, QTreeWidget* lv);
+      PartListItem(const InstrumentTemplate* i);
       PartListItem(const InstrumentTemplate* i, QTreeWidget* lv);
+      PartListItem(const InstrumentTemplate* i, QTreeWidget* lv, QTreeWidgetItem* prv);
+      QString id() const;
+      QString name() const;
       bool visible() const;
       void setVisible(bool val);
       void updateClefs();
+      void setSoloist(bool soloist);
+      bool isSoloist() const;
       };
 
 //---------------------------------------------------------
@@ -127,6 +174,11 @@ class InstrumentTemplateListItem : public QTreeWidgetItem {
 class InstrumentsWidget : public QWidget, public Ui::InstrumentsWidget {
       Q_OBJECT
 
+      ScoreOrderListModel* _model;
+      ScoreOrderFilterProxyModel* _filter;
+      int findPrvItem(PartListItem* pli, bool insert, int number=-1);
+      QTreeWidgetItem* movePartItem(int oldPos, int newPos);
+
    private slots:
       void on_instrumentList_itemSelectionChanged();
       void on_instrumentList_itemActivated(QTreeWidgetItem* item, int);
@@ -137,11 +189,17 @@ class InstrumentsWidget : public QWidget, public Ui::InstrumentsWidget {
       void on_downButton_clicked();
       StaffListItem* on_addStaffButton_clicked();
       void on_addLinkedStaffButton_clicked();
-
+      void on_makeSoloistButton_clicked();
+      void on_scoreOrderComboBox_activated(int index);
       void on_instrumentSearch_textChanged(const QString &);
-
       void on_instrumentGenreFilter_currentIndexChanged(int);
       void filterInstrumentsByGenre(QTreeWidget *, QString);
+      void sortInstruments();
+      void updateScoreOrder();
+      
+   protected:
+      virtual void changeEvent(QEvent*);
+      void retranslate();
 
    public slots:
       void buildTemplateList();
@@ -152,8 +210,15 @@ class InstrumentsWidget : public QWidget, public Ui::InstrumentsWidget {
    public:
       InstrumentsWidget(QWidget* parent = 0);
       void genPartList(Score*);
+      void updatePartIdx();
       void init();
+      void setMakeSoloistButtonText();
       void createInstruments(Score*);
+      void numberInstrumentNames(Score*);
+      void setScoreOrder(ScoreOrder* order);
+      ScoreOrder* getScoreOrder() const;
+      void setBracketsAndBarlines(Score*);
+      bool isScoreOrder(const ScoreOrder* order) const;
       QTreeWidget* getPartiturList();
       };
 

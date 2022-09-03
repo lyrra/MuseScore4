@@ -19,10 +19,11 @@
 #include "libmscore/durationtype.h"
 #include "libmscore/measure.h"
 #include "libmscore/segment.h"
+#include "libmscore/tempotext.h"
 #include "libmscore/chord.h"
 #include "libmscore/note.h"
 #include "libmscore/keysig.h"
-#include "mscore/exportmidi.h"
+#include "audio/exports/exportmidi.h"
 #include <QIODevice>
 
 #include "libmscore/mcursor.h"
@@ -45,6 +46,9 @@ class TestMidi : public QObject, public MTest
       void midiExportTestRef(const QString& file);
       void testMidiExport(MasterScore* score, const QString& writeFile, const QString& refFile);
 
+      void testTimeStretchFermata(MasterScore* score, const QString& file, const QString& testName);
+      void testTimeStretchFermataTempoEdit(MasterScore* score, const QString& file, const QString& testName);
+
    private slots:
       void initTestCase();
       void midi01();
@@ -56,6 +60,7 @@ class TestMidi : public QObject, public MTest
       void midiBendsExport2() { midiExportTestRef("testBends2"); }      // Play property test
       void midiPortExport()   { midiExportTestRef("testMidiPort"); }
       void midiArpeggio()     { midiExportTestRef("testArpeggio"); }
+      void midiMutedUnison()  { midiExportTestRef("testMutedUnison"); }
       void midi184376ExportMidiInitialKeySig()
             {
             midiExportTestRef("testInitialKeySigThenRepeatToMeas2");    // tick 0 has Bb keysig.  Meas 2 has no key sig. Meas 2 repeats back to start of Meas 2.  Result should have initial Bb keysig
@@ -69,6 +74,9 @@ class TestMidi : public QObject, public MTest
           midiExportTestRef("testVoltaStaffText"); // test changing StaffText in prima and seconda volta
           }
       void midiTimeStretchFermata();
+      void midiTimeStretchFermataContinuousView();
+      void midiTimeStretchFermataTempoEdit();
+      void midiTimeStretchFermataTempoEditContinuousView();
       void midiSingleNoteDynamics();
       };
 
@@ -128,11 +136,17 @@ void TestMidi::events_data()
 //      QTest::newRow("testPedal") <<  "testPedal";
       // multi note tremolo
       QTest::newRow("testMultiNoteTremolo") << "testMultiNoteTremolo";
+      QTest::newRow("testMultiNoteTremoloTuplet") << "testMultiNoteTremoloTuplet";
       // Test Pauses
       QTest::newRow("testPauses") <<  "testPauses";
       QTest::newRow("testPausesRepeats") <<  "testPausesRepeats";
       QTest::newRow("testPausesTempoTimesigChange") <<  "testPausesTempoTimesigChange";
       QTest::newRow("testGuitarTrem") <<  "testGuitarTrem";
+      QTest::newRow("testPlayArticulation") << "testPlayArticulation";
+      QTest::newRow("testTremoloDynamics") << "testTremoloDynamics";
+      QTest::newRow("testRepeatsDynamics") << "testRepeatsDynamics";
+      QTest::newRow("testArticulationDynamics") << "testArticulationDynamics";
+      QTest::newRow("testChannelsDynamics") << "testChannelsDynamics";
       }
 
 //---------------------------------------------------------
@@ -235,7 +249,7 @@ bool compareScores(Score* score1, Score* score2)
                   }
             s1 = s1->next1();
             s2 = s2->next1();
-            if ((s1 && !s2) || (s2 && !s2)) {
+            if ((s1 && !s2) || (s2 && !s1)) {
                   printf("   segment count different\n");
                   return false;
                   }
@@ -369,17 +383,14 @@ void TestMidi::midi03()
       }
 
 //---------------------------------------------------------
-//   midiTimeStretchFermata
+//   testTimeStretchFermata
 //---------------------------------------------------------
 
-void TestMidi::midiTimeStretchFermata()
+void TestMidi::testTimeStretchFermata(MasterScore* score, const QString& file, const QString& testName)
       {
-      const QString file("testTimeStretchFermata");
-      QString readFile(DIR   + file + ".mscx");
-      QString writeFile(file + "-test-%1.mid");
-      QString reference(DIR + file + "-ref.mid");
+      const QString writeFile = QString("%1-%2-test-%3.mid").arg(file).arg(testName);
+      const QString reference(DIR + file + "-ref.mid");
 
-      MasterScore* score = readScore(readFile);
       testMidiExport(score, writeFile.arg(1), reference);
 
       const Fraction frac1 = 2 * Fraction(4, 4) + Fraction(2, 4); // 3rd measure, 3rd beat
@@ -389,12 +400,122 @@ void TestMidi::midiTimeStretchFermata()
       const Fraction frac2 = 6 * Fraction(4, 4); // 7th measure
       score->doLayoutRange(frac2, frac2);
       testMidiExport(score, writeFile.arg(3), reference);
+      }
+
+//---------------------------------------------------------
+//   midiTimeStretchFermata
+//---------------------------------------------------------
+
+void TestMidi::midiTimeStretchFermata()
+      {
+      const QString file("testTimeStretchFermata");
+      const QString readFile(DIR + file + ".mscx");
+
+      MasterScore* score = readScore(readFile);
+
+      testTimeStretchFermata(score, file, "page");
 
       delete score;
       }
 
 //---------------------------------------------------------
-//   midiTimeStretchFermata
+//   midiTimeStretchFermataContinuousView
+///   Checks continuous view tempo issues like #289922.
+//---------------------------------------------------------
+
+void TestMidi::midiTimeStretchFermataContinuousView()
+      {
+      const QString file("testTimeStretchFermata");
+      const QString readFile(DIR + file + ".mscx");
+
+      MasterScore* score = readScore(readFile);
+      score->setLayoutMode(LayoutMode::LINE);
+      score->doLayout();
+
+      testTimeStretchFermata(score, file, "linear");
+
+      delete score;
+      }
+
+//---------------------------------------------------------
+//   testTimeStretchFermataTempoEdit
+///   see the issue #290997
+//---------------------------------------------------------
+
+void TestMidi::testTimeStretchFermataTempoEdit(MasterScore* score, const QString& file, const QString& testName)
+      {
+      const QString writeFile = QString("%1-%2-test-%3.mid").arg(file).arg(testName);
+      const QString reference(DIR + file + "-%1-ref.mid");
+
+      Element* tempo = score->firstSegment(SegmentType::ChordRest)->findAnnotation(ElementType::TEMPO_TEXT, -1, 3);
+      Q_ASSERT(tempo && tempo->isTempoText());
+
+      const int scoreTempo = 200;
+      const int defaultTempo = 120;
+      const qreal defaultTempoBps = defaultTempo / 60.0;
+
+      testMidiExport(score, writeFile.arg("init"), reference.arg(scoreTempo));
+
+      score->startCmd();
+      tempo->undoChangeProperty(Pid::TEMPO_FOLLOW_TEXT, false, PropertyFlags::UNSTYLED);
+      tempo->undoChangeProperty(Pid::TEMPO, defaultTempoBps, PropertyFlags::UNSTYLED);
+      score->endCmd();
+      testMidiExport(score, writeFile.arg("change-tempo"), reference.arg(defaultTempo));
+
+      // undo the last changes
+      score->startCmd();
+      score->undoRedo(/* undo */ true, /* EditData */ nullptr);
+      score->endCmd();
+      testMidiExport(score, writeFile.arg("undo-change-tempo"), reference.arg(scoreTempo));
+
+      score->startCmd();
+      score->undoRemoveElement(tempo);
+      score->endCmd();
+      testMidiExport(score, writeFile.arg("remove-tempo"), reference.arg(defaultTempo));
+
+      // undo the last changes
+      score->startCmd();
+      score->undoRedo(/* undo */ true, /* EditData */ nullptr);
+      score->endCmd();
+      testMidiExport(score, writeFile.arg("undo-remove-tempo"), reference.arg(scoreTempo));
+      }
+
+//---------------------------------------------------------
+//   midiTimeStretchFermataTempoEdit
+//---------------------------------------------------------
+
+void TestMidi::midiTimeStretchFermataTempoEdit()
+      {
+      const QString file("testTimeStretchFermataTempoEdit");
+      const QString readFile(DIR + file + ".mscx");
+
+      MasterScore* score = readScore(readFile);
+
+      testTimeStretchFermataTempoEdit(score, file, "page");
+
+      delete score;
+      }
+
+//---------------------------------------------------------
+//   midiTimeStretchFermataTempoEditContinuousView
+//---------------------------------------------------------
+
+void TestMidi::midiTimeStretchFermataTempoEditContinuousView()
+      {
+      const QString file("testTimeStretchFermataTempoEdit");
+      const QString readFile(DIR + file + ".mscx");
+
+      MasterScore* score = readScore(readFile);
+      score->setLayoutMode(LayoutMode::LINE);
+      score->doLayout();
+
+      testTimeStretchFermataTempoEdit(score, file, "linear");
+
+      delete score;
+      }
+
+//---------------------------------------------------------
+//   midiSingleNoteDynamics
 //---------------------------------------------------------
 
 void TestMidi::midiSingleNoteDynamics()
@@ -425,7 +546,7 @@ void TestMidi::events()
 
       MasterScore* score = readScore(readFile);
       EventMap events;
-      // a temporary, unitialized synth state so we can render the midi - should fall back correctly
+      // a temporary, uninitialized synth state so we can render the midi - should fall back correctly
       SynthesizerState ss;
       score->renderMidi(&events, ss);
       qDebug() << "Opened score " << readFile;

@@ -1,16 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<museScore version="3.01">
-  <programVersion>3.0.0</programVersion>
-  <programRevision>3543170</programRevision>
+<museScore version="3.02">
   <Score>
     <LayerTag id="0" tag="default"></LayerTag>
     <currentLayer>0</currentLayer>
-    <Synthesizer>
-      </Synthesizer>
     <Division>480</Division>
     <Style>
+      <enableVerticalSpread>1</enableVerticalSpread>
       <concertPitch>1</concertPitch>
-      <Spatium>1.76389</Spatium>
+      <Spatium>1.75</Spatium>
       </Style>
     <showInvisible>1</showInvisible>
     <showUnprintable>1</showUnprintable>
@@ -27,22 +24,48 @@
     <metaTag name="translator"></metaTag>
     <metaTag name="workNumber"></metaTag>
     <metaTag name="workTitle"></metaTag>
+    <Order id="woodwind-ensemble" customized="1">
+      <name>Woodwind Ensemble</name>
+      <instrument id="alto-saxophone">
+        <family id="saxophones">Saxophones</family>
+        </instrument>
+      <instrument id="baritone-saxophone">
+        <family id="saxophones">Saxophones</family>
+        </instrument>
+      <instrument id="soprano-saxophone">
+        <family id="saxophones">Saxophones</family>
+        </instrument>
+      <instrument id="tenor-saxophone">
+        <family id="saxophones">Saxophones</family>
+        </instrument>
+      <soloists/>
+      <section id="woodwind" brackets="true" showSystemMarkings="false" barLineSpan="true" thinBrackets="false">
+        <family>flutes</family>
+        <family>oboes</family>
+        <family>clarinets</family>
+        <family>horns</family>
+        <family>saxophones</family>
+        <family>bassoons</family>
+        </section>
+      <family>keyboards</family>
+      <unsorted/>
+      </Order>
     <Part>
       <Staff id="1">
         <StaffType group="pitched">
           <name>stdNormal</name>
           </StaffType>
         <bracket type="0" span="4" col="0"/>
-        <barLineSpan>3</barLineSpan>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Soprano Saxophone</trackName>
-      <Instrument>
+      <Instrument id="soprano-saxophone">
         <longName>Soprano Saxophone</longName>
         <trackName>Soprano Saxophone</trackName>
         <minPitchP>56</minPitchP>
-        <maxPitchP>94</maxPitchP>
+        <maxPitchP>91</maxPitchP>
         <minPitchA>56</minPitchA>
-        <maxPitchA>89</maxPitchA>
+        <maxPitchA>87</maxPitchA>
         <transposeDiatonic>-1</transposeDiatonic>
         <transposeChromatic>-2</transposeChromatic>
         <instrumentId>wind.reed.saxophone.soprano</instrumentId>
@@ -71,22 +94,24 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
-            <velocity>150</velocity>
-            <gateTime>100</gateTime>
-        </Articulation>
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
         <Articulation name="sforzatoStaccato">
-              <velocity>150</velocity>
-              <gateTime>50</gateTime>
-        </Articulation>
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
         <Articulation name="marcatoStaccato">
-              <velocity>120</velocity>
-              <gateTime>50</gateTime>
-        </Articulation>
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
         <Articulation name="marcatoTenuto">
-              <velocity>120</velocity>
-              <gateTime>100</gateTime>
-        </Articulation>
+          <velocity>120</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
         <Channel>
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="64"/>
           <synti>Fluid</synti>
           </Channel>
@@ -97,16 +122,16 @@
         <StaffType group="pitched">
           <name>stdNormal</name>
           </StaffType>
-        <barLineSpan>2</barLineSpan>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Alto Saxophone</trackName>
-      <Instrument>
+      <Instrument id="alto-saxophone">
         <longName>Alto Saxophone</longName>
         <trackName>Alto Saxophone</trackName>
         <minPitchP>49</minPitchP>
-        <maxPitchP>87</maxPitchP>
+        <maxPitchP>92</maxPitchP>
         <minPitchA>49</minPitchA>
-        <maxPitchA>82</maxPitchA>
+        <maxPitchA>80</maxPitchA>
         <transposeDiatonic>-5</transposeDiatonic>
         <transposeChromatic>-9</transposeChromatic>
         <instrumentId>wind.reed.saxophone.alto</instrumentId>
@@ -135,10 +160,24 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="65"/>
           <synti>Fluid</synti>
           </Channel>
@@ -154,13 +193,13 @@
         <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Tenor Saxophone</trackName>
-      <Instrument>
+      <Instrument id="tenor-saxophone">
         <longName>Tenor Saxophone</longName>
         <trackName>Tenor Saxophone</trackName>
         <minPitchP>44</minPitchP>
-        <maxPitchP>82</maxPitchP>
+        <maxPitchP>87</maxPitchP>
         <minPitchA>44</minPitchA>
-        <maxPitchA>77</maxPitchA>
+        <maxPitchA>75</maxPitchA>
         <transposeDiatonic>-8</transposeDiatonic>
         <transposeChromatic>-14</transposeChromatic>
         <instrumentId>wind.reed.saxophone.tenor</instrumentId>
@@ -191,10 +230,24 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="66"/>
           <synti>Fluid</synti>
           </Channel>
@@ -209,13 +262,13 @@
         <defaultTransposingClef>G</defaultTransposingClef>
         </Staff>
       <trackName>Baritone Saxophone</trackName>
-      <Instrument>
+      <Instrument id="baritone-saxophone">
         <longName>Baritone Saxophone</longName>
         <trackName>Baritone Saxophone</trackName>
         <minPitchP>36</minPitchP>
-        <maxPitchP>75</maxPitchP>
-        <minPitchA>37</minPitchA>
-        <maxPitchA>70</maxPitchA>
+        <maxPitchP>80</maxPitchP>
+        <minPitchA>36</minPitchA>
+        <maxPitchA>68</maxPitchA>
         <transposeDiatonic>-12</transposeDiatonic>
         <transposeChromatic>-21</transposeChromatic>
         <instrumentId>wind.reed.saxophone.baritone</instrumentId>
@@ -246,10 +299,24 @@
           <gateTime>67</gateTime>
           </Articulation>
         <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
         <Channel>
+          <controller ctrl="0" value="0"/>
+          <controller ctrl="32" value="17"/>
           <program value="67"/>
           <synti>Fluid</synti>
           </Channel>
@@ -266,7 +333,6 @@
       <Measure>
         <voice>
           <BarLine>
-            <span>1</span>
             </BarLine>
           <TimeSig>
             <sigN>4</sigN>
@@ -420,7 +486,6 @@
             </Rest>
           <BarLine>
             <subtype>end</subtype>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>
@@ -429,7 +494,6 @@
       <Measure>
         <voice>
           <BarLine>
-            <span>1</span>
             </BarLine>
           <TimeSig>
             <sigN>4</sigN>
@@ -577,7 +641,6 @@
             </Rest>
           <BarLine>
             <subtype>end</subtype>
-            <span>1</span>
             </BarLine>
           </voice>
         </Measure>

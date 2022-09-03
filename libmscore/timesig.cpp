@@ -215,6 +215,18 @@ void TimeSig::read(XmlReader& e)
             _sig.set(z1+z2+z3+z4, n);
             }
       _stretch.reduce();
+
+      // HACK: handle time signatures from scores before 3.5 differently on some special occasions.
+      // See https://musescore.org/node/308139.
+      QString version = masterScore()->mscoreVersion();
+      if (!version.isEmpty() && (version >= "3.0") && (version < "3.5")) {
+            if ((_timeSigType == TimeSigType::NORMAL) && !_numeratorString.isEmpty() && _denominatorString.isEmpty()) {
+                  if (_numeratorString == QString::number(_sig.numerator()))
+                        _numeratorString.clear();
+                  else
+                        setDenominatorString(QString::number(_sig.denominator()));
+                  }
+            }
       }
 
 //---------------------------------------------------------
@@ -256,7 +268,7 @@ void TimeSig::layout()
 
       if (_staff) {
             // if staff is without time sig, format as if no text at all
-            if (!_staff->staffType(tick())->genTimesig() ) {
+            if (!_staff->staffTypeForElement(this)->genTimesig()) {
                   // reset position and box sizes to 0
                   // qDebug("staff: no time sig");
                   pointLargeLeftParen.rx() = 0.0;
@@ -298,9 +310,29 @@ void TimeSig::layout()
             ns.push_back(SymId::timeSigCutCommon);
             ds.clear();
             }
+      else if (sigType == TimeSigType::CUT_BACH) {
+            pz = QPointF(0.0, yoff);
+            setbbox(symBbox(SymId::timeSigCut2).translated(pz));
+            ns.clear();
+            ns.push_back(SymId::timeSigCut2);
+            ds.clear();
+            }
+      else if (sigType == TimeSigType::CUT_TRIPLE) {
+            pz = QPointF(0.0, yoff);
+            setbbox(symBbox(SymId::timeSigCut3).translated(pz));
+            ns.clear();
+            ns.push_back(SymId::timeSigCut3);
+            ds.clear();
+            }
       else {
-            ns = toTimeSigString(_numeratorString.isEmpty()   ? QString::number(_sig.numerator())   : _numeratorString);
-            ds = toTimeSigString(_denominatorString.isEmpty() ? QString::number(_sig.denominator()) : _denominatorString);
+            if (_numeratorString.isEmpty()) {
+                  ns = toTimeSigString(_numeratorString.isEmpty()   ? QString::number(_sig.numerator())   : _numeratorString);
+                  ds = toTimeSigString(_denominatorString.isEmpty() ? QString::number(_sig.denominator()) : _denominatorString);
+                  }
+            else {
+                  ns = toTimeSigString(_numeratorString);
+                  ds = toTimeSigString(_denominatorString);
+                  }
 
             ScoreFont* font = score()->scoreFont();
             QSizeF mag(magS() * _scale);
@@ -344,26 +376,6 @@ void TimeSig::layout()
                   addbbox(QRect(pointLargeRightParen.x(), pointLargeRightParen.y() - denRect.height(),  _spatium / 2, numRect.height() + denRect.height()));
                   }
             }
-      }
-
-//---------------------------------------------------------
-//   shape
-//---------------------------------------------------------
-
-Shape TimeSig::shape() const
-      {
-      QRectF box(bbox());
-      const Staff* st = staff();
-      if (st && addToSkyline()) {
-            // Extend time signature shape up and down to
-            // the first ledger line height to ensure that
-            // no notes will be too close to the timesig.
-            const qreal sp = spatium();
-            const qreal y = pos().y();
-            box.setTop(std::min(-sp - y, box.top()));
-            box.setBottom(std::max(st->height() - y + sp, box.bottom()));
-            }
-      return Shape(box);
       }
 
 //---------------------------------------------------------
@@ -491,7 +503,7 @@ bool TimeSig::setProperty(Pid propertyId, const QVariant& v)
                         return false;
                   break;
             }
-      score()->setLayoutAll();      // TODO
+      triggerLayoutAll();      // TODO
       setGenerated(false);
       return true;
       }
@@ -549,15 +561,21 @@ QString TimeSig::accessibleInfo() const
       QString timeSigString;
       switch (timeSigType()) {
             case TimeSigType::FOUR_FOUR:
-                  timeSigString = QObject::tr("Common time");
+                  timeSigString = qApp->translate("symUserNames", "Common time");
                   break;
             case TimeSigType::ALLA_BREVE:
-                  timeSigString = QObject::tr("Cut time");
+                  timeSigString = qApp->translate("symUserNames", "Cut time");
+                  break;
+            case TimeSigType::CUT_BACH:
+                  timeSigString = qApp->translate("symUserNames", "Cut time (Bach)");
+                  break;
+            case TimeSigType::CUT_TRIPLE:
+                  timeSigString = qApp->translate("symUserNames", "Cut triple time (9/8)");
                   break;
             default:
-                  timeSigString = QObject::tr("%1/%2 time").arg(QString::number(numerator())).arg(QString::number(denominator()));
+                  timeSigString = QObject::tr("%1/%2 time").arg(QString::number(numerator()), QString::number(denominator()));
             }
-      return QString("%1: %2").arg(Element::accessibleInfo()).arg(timeSigString);
+      return QString("%1: %2").arg(Element::accessibleInfo(), timeSigString);
       }
 
 //---------------------------------------------------------

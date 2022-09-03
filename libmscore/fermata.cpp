@@ -41,11 +41,11 @@ static const ElementStyle fermataStyle {
 Fermata::Fermata(Score* s)
    : Element(s, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
       {
-      initElementStyle(&fermataStyle);
       setPlacement(Placement::ABOVE);
       _symId         = SymId::noSym;
       _timeStretch   = 1.0;
       setPlay(true);
+      initElementStyle(&fermataStyle);
       }
 
 Fermata::Fermata(SymId id, Score* s)
@@ -79,7 +79,7 @@ bool Fermata::readProperties(XmlReader& e)
             SymId id = Sym::name2id(s);
             setSymId(id);
             }
-      else if ( tag == "play")
+      else if (tag == "play")
             setPlay(e.readBool());
       else if (tag == "timeStretch")
             _timeStretch = e.readDouble();
@@ -110,6 +110,7 @@ void Fermata::write(XmlWriter& xml) const
       xml.tag("subtype", Sym::id2name(_symId));
       writeProperty(xml, Pid::TIME_STRETCH);
       writeProperty(xml, Pid::PLAY);
+      writeProperty(xml, Pid::MIN_DISTANCE);
       if (!isStyled(Pid::OFFSET))
             writeProperty(xml, Pid::OFFSET);
       Element::writeProperties(xml);
@@ -246,12 +247,14 @@ void Fermata::layout()
       }
 
 //---------------------------------------------------------
-//   dragAnchor
+//   dragAnchorLines
 //---------------------------------------------------------
 
-QLineF Fermata::dragAnchor() const
+QVector<QLineF> Fermata::dragAnchorLines() const
       {
-      return QLineF(canvasPos(), parent()->canvasPos());
+      QVector<QLineF> result;
+      result << QLineF(canvasPos(), parent()->canvasPos());
+      return result;
       }
 
 //---------------------------------------------------------
@@ -382,7 +385,7 @@ qreal Fermata::mag() const
 
 QString Fermata::accessibleInfo() const
       {
-      return QString("%1: %2").arg(Element::accessibleInfo()).arg(userName());
+      return QString("%1: %2").arg(Element::accessibleInfo(), userName());
       }
 
 }

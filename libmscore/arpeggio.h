@@ -41,35 +41,46 @@ class Arpeggio final : public Element {
       bool _hidden = false; // set in layout, will skip draw if true
 
       void symbolLine(SymId start, SymId fill);
-      void symbolLine2(SymId end, SymId fill);
 
-      virtual void spatiumChanged(qreal /*oldValue*/, qreal /*newValue*/) override;
-      virtual QLineF dragAnchor() const override;
-      virtual QPointF gripAnchor(Grip) const override;
-      virtual void startEdit(EditData&) override;
+      void spatiumChanged(qreal /*oldValue*/, qreal /*newValue*/) override;
+      QVector<QLineF> dragAnchorLines() const override;
+      QVector<QLineF> gripAnchorLines(Grip) const override;
+      void startEdit(EditData&) override;
+
+      qreal calcTop() const;
+      qreal calcBottom() const;
+
+      static const std::array<const char*, 6> arpeggioTypeNames;
+
+   private:
+
+      qreal insetTop() const;
+      qreal insetBottom() const;
+      qreal insetWidth() const;
 
    public:
       Arpeggio(Score* s);
-      virtual Arpeggio* clone() const override    { return new Arpeggio(*this); }
-      virtual ElementType type() const override   { return ElementType::ARPEGGIO; }
+
+      Arpeggio* clone() const override    { return new Arpeggio(*this); }
+      ElementType type() const override   { return ElementType::ARPEGGIO; }
 
       ArpeggioType arpeggioType() const    { return _arpeggioType; }
       void setArpeggioType(ArpeggioType v) { _arpeggioType = v;    }
+      QString arpeggioTypeName()           { return qApp->translate("Palette", arpeggioTypeNames[int(_arpeggioType)]); }
 
       Chord* chord() const                 { return (Chord*)parent(); }
 
-      virtual bool acceptDrop(EditData&) const override;
-      virtual Element* drop(EditData&) override;
-      virtual void layout() override;
-      virtual void draw(QPainter*) const override;
-      virtual bool isEditable() const override { return true; }
-      virtual void editDrag(EditData&) override;
-      virtual void updateGrips(EditData&) const override;
-      virtual bool edit(EditData&) override;
+      bool acceptDrop(EditData&) const override;
+      Element* drop(EditData&) override;
+      void layout() override;
+      void draw(QPainter*) const override;
+      bool isEditable() const override { return true; }
+      void editDrag(EditData&) override;
+      bool edit(EditData&) override;
 
-      virtual void read(XmlReader& e) override;
-      virtual void write(XmlWriter& xml) const override;
-      virtual void reset() override;
+      void read(XmlReader& e) override;
+      void write(XmlWriter& xml) const override;
+      void reset() override;
 
       int span() const      { return _span; }
       void setSpan(int val) { _span = val; }
@@ -80,15 +91,25 @@ class Arpeggio final : public Element {
       void setUserLen1(qreal v) { _userLen1 = v; }
       void setUserLen2(qreal v) { _userLen2 = v; }
 
+      qreal insetDistance(QVector<Accidental*>& accidentals, qreal mag_) const;
+
       bool playArpeggio()       { return _playArpeggio; }
       void setPlayArpeggio(bool p) { _playArpeggio = p; }
 
       qreal Stretch() const             { return _stretch; }
       void setStretch(qreal val)        { _stretch = val;  }
 
-      virtual QVariant getProperty(Pid propertyId) const override;
-      virtual bool setProperty(Pid propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(Pid propertyId) const override;
+      QVariant getProperty(Pid propertyId) const override;
+      bool setProperty(Pid propertyId, const QVariant&) override;
+      QVariant propertyDefault(Pid propertyId) const override;
+      Pid propertyId(const QStringRef& xmlName) const override;
+
+      // TODO: add a grip for moving the entire arpeggio
+      EditBehavior normalModeEditBehavior() const override { return EditBehavior::Edit; }
+      int gripsCount() const override { return 2; }
+      Grip initialEditModeGrip() const override { return Grip::END; }
+      Grip defaultGrip() const override { return Grip::START; }
+      std::vector<QPointF> gripsPositions(const EditData& = EditData()) const override;
       };
 
 

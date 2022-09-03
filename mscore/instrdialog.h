@@ -14,6 +14,7 @@
 #define __INSTRDIALOG_H__
 
 #include "ui_instrdialog.h"
+#include "abstractdialog.h"
 
 namespace Ms {
 
@@ -23,22 +24,29 @@ class Score;
 //   InstrumentsDialog
 //---------------------------------------------------------
 
-class InstrumentsDialog : public QDialog, public Ui::InstrumentsDialog {
+class InstrumentsDialog : public AbstractDialog, public Ui::InstrumentsDialog {
       Q_OBJECT
 
       void readSettings();
+      virtual void accept();
 
    private slots:
-      virtual void accept();
+      void buttonBoxClicked(QAbstractButton*);
       void on_saveButton_clicked();
       void on_loadButton_clicked();
+      
+   protected:
+      virtual void retranslate();
 
    public:
       InstrumentsDialog(QWidget* parent = 0);
       void init();
       void writeSettings();
       void genPartList(Score*);
+      void setBracketsAndBarlines(Score*);
       QTreeWidget* partiturList();
+      void setScoreOrder(ScoreOrder* order);
+      ScoreOrder* getScoreOrder();
       void buildInstrumentsList();
       };
 

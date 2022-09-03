@@ -25,10 +25,6 @@
 
 namespace Ms {
 
-// metrics for dashes and melisma; all in sp. units:
-static constexpr qreal  LYRICS_DASH_Y_POS_RATIO             = 0.67;     // the fraction of lyrics font x-height to
-                                                                        //    raise the dashes above text base line;
-
 //---------------------------------------------------------
 //   searchNextLyrics
 //---------------------------------------------------------
@@ -157,7 +153,8 @@ void LyricsLine::layout()
                   }
             // Spanner::computeEndElement() will actually ignore this value and use the (earlier) lyrics()->endTick() instead
             // still, for consistency with other lines, we should set the ticks for this to the computed (later) value
-            setTicks(s->tick() - lyricsStartTick);
+            if (s)
+                  setTicks(s->tick() - lyricsStartTick);
             }
       else {                                    // dash(es)
             _nextLyrics = searchNextLyrics(lyrics()->segment(), staffIdx(), lyrics()->no(), lyrics()->placement());
@@ -221,15 +218,14 @@ SpannerSegment* LyricsLine::layoutSystem(System* system)
                   System* s;
                   QPointF p1 = linePos(Grip::START, &s);
                   lineSegm->setPos(p1);
-                  qreal x2 = system->bbox().right();
+                  qreal x2 = system->lastNoteRestSegmentX(true);
                   lineSegm->setPos2(QPointF(x2 - p1.x(), 0.0));
                   }
                   break;
             case SpannerSegmentType::MIDDLE: {
-                  Measure* firstMeasure = system->firstMeasure();
-                  Segment* firstCRSeg   = firstMeasure->first(SegmentType::ChordRest);
-                  qreal x1              = (firstCRSeg ? firstCRSeg->pos().x() : 0) + firstMeasure->pos().x();
-                  qreal x2              = system->bbox().right();
+                  bool leading = (anchor() == Anchor::SEGMENT || anchor() == Anchor::MEASURE);
+                  qreal x1 = system->firstNoteRestSegmentX(leading);
+                  qreal x2 = system->lastNoteRestSegmentX(true);
                   System* s;
                   QPointF p1 = linePos(Grip::START, &s);
                   lineSegm->setPos(QPointF(x1, p1.y()));
@@ -237,19 +233,10 @@ SpannerSegment* LyricsLine::layoutSystem(System* system)
                   }
                   break;
             case SpannerSegmentType::END: {
-                  qreal offset = 0.0;
                   System* s;
-                  QPointF p2 = linePos(Grip::END,   &s);
-                  Measure* firstMeas  = system->firstMeasure();
-                  Segment* firstCRSeg = firstMeas->first(SegmentType::ChordRest);
-                  if (anchor() == Anchor::SEGMENT || anchor() == Anchor::MEASURE) {
-                        // start line just after previous element (eg, key signature)
-                        firstCRSeg = firstCRSeg->prev();
-                        Element* e = firstCRSeg ? firstCRSeg->element(staffIdx() * VOICES) : nullptr;
-                        if (e)
-                              offset = e->width();
-                        }
-                  qreal x1  = (firstCRSeg ? firstCRSeg->pos().x() : 0) + firstMeas->pos().x() + offset;
+                  QPointF p2 = linePos(Grip::END, &s);
+                  bool leading = (anchor() == Anchor::SEGMENT || anchor() == Anchor::MEASURE);
+                  qreal x1 = system->firstNoteRestSegmentX(leading);
                   qreal len = p2.x() - x1;
                   lineSegm->setPos(QPointF(p2.x() - len, p2.y()));
                   lineSegm->setPos2(QPointF(len, 0.0));
@@ -316,7 +303,7 @@ bool LyricsLine::setProperty(Pid propertyId, const QVariant& v)
                         return false;
                   break;
             }
-      score()->setLayoutAll();
+      triggerLayoutAll();
       return true;
       }
 
@@ -391,37 +378,43 @@ void LyricsLineSegment::layout()
 
       // VERTICAL POSITION: at the base line of the syllable text
       if (!isEndType()) {
-            rypos() = lyr->ipos().y();
-            ryoffset() = lyr->offset().y();
+            rypos() = lyr->ipos().y() + lyr->chordRest()->ipos().y();
+            ryoffset() = lyr->offset().y() + lyr->chordRest()->offset().y();
             }
       else {
             // use Y position of *next* syllable if there is one on same system
             Lyrics* nextLyr1 = searchNextLyrics(lyr->segment(), lyr->staffIdx(), lyr->no(), lyr->placement());
             if (nextLyr1 && nextLyr1->segment()->system() == system()) {
-                  rypos() = nextLyr1->ipos().y();
-                  ryoffset() = nextLyr1->offset().y();
+                  rypos() = nextLyr1->ipos().y() + nextLyr1->chordRest()->ipos().y();
+                  ryoffset() = nextLyr1->offset().y() + nextLyr1->chordRest()->offset().y();
                   }
             else {
-                  rypos() = lyr->ipos().y();
-                  ryoffset() = lyr->offset().y();
+                  rypos() = lyr->ipos().y() + lyr->chordRest()->ipos().y();
+                  ryoffset() = lyr->offset().y() + lyr->chordRest()->offset().y();
                   }
             }
 
       // MELISMA vs. DASHES
+      const double minMelismaLen = 1 * sp; // TODO: style setting
+      const double minDashLen  = score()->styleS(Sid::lyricsDashMinLength).val() * sp;
+      const double maxDashDist = score()->styleS(Sid::lyricsDashMaxDistance).val() * sp;
+      double len = pos2().rx();
       if (isEndMelisma) {                 // melisma
-            _numOfDashes = 1;
+            if (len < minMelismaLen) // Omit the extender line if too short
+                _numOfDashes = 0;
+            else
+                _numOfDashes = 1;
             rypos()      -= lyricsLine()->lineWidth() * .5; // let the line 'sit on' the base line
-            qreal offsetX = score()->styleP(Sid::minNoteDistance) * mag();
-            // if final segment, extend slightly after the chord, otherwise shorten it
-            rxpos2() += (isBeginType() || isEndType()) ? -offsetX : +offsetX;
+            // if not final segment, shorten it
+#if 0 // (why? -AS)
+            if (isBeginType() || isMiddleType())
+                  rxpos2() -= score()->styleP(Sid::minNoteDistance) * mag();
+#endif
             }
       else {                              // dash(es)
             // set conventional dash Y pos
             rypos() -= MScore::pixelRatio * lyr->fontMetrics().xHeight() * score()->styleD(Sid::lyricsDashYposRatio);
             _dashLength = score()->styleP(Sid::lyricsDashMaxLength) * mag();  // and dash length
-            qreal len         = pos2().x();
-            qreal minDashLen  = score()->styleS(Sid::lyricsDashMinLength).val() * sp;
-            qreal maxDashDist = score()->styleS(Sid::lyricsDashMaxDistance).val() * sp;
             if (len < minDashLen) {                                           // if no room for a dash
                   // if at end of system or dash is forced
                   if (endOfSystem || score()->styleB(Sid::lyricsDashForce)) {
@@ -444,6 +437,10 @@ void LyricsLineSegment::layout()
             if (_numOfDashes == 0 && nextLyr != nullptr && len > 0)
                   nextLyr->rxpos() -= (toX - fromX);
             }
+
+      // apply yoffset for staff type change (keeps lyrics lines aligned with lyrics)
+      if (staffType())
+            rypos() += staffType()->yoffset().val() * spatium();
 
       // set bounding box
       QRectF r = QRectF(0.0, 0.0, pos2().x(), pos2().y()).normalized();

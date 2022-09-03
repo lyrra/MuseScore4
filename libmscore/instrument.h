@@ -13,14 +13,16 @@
 #ifndef __INSTRUMENT_H__
 #define __INSTRUMENT_H__
 
+#include <QtGlobal>
+#include <QString>
+
 #include "stringdata.h"
 #include "mscore.h"
 #include "notifier.hpp"
-#include "synthesizer/event.h"
 #include "interval.h"
 #include "clef.h"
-#include <QtGlobal>
-#include <QString>
+
+#include "audio/midi/event.h"
 
 namespace Ms {
 
@@ -46,6 +48,7 @@ class StaffName {
       StaffName(const QString& s, int p=0);
 
       bool operator==(const StaffName&) const;
+      QString toString() const;
       void read(XmlReader&);
       void write(XmlWriter& xml, const char* name) const;
       int pos() const { return _pos; }
@@ -60,6 +63,7 @@ class StaffNameList : public QList<StaffName> {
 
    public:
       void write(XmlWriter& xml, const char* name) const;
+      QStringList toStringList() const;
       };
 
 //---------------------------------------------------------
@@ -122,14 +126,17 @@ class Channel {
       bool _mute;
       bool _solo;
 
-      // flags whether the user has changed the bank controller as opposed to switchExpressive
-      bool _userBankController = false;
+      // MuseScore General-specific SND flags:
+      bool _userBankController = false;   // if the user has changed the bank controller as opposed to switchExpressive
+      bool _switchedToExpressive = false; // if the patch has been automatically switched to and expr variant
 
       mutable std::vector<MidiCoreEvent> _init;
       mutable bool _mustUpdateInit = true;
 
 public:
       static const char* DEFAULT_NAME;
+      static const char* HARMONY_NAME;
+      static constexpr char defaultVolume = 100;
 
       enum class A : char {
             HBANK, LBANK, PROGRAM, VOLUME, PAN, CHORUS, REVERB,
@@ -138,7 +145,7 @@ public:
 
       enum class Prop : char {
             VOLUME, PAN, CHORUS, REVERB, NAME, DESCR, PROGRAM, BANK, COLOR,
-            SOLOMUTE, SOLO, MUTE, SYNTI, CHANNEL
+            SOLOMUTE, SOLO, MUTE, SYNTI, CHANNEL, USER_BANK_CONTROL
             };
 
 private:
@@ -182,7 +189,9 @@ public:
 
       // If the bank controller is set by the user or not
       bool userBankController() const           { return _userBankController; }
-      void setUserBankController(bool val)      { _userBankController = val; }
+      void setUserBankController(bool val);
+
+      bool isHarmonyChannel() const { return _name == Channel::HARMONY_NAME; }
 
       QList<NamedEventList> midiActions;
       QList<MidiArticulation> articulation;
@@ -236,7 +245,7 @@ class PartChannelSettingsLink final : private ChannelListener {
       PartChannelSettingsLink(PartChannelSettingsLink&&);
       PartChannelSettingsLink& operator=(const PartChannelSettingsLink&) = delete;
       PartChannelSettingsLink& operator=(PartChannelSettingsLink&&);
-      ~PartChannelSettingsLink() {};
+      ~PartChannelSettingsLink() {}
 
       friend void swap(PartChannelSettingsLink&, PartChannelSettingsLink&);
       };
@@ -249,6 +258,8 @@ class Instrument {
       StaffNameList _longNames;
       StaffNameList _shortNames;
       QString _trackName;
+      QString _id;
+      QColor _nameColor;
 
       char _minPitchA, _maxPitchA, _minPitchP, _maxPitchP;
       Interval _transpose;
@@ -266,7 +277,7 @@ class Instrument {
       bool _singleNoteDynamics;
 
    public:
-      Instrument();
+      Instrument(QString id="");
       Instrument(const Instrument&);
       void operator=(const Instrument&);
       ~Instrument();
@@ -277,10 +288,16 @@ class Instrument {
       NamedEventList* midiAction(const QString& s, int channel) const;
       int channelIdx(const QString& s) const;
       void updateVelocity(int* velocity, int channel, const QString& name);
+      qreal getVelocityMultiplier(const QString& name);
       void updateGateTime(int* gateTime, int channelIdx, const QString& name);
 
-      bool operator==(const Instrument&) const;
+      QString recognizeInstrumentId() const;
+      int recognizeMidiProgram() const;
 
+      bool operator==(const Instrument&) const;
+      bool isDifferentInstrument(const Instrument& i) const;
+
+      QString getId() const                                  { return _id;         }
       void setMinPitchP(int v)                               { _minPitchP = v;     }
       void setMaxPitchP(int v)                               { _maxPitchP = v;     }
       void setMinPitchA(int v)                               { _minPitchA = v;     }
@@ -309,12 +326,13 @@ class Instrument {
 
       const QList<Channel*>& channel() const                 { return _channel; }
       void appendChannel(Channel* c)                         { _channel.append(c); }
+      void removeChannel(Channel* c)                         { _channel.removeOne(c);}
       void clearChannels()                                   { _channel.clear(); }
 
       void setMidiActions(const QList<NamedEventList>& l)    { _midiActions = l;  }
       void setArticulation(const QList<MidiArticulation>& l) { _articulation = l; }
       const StringData* stringData() const                   { return &_stringData; }
-      void setStringData(const StringData& d)                { _stringData = d;     }
+      void setStringData(const StringData& d)                { _stringData.set(d);  }
 
       void setLongName(const QString& f);
       void setShortName(const QString& f);
@@ -337,11 +355,15 @@ class Instrument {
       void setTrackName(const QString& s);
       static Instrument fromTemplate(const InstrumentTemplate* t);
 
+      void updateInstrumentId();
+
       bool singleNoteDynamics() const           { return _singleNoteDynamics; }
       void setSingleNoteDynamics(bool val)      { _singleNoteDynamics = val; }
       void setSingleNoteDynamicsFromTemplate();
       bool getSingleNoteDynamicsFromTemplate() const;
       void switchExpressive(MasterScore* score, Synthesizer* synth, bool expressive, bool force = false);
+      QColor getNameColor() const                     { return _nameColor; }
+      void setNameColor(const QColor &nameColor)      { _nameColor = nameColor; }
       };
 
 //---------------------------------------------------------

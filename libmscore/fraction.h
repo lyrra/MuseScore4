@@ -76,6 +76,7 @@ class Fraction {
 
       bool isZero() const        { return _numerator == 0;      }
       bool isNotZero() const     { return _numerator != 0;      }
+      bool negative() const      { return _numerator < 0;       }
 
       bool isValid() const       { return _denominator != 0;    }
 
@@ -89,19 +90,27 @@ class Fraction {
       Fraction absValue() const  {
             return Fraction(qAbs(_numerator), _denominator); }
 
+      Fraction inverse() const  {
+            return Fraction(_denominator, _numerator); }
+
 
       // --- reduction --- //
 
       void reduce()
             {
             const int g = gcd(_numerator, _denominator);
-            _numerator /= g; _denominator /= g;
+            if (g) {
+                  _numerator /= g;
+                  _denominator /= g;
+                  }
             }
 
       Fraction reduced() const
             {
             const int g = gcd(_numerator, _denominator);
-            return Fraction(_numerator / g, _denominator / g);
+            if (g)
+                  return Fraction(_numerator / g, _denominator / g);
+            return Fraction(_numerator, _denominator);
             }      
 
       // --- comparison --- //
@@ -144,9 +153,11 @@ class Fraction {
                   _numerator += val._numerator;  // Common enough use case to be handled separately for efficiency
             else {
                   const int g = gcd(_denominator, val._denominator);
-                  const int m1 = val._denominator / g; // This saves one division over straight lcm
-                  _numerator = _numerator * m1 + val._numerator * (_denominator / g);
-                  _denominator = m1 * _denominator;
+                  if (g) {
+                        const int m1 = val._denominator / g; // This saves one division over straight lcm
+                        _numerator = _numerator * m1 + val._numerator * (_denominator / g);
+                        _denominator = m1 * _denominator;
+                        }
                   }
             return *this;
             }
@@ -157,9 +168,11 @@ class Fraction {
                   _numerator -= val._numerator; // Common enough use case to be handled separately for efficiency
             else {
                   const int g = gcd(_denominator, val._denominator);
-                  const int m1 = val._denominator / g; // This saves one division over straight lcm
-                  _numerator = _numerator * m1 - val._numerator * (_denominator / g);
-                  _denominator = m1 * _denominator;
+                  if (g) {
+                        const int m1 = val._denominator / g; // This saves one division over straight lcm
+                        _numerator = _numerator * m1 - val._numerator * (_denominator / g);
+                        _denominator = m1 * _denominator;
+                        }
                   }
             return *this;
             }
@@ -187,20 +200,26 @@ class Fraction {
             return *this;
             }
 
-      #if 0
+
       Fraction& operator/=(int val)
             {
             _denominator *= val;
+            if (_denominator < 0) {
+                  _denominator = -_denominator;
+                  _numerator = -_numerator;
+                  }
+            reduce();
             return *this;
             }
-      #endif
+
+
 
       Fraction operator+(const Fraction& v) const { return Fraction(*this) += v; }
       Fraction operator-(const Fraction& v) const { return Fraction(*this) -= v; }
       Fraction operator-() const                  { return Fraction(-_numerator, _denominator); }
       Fraction operator*(const Fraction& v) const { return Fraction(*this) *= v; }
       Fraction operator/(const Fraction& v) const { return Fraction(*this) /= v; }
-      //      Fraction operator/(int v)             const { return Fraction(*this) /= v; }
+      Fraction operator/(int v)             const { return Fraction(*this) /= v; }
 
 
       //---------------------------------------------------------
@@ -227,7 +246,7 @@ class Fraction {
 
       int ticks() const
             {
-            if (_numerator == -1 && _denominator == 1)        // HACK
+            if ((_numerator == -1 && _denominator == 1) || _denominator == 0)        // HACK
                   return -1;
 
             // MScore::division     - ticks per quarter note

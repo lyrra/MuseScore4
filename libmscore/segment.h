@@ -54,8 +54,8 @@ class Segment final : public Element {
       Spatium _extraLeadingSpace;
       qreal _stretch;
 
-      Segment* _next;                     // linked list of segments inside a measure
-      Segment* _prev;
+      Segment* _next = nullptr;                     // linked list of segments inside a measure
+      Segment* _prev = nullptr;
 
       std::vector<Element*> _annotations;
       std::vector<Element*> _elist;       // Element storage, size = staves * VOICES.
@@ -77,15 +77,16 @@ class Segment final : public Element {
       Segment(const Segment&);
       ~Segment();
 
-      virtual Segment* clone() const      { return new Segment(*this); }
-      virtual ElementType type() const    { return ElementType::SEGMENT; }
+      Segment* clone() const override      { return new Segment(*this); }
+      ElementType type() const override    { return ElementType::SEGMENT; }
 
-      virtual void setScore(Score*) override;
+      void setScore(Score*) override;
 
       Segment* next() const               { return _next;   }
       Segment* next(SegmentType) const;
       Segment* nextActive() const;
       Segment* nextEnabled() const;
+      Segment* nextInStaff(int staffIdx, SegmentType t = SegmentType::ChordRest) const;
       void setNext(Segment* e)            { _next = e;      }
 
       Segment* prev() const               { return _prev;   }
@@ -113,7 +114,7 @@ class Segment final : public Element {
 
       ChordRest* nextChordRest(int track, bool backwards = false) const;
 
-      Element* element(int track) const { return _elist[track];  }
+      Element* element(int track) const;
 
       // a variant of the above function, specifically designed to be called from QML
       //@ returns the element at track 'track' (null if none)
@@ -124,18 +125,18 @@ class Segment final : public Element {
 
       void removeElement(int track);
       void setElement(int track, Element* el);
-      virtual void scanElements(void* data, void (*func)(void*, Element*), bool all=true);
+      void scanElements(void* data, void (*func)(void*, Element*), bool all=true) override;
 
       Measure* measure() const                   { return toMeasure(parent()); }
       System* system() const                     { return toSystem(parent()->parent()); }
-      qreal x() const                            { return ipos().x();         }
+      qreal x() const override                   { return ipos().x();         }
       void setX(qreal v)                         { rxpos() = v;               }
 
       void insertStaff(int staff);
       void removeStaff(int staff);
 
-      virtual void add(Element*);
-      virtual void remove(Element*);
+      void add(Element*) override;
+      void remove(Element*) override;
       void swapElements(int i1, int i2);
 
       void sortStaves(QList<int>& dst);
@@ -156,12 +157,15 @@ class Segment final : public Element {
       qreal stretch() const                      { return _stretch; }
       void setStretch(qreal v)                   { _stretch = v;    }
 
-      virtual Fraction rtick() const override    { return _tick;    }
+      Fraction rtick() const override    { return _tick;    }
       void setRtick(const Fraction& v)           { Q_ASSERT(v >= Fraction(0,1));  _tick = v;       }
-      virtual Fraction tick() const override;
+      Fraction tick() const override;
 
       Fraction ticks() const                     { return _ticks;   }
       void setTicks(const Fraction& v)           { _ticks = v;      }
+
+      qreal widthInStaff(int staffIdx, SegmentType t = SegmentType::ChordRest) const;
+      Fraction ticksInStaff(int staffIdx) const;
 
       bool splitsTuplet() const;
 
@@ -172,7 +176,8 @@ class Segment final : public Element {
       Element* findAnnotation(ElementType type, int minTrack, int maxTrack);
       std::vector<Element*> findAnnotations(ElementType type, int minTrack, int maxTrack);
       bool hasElements() const;
-
+      bool hasElements(int minTrack, int maxTrack) const;
+      bool allElementsInvisible() const;
 
       qreal dotPosX(int staffIdx) const          { return _dotPosX[staffIdx];  }
       void setDotPosX(int staffIdx, qreal val)   { _dotPosX[staffIdx] = val;   }
@@ -180,12 +185,12 @@ class Segment final : public Element {
       Spatium extraLeadingSpace() const          { return _extraLeadingSpace;  }
       void setExtraLeadingSpace(Spatium v)       { _extraLeadingSpace = v;     }
 
-      virtual void write(XmlWriter&) const;
-      virtual void read(XmlReader&);
+      void write(XmlWriter&) const override;
+      void read(XmlReader&) override;
 
-      virtual QVariant getProperty(Pid propertyId) const;
-      virtual bool setProperty(Pid propertyId, const QVariant&);
-      virtual QVariant propertyDefault(Pid) const;
+      QVariant getProperty(Pid propertyId) const override;
+      bool setProperty(Pid propertyId, const QVariant&) override;
+      QVariant propertyDefault(Pid) const override;
 
       bool operator<(const Segment&) const;
       bool operator>(const Segment&) const;
@@ -240,6 +245,8 @@ class Segment final : public Element {
       bool isEndBarLineType() const         { return _segmentType == SegmentType::EndBarLine; }
       bool isKeySigAnnounceType() const     { return _segmentType == SegmentType::KeySigAnnounce; }
       bool isTimeSigAnnounceType() const    { return _segmentType == SegmentType::TimeSigAnnounce; }
+
+      static constexpr SegmentType durationSegmentsMask = SegmentType::ChordRest; // segment types which may have non-zero tick length
       };
 
 //---------------------------------------------------------

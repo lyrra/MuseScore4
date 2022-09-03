@@ -25,6 +25,7 @@
 #include "staff.h"
 #include "excerpt.h"
 #include "repeat.h"
+#include "tremolo.h"
 
 namespace Ms {
 
@@ -288,7 +289,7 @@ void TrackList::read(const Segment* fs, const Segment* es)
                         s  = skipTuplet(t);    // continue with first chord/rest after tuplet
                         de = t;
                         }
-                  Q_ASSERT(gap >= Fraction(0,1));
+
                   if (gap.isNotZero()) {
                         appendGap(gap);
                         tick += gap;
@@ -347,7 +348,7 @@ void TrackList::read(const Segment* fs, const Segment* es)
 //   checkRest
 //---------------------------------------------------------
 
-static void checkRest(Fraction& rest, Measure*& m, const Fraction& d)
+static bool checkRest(Fraction& rest, Measure*& m, const Fraction& d)
       {
       if (rest.isZero()) {
             if (m->nextMeasure()) {
@@ -355,9 +356,11 @@ static void checkRest(Fraction& rest, Measure*& m, const Fraction& d)
                   rest = m->ticks();
                   }
             else {
-                  qFatal("premature end of measure list, rest %d/%d", d.numerator(), d.denominator());
+                  qDebug("premature end of measure list, rest %d/%d", d.numerator(), d.denominator());
+                  return false;
                   }
             }
+      return true;
       }
 
 //---------------------------------------------------------
@@ -476,7 +479,10 @@ bool TrackList::write(Score* score, const Fraction& tick) const
       for (Element* e : *this) {
             if (e->isDurationElement()) {
                   Fraction duration = toDurationElement(e)->ticks();
-                  checkRest(remains, m, duration);     // go to next measure, if necessary
+                  if (!checkRest(remains, m, duration)) {     // go to next measure, if necessary
+                        MScore::setError(CORRUPTED_MEASURE);
+                        return false;
+                        }
                   if (duration > remains && e->isTuplet()) {
                         // experimental: allow tuplet split in the middle
                         if (duration != remains * 2) {
@@ -509,7 +515,10 @@ bool TrackList::write(Score* score, const Fraction& tick) const
                         else if (e->isChordRest()) {
                               Fraction du               = qMin(remains, duration);
                               std::vector<TDuration> dl = toDurationList(du, e->isChord());
-                              Q_ASSERT(!dl.empty());
+                              if (dl.empty()) {
+                                    MScore::setError(CORRUPTED_MEASURE);
+                                    return false;
+                                    }
                               for (const TDuration& k : dl) {
                                     segment       = m->undoGetSegmentR(SegmentType::ChordRest, m->ticks() - remains);
                                     ChordRest* cr = toChordRest(e->clone());
@@ -526,6 +535,15 @@ bool TrackList::write(Score* score, const Fraction& tick) const
                                     remains  -= gd;
 
                                     if (cr->isChord()) {
+                                          if (!firstpart && toChord(cr)->tremolo() && toChord(cr)->tremolo()->twoNotes()) { // remove partial two-note tremolo
+                                                if (toChord(e)->tremolo()->chord1() == toChord(e))
+                                                      toChord(cr)->tremolo()->setChords(toChord(cr),nullptr);
+                                                else
+                                                      toChord(cr)->tremolo()->setChords(nullptr,toChord(cr));
+                                                Tremolo* tremoloPointer = toChord(cr)->tremolo();
+                                                toChord(cr)->setTremolo(nullptr);
+                                                delete tremoloPointer;
+                                                }
                                           for (Note* note : toChord(cr)->notes()) {
                                                 if (!duration.isZero() && !note->tieFor()) {
                                                       Tie* tie = new Tie(score);
@@ -541,8 +559,12 @@ bool TrackList::write(Score* score, const Fraction& tick) const
                               duration = Fraction();
                               }
                         firstpart = false;
-                        if (duration > Fraction(0,1))
-                              checkRest(remains, m, duration);     // go to next measure, if necessary
+                        if (duration > Fraction(0,1)) {
+                              if (!checkRest(remains, m, duration)) {     // go to next measure, if necessary
+                                    MScore::setError(CORRUPTED_MEASURE);
+                                    return false;
+                                    }
+                              }
                         }
                   }
             else if (e->isBarLine()) {
@@ -646,7 +668,7 @@ void ScoreRange::read(Segment* first, Segment* last, bool readSpanner)
                         }
                   }
             }
-      for (int staffIdx : sl) {
+      for (int staffIdx : qAsConst(sl)) {
             int sTrack = staffIdx * VOICES;
             int eTrack = sTrack + VOICES;
             for (int track = sTrack; track < eTrack; ++track) {
@@ -696,7 +718,7 @@ bool ScoreRange::write(Score* score, const Fraction& tick) const
                         }
                   else
                         s->setStartElement(0);
-                  if (slur->endCR()->isGrace()) {
+                  if (slur->endCR() && slur->endCR()->isGrace()) {
                         Chord* sc = slur->endChord();
                         int idx   = sc->graceIndex();
                         Chord* dc = toChord(score->findCR(s->tick2(), s->track2()));
@@ -727,11 +749,11 @@ void ScoreRange::fill(const Fraction& f)
       {
       const Fraction oldDuration = ticks();
       Fraction oldEndTick = _first->tick() + oldDuration;
-      for (auto t : tracks)
+      for (auto t : qAsConst(tracks))
             t->appendGap(f);
 
       Fraction diff = ticks() - oldDuration;
-      for (Spanner* sp : spanner) {
+      for (Spanner* sp : qAsConst(spanner)) {
             if (sp->tick2() >= oldEndTick && sp->tick() < oldEndTick)
                   sp->setTicks(sp->ticks() + diff);
             }
@@ -744,7 +766,7 @@ void ScoreRange::fill(const Fraction& f)
 
 bool ScoreRange::truncate(const Fraction& f)
       {
-      for (TrackList* dl : tracks) {
+      for (TrackList* dl : qAsConst(tracks)) {
             if (dl->empty())
                   continue;
             Element* e = dl->back();
@@ -754,7 +776,7 @@ bool ScoreRange::truncate(const Fraction& f)
             if (r->ticks() < f)
                   return false;
             }
-      for (TrackList* dl : tracks)
+      for (TrackList* dl : qAsConst(tracks))
             dl->truncate(f);
       return true;
       }

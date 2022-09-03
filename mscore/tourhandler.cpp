@@ -1,12 +1,18 @@
 #include "tourhandler.h"
 #include "musescore.h"
 #include "preferences.h"
+#include "qmldockwidget.h"
 
 namespace Ms {
 
 QHash<QString, Tour*> TourHandler::allTours;
 QHash<QString, Tour*> TourHandler::shortcutToTour;
 QMap<QString, QMap<QString, QString>*> TourHandler::eventNameLookup;
+
+static int mboxFrameTopThickness = 0;
+static int mboxFrameBottomThickness = 0;
+static int mboxFrameLeftThickness = 0;
+static int mboxFrameRightThickness = 0;
 
 //---------------------------------------------------------
 //   OverlayWidget
@@ -74,7 +80,7 @@ void OverlayWidget::paintEvent(QPaintEvent *)
             painterPath.addRect(parentWindow->rect());
 
       QPainterPath subPath = QPainterPath();
-      for (QWidget* w : widgets) {
+      for (QWidget* w : qAsConst(widgets)) {
             if (w->isVisible()) {
                   // Add widget and children visible region mapped to the parentWindow
                   QRegion region = w->visibleRegion() + w->childrenRegion();
@@ -181,7 +187,7 @@ void TourHandler::loadTour(XmlReader& tourXml)
             }
 
       allTours[tourName] = tour;
-      for (QString s : shortcuts)
+      for (const QString &s : shortcuts)
             shortcutToTour[s] = tour;
       }
 
@@ -191,7 +197,7 @@ void TourHandler::loadTour(XmlReader& tourXml)
 
 void TourHandler::resetCompletedTours()
       {
-      for (auto tour : allTours)
+      for (auto tour : qAsConst(allTours))
             tour->setCompleted(false);
       }
 
@@ -209,7 +215,7 @@ void TourHandler::readCompletedTours()
       QList<QString> completedTours;
       in >> completedTours;
 
-      for (QString tourName : completedTours)
+      for (const QString &tourName : qAsConst(completedTours))
             if (allTours.contains(tourName))
                   allTours.value(tourName)->setCompleted(true);
       }
@@ -363,26 +369,20 @@ void TourHandler::positionMessage(QList<QWidget*> widgets, QMessageBox* mbox)
       QPoint displayPoint(0, 0);
       if (topBottom) {
             bool displayAbove = (widgetsBox.center().y() > midY);
-            if (displayAbove) {
-                  int mBoxHeight = mbox->size().height() + 15; // hack
-                  int y = widgetsBox.top();
-                  displayPoint.setY(y - mBoxHeight);
-                  }
+            if (displayAbove)
+                  displayPoint.setY(widgetsBox.top() - mbox->height() - mboxFrameBottomThickness);
             else
-                  displayPoint.setY(widgetsBox.bottom());
+                  displayPoint.setY(widgetsBox.bottom() + mboxFrameTopThickness);
 
-            int x = (int) (widgetsBox.width() - mbox->size().width()) / 2 + widgetsBox.left();
+            int x = static_cast<int>(widgetsBox.width() - mbox->size().width()) / 2 + widgetsBox.left();
             displayPoint.setX(x);
             }
       else {
             bool displayLeft = (widgetsBox.center().x() > midX);
-            if (displayLeft) {
-                  int mBoxWidth = mbox->size().width();
-                  int x = widgetsBox.left();
-                  displayPoint.setX(x - mBoxWidth);
-                  }
+            if (displayLeft)
+                  displayPoint.setX(widgetsBox.left() - mbox->width() - mboxFrameRightThickness);
             else
-                  displayPoint.setX(widgetsBox.right());
+                  displayPoint.setX(widgetsBox.right() + mboxFrameLeftThickness);
 
             int y = (widgetsBox.height() - mbox->size().height()) / 2 + widgetsBox.top();
             displayPoint.setY(y);
@@ -405,7 +405,7 @@ void TourHandler::positionMessage(QList<QWidget*> widgets, QMessageBox* mbox)
 QList<QWidget*> TourHandler::getWidgetsByNames(Tour* tour, QList<QString> names)
       {
       QList<QWidget*> widgets;
-      for (QString name : names) {
+      for (const QString &name : names) {
             // First check internal storage for widget
             if (tour->hasNameForWidget(name))
                   widgets.append(tour->getWidgetsByName(name));
@@ -469,10 +469,26 @@ void TourHandler::displayTour(Tour* tour)
                   overlay->setParent(tourWidgets.at(0)->window());
                   positionMessage(tourWidgets, mbox);
                   }
+
+            const std::vector<QmlDockWidget*> qmlDockWidgets = mscore->qmlDockWidgets();
+            if (!tourWidgets.contains(mscore)) {
+                  for (QmlDockWidget* qw : qmlDockWidgets) {
+                        if (!tourWidgets.contains(qw))
+                              qw->setShadowOverlay(true);
+                        }
+                  }
+
             overlay->show();
             mbox->exec();
+            mboxFrameTopThickness = mbox->geometry().top() - mbox->frameGeometry().top();
+            mboxFrameBottomThickness = mbox->frameGeometry().bottom() - mbox->geometry().bottom();
+            mboxFrameLeftThickness = mbox->geometry().left() - mbox->frameGeometry().left();
+            mboxFrameRightThickness = mbox->frameGeometry().right() - mbox->geometry().right();
             overlay->hide();
             showTours = showToursBox->isChecked();
+
+            for (QmlDockWidget* qw : qmlDockWidgets)
+                  qw->setShadowOverlay(false);
 
             // Handle the button presses
             if (mbox->clickedButton() == nextButton) {

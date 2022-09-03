@@ -15,6 +15,7 @@
 
 #include "element.h"
 #include "mscore.h"
+#include "sym.h"
 
 namespace Ms {
 
@@ -23,8 +24,6 @@ class Segment;
 class Measure;
 class System;
 class Page;
-
-enum class SymId;
 
 //---------------------------------------------------------
 //    Fermata
@@ -35,38 +34,39 @@ class Fermata final : public Element {
       qreal _timeStretch;
       bool _play;
 
-      virtual void draw(QPainter*) const override;
-      virtual Sid getPropertyStyle(Pid) const override;
+      void draw(QPainter*) const override;
+      Sid getPropertyStyle(Pid) const override;
 
    public:
       Fermata(Score*);
       Fermata(SymId, Score*);
+      Fermata(const Fermata&) = default;
       Fermata &operator=(const Fermata&) = delete;
 
-      virtual Fermata* clone() const override    { return new Fermata(*this); }
-      virtual ElementType type() const override  { return ElementType::FERMATA; }
+      Fermata* clone() const override    { return new Fermata(*this); }
+      ElementType type() const override  { return ElementType::FERMATA; }
 
-      virtual qreal mag() const override;
+      qreal mag() const override;
 
       SymId symId() const                   { return _symId; }
       void setSymId(SymId id)               { _symId  = id;  }
-      virtual int subtype() const override;
+      int subtype() const override;
       QString userName() const;
 
-      virtual void layout() override;
+      void layout() override;
 
-      virtual void read(XmlReader&) override;
-      virtual void write(XmlWriter& xml) const override;
-      virtual bool readProperties(XmlReader&) override;
+      void read(XmlReader&) override;
+      void write(XmlWriter& xml) const override;
+      bool readProperties(XmlReader&) override;
 
-      virtual QLineF dragAnchor() const override;
+      QVector<QLineF> dragAnchorLines() const override;
 
-      virtual QVariant getProperty(Pid propertyId) const override;
-      virtual bool setProperty(Pid propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(Pid) const override;
-      virtual void resetProperty(Pid id) override;
+      QVariant getProperty(Pid propertyId) const override;
+      bool setProperty(Pid propertyId, const QVariant&) override;
+      QVariant propertyDefault(Pid) const override;
+      void resetProperty(Pid id) override;
 
-      virtual Pid propertyId(const QStringRef& xmlName) const override;
+      Pid propertyId(const QStringRef& xmlName) const override;
 
       ChordRest* chordRest() const;
       Segment* segment() const              { return toSegment(parent()); }

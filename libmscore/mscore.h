@@ -18,8 +18,8 @@
 
 namespace Ms {
 
-#define MSC_VERSION     "3.01"
-static constexpr int MSCVERSION = 301;
+#define MSC_VERSION     "3.02"
+static constexpr int MSCVERSION = 302;
 
 // History:
 //    1.3   added staff->_barLineSpan
@@ -61,9 +61,10 @@ static constexpr int MSCVERSION = 301;
 //    2.07  irregular, breakMMrest, more style options, system divider, bass string for tab (3.0)
 
 //    3.00  (Version 3.0 alpha)
+//    3.01  -
+//    3.02  Engraving improvements for 3.6
 
 
-class MStyle;
 class Sequencer;
 
 enum class HairpinType : signed char;
@@ -72,12 +73,15 @@ enum class HairpinType : signed char;
 #define VOICES 4
 #endif
 
-inline int staff2track(int staffIdx) { return staffIdx << 2; }
-inline int track2staff(int voice)    { return voice >> 2;    }
-inline int track2voice(int track)    { return track & 3;     }
-inline int trackZeroVoice(int track) { return track & ~3;    }
+inline constexpr int staff2track(int staffIdx) { return staffIdx << 2; }
+inline constexpr int track2staff(int voice)    { return voice >> 2;    }
+inline constexpr int track2voice(int track)    { return track & 3;     }
+inline constexpr int trackZeroVoice(int track) { return track & ~3;    }
 
-static const int MAX_TAGS = 32;
+static constexpr int MAX_TAGS = 32;
+
+static constexpr int MAX_HEADERS = 3;
+static constexpr int MAX_FOOTERS = 3;
 
 static constexpr qreal INCH      = 25.4;
 static constexpr qreal PPI       = 72.0;           // printer points per inch
@@ -88,16 +92,16 @@ static constexpr qreal DPMM      = DPI / INCH;
 
 static constexpr int MAX_STAVES  = 4;
 
-static const int  SHADOW_NOTE_LIGHT       = 135;
+static constexpr int SHADOW_NOTE_LIGHT        = 135;
 
-static const char mimeSymbolFormat[]      = "application/musescore/symbol";
-static const char mimeSymbolListFormat[]  = "application/musescore/symbollist";
-static const char mimeStaffListFormat[]   = "application/musescore/stafflist";
+static constexpr char mimeSymbolFormat[]      = "application/musescore/symbol";
+static constexpr char mimeSymbolListFormat[]  = "application/musescore/symbollist";
+static constexpr char mimeStaffListFormat[]   = "application/musescore/stafflist";
 
-static const int  VISUAL_STRING_NONE      = -100;     // no ordinal for the visual repres. of string (topmost in TAB
-                                                      // varies according to visual order and presence of bass strings)
-static const int  STRING_NONE             = -1;       // no ordinal for a physical string (0 = topmost in instrument)
-static const int  FRET_NONE               = -1;       // no ordinal for a fret
+static constexpr int  VISUAL_STRING_NONE      = -100;     // no ordinal for the visual repres. of string (topmost in TAB
+                                                          // varies according to visual order and presence of bass strings)
+static constexpr int  INVALID_STRING_INDEX    = -1;       // no ordinal for a physical string (0 = topmost in instrument)
+static constexpr int  INVALID_FRET_INDEX      = -1;       // no ordinal for a fret
 
 //---------------------------------------------------------
 //   BracketType
@@ -129,7 +133,7 @@ enum class TransposeDirection : char {
 //---------------------------------------------------------
 
 enum class TransposeMode : char {
-      BY_KEY, BY_INTERVAL, DIATONICALLY
+      TO_KEY, BY_INTERVAL, DIATONICALLY
       };
 
 //---------------------------------------------------------
@@ -141,40 +145,19 @@ enum class SelectType : char {
       };
 
 //---------------------------------------------------------
-//   NoteType
-//---------------------------------------------------------
-
-enum class NoteType : unsigned char {
-      NORMAL        = 0,
-      ACCIACCATURA  = 0x1,
-      APPOGGIATURA  = 0x2,       // grace notes
-      GRACE4        = 0x4,
-      GRACE16       = 0x8,
-      GRACE32       = 0x10,
-      GRACE8_AFTER  = 0x20,
-      GRACE16_AFTER = 0x40,
-      GRACE32_AFTER = 0x80,
-      INVALID       = 0xFF
-      };
-// Q_ENUM_NS(NoteType);
-
-constexpr NoteType operator| (NoteType t1, NoteType t2) {
-      return static_cast<NoteType>(static_cast<int>(t1) | static_cast<int>(t2));
-      }
-constexpr bool operator& (NoteType t1, NoteType t2) {
-      return static_cast<int>(t1) & static_cast<int>(t2);
-      }
-
-//---------------------------------------------------------
 //    AccidentalVal
 //---------------------------------------------------------
 
 enum class AccidentalVal : signed char {
+      SHARP3  = 3,
       SHARP2  = 2,
       SHARP   = 1,
       NATURAL = 0,
       FLAT    = -1,
-      FLAT2   = -2
+      FLAT2   = -2,
+      FLAT3   = -3,
+      MIN     = FLAT3,
+      MAX     = SHARP3
       };
 
 //---------------------------------------------------------
@@ -204,32 +187,29 @@ enum class StaffGroup : char {
       };
 const int STAFF_GROUP_MAX = int(StaffGroup::TAB) + 1;      // out of enum to avoid compiler complains about not handled switch cases
 
-enum class NoteHeadScheme : char {
-      HEAD_NORMAL = 0,
-      HEAD_PITCHNAME,
-      HEAD_PITCHNAME_GERMAN,
-      HEAD_SOLFEGE,
-      HEAD_SOLFEGE_FIXED,
-      HEAD_SHAPE_NOTE_4,
-      HEAD_SHAPE_NOTE_7_AIKIN,
-      HEAD_SHAPE_NOTE_7_FUNK,
-      HEAD_SHAPE_NOTE_7_WALKER,
-      HEAD_SCHEMES
-      };
-
 //---------------------------------------------------------
 //   BarLineType
 //---------------------------------------------------------
 
 enum class BarLineType {
       NORMAL           = 1,
+      SINGLE           = BarLineType::NORMAL,
       DOUBLE           = 2,
       START_REPEAT     = 4,
+      LEFT_REPEAT      = BarLineType::START_REPEAT,
       END_REPEAT       = 8,
+      RIGHT_REPEAT     = BarLineType::END_REPEAT,
       BROKEN           = 0x10,
+      DASHED           = BarLineType::BROKEN,
       END              = 0x20,
+      FINAL            = BarLineType::END,
       END_START_REPEAT = 0x40,
-      DOTTED           = 0x80
+      LEFT_RIGHT_REPEAT= BarLineType::END_START_REPEAT,
+      DOTTED           = 0x80,
+      REVERSE_END      = 0x100,
+      REVERSE_FINALE   = BarLineType::REVERSE_END,
+      HEAVY            = 0x200,
+      DOUBLE_HEAVY     = 0x400,
       };
 
 constexpr BarLineType operator| (BarLineType t1, BarLineType t2) {
@@ -248,7 +228,7 @@ enum class IconType : signed char {
       SBEAM, MBEAM, NBEAM, BEAM32, BEAM64, AUTOBEAM,
       FBEAM1, FBEAM2,
       VFRAME, HFRAME, TFRAME, FFRAME, MEASURE,
-      BRACKETS, PARENTHESES
+      BRACKETS, PARENTHESES, BRACES,
       };
 
 //---------------------------------------------------------
@@ -261,13 +241,14 @@ enum MsError {
       NO_CHORD_REST_SELECTED,
       NO_LYRICS_SELECTED,
       NO_NOTE_REST_SELECTED,
-      NO_NOTE_SLUR_SELECTED,
+      NO_FLIPPABLE_SELECTED,
       NO_STAFF_SELECTED,
       NO_NOTE_FIGUREDBASS_SELECTED,
       CANNOT_INSERT_TUPLET,
       CANNOT_SPLIT_TUPLET,
       CANNOT_SPLIT_MEASURE_FIRST_BEAT,
       CANNOT_SPLIT_MEASURE_TUPLET,
+      CANNOT_SPLIT_MEASURE_TOO_SHORT,
       NO_DEST,
       DEST_TUPLET,
       TUPLET_CROSSES_BAR,
@@ -276,6 +257,7 @@ enum MsError {
       NO_MIME,
       DEST_NO_CR,
       CANNOT_CHANGE_LOCAL_TIMESIG,
+      CORRUPTED_MEASURE,
       };
 
 /// \cond PLUGIN_API \private \endcond
@@ -321,15 +303,16 @@ class MScore {
    public:
       enum class DirectionH : char { /**.\{*/ AUTO, LEFT, RIGHT /**\}*/ };
       enum class OrnamentStyle : char { /**.\{*/ DEFAULT, BAROQUE /**\}*/ };
-      Q_ENUM(DirectionH)
-      Q_ENUM(OrnamentStyle)
+      Q_ENUM(DirectionH);
+      Q_ENUM(OrnamentStyle);
 
       static MsError _error;
       static std::vector<MScoreError> errorList;
 
       static void init();
 
-      static const MStyle& baseStyle()             { return _baseStyle;            }
+      static MStyle& baseStyle()                   { return _baseStyle;            }
+      static void setBaseStyle(const MStyle& style) { _baseStyle = style;          }
       static MStyle& defaultStyle()                { return _defaultStyle;         }
       static const MStyle* defaultStyleForParts()  { return _defaultStyleForParts; }
 
@@ -349,16 +332,21 @@ class MScore {
       static bool verticalOrientation()            { return _verticalOrientation; }
       static void setVerticalOrientation(bool val) { _verticalOrientation = val;  }
 
-      static QColor selectColor[4];
+      static QColor selectColor[VOICES];
+      static QColor cursorColor;
       static QColor defaultColor;
       static QColor dropColor;
       static QColor layoutBreakColor;
       static QColor frameMarginColor;
       static QColor bgColor;
       static bool warnPitchRange;
+      static int pedalEventsMinTicks;
 
+      static bool harmonyPlayDisableCompatibility;
+      static bool harmonyPlayDisableNew;
       static bool playRepeats;
       static bool panPlayback;
+      static int playbackSpeedIncrement;
       static qreal nudgeStep;
       static qreal nudgeStep10;
       static qreal nudgeStep50;

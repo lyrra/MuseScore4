@@ -135,7 +135,7 @@ Segment* Score::tick2segment(const Fraction& t, bool first, SegmentType st, bool
       if (useMMrest) {
             m = tick2measureMM(tick);
             // When mmRest force tick to the first segment of mmRest.
-            if (m && m->isMMRest())
+            if (m && m->isMMRest() && tick != m->endTick())
                   tick = m->tick();
             }
       else
@@ -173,48 +173,14 @@ Segment* Score::tick2segment(const Fraction& tick, bool first) const
       }
 
 //---------------------------------------------------------
-//   tick2segmentEnd
-//    Find a segment containing a note or rest in track ending at tick
-//    Return the segment or null
-//---------------------------------------------------------
-
-Segment* Score::tick2segmentEnd(int track, const Fraction& tick) const
-      {
-      Measure* m = tick2measure(tick);
-      if (m == 0) {
-            qDebug("tick2segment(): not found tick %d", tick.ticks());
-            return 0;
-            }
-      // loop over all segments
-      for (Segment* segment = m->first(SegmentType::ChordRest); segment; segment = segment->next(SegmentType::ChordRest)) {
-            ChordRest* cr = toChordRest(segment->element(track));
-            if (!cr)
-                  continue;
-            // TODO LVI: check if following is correct, see exceptions in
-            // ExportMusicXmlchord() and ExportMusicXmlrest()
-            Fraction endTick = cr->tick() + cr->actualTicks();
-            if (endTick < tick)
-                  continue; // not found yet
-            else if (endTick == tick) {
-                  return segment; // found it
-                  }
-            else {
-                  // endTick > tick (beyond the tick we are looking for)
-                  return 0;
-                  }
-            }
-      return 0;
-      }
-
-//---------------------------------------------------------
 //   tick2leftSegment
 /// return the segment at this tick position if any or
 /// the first segment *before* this tick position
 //---------------------------------------------------------
 
-Segment* Score::tick2leftSegment(const Fraction& tick) const
+Segment* Score::tick2leftSegment(const Fraction& tick, bool useMMrest) const
       {
-      Measure* m = tick2measure(tick);
+      Measure* m = useMMrest ? tick2measureMM(tick) : tick2measure(tick);
       if (m == 0) {
             qDebug("tick2leftSegment(): not found tick %d", tick.ticks());
             return 0;
@@ -237,15 +203,15 @@ Segment* Score::tick2leftSegment(const Fraction& tick) const
 /// the first segment *after* this tick position
 //---------------------------------------------------------
 
-Segment* Score::tick2rightSegment(const Fraction& tick) const
+Segment* Score::tick2rightSegment(const Fraction& tick, bool useMMrest) const
       {
-      Measure* m = tick2measure(tick);
+      Measure* m = useMMrest ? tick2measureMM(tick) : tick2measure(tick);
       if (m == 0) {
             qDebug("tick2nearestSegment(): not found tick %d", tick.ticks());
             return 0;
             }
       // loop over all segments
-      for (Segment* s = m->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
+      for (Segment* s = m->first(SegmentType::ChordRest); s; s = s->next1(SegmentType::ChordRest)) {
             if (tick <= s->tick())
                   return s;
             }
@@ -524,7 +490,7 @@ QString pitch2string(int v)
             return QString("----");
       int octave = (v / 12) - 1;
       QString o;
-      o.sprintf("%d", octave);
+      o = QString::asprintf("%d", octave);
       int i = v % 12;
       return qApp->translate("utils", octave < 0 ? valu[i] : vall[i]) + o;
       }
@@ -536,7 +502,7 @@ QString pitch2string(int v)
  * tracks all the different valid intervals. They are arranged
  * in diatonic then chromatic order.
  */
-Interval intervalList[26] = {
+Interval intervalList[intervalListSize] = {
       // diatonic - chromatic
       Interval(0, 0),         //  0 Perfect Unison
       Interval(0, 1),         //  1 Augmented Unison
@@ -805,6 +771,9 @@ int diatonicUpDown(Key k, int pitch, int steps)
 
 Note* searchTieNote(Note* note)
       {
+      if (!note)
+            return nullptr;
+
       Note* note2  = 0;
       Chord* chord = note->chord();
       Segment* seg = chord->segment();
@@ -817,7 +786,7 @@ Note* searchTieNote(Note* note)
 
             // try to tie to next grace note
 
-            int index = chord->graceIndex();
+            int index = note->chord()->graceIndex();
             for (Chord* c : chord->graceNotes()) {
                   if (c->graceIndex() == index + 1) {
                         note2 = c->findNote(note->pitch());
@@ -857,6 +826,7 @@ Note* searchTieNote(Note* note)
       // but err on the safe side in case there is roundoff in tick count
       Fraction endTick = chord->tick() + chord->actualTicks() - Fraction(1, 4 * 480);
 
+      int idx1 = note->unisonIndex();
       while ((seg = seg->next1(SegmentType::ChordRest))) {
             // skip ahead to end of current note duration as calculated above
             // but just in case, stop if we find element in current track
@@ -880,10 +850,17 @@ Note* searchTieNote(Note* note)
                         if (gn2)
                               return gn2;
                         }
+                  int idx2 = 0;
                   for (Note* n : c->notes()) {
                         if (n->pitch() == note->pitch()) {
-                              if (note2 == 0 || c->track() == chord->track())
-                                    note2 = n;
+                              if (idx1 == idx2) {
+                                    if (note2 == 0 || c->track() == chord->track()) {
+                                          note2 = n;
+                                          break;
+                                          }
+                                    }
+                              else
+                                    ++idx2;
                               }
                         }
                   }
@@ -1043,6 +1020,8 @@ std::vector<SymId> toTimeSigString(const QString& s)
             { 40,    SymId::timeSigParensLeftSmall  },  // '('
             { 41,    SymId::timeSigParensRightSmall },  // ')'
             { 162,   SymId::timeSigCutCommon        },  // '¢'
+            { 189,   SymId::timeSigFractionHalf     },
+            { 188,   SymId::timeSigFractionQuarter  },
             { 59664, SymId::mensuralProlation1      },
             { 79,    SymId::mensuralProlation2      },  // 'O'
             { 59665, SymId::mensuralProlation2      },
@@ -1066,6 +1045,18 @@ std::vector<SymId> toTimeSigString(const QString& s)
                   }
             }
       return d;
+      }
+
+//---------------------------------------------------------
+//   actualTicks
+//---------------------------------------------------------
+
+Fraction actualTicks(Fraction duration, Tuplet* tuplet, Fraction timeStretch)
+      {
+      Fraction f = duration / timeStretch;
+      for (Tuplet* t = tuplet; t; t = t->tuplet())
+            f /= t->ratio();
+      return f;
       }
 
 }
