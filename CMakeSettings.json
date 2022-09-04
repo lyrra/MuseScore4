@@ -3,10 +3,10 @@
    "configurations": [
       {
          "name": "x64-RelWithDebInfo",
-         "generator": "Visual Studio 15 2017 Win64",
+         "generator": "Visual Studio 16 2019 Win64",
          "configurationType": "RelWithDebInfo",
          "inheritEnvironments": [ "msvc_x64_x64" ],
-         "buildRoot": "${projectDir}\\msvc.build_x64", // "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}", 
+         "buildRoot": "${projectDir}\\msvc.build_x64", // "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
          "installRoot": "${projectDir}\\msvc.install_x64", // "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
          "cmakeCommandArgs": "-Wno-deprecated",
          "variables": [
@@ -31,7 +31,7 @@
                "value": "${projectDir}\\dependencies\\libx64"
             }
          ],
-         "buildCommandArgs": "-v",
+         "buildCommandArgs": "",
          "ctestCommandArgs": ""
       }
    ]

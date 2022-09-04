@@ -32,6 +32,8 @@
 
 namespace Ms {
 
+extern QString revision;
+
 //---------------------------------------------------------
 //   Page
 //---------------------------------------------------------
@@ -146,26 +148,46 @@ void Page::draw(QPainter* painter) const
 
 void Page::drawHeaderFooter(QPainter* p, int area, const QString& ss) const
       {
+      Text* text = layoutHeaderFooter(area, ss);
+      if (!text)
+            return;
+      p->translate(text->pos());
+      text->draw(p);
+      p->translate(-text->pos());
+      text->setParent(0);
+      }
+
+//---------------------------------------------------------
+//   layoutHeaderFooter
+//---------------------------------------------------------
+
+Text* Page::layoutHeaderFooter(int area, const QString& ss) const
+      {
       QString s = replaceTextMacros(ss);
       if (s.isEmpty())
-            return;
+            return nullptr;
 
       Text* text;
-      if (area < 3) {
-            text = score()->headerText();
+      if (area < MAX_HEADERS) {
+            text = score()->headerText(area);
             if (!text) {
                   text = new Text(score(), Tid::HEADER);
+                  text->setFlag(ElementFlag::MOVABLE, false);
+                  text->setFlag(ElementFlag::GENERATED, true); // set to disable editing
                   text->setLayoutToParentWidth(true);
-                  score()->setHeaderText(text);
+                  score()->setHeaderText(text, area);
                   }
             }
       else {
-            text = score()->footerText();
+            text = score()->footerText(area - MAX_HEADERS); // because they are 3 4 5
             if (!text) {
                   text = new Text(score(), Tid::FOOTER);
+                  text->setFlag(ElementFlag::MOVABLE, false);
+                  text->setFlag(ElementFlag::GENERATED, true); // set to disable editing
                   text->setLayoutToParentWidth(true);
-                  score()->setFooterText(text);
+                  score()->setFooterText(text, area - MAX_HEADERS);
                   }
+            text->setLayoutRelativeToBottom(score()->styleB(Sid::footerInsideMargins));
             }
       text->setParent((Page*)this);
       Align flags = Align::LEFT;
@@ -180,10 +202,94 @@ void Page::drawHeaderFooter(QPainter* p, int area, const QString& ss) const
       text->setAlign(flags);
       text->setXmlText(s);
       text->layout();
-      p->translate(text->pos());
-      text->draw(p);
-      p->translate(-text->pos());
-      text->setParent(0);
+      return text;
+      }
+
+//---------------------------------------------------------
+//   headerExtension
+//   - how much the header extends into the page (i.e., not in the margins)
+//---------------------------------------------------------
+
+qreal Page::headerExtension() const
+      {
+      if (!score()->pageMode())
+            return 0.0;
+
+      int n = no() + 1 + score()->pageNumberOffset();
+
+      QString s1, s2, s3;
+
+      if (score()->styleB(Sid::showHeader) && (no() || score()->styleB(Sid::headerFirstPage))) {
+            bool odd = (n & 1) || !score()->styleB(Sid::headerOddEven);
+            if (odd) {
+                  s1 = score()->styleSt(Sid::oddHeaderL);
+                  s2 = score()->styleSt(Sid::oddHeaderC);
+                  s3 = score()->styleSt(Sid::oddHeaderR);
+                  }
+            else {
+                  s1 = score()->styleSt(Sid::evenHeaderL);
+                  s2 = score()->styleSt(Sid::evenHeaderC);
+                  s3 = score()->styleSt(Sid::evenHeaderR);
+                  }
+
+            Text* headerLeft = layoutHeaderFooter(0, s1);
+            Text* headerCenter = layoutHeaderFooter(1, s2);
+            Text* headerRight = layoutHeaderFooter(2, s3);
+
+            qreal headerLeftHeight = headerLeft ? headerLeft->height() : 0.0;
+            qreal headerCenterHeight = headerCenter ? headerCenter->height() : 0.0;
+            qreal headerRightHeight = headerRight ? headerRight->height() : 0.0;
+
+            qreal headerHeight = qMax(headerLeftHeight, qMax(headerCenterHeight, headerRightHeight));
+            qreal headerOffset = score()->styleV(Sid::headerOffset).value<QPointF>().y() * DPMM;
+            return qMax(0.0, headerHeight - headerOffset);
+            }
+
+      return 0.0;
+      }
+
+//---------------------------------------------------------
+//   footerExtension
+//   - how much the footer extends into the page (i.e., not in the margins)
+//---------------------------------------------------------
+
+qreal Page::footerExtension() const
+      {
+      if (!score()->pageMode())
+            return 0.0;
+
+      int n = no() + 1 + score()->pageNumberOffset();
+
+      QString s1, s2, s3;
+
+      if (score()->styleB(Sid::showFooter) && (no() || score()->styleB(Sid::footerFirstPage))) {
+            bool odd = (n & 1) || !score()->styleB(Sid::footerOddEven);
+            if (odd) {
+                  s1 = score()->styleSt(Sid::oddFooterL);
+                  s2 = score()->styleSt(Sid::oddFooterC);
+                  s3 = score()->styleSt(Sid::oddFooterR);
+                  }
+            else {
+                  s1 = score()->styleSt(Sid::evenFooterL);
+                  s2 = score()->styleSt(Sid::evenFooterC);
+                  s3 = score()->styleSt(Sid::evenFooterR);
+                  }
+
+            Text* footerLeft = layoutHeaderFooter(3, s1);
+            Text* footerCenter = layoutHeaderFooter(4, s2);
+            Text* footerRight = layoutHeaderFooter(5, s3);
+
+            qreal footerLeftHeight = footerLeft ? footerLeft->height() : 0.0;
+            qreal footerCenterHeight = footerCenter ? footerCenter->height() : 0.0;
+            qreal footerRightHeight = footerRight ? footerRight->height() : 0.0;
+
+            qreal footerHeight = qMax(footerLeftHeight, qMax(footerCenterHeight, footerRightHeight));
+
+            qreal footerOffset = score()->styleV(Sid::footerOffset).value<QPointF>().y() * DPMM;
+            return qMax(0.0, footerHeight - footerOffset);
+            }
+
+      return 0.0;
       }
 
 #if 0
@@ -208,7 +314,7 @@ void Page::styleChanged()
 
 void Page::scanElements(void* data, void (*func)(void*, Element*), bool all)
       {
-      for (System* s :_systems) {
+      for (System* s :qAsConst(_systems)) {
             for (MeasureBase* m : s->measures())
                   m->scanElements(data, func, all);
             s->scanElements(data, func, all);
@@ -279,11 +385,12 @@ void Page::doRebuildBspTree()
 //    $M          - last modification date
 //    $C          - copyright, on first page only
 //    $c          - copyright, on all pages
+//    $v          - MuseScore version the score was last saved with
+//    $r          - MuseScore revision the score was last saved with
 //    $$          - the $ sign itself
 //    $:tag:      - any metadata tag
 //
-//       tags already defined:
-//       (see Score::init()))
+//       tags always defined (see Score::init())):
 //       copyright
 //       creationDate
 //       movementNumber
@@ -302,21 +409,21 @@ QString Page::replaceTextMacros(const QString& s) const
             if (c == '$' && (i < (n-1))) {
                   QChar nc = s[i+1];
                   switch(nc.toLatin1()) {
-                        case 'p': // not on first page 1
+                        case 'p': // not on page 1
                               if (_no) // FALLTHROUGH
                         case 'N': // on page 1 only if there are multiple pages
-                              if ( (score()->npages() + score()->pageNumberOffset()) > 1 ) // FALLTHROUGH
+                              if ((score()->npages() + score()->pageNumberOffset()) > 1) // FALLTHROUGH
                         case 'P': // on all pages
                               {
                               int no = _no + 1 + score()->pageNumberOffset();
-                              if (no > 0 )
+                              if (no > 0 ) // except page numbers < 1
                                     d += QString("%1").arg(no);
                               }
                               break;
                         case 'n':
                               d += QString("%1").arg(score()->npages() + score()->pageNumberOffset());
                               break;
-                        case 'i': // not on first page
+                        case 'i': // not on page 1
                               if (_no) // FALLTHROUGH
                         case 'I':
                               d += score()->metaTag("partName").toHtmlEscaped();
@@ -328,33 +435,55 @@ QString Page::replaceTextMacros(const QString& s) const
                               d += masterScore()->fileInfo()->absoluteFilePath().toHtmlEscaped();
                               break;
                         case 'd':
-                              d += QDate::currentDate().toString(Qt::DefaultLocaleShortDate);
+                              d += QLocale().toString(QDate::currentDate(), QLocale::ShortFormat);
                               break;
                         case 'D':
                               {
                               QString creationDate = score()->metaTag("creationDate");
                               if (creationDate.isNull())
-                                    d += masterScore()->fileInfo()->created().date().toString(Qt::DefaultLocaleShortDate);
+#if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
+                                    d += QLocale().toString(masterScore()->fileInfo()->created().date(), QLocale::ShortFormat);
+#else
+                                    d += QLocale().toString(masterScore()->fileInfo()->birthTime().date(), QLocale::ShortFormat);
+#endif
                               else
-                                    d += QDate::fromString(creationDate, Qt::ISODate).toString(Qt::DefaultLocaleShortDate);
+                                    d += QLocale().toString(QDate::fromString(creationDate, Qt::ISODate), QLocale::ShortFormat);
                               }
                               break;
                         case 'm':
-                              if ( score()->dirty() )
-                                    d += QTime::currentTime().toString(Qt::DefaultLocaleShortDate);
+                              if (score()->dirty())
+                                    d += QLocale().toString(QDate::currentDate(), QLocale::ShortFormat);
                               else
-                                    d += masterScore()->fileInfo()->lastModified().time().toString(Qt::DefaultLocaleShortDate);
+                                    d += QLocale().toString(masterScore()->fileInfo()->lastModified().time(), QLocale::ShortFormat);
                               break;
                         case 'M':
-                              if ( score()->dirty() )
-                                    d += QDate::currentDate().toString(Qt::DefaultLocaleShortDate);
+                              if (score()->dirty())
+                                    d += QLocale().toString(QDate::currentDate(), QLocale::ShortFormat);
                               else
-                                    d += masterScore()->fileInfo()->lastModified().date().toString(Qt::DefaultLocaleShortDate);
+                                    d += QLocale().toString(masterScore()->fileInfo()->lastModified().date(), QLocale::ShortFormat);
                               break;
-                        case 'C': // only on first page
+                        case 'C': // only on page 1
                               if (!_no) // FALLTHROUGH
                         case 'c':
                               d += score()->metaTag("copyright").toHtmlEscaped();
+                              break;
+                        case 'v':
+                              if (score()->dirty())
+                                    d += QString(VERSION);
+                              else
+                                    d += score()->mscoreVersion();
+                              break;
+                        case 'r':
+                              if (score()->dirty()) {
+                                    d += revision;
+                                    }
+                              else {
+                                    int rev = score()->mscoreRevision();
+                                    if (rev > 99999)  // MuseScore 1.3 is decimal 5702, 2.0 and later uses a 7-digit hex SHA
+                                          d += QString::number(rev, 16);
+                                    else
+                                          d += QString::number(rev, 10);
+                                    }
                               break;
                         case '$':
                               d += '$';
@@ -381,6 +510,8 @@ QString Page::replaceTextMacros(const QString& s) const
                         }
                   ++i;
                   }
+            else if (c == '&')
+                  d += "&amp;";
             else
                   d += c;
             }

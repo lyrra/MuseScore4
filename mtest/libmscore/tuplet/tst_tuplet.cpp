@@ -42,6 +42,7 @@ class TestTuplet : public QObject, public MTest
       void split2() { split("split2.mscx",   "split2-ref.mscx");  }
       void split3() { split("split3.mscx",   "split3-ref.mscx");  }
       void split4() { split("split4.mscx",   "split4-ref.mscx");  }
+      void saveLoad();
       void addStaff();
       };
 
@@ -120,7 +121,7 @@ void TestTuplet::tuplet(const char* p1, const char* p2)
 
       Segment* s = m2->first(SegmentType::ChordRest);
       QVERIFY(s != 0);
-      Chord* c = toChord(s->element(0));
+      Ms::Chord* c = toChord(s->element(0));
       QVERIFY(c != 0);
 
       QVERIFY(createTuplet(3, c));
@@ -143,7 +144,7 @@ void TestTuplet::split(const char* p1, const char* p2)
       score->startCmd();
       EditData dd(0);
       dd.dropElement = ts;
-      dd.modifiers = 0;
+      dd.modifiers = {};
       dd.dragOffset = QPointF();
       dd.pos = m->pagePos();
       m->drop(dd);
@@ -176,6 +177,19 @@ void TestTuplet::addStaff()
       score->undoInsertStaff(newStaff, 0, true);
 
       QVERIFY(saveCompareScore(score, "nestedTuplets_addStaff.mscx", DIR + "nestedTuplets_addStaff-ref.mscx"));
+      delete score;
+      }
+
+//-----------------------------------------
+//    saveLoad
+//     checks that properties persist after loading and saving
+//-----------------------------------------
+void TestTuplet::saveLoad()
+      {
+      MasterScore* score = readScore(DIR + "save-load.mscx");
+      QVERIFY(score);
+      //simply load and save
+      QVERIFY(saveCompareScore(score, "save-load.mscx", DIR + "save-load.mscx"));
       delete score;
       }
 

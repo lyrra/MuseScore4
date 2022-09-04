@@ -196,7 +196,7 @@ std::vector<TextDiff> MscxModeDiff::mscxModeDiff(const QString& s1, const QStrin
 
 void MscxModeDiff::adjustSemanticsMscx(std::vector<TextDiff>& diffs)
       {
-      for (int i = 0; i < int(diffs.size()); ++i)
+      for (unsigned i = 0; i < diffs.size(); ++i)
             i = adjustSemanticsMscxOneDiff(diffs, i);
       }
 
@@ -211,7 +211,6 @@ int MscxModeDiff::adjustSemanticsMscxOneDiff(std::vector<TextDiff>& diffs, int i
       int iScore;
       switch(diff->type) {
             case DiffType::EQUAL:
-                  /* FALLTROUGH */
             case DiffType::REPLACE:
                   // TODO: split a REPLACE diff, though they should not be here
                   return index;
@@ -219,7 +218,6 @@ int MscxModeDiff::adjustSemanticsMscxOneDiff(std::vector<TextDiff>& diffs, int i
                   iScore = 1;
                   break;
             case DiffType::DELETE:
-                  /* FALLTROUGH */
             default:
                   iScore = 0;
                   break;
@@ -405,14 +403,17 @@ int MscxModeDiff::performShiftDiff(std::vector<TextDiff>& diffs, int index, int 
       std::copy(chunkEnd, chunkEnd + 2, eqDiff.end);
 
       const int prevDiffIdx = index + (down ? -1 : 1);
+      bool merged = false;
       if (diffs[prevDiffIdx].type == DiffType::EQUAL)
-            diffs[prevDiffIdx].merge(eqDiff);
-      else {
+            merged = diffs[prevDiffIdx].merge(eqDiff);
+
+      if (!merged) {
             const int insertIdx = down ? index : (index + 1);
             diffs.insert(diffs.begin() + insertIdx, eqDiff);
             if (down)
                   ++index;
             }
+
       return index;
       }
 
@@ -422,7 +423,7 @@ int MscxModeDiff::performShiftDiff(std::vector<TextDiff>& diffs, int index, int 
 
 QString MscxModeDiff::getOuterLines(const QString& str, int lines, bool start) {
       lines = qAbs(lines);
-      const int secIdxStart = start ? 0 : (-1 - (lines - 1));
+      const int secIdxStart = start ? 0 : -lines;
       const int secIdxEnd = start ? (lines - 1) : -1;
       constexpr auto secFlags = QString::SectionIncludeTrailingSep | QString::SectionSkipEmpty;
       return str.section('\n', secIdxStart, secIdxEnd, secFlags);
@@ -609,7 +610,7 @@ void TextDiffParser::makeDiffs(const QString& mscx, const std::vector<std::pair<
             r.readNext();
             }
       if (r.hasError())
-            qWarning("TextDiffParser::makeDiffs: error while reading MSCX output: %s", r.errorString().toLatin1().constData());
+            qDebug("TextDiffParser::makeDiffs: error while reading MSCX output: %s", r.errorString().toLatin1().constData());
       }
 
 //---------------------------------------------------------
@@ -1172,7 +1173,7 @@ QString ScoreDiff::userDiff() const
 //   TextDiff::merge
 //---------------------------------------------------------
 
-void TextDiff::merge(const TextDiff& other)
+bool TextDiff::merge(const TextDiff& other)
       {
       if (type == other.type) {
             if (other.end[0] == (start[0] - 1) && other.end[1] == (start[1] - 1)) {
@@ -1187,8 +1188,10 @@ void TextDiff::merge(const TextDiff& other)
                   text[0].append(other.text[0]);
                   text[1].append(other.text[1]);
                   }
-            else
-                  qFatal("TextDiff:merge: invalid argument: wrong line numbers");
+            else {
+                  qDebug("TextDiff:merge: invalid argument: wrong line numbers");
+                  return false;
+                  }
             }
       else if ((type == DiffType::INSERT && other.type == DiffType::DELETE)
          || (type == DiffType::DELETE && other.type == DiffType::INSERT)
@@ -1199,8 +1202,12 @@ void TextDiff::merge(const TextDiff& other)
             end[iOther] = other.end[iOther];
             text[iOther] = other.text[iOther];
             }
-      else
-            qFatal("TextDiff:merge: invalid argument: wrong types");
+      else {
+            qDebug("TextDiff:merge: invalid argument: wrong types");
+            return false;
+            }
+
+      return true;
       }
 
 //---------------------------------------------------------
@@ -1248,12 +1255,12 @@ QString TextDiff::toString(DiffType dt, bool prefixLines) const
                   }
             else
                   lines[i] = QString("%1--%2")
-                        .arg(start[i]).arg(end[i]);
+                        .arg(start[i], end[i]);
             }
 
       return QString("@%1;%2\n%3")
-            .arg(lines[0]).arg(lines[1])
-            .arg(prefixLines ? addLinePrefix(text[idx], prefix) : text[idx]);
+            .arg(lines[0], lines[1],
+                  prefixLines ? addLinePrefix(text[idx], prefix) : text[idx]);
       }
 
 //---------------------------------------------------------
@@ -1327,7 +1334,7 @@ static QString describeContext(const ScoreElement* ctx)
 
 QString ContextChange::toString() const
       {
-      return QString("Context change: ctx1 (%1), ctx2(%2)").arg(describeContext(ctx[0])).arg(describeContext(ctx[1]));
+      return QString("Context change: ctx1 (%1), ctx2(%2)").arg(describeContext(ctx[0]), describeContext(ctx[1]));
       }
 
 //---------------------------------------------------------
@@ -1362,14 +1369,14 @@ QString ElementDiff::toString() const
       QString ctxDescr = describeContext(ctx[0]);
       switch(type) {
             case DiffType::DELETE:
-                  return QObject::tr("%1: removed element %2", "scorediff").arg(ctxDescr).arg(el[0]->userName());
+                  return QObject::tr("%1: removed element %2", "scorediff").arg(ctxDescr, el[0]->userName());
             case DiffType::INSERT:
-                  return QObject::tr("%1: inserted element %2", "scorediff").arg(ctxDescr).arg(el[1]->userName());
+                  return QObject::tr("%1: inserted element %2", "scorediff").arg(ctxDescr, el[1]->userName());
             case DiffType::REPLACE:
-                  return QObject::tr("%1: replaced element %2 with element %3", "scorediff").arg(ctxDescr).arg(el[0]->userName()).arg(el[1]->userName());
+                  return QObject::tr("%1: replaced element %2 with element %3", "scorediff").arg(ctxDescr, el[0]->userName(), el[1]->userName());
             case DiffType::EQUAL:
                   Q_ASSERT(el[0]->type() == el[1]->type());
-                  return QObject::tr("%1: equal element %2", "scorediff").arg(ctxDescr).arg(el[0]->userName());
+                  return QObject::tr("%1: equal element %2", "scorediff").arg(ctxDescr, el[0]->userName());
             }
       return ctxDescr;
       }
@@ -1406,14 +1413,14 @@ QString PropertyDiff::toString() const
                         t = QObject::tr("%1: property %2 is turned off", "scorediff");
                   else
                         t = QObject::tr("%1: property %2 is turned on", "scorediff");
-                  return t.arg(ctxDescr).arg(propName);
+                  return t.arg(ctxDescr, propName);
                   }
             default:
                   {
                   QString val1 = ctx[0]->propertyUserValue(pid);
                   QString val2 = ctx[1]->propertyUserValue(pid);
                   QString t = QObject::tr("%1: property %2 changed from %3 to %4", "scorediff");
-                  return t.arg(ctxDescr).arg(propName).arg(val1).arg(val2);
+                  return t.arg(ctxDescr, propName, val1, val2);
                   }
             }
       }
@@ -1442,12 +1449,11 @@ QString MarkupDiff::toString() const
       if (name == "metaTag") {
             QString tagName = info.toString();
             return QObject::tr("%1: %2 changed from %3 to %4", "scorediff")
-               .arg(ctxDescr).arg(tagName)
-               .arg(ctx[0]->score()->metaTag(tagName))
-               .arg(ctx[1]->score()->metaTag(tagName));
+               .arg(ctxDescr, tagName,
+                    ctx[0]->score()->metaTag(tagName), ctx[1]->score()->metaTag(tagName));
             }
       return QObject::tr("%1: markup changes: %2", "scorediff")
-         .arg(ctxDescr).arg(name);
+         .arg(ctxDescr, name);
       }
 }
 

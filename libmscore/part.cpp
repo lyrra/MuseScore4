@@ -24,6 +24,7 @@
 #include "stafftype.h"
 #include "sym.h"
 #include "chordrest.h"
+#include "fret.h"
 
 namespace Ms {
 
@@ -34,9 +35,11 @@ namespace Ms {
 Part::Part(Score* s)
    : ScoreElement(s)
       {
-      _color = DEFAULT_COLOR;
-      _show  = true;
+      _color   = DEFAULT_COLOR;
+      _show    = true;
+      _soloist = false;
       _instruments.setInstrument(new Instrument, -1);   // default instrument
+      _preferSharpFlat = PreferSharpFlat::DEFAULT;
       }
 
 //---------------------------------------------------------
@@ -109,7 +112,7 @@ bool Part::readProperties(XmlReader& e)
       else if (tag == "Instrument") {
             Instrument* instr = new Instrument;
             instr->read(e, this);
-            setInstrument(instr, Fraction(-1,1));
+            setInstrument(instr, Fraction(-1, 1));
             }
       else if (tag == "name")
             instrument()->setLongName(e.readElementText());
@@ -121,6 +124,11 @@ bool Part::readProperties(XmlReader& e)
             _partName = e.readElementText();
       else if (tag == "show")
             _show = e.readInt();
+      else if (tag == "soloist")
+            _soloist = e.readInt();
+      else if (tag == "preferSharpFlat")
+            _preferSharpFlat =
+               e.readElementText() == "sharps" ? PreferSharpFlat::SHARPS : PreferSharpFlat::FLATS;
       else
             return false;
       return true;
@@ -151,9 +159,14 @@ void Part::write(XmlWriter& xml) const
             staff->write(xml);
       if (!_show)
             xml.tag("show", _show);
+      if (_soloist)
+            xml.tag("soloist", _soloist);
       xml.tag("trackName", _partName);
       if (_color != DEFAULT_COLOR)
             xml.tag("color", _color);
+      if (_preferSharpFlat != PreferSharpFlat::DEFAULT)
+            xml.tag("preferSharpFlat",
+               _preferSharpFlat == PreferSharpFlat::SHARPS ? "sharps" : "flats");
       instrument()->write(xml, this);
       xml.etag();
       }
@@ -380,6 +393,26 @@ QString Part::shortName(const Fraction& tick) const
       }
 
 //---------------------------------------------------------
+//   setLongNameAll
+//---------------------------------------------------------
+
+void Part::setLongNameAll(const QString& s)
+      {
+      for (auto instrument : _instruments)
+            instrument.second->setLongName(s);
+      }
+
+//---------------------------------------------------------
+//   setShortNameAll
+//---------------------------------------------------------
+
+void Part::setShortNameAll(const QString& s)
+      {
+      for (auto instrument : _instruments)
+            instrument.second->setShortName(s);
+      }
+
+//---------------------------------------------------------
 //   setLongName
 //---------------------------------------------------------
 
@@ -395,6 +428,24 @@ void Part::setLongName(const QString& s)
 void Part::setShortName(const QString& s)
       {
       instrument()->setShortName(s);
+      }
+
+//---------------------------------------------------------
+//   setPlainLongNameAll
+//---------------------------------------------------------
+
+void Part::setPlainLongNameAll(const QString& s)
+      {
+      setLongNameAll(XmlWriter::xmlString(s));
+      }
+
+//---------------------------------------------------------
+//   setPlainShortNameAll
+//---------------------------------------------------------
+
+void Part::setPlainShortNameAll(const QString& s)
+      {
+      setShortNameAll(XmlWriter::xmlString(s));
       }
 
 //---------------------------------------------------------
@@ -426,6 +477,8 @@ QVariant Part::getProperty(Pid id) const
                   return QVariant(_show);
             case Pid::USE_DRUMSET:
                   return instrument()->useDrumset();
+            case Pid::PREFER_SHARP_FLAT:
+                  return int(preferSharpFlat());
             default:
                   return QVariant();
             }
@@ -443,6 +496,9 @@ bool Part::setProperty(Pid id, const QVariant& property)
                   break;
             case Pid::USE_DRUMSET:
                   instrument()->setUseDrumset(property.toBool());
+                  break;
+            case Pid::PREFER_SHARP_FLAT:
+                  setPreferSharpFlat(PreferSharpFlat(property.toInt()));
                   break;
             default:
                   qDebug("Part::setProperty: unknown id %d", int(id));
@@ -504,10 +560,14 @@ void Part::insertTime(const Fraction& tick, const Fraction& len)
 //   lyricCount
 //---------------------------------------------------------
 
-int Part::lyricCount()
+int Part::lyricCount() const
       {
       if (!score())
             return 0;
+
+      if (!score()->firstMeasure())
+            return 0;
+
       size_t count = 0;
       SegmentType st = SegmentType::ChordRest;
       for (Segment* seg = score()->firstMeasure()->first(st); seg; seg = seg->next1(st)) {
@@ -524,15 +584,20 @@ int Part::lyricCount()
 //   harmonyCount
 //---------------------------------------------------------
 
-int Part::harmonyCount()
+int Part::harmonyCount() const
       {
       if (!score())
             return 0;
-      int count = 0;
+
+      Measure* firstM = score()->firstMeasure();
+      if (!firstM)
+            return 0;
+
       SegmentType st = SegmentType::ChordRest;
-      for (Segment* seg = score()->firstMeasure()->first(st); seg; seg = seg->next1(st)) {
-            for (Element* e : seg->annotations()) {
-                  if (e->type() == ElementType::HARMONY && e->track() >= startTrack() && e->track() < endTrack())
+      int count = 0;
+      for (const Segment* seg = firstM->first(st); seg; seg = seg->next1(st)) {
+            for (const Element* e : seg->annotations()) {
+                  if ((e->isHarmony() || (e->isFretDiagram() && toFretDiagram(e)->harmony())) && e->track() >= startTrack() && e->track() < endTrack())
                         count++;
                   }
             }
@@ -540,10 +605,81 @@ int Part::harmonyCount()
       }
 
 //---------------------------------------------------------
+//   updateHarmonyChannels
+///   update the harmony channel by creating a new channel
+///   when appropriate or using the existing one
+///
+///   checkRemoval can be set to true to check to see if we
+///   can remove the harmony channel
+//---------------------------------------------------------
+void Part::updateHarmonyChannels(bool isDoOnInstrumentChanged, bool checkRemoval)
+      {
+
+      auto onInstrumentChanged = [this]() {
+            masterScore()->rebuildMidiMapping();
+            masterScore()->updateChannel();
+            score()->setInstrumentsChanged(true);
+            score()->setLayoutAll(); //do we need this?
+            };
+
+
+      // usage of harmony count is okay even if expensive since checking harmony channel will shortcircuit if existent
+      // harmonyCount will only be called on loading of a score (where it will need to be scanned for harmony anyway)
+      // or when the first harmony of a score is just added
+      if (checkRemoval) {
+            //may be a bit expensive since it gets called after every single delete or undo, but it should be okay for now
+            //~OPTIM~
+            if (harmonyCount() == 0) {
+                  Instrument* instr = instrument();
+                  int hChIdx = instr->channelIdx(Channel::HARMONY_NAME);
+                  if (hChIdx != -1) {
+                        Channel* hChan = instr->channel(hChIdx);
+                        instr->removeChannel(hChan);
+                        delete hChan;
+                        if (isDoOnInstrumentChanged)
+                              onInstrumentChanged();
+                        return;
+                        }
+                  }
+            }
+
+      if (!harmonyChannel() && harmonyCount() > 0) {
+            Instrument* instr = instrument();
+            Channel* c = new Channel(*instr->channel(0));
+            // default to program 0, which is piano in General MIDI
+            c->setProgram(0);
+            if (c->bank() == 128) // drumset?
+                  c->setBank(0);
+            c->setName(Channel::HARMONY_NAME);
+            instr->appendChannel(c);
+            onInstrumentChanged();
+            }
+      }
+
+//---------------------------------------------------------
+//   harmonyChannel
+//---------------------------------------------------------
+
+const Channel* Part::harmonyChannel() const
+      {
+            const Instrument* instr = instrument();
+            if (!instr)
+                  return nullptr;
+
+            int chanIdx = instr->channelIdx(Channel::HARMONY_NAME);
+            if (chanIdx == -1)
+                  return nullptr;
+
+            const Channel* chan = instr->channel(chanIdx);
+            Q_ASSERT(chan);
+            return chan;
+      }
+
+//---------------------------------------------------------
 //   hasPitchedStaff
 //---------------------------------------------------------
 
-bool Part::hasPitchedStaff()
+bool Part::hasPitchedStaff() const
       {
       if (!staves())
             return false;
@@ -558,7 +694,7 @@ bool Part::hasPitchedStaff()
 //   hasTabStaff
 //---------------------------------------------------------
 
-bool Part::hasTabStaff()
+bool Part::hasTabStaff() const
       {
       if (!staves())
             return false;
@@ -573,7 +709,7 @@ bool Part::hasTabStaff()
 //   hasDrumStaff
 //---------------------------------------------------------
 
-bool Part::hasDrumStaff()
+bool Part::hasDrumStaff() const
       {
       if (!staves())
             return false;

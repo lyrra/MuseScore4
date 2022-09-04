@@ -11,15 +11,8 @@
 //=============================================================================
 
 #include "xml.h"
-#include "layoutbreak.h"
-#include "spanner.h"
-#include "beam.h"
-#include "tuplet.h"
-#include "sym.h"
-#include "note.h"
-#include "barline.h"
-#include "dynamic.h"
-#include "hairpin.h"
+#include "property.h"
+#include "scoreElement.h"
 
 namespace Ms {
 
@@ -183,7 +176,6 @@ void XmlWriter::tag(Pid id, QVariant data, QVariant defaultData)
       const char* name = propertyName(id);
       if (name == 0)
             return;
-
       const QString writableVal(propertyToString(id, data, /* mscx */ true));
       if (writableVal.isEmpty())
             tag(name, data);
@@ -274,7 +266,7 @@ void XmlWriter::tag(const QString& name, QVariant data)
                         *this << QString("<%1>%2/%3</%1>\n").arg(name).arg(f.numerator()).arg(f.denominator());
                         }
                   else if (strcmp(type, "Ms::Direction") == 0)
-                        *this << QString("<%1>%2</%1>\n").arg(name).arg(toString(data.value<Direction>()));
+                        *this << QString("<%1>%2</%1>\n").arg(name, toString(data.value<Direction>()));
                   else if (strcmp(type, "Ms::Align") == 0) {
                         // TODO: remove from here? (handled in Ms::propertyWritableValue())
                         Align a = Align(data.toInt());
@@ -294,7 +286,8 @@ void XmlWriter::tag(const QString& name, QVariant data)
                               v = "baseline";
                         else
                               v = "top";
-                        *this << QString("<%1>%2,%3</%1>\n").arg(name).arg(h).arg(v);
+                        *this << QString("<%1>%2,%3</%1>\n").arg(name)
+                                    .arg(h, v);
                         }
                   else {
                         qFatal("XmlWriter::tag: unsupported type %d %s", data.type(), type);

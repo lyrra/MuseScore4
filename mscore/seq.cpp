@@ -21,7 +21,7 @@
 #include "seq.h"
 #include "musescore.h"
 
-#include "synthesizer/msynthesizer.h"
+#include "audio/midi/msynthesizer.h"
 #include "libmscore/rendermidi.h"
 #include "libmscore/slur.h"
 #include "libmscore/tie.h"
@@ -41,7 +41,7 @@
 #include "libmscore/repeatlist.h"
 #include "libmscore/audio.h"
 #include "synthcontrol.h"
-#include "pianoroll.h"
+#include "pianoroll/pianoroll.h"
 #include "pianotools.h"
 
 #include "click.h"
@@ -235,6 +235,41 @@ void Seq::setScoreView(ScoreView* v)
       }
 
 //---------------------------------------------------------
+//   Seq::CachedPreferences::update
+//---------------------------------------------------------
+
+void Seq::CachedPreferences::update()
+      {
+      portMidiOutputLatencyMilliseconds = preferences.getInt(PREF_IO_PORTMIDI_OUTPUTLATENCYMILLISECONDS);
+      jackTimeBaseMaster = preferences.getBool(PREF_IO_JACK_TIMEBASEMASTER);
+      useJackTransport = preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT);
+      useJackMidi = preferences.getBool(PREF_IO_JACK_USEJACKMIDI);
+      useJackAudio = preferences.getBool(PREF_IO_JACK_USEJACKAUDIO);
+      useAlsaAudio = preferences.getBool(PREF_IO_ALSA_USEALSAAUDIO);
+      usePortAudio = preferences.getBool(PREF_IO_PORTAUDIO_USEPORTAUDIO);
+      usePulseAudio = preferences.getBool(PREF_IO_PULSEAUDIO_USEPULSEAUDIO);
+      }
+
+//---------------------------------------------------------
+//   startTransport
+//---------------------------------------------------------
+
+void Seq::startTransport()
+      {
+      cachedPrefs.update();
+      _driver->startTransport();
+      }
+
+//---------------------------------------------------------
+//   stopTransport
+//---------------------------------------------------------
+
+void Seq::stopTransport()
+      {
+      _driver->stopTransport();
+      }
+
+//---------------------------------------------------------
 //   init
 //    return false on error
 //---------------------------------------------------------
@@ -246,6 +281,7 @@ bool Seq::init(bool hotPlug)
             running = false;
             return false;
             }
+      cachedPrefs.update();
       running = true;
       return true;
       }
@@ -309,6 +345,8 @@ void Seq::start()
             return;
             }
 
+      mscore->moveControlCursor();
+
       allowBackgroundRendering = true;
       collectEvents(getPlayStartUtick());
       if (cs->playMode() == PlayMode::AUDIO) {
@@ -332,7 +370,7 @@ void Seq::start()
             useJackTransportSavedFlag    = true;
             preferences.setPreference(PREF_IO_JACK_USEJACKTRANSPORT, false);
             }
-      _driver->startTransport();
+      startTransport();
       }
 
 //---------------------------------------------------------
@@ -355,7 +393,7 @@ void Seq::stop()
       if (!_driver)
             return;
       if (!preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) || (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) && _driver->getState() == Transport::PLAY))
-            _driver->stopTransport();
+            stopTransport();
       if (cv)
             cv->setCursorOn(false);
       if (midiRenderFuture.isRunning())
@@ -514,17 +552,9 @@ void Seq::seqMessage(int msg, int arg)
 void Seq::playEvent(const NPlayEvent& event, unsigned framePos)
       {
       int type = event.type();
+      PianoTools* piano = mscore->pianoTools();
       if (type == ME_NOTEON) {
-            bool mute = false;
-
-            const Note* note = event.note();
-            if (note) {
-                  Staff* staff      = note->staff();
-                  Instrument* instr = staff->part()->instrument(note->chord()->tick());
-                  const Channel* a = instr->playbackChannel(note->subchannel(), cs);
-                  mute = a->mute() || a->soloMute() || !staff->playbackVoice(note->voice());
-                  }
-            if (!mute) {
+            if (!event.isMuted()) {
                   if (event.discard()) { // ignore noteoff but restrike noteon
                         if (event.velo() > 0)
                               putEvent(NPlayEvent(ME_NOTEON, event.channel(), event.pitch(), 0) ,framePos);
@@ -532,9 +562,15 @@ void Seq::playEvent(const NPlayEvent& event, unsigned framePos)
                               return;
                         }
                   putEvent(event, framePos);
+                  if (piano && piano->isVisible()) {
+                        if (event.velo() > 0)
+                              piano->pressPlaybackPitch(event.pitch());
+                        else // Note-offs are synthesized as ME_NOTEON with 0 velocity
+                              piano->releasePlaybackPitch(event.pitch());
+                        }
                   }
             }
-      else if (type == ME_CONTROLLER || type == ME_PITCHBEND)
+      else if (type == ME_CONTROLLER || type == ME_PITCHBEND || type == ME_AFTERTOUCH || type == ME_POLYAFTER)
             putEvent(event, framePos);
       }
 
@@ -576,7 +612,7 @@ void Seq::processMessages()
                               int utick = cs->utime2utick(qreal(playFrame) / qreal(MScore::sampleRate));
                               cs->tempomap()->setRelTempo(msg.realVal);
                               playFrame = cs->utick2utime(utick) * MScore::sampleRate;
-                              if (preferences.getBool(PREF_IO_JACK_TIMEBASEMASTER) && preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT))
+                              if (cachedPrefs.jackTimeBaseMaster && cachedPrefs.useJackTransport)
                                     _driver->seekTransport(utick + 2 * cs->utime2utick(qreal((_driver->bufferSize()) + 1) / qreal(MScore::sampleRate)));
                               }
                         else
@@ -591,6 +627,17 @@ void Seq::processMessages()
                         break;
                   case SeqMsgId::SEEK:
                         setPos(msg.intVal);
+                        break;
+                  case SeqMsgId::ALL_NOTE_OFF:
+                        {
+                        _synti->allNotesOff(msg.intVal);
+                        PianoTools* piano = mscore->pianoTools();
+                        // PianoTools here returns the playback pitches by-value
+                        // to ensure no discrepancy while erasing items from
+                        // the _pressedPlaybackPitches container
+                        for (int pressedPitch : piano->pressedPlaybackPitches())
+                              piano->releasePlaybackPitch(pressedPitch);
+                        }
                         break;
                   default:
                         break;
@@ -689,7 +736,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
       if (driverState != state) {
             // Got a message from JACK Transport panel: Play
             if (state == Transport::STOP && driverState == Transport::PLAY) {
-                  if ((preferences.getBool(PREF_IO_JACK_USEJACKMIDI) || preferences.getBool(PREF_IO_JACK_USEJACKAUDIO)) && !getAction("play")->isChecked()) {
+                  if ((cachedPrefs.useJackMidi || cachedPrefs.useJackAudio) && !getAction("play")->isChecked()) {
                         // Do not play while editing elements
                         if (mscore->state() != STATE_NORMAL || !isRunning() || !canStart())
                               return;
@@ -698,18 +745,18 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
 
                         // If we just launch MuseScore and press "Play" on JACK Transport with time 0:00
                         // MuseScore doesn't seek to 0 and guiPos is uninitialized, so let's make it manually
-                        if (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) && getCurTick() == 0)
+                        if (cachedPrefs.useJackTransport && getCurTick() == 0)
                               seekRT(0);
 
                         // Switching to fake transport while playing count in
                         // to prevent playing in other applications with our ticks simultaneously
-                        if (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) && mscore->countIn()) {
+                        if (cachedPrefs.useJackTransport && mscore->countIn()) {
                               // Stopping real JACK Transport
-                              _driver->stopTransport();
+                              stopTransport();
                               // Starting fake transport
                               useJackTransportSavedFlag = preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT);
                               preferences.setPreference(PREF_IO_JACK_USEJACKTRANSPORT, false);
-                              _driver->startTransport();
+                              startTransport();
                               }
                         }
                   // Initializing instruments every time we start playback.
@@ -806,11 +853,13 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                         if (mscore->loop()) {
                               int loopOutUTick = cs->repeatList().tick2utick(cs->loopOutTick().ticks());
                               if (loopOutUTick < scoreEndUTick) {
-                                    // Also make sure we are not "before" the loop
-                                    if (playPosUTick >= loopOutUTick || cs->repeatList().utick2tick(playPosUTick) < cs->loopInTick().ticks()) {
+                                    qreal framesPerPeriodInTime = static_cast<qreal>(framesPerPeriod) / MScore::sampleRate;
+                                    int framesPerPeriodInTicks = cs->utime2utick(framesPerPeriodInTime);
+                                    // Also make sure we are inside the loop
+                                    if (playPosUTick >= loopOutUTick - 2 * framesPerPeriodInTicks || cs->repeatList().utick2tick(playPosUTick) < cs->loopInTick().ticks()) {
                                           qDebug ("Process: playPosUTick = %d, cs->loopInTick().ticks() = %d, cs->loopOutTick().ticks() = %d, getCurTick() = %d, loopOutUTick = %d, playFrame = %d",
                                                             playPosUTick,      cs->loopInTick().ticks(),      cs->loopOutTick().ticks(),      getCurTick(),      loopOutUTick,    *pPlayFrame);
-                                          if (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT)) {
+                                          if (cachedPrefs.useJackTransport) {
                                                 int loopInUTick = cs->repeatList().tick2utick(cs->loopInTick().ticks());
                                                 _driver->seekTransport(loopInUTick);
                                                 if (loopInUTick != 0) {
@@ -819,7 +868,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                                                       }
                                                 }
                                           else {
-                                                emit toGui('3');
+                                                emit toGui('3'); // calls loopStart()
                                                 }
                                           // Exit this function to avoid segmentation fault in Scoreview
                                           return;
@@ -899,14 +948,14 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                         // Connecting to JACK Transport if MuseScore was temporarily disconnected from it
                         if (useJackTransportSavedFlag) {
                               // Stopping fake driver
-                              _driver->stopTransport();
+                              stopTransport();
                               preferences.setPreference(PREF_IO_JACK_USEJACKTRANSPORT, true);
                               // Starting the real JACK Transport. All applications play in sync now
-                              _driver->startTransport();
+                              startTransport();
                               }
                         }
                   else
-                        _driver->stopTransport();
+                        stopTransport();
                   }
             }
       else {
@@ -961,7 +1010,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
 void Seq::initInstruments(bool realTime)
       {
       // Add midi out ports if necessary
-      if (cs && (preferences.getBool(PREF_IO_JACK_USEJACKMIDI) || preferences.getBool(PREF_IO_ALSA_USEALSAAUDIO))) {
+      if (cs && (cachedPrefs.useJackMidi || cachedPrefs.useAlsaAudio)) {
             // Increase the maximum number of midi ports if user adds staves/instruments
             int scoreMaxMidiPort = cs->masterScore()->midiPortCount();
             if (maxMidiOutPort < scoreMaxMidiPort)
@@ -983,7 +1032,7 @@ void Seq::initInstruments(bool realTime)
                         sendEvent(event);
                   }
             // Setting pitch bend sensitivity to 12 semitones for external synthesizers
-            if ((preferences.getBool(PREF_IO_JACK_USEJACKMIDI) || preferences.getBool(PREF_IO_ALSA_USEALSAAUDIO)) && mm.channel() != 9) {
+            if ((cachedPrefs.useJackMidi || cachedPrefs.useAlsaAudio) && mm.channel() != 9) {
                   if (realTime) {
                         putEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_LRPN, 0));
                         putEvent(NPlayEvent(ME_CONTROLLER, channel->channel(), CTRL_HRPN, 0));
@@ -1008,7 +1057,11 @@ void Seq::initInstruments(bool realTime)
 
 void Seq::renderChunk(const MidiRenderer::Chunk& ch, EventMap* eventMap)
       {
-      midi.renderChunk(ch, eventMap, mscore->synthesizerState(), /* metronome */ true);
+      SynthesizerState synState = mscore->synthesizerState();
+      MidiRenderer::Context ctx(synState);
+      ctx.metronome = true;
+      ctx.renderHarmony = true;
+      midi.renderChunk(ch, eventMap, ctx);
       renderEventsStatus.setOccupied(ch.utick1(), ch.utick2());
       }
 
@@ -1059,7 +1112,7 @@ void Seq::collectEvents(int utick)
             }
 
       updateEventsEnd();
-      playPos = events.cbegin();
+      playPos = mscore->loop() ? events.find(cs->loopInTick().ticks()) : events.cbegin();
       playlistChanged = false;
       mutex.unlock();
       }
@@ -1150,8 +1203,7 @@ int Seq::getPlayStartUtick()
       {
       if ((mscore->loop())) {
             if (preferences.getBool(PREF_APP_PLAYBACK_LOOPTOSELECTIONONPLAY)) {
-                  if (cs->selection().isRange())
-                        setLoopSelection();
+                  setLoopSelection();
                   }
             return cs->repeatList().tick2utick(cs->loopInTick().ticks());
             }
@@ -1215,7 +1267,7 @@ void Seq::seek(int utick)
 
 void Seq::seekRT(int utick)
       {
-      if (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT) && utick > endUTick)
+      if (cachedPrefs.useJackTransport && utick > endUTick)
                   utick = 0;
       seekCommon(utick);
       setPos(utick);
@@ -1288,11 +1340,18 @@ void Seq::stopNotes(int channel, bool realTime)
                   putEvent(event);
             else
                   sendEvent(event);
-      };
+            };
+      // For VSTs/devices that do not support All Notes Off
+      // CTRL_ALL_NOTES_OFF should still be evoked after calling this function, even if it seems redundant
+      auto turnAllNotesOff = [send](int channel) {
+            for (unsigned note = 0; note < 128; note++)
+                  send(NPlayEvent(ME_NOTEOFF, channel, note, 0));
+            };
       // Stop notes in all channels
       if (channel == -1) {
-            for(int ch = 0; ch < int(cs->midiMapping().size()); ch++) {
+            for(unsigned ch = 0; ch < cs->midiMapping().size(); ch++) {
                   send(NPlayEvent(ME_CONTROLLER, ch, CTRL_SUSTAIN, 0));
+                  turnAllNotesOff(ch);
                   send(NPlayEvent(ME_CONTROLLER, ch, CTRL_ALL_NOTES_OFF, 0));
                   if (cs->midiChannel(ch) != 9)
                         send(NPlayEvent(ME_PITCHBEND,  ch, 0, 64));
@@ -1300,12 +1359,14 @@ void Seq::stopNotes(int channel, bool realTime)
             }
       else {
             send(NPlayEvent(ME_CONTROLLER, channel, CTRL_SUSTAIN, 0));
+            turnAllNotesOff(channel);
             send(NPlayEvent(ME_CONTROLLER, channel, CTRL_ALL_NOTES_OFF, 0));
             if (cs->midiChannel(channel) != 9)
                   send(NPlayEvent(ME_PITCHBEND,  channel, 0, 64));
             }
-      if (preferences.getBool(PREF_IO_ALSA_USEALSAAUDIO) || preferences.getBool(PREF_IO_JACK_USEJACKAUDIO) || preferences.getBool(PREF_IO_PULSEAUDIO_USEPULSEAUDIO) || preferences.getBool(PREF_IO_PORTAUDIO_USEPORTAUDIO))
-            _synti->allNotesOff(channel);
+      if (cachedPrefs.useAlsaAudio || cachedPrefs.useJackAudio || cachedPrefs.usePulseAudio || cachedPrefs.usePortAudio) {
+            guiToSeq(SeqMsg(SeqMsgId::ALL_NOTE_OFF, channel));
+            }
       }
 
 //---------------------------------------------------------
@@ -1520,7 +1581,7 @@ void Seq::putEvent(const NPlayEvent& event, unsigned framePos)
       _synti->play(event, syntiIdx);
 
       // midi
-      if (_driver != 0 && (preferences.getBool(PREF_IO_JACK_USEJACKMIDI) || preferences.getBool(PREF_IO_ALSA_USEALSAAUDIO) || preferences.getBool(PREF_IO_PORTAUDIO_USEPORTAUDIO)))
+      if (_driver != 0 && (cachedPrefs.useJackMidi || cachedPrefs.useAlsaAudio || cachedPrefs.usePortAudio))
             _driver->putEvent(event, framePos);
       }
 
@@ -1626,7 +1687,7 @@ void Seq::heartBeatTimeout()
 
       PianoTools* piano = mscore->pianoTools();
       if (piano && piano->isVisible())
-            piano->setPlaybackNotes(markedNotes);
+            piano->updateAllKeys();
 
       cv->update(cv->toPhysical(r));
       }
@@ -1719,8 +1780,21 @@ void Seq::setPos(POS, unsigned t)
 
 void Seq::setLoopSelection()
       {
-      cs->setLoopInTick(cs->selection().tickStart());
-      cs->setLoopOutTick(cs->selection().tickEnd());
+      const Score* score = mscore->currentScore();
+      Q_ASSERT(!score || score->masterScore() == cs);
+
+      if (score && score->selection().isRange()) {
+            cs->setLoopInTick(score->selection().tickStart());
+            cs->setLoopOutTick(score->selection().tickEnd());      
+            }
+      
+      // add a dummy event to loop end if it is not already there
+      // this is to let the playback reach the end completely before starting again
+      if (!events.count(cs->loopOutTick().ticks())) {
+            NPlayEvent ev;
+            ev.setValue(ME_INVALID);
+            events.insert(std::pair<int, Ms::NPlayEvent>(cs->loopOutTick().ticks(), ev));
+            }
       }
 
 //---------------------------------------------------------
@@ -1743,7 +1817,7 @@ void Seq::handleTimeSigTempoChanged()
 void Seq::setInitialMillisecondTimestampWithLatency()
       {
      #ifdef USE_PORTMIDI
-           initialMillisecondTimestampWithLatency = Pt_Time() + preferences.getInt(PREF_IO_PORTMIDI_OUTPUTLATENCYMILLISECONDS);
+           initialMillisecondTimestampWithLatency = Pt_Time() + cachedPrefs.portMidiOutputLatencyMilliseconds;
            //qDebug("PortMidi initialMillisecondTimestampWithLatency: %d = %d + %d", initialMillisecondTimestampWithLatency, unsigned(Pt_Time()), preferences.getInt(PREF_IO_PORTMIDI_OUTPUTLATENCYMILLISECONDS));
      #endif
      }

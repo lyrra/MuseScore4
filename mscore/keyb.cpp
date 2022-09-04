@@ -75,7 +75,13 @@ void MuseScore::updateInputState(Score* score)
                   is.setDuration(d);
                   }
             Staff* staff = score->staff(is.track() / VOICES);
-            switch (staff->staffType(is.tick())->group()) {
+
+            //if not tab, note entry depends on instrument (override StaffGroup) 
+            StaffGroup staffGroup = staff->staffType(is.tick())->group();
+            if (staffGroup != StaffGroup::TAB)
+                  staffGroup = staff->part()->instrument(is.tick())->useDrumset() ? StaffGroup::PERCUSSION : StaffGroup::STANDARD;
+
+            switch (staffGroup) {
                   case StaffGroup::STANDARD:
                         changeState(STATE_NOTE_ENTRY_STAFF_PITCHED);
                         break;
@@ -87,6 +93,8 @@ void MuseScore::updateInputState(Score* score)
                         break;
                   }
             }
+      else
+            is.update(score->selection());
 
       getAction("pad-rest")->setChecked(is.rest());
       getAction("pad-dot")->setChecked(is.duration().dots() == 1);
@@ -129,6 +137,15 @@ void MuseScore::updateInputState(Score* score)
       getAction("pad-note-32")->setChecked(is.duration() == TDuration::DurationType::V_32ND);
       getAction("pad-note-64")->setChecked(is.duration() == TDuration::DurationType::V_64TH);
       getAction("pad-note-128")->setChecked(is.duration() == TDuration::DurationType::V_128TH);
+      getAction("pad-note-256")->setChecked(is.duration() == TDuration::DurationType::V_256TH);
+      getAction("pad-note-512")->setChecked(is.duration() == TDuration::DurationType::V_512TH);
+      getAction("pad-note-1024")->setChecked(is.duration() == TDuration::DurationType::V_1024TH);
+
+      getAction("sharp2")->setChecked(is.accidentalType() == AccidentalType::SHARP2);
+      getAction("sharp")->setChecked(is.accidentalType() == AccidentalType::SHARP);
+      getAction("nat")->setChecked(is.accidentalType() == AccidentalType::NATURAL);
+      getAction("flat")->setChecked(is.accidentalType() == AccidentalType::FLAT);
+      getAction("flat2")->setChecked(is.accidentalType() == AccidentalType::FLAT2);
 
       // uncheck all voices if multi-selection
       int voice = score->selection().isSingle() ? is.voice() : -1;
@@ -136,6 +153,21 @@ void MuseScore::updateInputState(Score* score)
       getAction("voice-2")->setChecked(voice == 1);
       getAction("voice-3")->setChecked(voice == 2);
       getAction("voice-4")->setChecked(voice == 3);
+
+      QAction* tieAction = getAction("tie");
+      if (is.noteEntryMode())
+            tieAction->setChecked(false);
+      else {
+            const std::vector<Note*> cmdTieNotes = Score::cmdTieNoteList(score->selection(), false);
+            bool onlyTiedNotes = !cmdTieNotes.empty();
+            for (Note* n : cmdTieNotes) {
+                  if (!n->tieFor()) {
+                        onlyTiedNotes = false;
+                        break;
+                        }
+                  }
+            tieAction->setChecked(onlyTiedNotes);
+            }
 
       getAction("acciaccatura")->setChecked(is.noteType() == NoteType::ACCIACCATURA);
       getAction("appoggiatura")->setChecked(is.noteType() == NoteType::APPOGGIATURA);
@@ -149,6 +181,7 @@ void MuseScore::updateInputState(Score* score)
       getAction("beam-mid")->setChecked(is.beamMode()   == Beam::Mode::MID);
       getAction("no-beam")->setChecked(is.beamMode()    == Beam::Mode::NONE);
       getAction("beam32")->setChecked(is.beamMode()     == Beam::Mode::BEGIN32);
+      getAction("beam64")->setChecked(is.beamMode()     == Beam::Mode::BEGIN64);
       getAction("auto-beam")->setChecked(is.beamMode()  == Beam::Mode::AUTO);
 
       if(is.noteEntryMode() && !is.rest())

@@ -18,7 +18,7 @@
     </SC>
   <SC>
     <key>file-save-as</key>
-    <std>63</std>
+    <seq>Ctrl+Shift+S</seq>
     </SC>
   <SC>
     <key>file-close</key>
@@ -281,6 +281,14 @@
     <seq>Alt+Left</seq>
     </SC>
   <SC>
+    <key>palette-search</key>
+    <seq>Ctrl+F9</seq>
+    </SC>
+  <SC>
+    <key>get-location</key>
+    <seq>Shift+L</seq>
+    </SC>
+  <SC>
     <key>move-up</key>
     <seq>Ctrl+Shift+Up</seq>
     </SC>
@@ -373,12 +381,20 @@
     <seq>Shift+Down</seq>
     </SC>
   <SC>
-    <key>page-prev</key>
+    <key>scr-prev</key>
     <seq>PgUp</seq>
     </SC>
   <SC>
-    <key>page-next</key>
+    <key>scr-next</key>
     <seq>PgDown</seq>
+    </SC>
+  <SC>
+    <key>page-prev</key>
+    <seq>Ctrl+PgUp</seq>
+    </SC>
+  <SC>
+    <key>page-next</key>
+    <seq>Ctrl+PgDown</seq>
     </SC>
   <SC>
     <key>page-top</key>
@@ -1011,11 +1027,23 @@
     <seq>Ctrl+Shift+V</seq>
     </SC>
   <SC>
-    <key>toggle-insert-mode</key>
-    <seq>Ctrl+I</seq>
+    <key>toggle-autoplace</key>
+    <seq>=</seq>
     </SC>
-    <SC>
-      <key>toggle-autoplace</key>
-      <seq>=</seq>
-      </SC>
+  <SC>
+    <key>zoom-in-horiz-pre</key>
+    <seq>Ctrl++</seq>
+    </SC>
+  <SC>
+    <key>zoom-out-horiz-pre</key>
+    <seq>Ctrl+-</seq>
+    </SC>
+  <SC>
+    <key>zoom-in-vert-pre</key>
+    <seq>Ctrl+Shift++</seq>
+    </SC>
+  <SC>
+    <key>zoom-out-vert-pre</key>
+    <seq>Ctrl+Shift+-</seq>
+    </SC>
   </Shortcuts>

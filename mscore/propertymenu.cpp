@@ -20,14 +20,10 @@
 #include "libmscore/mscore.h"
 
 #include "articulationprop.h"
-#include "bendproperties.h"
-#include "tremolobarprop.h"
 #include "timesigproperties.h"
-#include "sectionbreakprop.h"
 #include "stafftextproperties.h"
-#include "fretproperties.h"
 #include "selinstrument.h"
-#include "pianoroll.h"
+#include "pianoroll/pianoroll.h"
 #include "editstyle.h"
 #include "editstaff.h"
 #include "measureproperties.h"
@@ -39,7 +35,6 @@
 #include "libmscore/text.h"
 #include "libmscore/articulation.h"
 #include "libmscore/volta.h"
-#include "libmscore/tremolobar.h"
 #include "libmscore/timesig.h"
 #include "libmscore/accidental.h"
 #include "libmscore/clef.h"
@@ -58,10 +53,13 @@
 #include "libmscore/glissando.h"
 #include "libmscore/fret.h"
 #include "libmscore/instrchange.h"
+#include "libmscore/instrtemplate.h"
 #include "libmscore/slur.h"
 #include "libmscore/jump.h"
 #include "libmscore/marker.h"
 #include "libmscore/measure.h"
+#include "libmscore/iname.h"
+#include "libmscore/system.h"
 
 namespace Ms {
 
@@ -133,13 +131,11 @@ void ScoreView::createElementPropertyMenu(Element* e, QMenu* popup)
             popup->addAction(getAction("flip"));
       else if (e->isHook())
             popup->addAction(getAction("flip"));
-      else if (e->isBend()) {
-            genPropertyMenu1(e, popup);
-            popup->addAction(tr("Bend Properties…"))->setData("b-props");
-            }
-      else if (e->isTremoloBar()) {
-            genPropertyMenu1(e, popup);
-            popup->addAction(tr("Tremolo Bar Properties…"))->setData("tr-props");
+      else if (e->isTBox()) {
+            QMenu* textMenu = popup->addMenu(tr("Add"));
+            // borrow translation info from global actions
+            // but create new actions with local handler
+            textMenu->addAction(getAction("frame-text")->text())->setData("frame-text");
             }
       else if (e->isHBox()) {
             QMenu* textMenu = popup->addMenu(tr("Add"));
@@ -165,12 +161,10 @@ void ScoreView::createElementPropertyMenu(Element* e, QMenu* popup)
             genPropertyMenu1(e, popup);
       else if (e->isTimeSig()) {
             genPropertyMenu1(e, popup);
-            TimeSig* ts = static_cast<TimeSig*>(e);
-            int _track = ts->track();
-            // if the time sig. is not generated (= not courtesy) and is in track 0
-            // add the specific menu item
+            TimeSig* ts = toTimeSig(e);
+            // if the time sig. is not generated (= not courtesy) add the specific menu item
             QAction* a;
-            if (!ts->generated() && !_track && ts->measure() != score()->firstMeasure()) {
+            if (!ts->generated() && ts->measure() != score()->firstMeasure()) {
                   a = popup->addAction(ts->showCourtesySig()
                      ? tr("Hide Courtesy Time Signature")
                      : tr("Show Courtesy Time Signature") );
@@ -183,10 +177,9 @@ void ScoreView::createElementPropertyMenu(Element* e, QMenu* popup)
             }
       else if (e->isClef()) {
             genPropertyMenu1(e, popup);
-            Clef* clef = static_cast<Clef*>(e);
-            // if the clef is not generated (= not courtesy) add the specific menu item
-            if (!e->generated() && clef->measure() != score()->firstMeasure()) {
-                  QAction* a = popup->addAction(static_cast<Clef*>(e)->showCourtesy()
+            Clef* clef = toClef(e);
+            if (clef->measure() != score()->firstMeasure()) {
+                  QAction* a = popup->addAction(toClef(e)->showCourtesy()
                      ? tr("Hide Courtesy Clef")
                      : tr("Show Courtesy Clef") );
                         a->setData("clef-courtesy");
@@ -209,13 +202,17 @@ void ScoreView::createElementPropertyMenu(Element* e, QMenu* popup)
                || e->isFiguredBass()) {
             genPropertyMenuText(e, popup);
             }
-      else if (e->isHarmony())
+      else if (e->isHarmony()) {
             genPropertyMenu1(e, popup);
+            QAction* a = getAction("realize-chord-symbols");
+            if (a)
+                  popup->addAction(a->text())->setData("realize-chord-symbols-dialog");
+            }
       else if (e->isTempoText())
             genPropertyMenu1(e, popup);
       else if (e->isKeySig()) {
             genPropertyMenu1(e, popup);
-            KeySig* ks = static_cast<KeySig*>(e);
+            KeySig* ks = toKeySig(e);
             if (!e->generated() && ks->measure() != score()->firstMeasure()) {
                   QAction* a = popup->addAction(ks->showCourtesy()
                      ? tr("Hide Courtesy Key Signature")
@@ -242,7 +239,7 @@ void ScoreView::createElementPropertyMenu(Element* e, QMenu* popup)
             a = new QAction(tr("Measure Properties…"), 0);
             a->setData("measure-props");
             // disable property changes for multi measure rests
-            a->setEnabled(!static_cast<Rest*>(e)->segment()->measure()->isMMRest());
+            a->setEnabled(!toRest(e)->segment()->measure()->isMMRest());
 
             popup->insertAction(b, a);
             genPropertyMenu1(e, popup);
@@ -260,29 +257,30 @@ void ScoreView::createElementPropertyMenu(Element* e, QMenu* popup)
             a = new QAction(tr("Measure Properties…"), 0);
             a->setData("measure-props");
             // disable property changes for multi measure rests
-            a->setEnabled(!static_cast<Note*>(e)->chord()->segment()->measure()->isMMRest());
+            a->setEnabled(!toNote(e)->chord()->segment()->measure()->isMMRest());
 
             popup->insertAction(b, a);
 
             genPropertyMenu1(e, popup);
-            popup->addSeparator();
 
-            popup->addAction(tr("Style…"))->setData("style");
-            if (enableExperimental)
+            if (enableExperimental) {
+                  popup->addSeparator();
                   popup->addAction(tr("Chord Articulation…"))->setData("articulation");
+                  }
             }
-      else if (e->isLayoutBreak() && toLayoutBreak(e)->layoutBreakType() == LayoutBreak::Type::SECTION)
-            popup->addAction(tr("Section Break Properties…"))->setData("break-props");
       else if (e->isInstrumentChange()) {
             genPropertyMenu1(e, popup);
-            popup->addAction(tr("Change Instrument…"))->setData("ch-instr");
+            popup->addAction(tr("Select Instrument…"))->setData("ch-instr");
             }
-//      else if (e->isFretDiagram())
-//            popup->addAction(tr("Fretboard Diagram Properties…"))->setData("fret-props");
       else if (e->isInstrumentName())
             popup->addAction(tr("Staff/Part Properties…"))->setData("staff-props");
       else
             genPropertyMenu1(e, popup);
+
+      if (EditStyle::elementHasPage(e)) {
+            popup->addSeparator();
+            popup->addAction(tr("Style…"))->setData("style");
+            }
       }
 
 //---------------------------------------------------------
@@ -292,24 +290,21 @@ void ScoreView::createElementPropertyMenu(Element* e, QMenu* popup)
 void ScoreView::elementPropertyAction(const QString& cmd, Element* e)
       {
       if (cmd == "a-props") {
-            ArticulationProperties rp(static_cast<Articulation*>(e));
-            rp.exec();
+            editArticulationProperties(toArticulation(e));
             }
-      else if (cmd == "b-props")
-            editBendProperties(static_cast<Bend*>(e));
       else if (cmd == "measure-props") {
             Measure* m = 0;
             if (e->type() == ElementType::NOTE)
-                  m = static_cast<Note*>(e)->chord()->segment()->measure();
+                  m = toNote(e)->chord()->segment()->measure();
             else if (e->type() == ElementType::REST)
-                  m = static_cast<Rest*>(e)->segment()->measure();
+                  m = toRest(e)->segment()->measure();
             if (m) {
                   MeasureProperties vp(m);
                   vp.exec();
                   }
             }
       else if (cmd == "picture") {
-            mscore->addImage(score(), static_cast<HBox*>(e));
+            mscore->addImage(score(), e);
             }
       else if (cmd == "frame-text") {
             Text* t = new Text(score(), Tid::FRAME);
@@ -362,33 +357,18 @@ void ScoreView::elementPropertyAction(const QString& cmd, Element* e)
             score()->select(s, SelectType::SINGLE, 0);
             startEditMode(s);
             }
-      else if (cmd == "tr-props")
-            editTremoloBarProperties(static_cast<TremoloBar*>(e));
       if (cmd == "ts-courtesy") {
-            TimeSig* ts = static_cast<TimeSig*>(e);
-            ts->undoChangeProperty(Pid::SHOW_COURTESY, !ts->showCourtesySig());
+            for (int stave = 0; stave < score()->nstaves(); stave++) {
+                  TimeSig* ts = toTimeSig(toSegment(e->parent())->element(stave*VOICES));
+                  if (ts)
+                        ts->undoChangeProperty(Pid::SHOW_COURTESY, !ts->showCourtesySig());
+                  }
             }
       else if (cmd == "ts-props") {
-            TimeSig* ts = static_cast<TimeSig*>(e);
-            TimeSig* r = new TimeSig(*ts);
-            TimeSigProperties tsp(r);
-
-            if (tsp.exec()) {
-                  ts->undoChangeProperty(Pid::SHOW_COURTESY,      r->showCourtesySig());
-                  ts->undoChangeProperty(Pid::NUMERATOR_STRING,   r->numeratorString());
-                  ts->undoChangeProperty(Pid::DENOMINATOR_STRING, r->denominatorString());
-                  ts->undoChangeProperty(Pid::TIMESIG_TYPE,       int(r->timeSigType()));
-                  ts->undoChangeProperty(Pid::GROUPS,        QVariant::fromValue<Groups>(r->groups()));
-
-                  if (r->sig() != ts->sig()) {
-                        score()->cmdAddTimeSig(ts->measure(), ts->staffIdx(), r, true);
-                        r = 0;
-                        }
-                  }
-            delete r;
+            editTimeSigProperties(toTimeSig(e));
             }
       else if (cmd == "smallNote")
-            e->undoChangeProperty(Pid::SMALL, !static_cast<Note*>(e)->small());
+            e->undoChangeProperty(Pid::SMALL, !toNote(e)->isSmall());
       else if (cmd == "clef-courtesy") {
             Clef* clef = toClef(e);
             bool show = !clef->showCourtesy();
@@ -398,29 +378,19 @@ void ScoreView::elementPropertyAction(const QString& cmd, Element* e)
                   otherClef->undoChangeProperty(Pid::SHOW_COURTESY, show);
             }
       else if (cmd == "st-props") {
-            StaffTextProperties rp(toStaffTextBase(e));
-            if (rp.exec()) {
-                  Score* score = e->score();
-                  StaffTextBase* nt = toStaffTextBase(rp.staffTextBase()->clone());
-                  nt->setScore(score);
-                  score->undoChangeElement(e, nt);
-                  score->masterScore()->updateChannel();
-                  score->updateCapo();
-                  score->updateSwing();
-                  score->setPlaylistDirty();
-                  }
+            editStaffTextProperties(toStaffTextBase(e));
             }
 #if 0
       else if (cmd == "text-style") {
-            Text* t = static_cast<Text*>(e);
+            Text* t = toText(e);
             QString name = t->textStyle().name();
             TextStyleDialog ts(0, score());
             ts.setPage(name);
             ts.exec();
             }
       else if (cmd == "text-props") {
-            Text* ot    = static_cast<Text*>(e);
-            Text* nText = static_cast<Text*>(ot->clone());
+            Text* ot    = toText(e);
+            Text* nText = toText(ot->clone());
             TextProperties tp(nText);
             int rv = tp.exec();
             if (rv) {
@@ -438,11 +408,13 @@ void ScoreView::elementPropertyAction(const QString& cmd, Element* e)
             }
 #endif
       else if (cmd == "key-courtesy") {
-            KeySig* ks = static_cast<KeySig*>(e);
-            score()->undo(new ChangeKeySig(ks, ks->keySigEvent(), !ks->showCourtesy() /*, ks->showNaturals()*/));
+            for (int stave = 0; stave < score()->nstaves(); stave++) {
+                  KeySig* ks = toKeySig(toSegment(e->parent())->element(stave*VOICES));
+                  score()->undo(new ChangeKeySig(ks, ks->keySigEvent(), !ks->showCourtesy() /*, ks->showNaturals()*/));
+                  }
             }
       else if (cmd == "ss-props") {
-            StaffState* ss = static_cast<StaffState*>(e);
+            StaffState* ss = toStaffState(e);
             SelectInstrument si(ss->instrument(), 0);
             if (si.exec()) {
                   const InstrumentTemplate* it = si.instrTemplate();
@@ -459,78 +431,36 @@ void ScoreView::elementPropertyAction(const QString& cmd, Element* e)
                   }
             }
       else if (cmd == "articulation") {
-            Note* note = static_cast<Note*>(e);
+            Note* note = toNote(e);
             mscore->editInPianoroll(note->staff());
             }
-      else if (cmd == "style") {
-            EditStyle es(e->score(), 0);
-            es.setPage(EditStyle::PAGE_NOTE);
-            es.exec();
-            }
-      else if (cmd == "break-props") {
-            LayoutBreak* lb = static_cast<LayoutBreak*>(e);
-            SectionBreakProperties sbp(lb, 0);
-            if (sbp.exec()) {
-                  if (lb->pause() != sbp.pause()
-                     || lb->startWithLongNames() != sbp.startWithLongNames()
-                     || lb->startWithMeasureOne() != sbp.startWithMeasureOne()) {
-                        LayoutBreak* nlb = new LayoutBreak(*lb);
-                        nlb->setParent(lb->parent());
-                        nlb->setPause(sbp.pause());
-                        nlb->setStartWithLongNames(sbp.startWithLongNames());
-                        nlb->setStartWithMeasureOne(sbp.startWithMeasureOne());
-                        // propagate in parts
-                        lb->undoChangeProperty(Pid::PAUSE, sbp.pause());
-                        score()->undoChangeElement(lb, nlb);
-                        }
-                  }
-            }
-      else if (cmd == "ch-instr") {
-            InstrumentChange* ic = static_cast<InstrumentChange*>(e);
-            SelectInstrument si(ic->instrument(), 0);
-            if (si.exec()) {
-                  const InstrumentTemplate* it = si.instrTemplate();
-                  if (it) {
-                        Fraction tickStart = ic->segment()->tick();
-                        Part* part = ic->staff()->part();
-                        Interval oldV = part->instrument(tickStart)->transpose();
-                        //Instrument* oi = ic->instrument();  //part->instrument(tickStart);
-                        //Instrument* instrument = new Instrument(Instrument::fromTemplate(it));
-                        // change instrument in all linked scores
-                        for (ScoreElement* se : ic->linkList()) {
-                              InstrumentChange* lic = static_cast<InstrumentChange*>(se);
-                              Instrument* instrument = new Instrument(Instrument::fromTemplate(it));
-                              lic->score()->undo(new ChangeInstrument(lic, instrument));
-                              }
-                        // transpose for current score only
-                        // this automatically propagates to linked scores
-                        if (part->instrument(tickStart)->transpose() != oldV) {
-                              auto i = part->instruments()->upper_bound(tickStart.ticks());    // find(), ++i
-                              Fraction tickEnd;
-                              if (i == part->instruments()->end())
-                                    tickEnd = Fraction(-1, 1);
-                              else
-                                    tickEnd = Fraction::fromTicks(i->first);
-                              ic->score()->transpositionChanged(part, oldV, tickStart, tickEnd);
-                              }
-                        }
-                  else
-                        qDebug("no template selected?");
-                  }
-           }
-//      else if (cmd == "fret-props")
-//            editFretDiagram(static_cast<FretDiagram*>(e));
+      else if (cmd == "style")
+            mscore->showStyleDialog(e);
+      else if (cmd == "ch-instr")
+            selectInstrument(toInstrumentChange(e));
       else if (cmd == "staff-props") {
             Fraction tick = {-1,1};
-            if (e->isChordRest())
-                  tick = static_cast<ChordRest*>(e)->tick();
-            else if (e->type() == ElementType::NOTE)
-                  tick = static_cast<Note*>(e)->chord()->tick();
-            else if (e->type() == ElementType::MEASURE)
-                  tick = static_cast<Measure*>(e)->tick();
+            if (e->isChordRest()) {
+                  tick = toChordRest(e)->tick();
+                  }
+            else if (e->isNote()) {
+                  tick = toNote(e)->chord()->tick();
+                  }
+            else if (e->isMeasure()) {
+                  tick = toMeasure(e)->tick();
+                  }
+            else if (e->isInstrumentName()) {
+                  System* system = toSystem(toInstrumentName(e)->parent());
+                  Measure* m = system ? system->firstMeasure() : nullptr;
+                  if (m)
+                        tick = m->tick();
+                  }
+            score()->startCmd();
             EditStaff editStaff(e->staff(), tick, 0);
             connect(&editStaff, SIGNAL(instrumentChanged()), mscore, SLOT(instrumentChanged()));
             editStaff.exec();
+            if (score()->undoStack()->active())
+                  score()->endCmd();
             }
       else if (cmd.startsWith("layer-")) {
             int n = cmd.mid(6).toInt();
@@ -539,54 +469,76 @@ void ScoreView::elementPropertyAction(const QString& cmd, Element* e)
             }
       }
 
-#if 0
 //---------------------------------------------------------
-//   editFretDiagram
+//   editArticulationProperties
 //---------------------------------------------------------
 
-void ScoreView::editFretDiagram(FretDiagram* fd)
+void ScoreView::editArticulationProperties(Articulation* ar)
       {
-      FretDiagram* nFret = const_cast<FretDiagram*>(fd->clone());
-      FretDiagramProperties fp(nFret, 0);
-      int rv = fp.exec();
-      nFret->layout();
-      if (rv) {
-            for (ScoreElement* ee : fd->linkList()) {
-                  Element* e = static_cast<Element*>(ee);
-                  FretDiagram* f = static_cast<FretDiagram*>(nFret->clone());
-                  f->setScore(e->score());
-                  f->setTrack(e->track());
-                  e->score()->undoChangeElement(e, f);
+      ArticulationProperties rp(ar);
+      rp.exec();
+      }
+
+//---------------------------------------------------------
+//   editTimeSigProperties
+//---------------------------------------------------------
+
+void ScoreView::editTimeSigProperties(TimeSig* ts)
+      {
+      TimeSig* r = new TimeSig(*ts);
+      TimeSigProperties tsp(r);
+
+      if (tsp.exec()) {
+            ts->undoChangeProperty(Pid::TIMESIG_TYPE, int(r->timeSigType()));
+            ts->undoChangeProperty(Pid::SHOW_COURTESY, r->showCourtesySig());
+            ts->undoChangeProperty(Pid::NUMERATOR_STRING, r->numeratorString());
+            ts->undoChangeProperty(Pid::DENOMINATOR_STRING, r->denominatorString());
+            ts->undoChangeProperty(Pid::GROUPS, QVariant::fromValue<Groups>(r->groups()));
+
+            if (r->sig() != ts->sig()) {
+                  score()->cmdAddTimeSig(ts->measure(), ts->staffIdx(), r, true);
+                  r = 0;
                   }
             }
-      delete nFret;
+      delete r;
       }
-#endif
 
 //---------------------------------------------------------
-//   editBendProperties
+//   selectInstrument
 //---------------------------------------------------------
 
-void ScoreView::editBendProperties(Bend* bend)
+void Ms::ScoreView::selectInstrument(InstrumentChange* ic)
       {
-      BendProperties bp(bend, 0);
-      if (bp.exec()) {
-            for (ScoreElement* b : bend->linkList())
-                  b->score()->undo(new ChangeBend(toBend(b), bp.points()));
+      SelectInstrument si(ic->instrument(), 0);
+      if (si.exec()) {
+            const InstrumentTemplate* it = si.instrTemplate();
+            if (it) {
+                  Instrument instr = Instrument::fromTemplate(it);
+                  ic->setInit(true);
+                  ic->setupInstrument(&instr);
+                  }
+            else
+                  qDebug("no template selected?");
             }
       }
 
 //---------------------------------------------------------
-//   editTremoloBarProperties
+//   editStaffTextProperties
 //---------------------------------------------------------
 
-void ScoreView::editTremoloBarProperties(TremoloBar* tb)
+void ScoreView::editStaffTextProperties(StaffTextBase* st)
       {
-      TremoloBarProperties bp(tb, 0);
-      if (bp.exec()) {
-            for (ScoreElement* b : tb->linkList())
-                  score()->undo(new ChangeTremoloBar(static_cast<TremoloBar*>(b), bp.points()));
+      StaffTextProperties rp(st);
+      if (rp.exec()) {
+            Score* score = st->score();
+            StaffTextBase* nt = toStaffTextBase(rp.staffTextBase()->clone());
+            nt->setScore(score);
+            score->undoChangeElement(st, nt);
+            score->masterScore()->updateChannel();
+            score->updateCapo();
+            score->updateSwing();
+            score->setPlaylistDirty();
             }
       }
+
 }
-

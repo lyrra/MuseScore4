@@ -23,10 +23,11 @@
 #include "libmscore/rendermidi.h"
 #include "libmscore/sequencer.h"
 #include "libmscore/fraction.h"
-#include "synthesizer/event.h"
-#include "driver.h"
 #include "libmscore/fifo.h"
 #include "libmscore/tempo.h"
+
+#include "audio/midi/event.h"
+#include "audio/drivers/driver.h"
 
 class QTimer;
 
@@ -55,6 +56,7 @@ enum class SeqMsgId : char {
       NO_MESSAGE,
       TEMPO_CHANGE,
       PLAY, SEEK,
+      ALL_NOTE_OFF,
       MIDI_INPUT_EVENT
       };
 
@@ -165,6 +167,28 @@ class Seq : public QObject, public Sequencer {
       QTimer* heartBeatTimer;
       QTimer* noteTimer;
 
+      /**
+       * Preferences cached for faster access in realtime context.
+       * Using QSettings-based Ms::Preferences directly results in
+       * audible glitches on some systems (esp. MacOS, see #280493).
+       */
+      struct CachedPreferences {
+            int portMidiOutputLatencyMilliseconds = 0;
+            bool jackTimeBaseMaster = false;
+            bool useJackTransport = false;
+            bool useJackMidi = false;
+            bool useJackAudio = false;
+            bool useAlsaAudio = false;
+            bool usePortAudio = false;
+            bool usePulseAudio = false;
+
+            void update();
+            };
+      CachedPreferences cachedPrefs;
+
+      void startTransport();
+      void stopTransport();
+
       void renderChunk(const MidiRenderer::Chunk&, EventMap*);
       void updateEventsEnd();
 
@@ -266,6 +290,8 @@ class Seq : public QObject, public Sequencer {
 
       void setInitialMillisecondTimestampWithLatency();
       unsigned getCurrentMillisecondTimestampWithLatency(unsigned framePos) const;
+
+      void preferencesChanged() { cachedPrefs.update(); }
       };
 
 extern Seq* seq;

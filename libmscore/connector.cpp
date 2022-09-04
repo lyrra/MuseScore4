@@ -177,7 +177,7 @@ ConnectorInfo* ConnectorInfo::findFirst()
       while (i->_prev) {
             i = i->_prev;
             if (i == this) {
-                  qWarning("ConnectorInfo::findFirst: circular connector %p", this);
+                  qDebug("ConnectorInfo::findFirst: circular connector %p", this);
                   return nullptr;
                   }
             }
@@ -203,7 +203,7 @@ ConnectorInfo* ConnectorInfo::findLast()
       while (i->_next) {
             i = i->_next;
             if (i == this) {
-                  qWarning("ConnectorInfo::findLast: circular connector %p", this);
+                  qDebug("ConnectorInfo::findLast: circular connector %p", this);
                   return nullptr;
                   }
             }
@@ -277,7 +277,7 @@ ConnectorInfo* ConnectorInfo::end()
 //---------------------------------------------------------
 
 ConnectorInfoReader::ConnectorInfoReader(XmlReader& e, Element* current, int track)
-   : ConnectorInfo(current, track), _reader(&e), _connector(nullptr), _currentElement(current), _connectorReceiver(current)
+   : ConnectorInfo(current, track), _reader(&e), _connector(nullptr), _connectorReceiver(current)
       {}
 
 //---------------------------------------------------------
@@ -295,7 +295,7 @@ static Location readPositionInfo(const XmlReader& e, int track) {
 //---------------------------------------------------------
 
 ConnectorInfoReader::ConnectorInfoReader(XmlReader& e, Score* current, int track)
-   : ConnectorInfo(current, readPositionInfo(e, track)), _reader(&e), _connector(nullptr), _currentElement(nullptr), _connectorReceiver(current)
+   : ConnectorInfo(current, readPositionInfo(e, track)), _reader(&e), _connector(nullptr), _connectorReceiver(current)
       {
       setCurrentUpdated(true);
       }
@@ -324,7 +324,7 @@ void ConnectorInfoWriter::write()
       XmlWriter& xml = *_xml;
       if (!xml.canWrite(_connector))
             return;
-      xml.stag(QString("%1 type=\"%2\"").arg(tagName()).arg(_connector->name()));
+      xml.stag(QString("%1 type=\"%2\"").arg(tagName(), _connector->name()));
       if (isStart())
             _connector->write(xml);
       if (hasPrevious()) {
@@ -365,7 +365,7 @@ bool ConnectorInfoReader::read()
                   if (tag == name)
                         _connector = Element::name2Element(tag, _connectorReceiver->score());
                   else
-                        qWarning("ConnectorInfoReader::read: element tag (%s) does not match connector type (%s). Is the file corrupted?", tag.toLatin1().constData(), name.toLatin1().constData());
+                        qDebug("ConnectorInfoReader::read: element tag (%s) does not match connector type (%s). Is the file corrupted?", tag.toLatin1().constData(), name.toLatin1().constData());
 
                   if (!_connector) {
                         e.unknown();

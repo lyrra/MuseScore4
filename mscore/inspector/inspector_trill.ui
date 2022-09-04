@@ -228,7 +228,7 @@
        </widget>
       </item>
       <item row="3" column="0">
-       <widget class="QLabel" name="label_3">
+       <widget class="QLabel" name="labelOrnamentStyle">
         <property name="text">
          <string>Ornament style:</string>
         </property>
@@ -275,22 +275,6 @@
  </tabstops>
  <resources/>
  <connections>
-  <connection>
-   <sender>playArticulation</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>label_3</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>42</x>
-     <y>147</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>49</x>
-     <y>164</y>
-    </hint>
-   </hints>
-  </connection>
   <connection>
    <sender>playArticulation</sender>
    <signal>toggled(bool)</signal>

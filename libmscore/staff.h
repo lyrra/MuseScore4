@@ -19,7 +19,7 @@
 */
 
 #include "mscore.h"
-#include "velo.h"
+#include "changeMap.h"
 #include "pitch.h"
 #include "cleflist.h"
 #include "keylist.h"
@@ -42,6 +42,7 @@ class Clef;
 class TimeSig;
 class Ottava;
 class BracketItem;
+class Note;
 
 enum class Key;
 
@@ -81,6 +82,7 @@ class Staff final : public ScoreElement {
       bool _cutaway            { false };
       bool _showIfEmpty        { false };       ///< show this staff if system is empty and hideEmptyStaves is true
       bool _hideSystemBarLine  { false };       // no system barline if not preceded by staff with barline
+      bool _mergeMatchingRests { false };       // merge matching rests in multiple voices
       HideMode _hideWhenEmpty  { HideMode::AUTO };    // hide empty staves
 
       QColor _color            { MScore::defaultColor };
@@ -93,11 +95,14 @@ class Staff final : public ScoreElement {
       QMap<int,int> _capoList;
       bool _playbackVoice[VOICES] { true, true, true, true };
 
-      VeloList _velocities;         ///< cached value
+      ChangeMap _velocities;         ///< cached value
+      ChangeMap _velocityMultiplications;         ///< cached value
       PitchList _pitchOffsets;      ///< cached value
 
       void fillBrackets(int);
       void cleanBrackets();
+
+      qreal mag(const StaffType*) const;
 
    public:
       Staff(Score* score = 0);
@@ -105,7 +110,7 @@ class Staff final : public ScoreElement {
       void initFromStaffType(const StaffType* staffType);
       void init(const Staff*);
 
-      virtual ElementType type() const override { return ElementType::STAFF; }
+      ElementType type() const override { return ElementType::STAFF; }
 
       bool isTop() const;
       QString partName() const;
@@ -162,9 +167,7 @@ class Staff final : public ScoreElement {
       void removeKey(const Fraction&);
 
       bool show() const;
-      bool slashStyle(const Fraction&) const;
-      bool invisible() const         { return _invisible;   }
-      void setInvisible(bool val)    { _invisible = val;    }
+      bool stemless(const Fraction&) const;
       bool cutaway() const           { return _cutaway;     }
       void setCutaway(bool val)      { _cutaway = val;      }
       bool showIfEmpty() const       { return _showIfEmpty; }
@@ -174,6 +177,8 @@ class Staff final : public ScoreElement {
       void setHideSystemBarLine(bool val) { _hideSystemBarLine = val;  }
       HideMode hideWhenEmpty() const      { return _hideWhenEmpty;     }
       void setHideWhenEmpty(HideMode v)   { _hideWhenEmpty = v;        }
+      bool mergeMatchingRests() const     { return _mergeMatchingRests;}
+      void setMergeMatchingRests(bool val){ _mergeMatchingRests = val; }
 
       int barLineSpan() const        { return _barLineSpan; }
       int barLineFrom() const        { return _barLineFrom; }
@@ -184,6 +189,10 @@ class Staff final : public ScoreElement {
       qreal height() const;
 
       int channel(const Fraction&, int voice) const;
+
+      QList<Note*> getNotes() const;
+      void addChord(QList<Note*>& list, Chord* chord, int voice) const;
+
       void clearChannelList(int voice)                               { _channelList[voice].clear(); }
       void insertIntoChannelList(int voice, const Fraction& tick, int channelId) { _channelList[voice].insert(tick.ticks(), channelId); }
 
@@ -198,6 +207,7 @@ class Staff final : public ScoreElement {
       //==== staff type helper function
       const StaffType* staffType(const Fraction&) const;
       const StaffType* constStaffType(const Fraction&) const;
+      const StaffType* staffTypeForElement(const Element*) const;
       StaffType* staffType(const Fraction&);
       StaffType* setStaffType(const Fraction&, const StaffType&);
       void removeStaffType(const Fraction&);
@@ -211,19 +221,21 @@ class Staff final : public ScoreElement {
       void setLines(const Fraction&, int lines);
       qreal lineDistance(const Fraction&) const;
 
+      bool invisible(const Fraction&) const;
+      void setInvisible(const Fraction&, bool val);
+
       void setSlashStyle(const Fraction&, bool val);
       int middleLine(const Fraction&) const;
       int bottomLine(const Fraction&) const;
 
-      qreal userMag(const Fraction&) const;
-      void setUserMag(const Fraction&, qreal m);
       qreal mag(const Fraction&) const;
-      bool small(const Fraction&) const;
-      void setSmall(const Fraction&, bool val);
+      qreal mag(const Element*) const;
       qreal spatium(const Fraction&) const;
+      qreal spatium(const Element*) const;
       //===========
 
-      VeloList& velocities()           { return _velocities;     }
+      ChangeMap& velocities()           { return _velocities;     }
+      ChangeMap& velocityMultiplications()      { return _velocityMultiplications;     }
       PitchList& pitchOffsets()        { return _pitchOffsets;   }
 
       int pitchOffset(const Fraction& tick) { return _pitchOffsets.pitchOffset(tick.ticks());   }
@@ -240,14 +252,14 @@ class Staff final : public ScoreElement {
       bool genKeySig();
       bool showLedgerLines(const Fraction&) const;
 
-      QColor color() const                { return _color; }
-      void setColor(const QColor& val)    { _color = val;    }
+      QColor color(const Fraction&) const;
+      void setColor(const Fraction&, const QColor& val);
       void undoSetColor(const QColor& val);
       void insertTime(const Fraction&, const Fraction& len);
 
-      virtual QVariant getProperty(Pid) const override;
-      virtual bool setProperty(Pid, const QVariant&) override;
-      virtual QVariant propertyDefault(Pid) const override;
+      QVariant getProperty(Pid) const override;
+      bool setProperty(Pid, const QVariant&) override;
+      QVariant propertyDefault(Pid) const override;
 
       BracketType innerBracket() const;
 
@@ -263,6 +275,9 @@ class Staff final : public ScoreElement {
       void dumpKeys(const char*) const {}
       void dumpTimeSigs(const char*) const {}
 #endif
+
+      void triggerLayout();
+      void triggerLayout(const Fraction& tick);
       };
 
 }     // namespace Ms

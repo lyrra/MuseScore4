@@ -27,14 +27,15 @@
 
 namespace Ms {
 
+#if !defined(Q_OS_MAC) && (!defined(Q_OS_WIN) || defined(MSCORE_UNSTABLE))
 //---------------------------------------------------------
 //   default period
 //---------------------------------------------------------
 
 static int defaultPeriod()
       {
-      int result = 24;
-      if(qApp->applicationName() == "MuseScore2"){ //avoid nightly cymbals
+      int result = 24; // hours
+      if (qApp->applicationName() == "MuseScore3") { //avoid nightly cymbals
             if (MuseScore::unstable())
                   result = 24;
             else
@@ -42,6 +43,7 @@ static int defaultPeriod()
             }
       return result;
       }
+#endif
 
 UpdateChecker::UpdateChecker(QObject* parent)
       : UpdateCheckerBase(parent)

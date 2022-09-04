@@ -24,31 +24,34 @@ class StaffType;
 //---------------------------------------------------------
 
 class StaffTypeChange final : public Element {
-      StaffType* _staffType { 0 };
+      StaffType* m_staffType { nullptr };
+      bool m_ownsStaffType = false;
       qreal lw;
 
-      virtual void layout() override;
-      virtual void spatiumChanged(qreal oldValue, qreal newValue) override;
-      virtual void draw(QPainter*) const override;
+      void layout() override;
+      void spatiumChanged(qreal oldValue, qreal newValue) override;
+      void draw(QPainter*) const override;
 
    public:
+      ~StaffTypeChange() override ;
+
       StaffTypeChange(Score* = 0);
       StaffTypeChange(const StaffTypeChange&);
-      virtual StaffTypeChange* clone() const override { return new StaffTypeChange(*this); }
 
-      virtual ElementType type() const override { return ElementType::STAFFTYPE_CHANGE; }
+      StaffTypeChange* clone() const override   { return new StaffTypeChange(*this); }
+      ElementType type() const override         { return ElementType::STAFFTYPE_CHANGE; }
 
-      virtual void write(XmlWriter&) const override;
-      virtual void read(XmlReader&) override;
+      void write(XmlWriter&) const override;
+      void read(XmlReader&) override;
 
-      const StaffType* staffType() const     { return _staffType; }
-      void setStaffType(StaffType* st)       { _staffType = st; }
+      const StaffType* staffType() const     { return m_staffType; }
+      void setStaffType(StaffType* st, bool owned);
 
-      Measure* measure() const         { return toMeasure(parent());   }
+      Measure* measure() const               { return toMeasure(parent());   }
 
-      virtual QVariant getProperty(Pid propertyId) const override;
-      virtual bool setProperty(Pid propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(Pid) const override;
+      QVariant getProperty(Pid propertyId) const override;
+      bool setProperty(Pid propertyId, const QVariant&) override;
+      QVariant propertyDefault(Pid) const override;
       };
 
 

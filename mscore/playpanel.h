@@ -22,7 +22,7 @@
 
 #include "ui_playpanel.h"
 #include "enableplayforwidget.h"
-
+#include "iplaypanel.h"
 
 namespace Ms {
 
@@ -32,17 +32,12 @@ class Score;
 //   PlayPanel
 //---------------------------------------------------------
 
-class PlayPanel : public QDockWidget, private Ui::PlayPanelBase {
+class PlayPanel : public QDockWidget, private Ui::PlayPanelBase, public IPlayPanel {
       Q_OBJECT
       int cachedTickPosition;
       int cachedTimePosition;
-      bool tempoSliderIsPressed;
+      bool _isSpeedSliderPressed;
       EnablePlayForWidget* enablePlay;
-      static constexpr double MUTE = 0.00 ;
-      static constexpr double N = 20.0 ;
-      double vol;
-      double svol;
-
 
       Score* cs;
       virtual void closeEvent(QCloseEvent*);
@@ -56,10 +51,10 @@ class PlayPanel : public QDockWidget, private Ui::PlayPanelBase {
    private slots:
       void volumeChanged(double,int);
       void metronomeGainChanged(double val, int);
-      void relTempoChanged(double,int);
-      void relTempoChanged();
-      void tempoSliderReleased(int);
-      void tempoSliderPressed(int);
+      void speedChanged(double,int);
+      void speedChanged();
+      void speedSliderReleased(int);
+      void speedSliderPressed(int);
       void volLabel();
       void volSpinBoxEdited();
 
@@ -68,10 +63,9 @@ class PlayPanel : public QDockWidget, private Ui::PlayPanelBase {
       void retranslate()  { retranslateUi(this); }
 
    signals:
-      void relTempoChanged(double);
+      void speedChanged(double);
       void metronomeGainChanged(float);
       void posChange(int);
-      void gainChange(float);
       void closed(bool);
 
    public slots:
@@ -83,12 +77,20 @@ class PlayPanel : public QDockWidget, private Ui::PlayPanelBase {
       PlayPanel(QWidget* parent = 0);
       ~PlayPanel();
 
-      void setTempo(double);
-      void setRelTempo(qreal);
+      double speed() const override;
+
+      void setTempo(double) override;
+      void setSpeed(double) override;
+
+      void increaseSpeed() override;
+      void decreaseSpeed() override;
+      void resetSpeed() override;
 
       void setEndpos(int);
       void setScore(Score* s);
-      bool isTempoSliderPressed() {return tempoSliderIsPressed;}
+      bool isSpeedSliderPressed() const override { return _isSpeedSliderPressed; }
+
+      void setSpeedIncrement(int);
       };
 
 

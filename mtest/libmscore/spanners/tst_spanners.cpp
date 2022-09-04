@@ -53,7 +53,8 @@ class TestSpanners : public QObject, public MTest
       void spanners12();            // remove a measure containing the middle portion of a LyricsLine and undo
 //      void spanners13();            // drop a line break at the middle of a LyricsLine and check LyricsLineSegments
       void spanners14();            // creating part from an existing grand staff containing a cross staff glissando
-      void spanners15();            // change the color of a line and save it
+      void spanners15();            // change the color & min distance of a line and save it
+      void spanners16();            // read lines with manual adjustments on a small staff and save
       };
 
 //---------------------------------------------------------
@@ -176,7 +177,7 @@ void TestSpanners::spanners02()
       MasterScore* score = readScore(DIR + "glissando-crossstaff01.mscx");
       QVERIFY(score);
 
-      QVERIFY(saveCompareScore(score, "glissando-crsossstaff01.mscx", DIR + "glissando-crossstaff01-ref.mscx"));
+      QVERIFY(saveCompareScore(score, "glissando-crossstaff01.mscx", DIR + "glissando-crossstaff01-ref.mscx"));
       delete score;
       }
 
@@ -556,7 +557,7 @@ void TestSpanners::spanners12()
 #if 0
 //---------------------------------------------------------
 ///  spanners13
-///   Drop a line break at a bar line inthe middle of a LyricsLine and check LyricsLineSegments are correct
+///   Drop a line break at a bar line in the middle of a LyricsLine and check LyricsLineSegments are correct
 //
 //---------------------------------------------------------
 
@@ -637,9 +638,27 @@ void TestSpanners::spanners15()
             Spanner* spanner = (*it).second;
             SLine* sl = static_cast<SLine*>(spanner);
             sl->setProperty(Pid::COLOR, QVariant::fromValue(QColor(255, 0, 0, 255)));
+            for (auto ss : sl->spannerSegments()) {
+                  ss->setProperty(Pid::MIN_DISTANCE, 0.0);
+                  ss->setPropertyFlags(Pid::MIN_DISTANCE, PropertyFlags::UNSTYLED);
+                  }
             }
 
       QVERIFY(saveCompareScore(score, "linecolor01.mscx", DIR + "linecolor01-ref.mscx"));
+      delete score;
+      }
+
+//---------------------------------------------------------
+///  spanners16
+///   read manually adjusted lines on a small staff and save
+//---------------------------------------------------------
+
+void TestSpanners::spanners16()
+      {
+      MasterScore* score = readScore(DIR + "smallstaff01.mscx");
+      QVERIFY(score);
+
+      QVERIFY(saveCompareScore(score, "smallstaff01.mscx", DIR + "smallstaff01-ref.mscx"));
       delete score;
       }
 

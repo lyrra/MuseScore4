@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<museScore version="3.01">
+<museScore version="3.02">
   <Score>
     <LayerTag id="0" tag="default"></LayerTag>
     <currentLayer>0</currentLayer>
     <Division>480</Division>
     <Style>
-      <Spatium>1.76389</Spatium>
+      <Spatium>1.74978</Spatium>
       </Style>
     <showInvisible>1</showInvisible>
     <showUnprintable>1</showUnprintable>
@@ -31,7 +31,7 @@
         <defaultClef>PERC</defaultClef>
         </Staff>
       <trackName>Drumset, Drum Set</trackName>
-      <Instrument>
+      <Instrument id="drumset">
         <longName>Drumset, Drum Set</longName>
         <shortName>D. Set</shortName>
         <trackName>Drumset</trackName>
@@ -92,9 +92,9 @@
         <Drum pitch="43">
           <head>normal</head>
           <line>5</line>
-          <voice>1</voice>
+          <voice>0</voice>
           <name>High Floor Tom</name>
-          <stem>2</stem>
+          <stem>1</stem>
           </Drum>
         <Drum pitch="44">
           <head>cross</head>
@@ -260,10 +260,16 @@
           <velocity>120</velocity>
           <gateTime>100</gateTime>
           </Articulation>
-        <Channel>
+        <Channel name="standard">
           <controller ctrl="0" value="1"/>
+          <controller ctrl="32" value="0"/>
           <program value="0"/>
           <controller ctrl="7" value="105"/>
+          </Channel>
+        <Channel name="brush">
+          <controller ctrl="0" value="1"/>
+          <controller ctrl="32" value="0"/>
+          <program value="40"/>
           </Channel>
         </Instrument>
       </Part>

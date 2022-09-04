@@ -40,8 +40,6 @@ PluginCreator::PluginCreator(QWidget* parent)
       item        = 0;
       view        = 0;
       dock        = 0;
-      manualDock  = 0;
-      helpBrowser = 0;
 
       setObjectName("PluginCreator");
       setIconSize(QSize(preferences.getInt(PREF_UI_THEME_ICONWIDTH) * guiScaling, preferences.getInt(PREF_UI_THEME_ICONHEIGHT) * guiScaling));
@@ -110,17 +108,6 @@ PluginCreator::PluginCreator(QWidget* parent)
       connect(textEdit,   SIGNAL(undoAvailable(bool)), actionUndo, SLOT(setEnabled(bool)));
       connect(textEdit,   SIGNAL(redoAvailable(bool)), actionRedo, SLOT(setEnabled(bool)));
       connect(textEdit,   SIGNAL(textChanged()), SLOT(textChanged()));
-      }
-
-//---------------------------------------------------------
-//   manualPath
-//---------------------------------------------------------
-
-QString PluginCreator::manualPath()
-      {
-      QString _path = mscoreGlobalShare;
-      _path += "/manual/plugins/plugins3.html";
-      return _path;
       }
 
 //---------------------------------------------------------
@@ -300,30 +287,39 @@ void PluginCreator::runClicked()
 
       item = 0;
       QQmlComponent component(qml);
-      component.setData(textEdit->toPlainText().toUtf8(), QUrl());
+      const QUrl url = created ? QUrl() : QUrl::fromLocalFile(path);
+      component.setData(textEdit->toPlainText().toUtf8(), url);
       QObject* obj = component.create();
       if (obj == 0) {
             msg(tr("Creating component failed\n"));
-            foreach(QQmlError e, component.errors())
+            for (QQmlError e : component.errors())
                   msg("   " + tr("line %1: %2\n").arg(e.line()).arg(e.description()));
             stop->setEnabled(false);
             return;
             }
+
+      item = qobject_cast<QmlPlugin*>(obj);
+
+      if (!item) {
+            msg(tr("Component is not a MuseScore plugin") + '\n');
+            delete obj;
+            return;
+            }
+
       qInstallMessageHandler(qmlMsgHandler);
       stop->setEnabled(true);
       run->setEnabled(false);
 
-      item = qobject_cast<QmlPlugin*>(obj);
       msg(tr("Plugin Details:") + "\n");
       msg("  " + tr("Menu Path:") + " " + item->menuPath() + "\n");
       msg("  " + tr("Version:") + " " + item->version() + "\n");
       msg("  " + tr("Description:") + " " + item->description() + "\n");
       if (item->requiresScore()) msg("  " + tr("Requires Score\n"));
-      if(MuseScoreCore::mscoreCore->currentScore() == nullptr && item->requiresScore() == true) {
+      if (MuseScoreCore::mscoreCore->currentScore() == nullptr && item->requiresScore() == true) {
             QMessageBox::information(0,
                   tr("MuseScore"),
                   tr("No score open.\n"
-                  "This plugin requires an open score to run.\n"),
+                  "This plugin requires an open score to run."),
                   QMessageBox::Ok, QMessageBox::NoButton);
             delete obj;
             item = nullptr;
@@ -342,7 +338,7 @@ void PluginCreator::runClicked()
             item->setParentItem(view->contentItem());
 
             if (item->pluginType() == "dock") {
-                  dock = new QDockWidget("Plugin", 0);
+                  dock = new QDockWidget(view->title(), 0);
                   dock->setAttribute(Qt::WA_DeleteOnClose);
                   dock->setWidget(QWidget::createWindowContainer(view));
                   dock->widget()->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding));
@@ -363,6 +359,7 @@ void PluginCreator::runClicked()
             }
 
       connect(qml,  SIGNAL(quit()), SLOT(closePlugin()));
+      connect(qml, &QmlPluginEngine::endCmd, item, &QmlPlugin::endCmd);
 
       if (mscore->currentScore() && item->pluginType() != "dock")
             mscore->currentScore()->startCmd();
@@ -548,7 +545,7 @@ void PluginCreator::textChanged()
 
 void PluginCreator::qmlWarnings(const QList<QQmlError>& el)
       {
-      foreach(const QQmlError& e, el)
+      for (const QQmlError& e : el)
             msg(QString("%1:%2: %3\n").arg(e.line()).arg(e.column()).arg(e.description()));
       }
 
@@ -568,17 +565,7 @@ void PluginCreator::msg(const QString& s)
 
 void PluginCreator::showManual()
       {
-      if (helpBrowser == 0) {
-            helpBrowser = new HelpBrowser;
-            manualDock = new QDockWidget(tr("Manual"), 0);
-            manualDock->setObjectName("Manual");
-
-            manualDock->setWidget(helpBrowser);
-            Qt::DockWidgetArea area = Qt::RightDockWidgetArea;
-            addDockWidget(area, manualDock);
-            helpBrowser->setContent(manualPath());
-            }
-      manualDock->setVisible(!manualDock->isVisible());
+      QDesktopServices::openUrl(QUrl("https://musescore.github.io/MuseScore_PluginAPI_Docs/plugins/html/index.html"));
       }
 }
 

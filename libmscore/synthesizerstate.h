@@ -53,6 +53,7 @@ class SynthesizerGroup : public std::list<IdValue> {
 //---------------------------------------------------------
 
 class SynthesizerState : public std::list<SynthesizerGroup> {
+      bool _isDefault        { true };
 
    public:
       SynthesizerState(std::initializer_list<SynthesizerGroup> l) {
@@ -60,12 +61,14 @@ class SynthesizerState : public std::list<SynthesizerGroup> {
             }
       SynthesizerState() : std::list<SynthesizerGroup>() {}
 
-      void write(XmlWriter&) const;
+      void write(XmlWriter&, bool force = false) const;
       void read(XmlReader&);
       SynthesizerGroup group(const QString& name) const;
       bool isDefaultSynthSoundfont();
       int ccToUse() const;
       int method() const;
+      bool isDefault() const        { return _isDefault; }
+      void setIsDefault(bool val)   { _isDefault = val; }
       };
 
 //---------------------------------------------------------
@@ -76,7 +79,10 @@ class SynthesizerState : public std::list<SynthesizerGroup> {
 
 static SynthesizerState defaultState = {
       { "master", {
+
+#ifdef ZITA_REVERB
             { 0, "Zita1" },
+#endif
             { 2, "0.1"   },
             { 3, "440"   },
             { 4, "1"     },

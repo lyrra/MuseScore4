@@ -259,17 +259,26 @@ void Vibrato::setVibratoType(const QString& s)
       }
 
 //---------------------------------------------------------
+//   type2name
+//---------------------------------------------------------
+
+QString Vibrato::type2name(Vibrato::Type t)
+      {
+      for (VibratoTableItem i : vibratoTable) {
+            if (i.type == t)
+                  return i.name;
+            }
+      qDebug("unknown Vibrato subtype %d", int(t));
+            return "?";
+      }
+
+//---------------------------------------------------------
 //   vibratoTypeName
 //---------------------------------------------------------
 
 QString Vibrato::vibratoTypeName() const
       {
-      for (VibratoTableItem i : vibratoTable) {
-            if (i.type == vibratoType())
-                  return i.name;
-            }
-      qDebug("unknown Vibrato subtype %d", int(vibratoType()));
-            return "?";
+      return type2name(vibratoType());
       }
 
 //---------------------------------------------------------
@@ -334,7 +343,7 @@ bool Vibrato::setProperty(Pid propertyId, const QVariant& val)
                         return false;
                   break;
             }
-      score()->setLayoutAll();
+      triggerLayoutAll();
       return true;
       }
 
@@ -357,6 +366,17 @@ QVariant Vibrato::propertyDefault(Pid propertyId) const
       }
 
 //---------------------------------------------------------
+//   propertyId
+//---------------------------------------------------------
+
+Pid Vibrato::propertyId(const QStringRef& name) const
+      {
+      if (name == "subtype")
+            return Pid::VIBRATO_TYPE;
+      return SLine::propertyId(name);
+      }
+
+//---------------------------------------------------------
 //   undoSetVibratoType
 //---------------------------------------------------------
 
@@ -371,7 +391,7 @@ void Vibrato::undoSetVibratoType(Type val)
 
 QString Vibrato::accessibleInfo() const
       {
-      return QString("%1: %2").arg(Element::accessibleInfo()).arg(vibratoTypeUserName());
+      return QString("%1: %2").arg(Element::accessibleInfo(), vibratoTypeUserName());
       }
 }
 

@@ -34,6 +34,8 @@ extern bool useFactorySettings;
 extern Palette* newAccidentalsPalette();
 extern Palette* newKeySigPalette();
 
+static const qreal editScale = 1.0;
+
 //---------------------------------------------------------
 //   KeyCanvas
 //---------------------------------------------------------
@@ -42,7 +44,7 @@ KeyCanvas::KeyCanvas(QWidget* parent)
    : QFrame(parent)
       {
       setAcceptDrops(true);
-      extraMag   = 2.0;
+      extraMag   = editScale * guiScaling;
       qreal mag  = PALETTE_SPATIUM * extraMag / gscore->spatium();
       _matrix    = QTransform(mag, 0.0, 0.0, mag, 0.0, 0.0);
       imatrix    = _matrix.inverted();
@@ -252,10 +254,16 @@ void KeyCanvas::dropEvent(QDropEvent*)
 void KeyCanvas::snap(Accidental* a)
       {
       double y        = a->ipos().y();
-      double spatium2 = gscore->spatium() * .5;
-      int line        = int((y + spatium2 * .5) / spatium2);
+      double x        = a->ipos().x();
+      double _spatium = gscore->spatium();
+      double spatium2 = _spatium * .5;
+      int line        = int(y / spatium2 + .5);
+      int stepx       = int(x / _spatium + .5);
       y               = line * spatium2;
+      x               = stepx * _spatium;
       a->rypos()      = y;
+      if (!QGuiApplication::keyboardModifiers().testFlag(Qt::ControlModifier))
+            a->rxpos() = x;
       }
 
 //---------------------------------------------------------
@@ -290,6 +298,9 @@ KeyEditor::KeyEditor(QWidget* parent)
       l->setContentsMargins(0, 0, 0, 0);
       frame_3->setLayout(l);
       sp1 = MuseScore::newAccidentalsPalette();
+      qreal adj = sp1->mag();
+      sp1->setGrid(sp1->gridWidth() * editScale / adj, sp1->gridHeight() * editScale / adj);
+      sp1->setMag(editScale);
       PaletteScrollArea* accPalette = new PaletteScrollArea(sp1);
       QSizePolicy policy1(QSizePolicy::Expanding, QSizePolicy::Expanding);
       accPalette->setSizePolicy(policy1);
@@ -348,6 +359,7 @@ void KeyEditor::addClicked()
       ks->setKeySigEvent(e);
       sp->append(ks, "custom");
       _dirty = true;
+      emit keySigAdded(ks);
       }
 
 //---------------------------------------------------------
@@ -357,6 +369,15 @@ void KeyEditor::addClicked()
 void KeyEditor::clearClicked()
       {
       canvas->clear();
+      }
+
+//---------------------------------------------------------
+//   showKeyPalette
+//---------------------------------------------------------
+
+void KeyEditor::showKeyPalette(bool val)
+      {
+      _keyPalette->setVisible(val);
       }
 
 //---------------------------------------------------------

@@ -21,13 +21,17 @@
 #define __EDITSTYLE_H__
 
 #include "ui_editstyle.h"
+#include "abstractdialog.h"
 #include "globals.h"
 #include "libmscore/mscore.h"
 #include "libmscore/style.h"
 
+class QScrollArea;
+
 namespace Ms {
 
 class Score;
+class EditStyle;
 
 //---------------------------------------------------------
 //   StyleWidget
@@ -41,32 +45,48 @@ struct StyleWidget {
       };
 
 //---------------------------------------------------------
+//   EditStylePage
+///   This is a type for a pointer to any QWidget that is a member of EditStyle.
+///   It's used to create static references to the pointers to pages.
+//---------------------------------------------------------
+
+typedef QWidget* EditStyle::* EditStylePage;
+
+//---------------------------------------------------------
 //   EditStyle
 //---------------------------------------------------------
 
-class EditStyle : public QDialog, private Ui::EditStyleBase {
+class EditStyle : public AbstractDialog, private Ui::EditStyleBase {
       Q_OBJECT
 
-      Score* cs;
-      QPushButton* buttonApplyToAllParts;
-      QButtonGroup* stemGroups[VOICES];
+      Score* cs = nullptr;
+      QPushButton* buttonApplyToAllParts = nullptr;
       QVector<StyleWidget> styleWidgets;
-      QButtonGroup* keySigNatGroup;
-      QButtonGroup* clefTypeGroup;
-      bool isTooBig;
-      bool hasShown;
+      QScrollArea* scrollArea = nullptr;
+      bool isTooBig = false;
+      bool hasShown = false;
+      bool needResetStyle = false;
 
       virtual void showEvent(QShowEvent*);
       virtual void hideEvent(QHideEvent*);
       QVariant getValue(Sid idx);
       void setValues();
 
+      void resetStyle(Score* score);
       void applyToAllParts();
       const StyleWidget& styleWidget(Sid) const;
+
+      void adjustPagesStackSize(int currentPageIndex);
+      void setHeaderFooterToolTip();
+
+      static EditStylePage pageForElement(Element*);
 
    private slots:
       void selectChordDescriptionFile();
       void setChordStyle(bool);
+      void enableStyleWidget(const Sid idx, bool enable);
+      void enableVerticalSpreadClicked(bool);
+      void disableVerticalSpreadClicked(bool);
       void toggleHeaderOddEven(bool);
       void toggleFooterOddEven(bool);
       void buttonClicked(QAbstractButton*);
@@ -83,16 +103,27 @@ class EditStyle : public QDialog, private Ui::EditStyleBase {
       void textStyleValueChanged(Pid, QVariant);
       void on_comboFBFont_currentIndexChanged(int index);
       void on_buttonTogglePagelist_clicked();
+      void on_resetStylesButton_clicked();
       void editUserStyleName();
       void endEditUserStyleName();
       void resetUserStyleName();
 
-public:
-      static const int PAGE_NOTE = 10;
+   protected:
+      void retranslate();
+
+   public:
       EditStyle(Score*, QWidget*);
       void setPage(int no);
-      };
+      void setScore(Score* s) { cs = s; }
 
+      void gotoElement(Element* e);
+      void gotoHeaderFooterPage();
+      static bool elementHasPage(Element* e);
+      
+   public slots:
+      void accept();
+      void reject();
+      };
 
 } // namespace Ms
 #endif

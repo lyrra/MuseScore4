@@ -1,6 +1,6 @@
-[Desktop Entry]
+[Desktop Entry]@Variables_substituted_by_CMAKE_on_installation@
 Version=1.0@This_is_version_of_Desktop_Entry_Specification@@It_is_NOT_MuseScore_version@
-Name=@MUSESCORE_NAME_VERSION@@Variables_substituted_by_CMAKE_on_installation@
+Name=@MUSESCORE_NAME@ @MUSESCORE_VERSION@@MSCORE_INSTALL_SUFFIX@
 GenericName=Music notation
 GenericName[de]=Notensatz
 GenericName[fr]=Notation musicale
@@ -10,9 +10,10 @@ Comment[fr]=Gravure de partitions musicales
 Exec=mscore@MSCORE_INSTALL_SUFFIX@ %F
 Icon=mscore@MSCORE_INSTALL_SUFFIX@
 StartupNotify=true
+StartupWMClass=mscore@MSCORE_INSTALL_SUFFIX@
 Terminal=false
 Type=Application
 Categories=Qt;Audio;Sequencer;Midi;AudioVideoEditing;Music;AudioVideo;
 Keywords=music;notation;composition;composing;arranging;making;sheet music;music notation software;lead sheet;leadsheet;score;full score;scorewriter;MIDI;musicxml;playback;instrument;
 Keywords[de]=Musik;Noten;Musiknoten;Komposition;Komponieren;Arrangieren;Notenblatt;Notenblätter;Notationsprogramm;Musiknotationsprogramm;Musiknotation;Tabulatur;MIDI;musicxml;Instrument;
-MimeType=application/x-musescore@MSCORE_INSTALL_SUFFIX@;application/x-musescore@MSCORE_INSTALL_SUFFIX@+xml;application/vnd.recordare.musicxml@MSCORE_INSTALL_SUFFIX@;application/vnd.recordare.musicxml@MSCORE_INSTALL_SUFFIX@+xml;
+MimeType=application/x-musescore;application/x-musescore+xml;application/vnd.recordare.musicxml;application/vnd.recordare.musicxml+xml;audio/midi;application/x-bww;application/x-biab;application/x-capella;audio/x-gtp;application/x-musedata;application/x-overture;audio/x-ptb;application/x-sf2;application/x-sf3;

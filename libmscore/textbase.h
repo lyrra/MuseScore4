@@ -46,7 +46,15 @@ enum class VerticalAlignment : char {
 //---------------------------------------------------------
 
 enum class FormatId : char {
-      Bold, Italic, Underline, Valign, FontSize, FontFamily
+      Bold, Italic, Underline, Strike, Valign, FontSize, FontFamily
+      };
+
+//---------------------------------------------------------
+//   MultiClick
+//---------------------------------------------------------
+
+enum class MultiClick : char {
+      Double, Triple
       };
 
 //---------------------------------------------------------
@@ -58,6 +66,7 @@ class CharFormat {
       bool _preedit             { false };
       VerticalAlignment _valign { VerticalAlignment::AlignNormal };
       qreal _fontSize           { 12.0  };
+      qreal _textLineSpacing    { 1.0 };
       QString _fontFamily;
 
    public:
@@ -69,9 +78,11 @@ class CharFormat {
       bool bold() const                      { return _style & FontStyle::Bold;       }
       bool italic() const                    { return _style & FontStyle::Italic;     }
       bool underline() const                 { return _style & FontStyle::Underline;  }
+      bool strike() const                    { return _style & FontStyle::Strike;  }
       void setBold(bool val)                 { _style = val ? _style + FontStyle::Bold      : _style - FontStyle::Bold;      }
       void setItalic(bool val)               { _style = val ? _style + FontStyle::Italic    : _style - FontStyle::Italic;    }
       void setUnderline(bool val)            { _style = val ? _style + FontStyle::Underline : _style - FontStyle::Underline; }
+      void setStrike(bool val)               { _style = val ? _style + FontStyle::Strike    : _style - FontStyle::Strike; }
 
       bool preedit() const                   { return _preedit;     }
       VerticalAlignment valign() const       { return _valign;      }
@@ -80,6 +91,7 @@ class CharFormat {
       void setPreedit(bool val)              { _preedit     = val;  }
       void setValign(VerticalAlignment val)  { _valign      = val;  }
       void setFontSize(qreal val)            { Q_ASSERT(val > 0.0); _fontSize = val; }
+      void setTextLineSpacing(qreal val)     { _textLineSpacing = val; }
       void setFontFamily(const QString& val) { _fontFamily  = val;  }
 
       void setFormat(FormatId, QVariant);
@@ -124,14 +136,22 @@ class TextCursor {
       TextBlock& curLine() const;
       QRectF cursorRect() const;
       bool movePosition(QTextCursor::MoveOperation op, QTextCursor::MoveMode mode = QTextCursor::MoveAnchor, int count = 1);
+      void doubleClickSelect();
       void moveCursorToEnd()   { movePosition(QTextCursor::End);   }
       void moveCursorToStart() { movePosition(QTextCursor::Start); }
       QChar currentCharacter() const;
+      QString currentWord() const;
+      QString currentLine() const;
       bool set(const QPointF& p, QTextCursor::MoveMode mode = QTextCursor::MoveAnchor);
       QString selectedText() const;
+      QString extractText(int r1, int c1, int r2, int c2) const;
       void updateCursorFormat();
       void setFormat(FormatId, QVariant);
       void changeSelectionFormat(FormatId id, QVariant val);
+
+   private:
+      QString accessibleCurrentCharacter() const;
+      void accessibileMessage(QString& accMsg, int oldRow, int oldCol, QString oldSelection, QTextCursor::MoveMode mode) const;
       };
 
 //---------------------------------------------------------
@@ -180,14 +200,17 @@ class TextBlock {
       void layout(TextBase*);
       const QList<TextFragment>& fragments() const { return _fragments; }
       QList<TextFragment>& fragments()             { return _fragments; }
+      QList<TextFragment>* fragmentsWithoutEmpty();
       const QRectF& boundingRect() const           { return _bbox; }
       QRectF boundingRect(int col1, int col2, const TextBase*) const;
       int columns() const;
       void insert(TextCursor*, const QString&);
-      QString remove(int column);
-      QString remove(int start, int n);
+      void insertEmptyFragmentIfNeeded(TextCursor*);
+      void removeEmptyFragment();
+      QString remove(int column, TextCursor*);
+      QString remove(int start, int n, TextCursor*);
       int column(qreal x, TextBase*) const;
-      TextBlock split(int column);
+      TextBlock split(int column, TextCursor* cursor);
       qreal xpos(int col, const TextBase*) const;
       const CharFormat* formatAt(int) const;
       const TextFragment* fragment(int col) const;
@@ -212,6 +235,7 @@ class TextBase : public Element {
       M_PROPERTY(FrameType,  frameType,              setFrameType)
       M_PROPERTY(QString,    family,                 setFamily)
       M_PROPERTY(qreal,      size,                   setSize)
+      M_PROPERTY(qreal,      textLineSpacing,        setTextLineSpacing)
       M_PROPERTY(QColor,     bgColor,                setBgColor)
       M_PROPERTY(QColor,     frameColor,             setFrameColor)
       M_PROPERTY(Spatium,    frameWidth,             setFrameWidth)
@@ -230,14 +254,17 @@ class TextBase : public Element {
 
       QString preEdit;              // move to EditData?
       bool _layoutToParentWidth     { false };
+      bool _layoutRelativeToBottom  { false }; // used to keep footers inside page margins
 
       int  hexState                 { -1    };
+      bool _primed                  { 0 };
 
       void drawSelection(QPainter*, const QRectF&) const;
       void insert(TextCursor*, uint code);
       void genText() const;
       virtual int getPropertyFlagsIdx(Pid id) const override;
       QString stripText(bool, bool, bool) const;
+      Sid offsetSid() const;
 
    protected:
       QColor textColor() const;
@@ -258,9 +285,11 @@ class TextBase : public Element {
 
       virtual void draw(QPainter*) const override;
       virtual void drawEditMode(QPainter* p, EditData& ed) override;
+      static void drawTextWorkaround(QPainter* p, QFont& f, const QPointF pos, const QString text);
 
-      void setPlainText(const QString&);
-      void setXmlText(const QString&);
+      static QString plainToXmlText(const QString& s) { return s.toHtmlEscaped(); }
+      void setPlainText(const QString& t) { setXmlText(plainToXmlText(t)); }
+      virtual void setXmlText(const QString&);
       QString xmlText() const;
       QString plainText() const;
 
@@ -272,11 +301,12 @@ class TextBase : public Element {
       qreal lineHeight() const;
       virtual qreal baseLine() const override;
 
-      bool empty() const                  { return xmlText().isEmpty(); }
-      void clear()                        { setXmlText(QString());      }
+      bool empty() const                        { return xmlText().isEmpty();   }
+      void clear()                              { setXmlText(QString());        }
 
-      bool layoutToParentWidth() const    { return _layoutToParentWidth; }
-      void setLayoutToParentWidth(bool v) { _layoutToParentWidth = v;   }
+      bool layoutToParentWidth() const          { return _layoutToParentWidth;  }
+      void setLayoutToParentWidth(bool v)       { _layoutToParentWidth = v;     }
+      void setLayoutRelativeToBottom(bool v)    { _layoutRelativeToBottom = v ; }
 
       virtual void startEdit(EditData&) override;
       virtual bool edit(EditData&) override;
@@ -288,6 +318,9 @@ class TextBase : public Element {
       bool deleteSelectedText(EditData&);
 
       void selectAll(TextCursor*);
+      void multiClickSelect(EditData&, MultiClick);
+      bool isPrimed() const               { return _primed; }
+      void setPrimed(bool primed)         { _primed = primed; }
 
       virtual void write(XmlWriter& xml) const override;
       virtual void read(XmlReader&) override;
@@ -302,7 +335,7 @@ class TextBase : public Element {
 
       void dragTo(EditData&);
 
-      virtual QLineF dragAnchor() const override;
+      QVector<QLineF> dragAnchorLines() const override;
 
       virtual bool acceptDrop(EditData&) const override;
       virtual Element* drop(EditData&) override;
@@ -365,9 +398,11 @@ class TextBase : public Element {
       bool bold() const                      { return _fontStyle & FontStyle::Bold;       }
       bool italic() const                    { return _fontStyle & FontStyle::Italic;     }
       bool underline() const                 { return _fontStyle & FontStyle::Underline;  }
+      bool strike() const                    { return _fontStyle & FontStyle::Strike;  }
       void setBold(bool val)                 { _fontStyle = val ? _fontStyle + FontStyle::Bold      : _fontStyle - FontStyle::Bold;      }
       void setItalic(bool val)               { _fontStyle = val ? _fontStyle + FontStyle::Italic    : _fontStyle - FontStyle::Italic;    }
       void setUnderline(bool val)            { _fontStyle = val ? _fontStyle + FontStyle::Underline : _fontStyle - FontStyle::Underline; }
+      void setStrike(bool val)               { _fontStyle = val ? _fontStyle + FontStyle::Strike    : _fontStyle - FontStyle::Strike;    }
 
       bool hasCustomFormatting() const;
 
@@ -378,4 +413,3 @@ class TextBase : public Element {
 }     // namespace Ms
 
 #endif
-

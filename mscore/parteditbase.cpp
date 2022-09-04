@@ -21,11 +21,11 @@
 #include "parteditbase.h"
 #include "libmscore/score.h"
 #include "libmscore/part.h"
-#include "mixer.h"
+#include "mixer/mixer.h"
 #include "seq.h"
 #include "libmscore/undo.h"
 #include "synthcontrol.h"
-#include "synthesizer/msynthesizer.h"
+#include "audio/midi/msynthesizer.h"
 #include "preferences.h"
 #include <qmessagebox.h>
 #include <accessibletoolbutton.h>
@@ -542,7 +542,7 @@ void PartEdit::midiChannelChanged(int)
             }
 
       // Update MIDI Out ports
-      int maxPort = max(p, part->score()->masterScore()->midiPortCount());
+      int maxPort = std::max(p, part->score()->masterScore()->midiPortCount());
       part->score()->masterScore()->setMidiPortCount(maxPort);
       if (seq->driver() && (preferences.getBool(PREF_IO_JACK_USEJACKMIDI) || preferences.getBool(PREF_IO_ALSA_USEALSAAUDIO)))
             seq->driver()->updateOutPortCount(maxPort + 1);

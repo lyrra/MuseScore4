@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>InspectorGroupElement</class>
  <widget class="QWidget" name="InspectorGroupElement">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>291</width>
+    <height>127</height>
+   </rect>
+  </property>
   <property name="accessibleName">
    <string>Element Group Inspector</string>
   </property>
@@ -51,7 +59,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QWidget" name="widget" native="true">
+    <widget class="QWidget" name="panel" native="true">
      <layout class="QGridLayout" name="gridLayout">
       <property name="leftMargin">
        <number>3</number>
@@ -82,9 +90,6 @@
        <widget class="Awl::ColorLabel" name="color">
         <property name="accessibleName">
          <string>Color</string>
-        </property>
-        <property name="frameShape">
-         <enum>QFrame::Box</enum>
         </property>
        </widget>
       </item>
@@ -136,7 +141,7 @@
  <customwidgets>
   <customwidget>
    <class>Awl::ColorLabel</class>
-   <extends>QFrame</extends>
+   <extends>QPushButton</extends>
    <header>awl/colorlabel.h</header>
    <container>1</container>
   </customwidget>

@@ -37,7 +37,6 @@
 #cmakedefine HAS_AUDIOFILE
 #cmakedefine USE_SSE
 
-#define MSCORE_EXECUTABLE       "${MSCORE_EXECUTABLE}"
 #cmakedefine BUILD_CRASH_REPORTER
 #define CRASHREPORTER_EXECUTABLE "${CRASHREPORTER_EXECUTABLE}"
 #define CRASH_REPORT_URL        "${CRASH_REPORT_URL}"
@@ -49,15 +48,20 @@
 #define BUILD_NUMBER            "${CMAKE_BUILD_NUMBER}"
 #define WIN_SPARKLE_APPCAST_URL "${WIN_SPARKLE_APPCAST_URL}"
 
+#cmakedefine BUILD_TELEMETRY_MODULE
+#define TELEMETRY_TRACK_ID "${TELEMETRY_TRACK_ID}"
+
 #cmakedefine WIN_SPARKLE_ENABLED
 #cmakedefine MAC_SPARKLE_ENABLED
 #cmakedefine AEOLUS
 #cmakedefine ZERBERUS
 #cmakedefine OMR
 #cmakedefine OCR
+#cmakedefine AVSOMR
 #cmakedefine OSC
 #cmakedefine OPENGL
 #cmakedefine SOUNDFONT3
+#cmakedefine WIN_PORTABLE
 
 #cmakedefine Q_WS_UIKIT
 

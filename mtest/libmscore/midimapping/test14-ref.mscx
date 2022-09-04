@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<museScore version="3.01">
+<museScore version="3.02">
   <Score>
     <LayerTag id="0" tag="default"></LayerTag>
     <currentLayer>0</currentLayer>
@@ -553,7 +553,7 @@
           <head>normal</head>
           <line>3</line>
           <voice>0</voice>
-          <name>Bell Tree</name>
+          <name>Mark Tree</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="85">
@@ -1698,7 +1698,7 @@
             <head>normal</head>
             <line>3</line>
             <voice>0</voice>
-            <name>Bell Tree</name>
+            <name>Mark Tree</name>
             <stem>1</stem>
             </Drum>
           <Drum pitch="85">

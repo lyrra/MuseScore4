@@ -196,7 +196,7 @@ void Ambitus::write(XmlWriter& xml) const
       xml.tag(Pid::HEAD_TYPE,  int(_noteHeadType),  int(NOTEHEADTYPE_DEFAULT));
       xml.tag(Pid::MIRROR_HEAD,int(_dir),           int(DIR_DEFAULT));
       xml.tag("hasLine",    _hasLine,       true);
-      xml.tag(Pid::LINE_WIDTH, _lineWidth,     LINEWIDTH_DEFAULT);
+      xml.tag(Pid::LINE_WIDTH_SPATIUM, _lineWidth, LINEWIDTH_DEFAULT);
       xml.tag("topPitch",   _topPitch);
       xml.tag("topTpc",     _topTpc);
       xml.tag("bottomPitch",_bottomPitch);
@@ -243,7 +243,7 @@ bool Ambitus::readProperties(XmlReader& e)
       else if (tag == "hasLine")
             setHasLine(e.readInt());
       else if (tag == "lineWidth")
-            readProperty(e, Pid::LINE_WIDTH);
+            readProperty(e, Pid::LINE_WIDTH_SPATIUM);
       else if (tag == "topPitch")
             _topPitch = e.readInt();
       else if (tag == "bottomPitch")
@@ -337,7 +337,7 @@ void Ambitus::layout()
             if (_topTpc - int(key) >= 13 && _topTpc - int(key) <= 19)
                   accidType = AccidentalType::NONE;
             else {
-                  AccidentalVal accidVal = AccidentalVal( (_topTpc - Tpc::TPC_MIN) / TPC_DELTA_SEMITONE - 2 );
+                  AccidentalVal accidVal = tpc2alter(_topTpc);
                   accidType = Accidental::value2subtype(accidVal);
                   if (accidType == AccidentalType::NONE)
                         accidType = AccidentalType::NATURAL;
@@ -362,7 +362,7 @@ void Ambitus::layout()
             if (_bottomTpc - int(key) >= 13 && _bottomTpc - int(key) <= 19)
                   accidType = AccidentalType::NONE;
             else {
-                  AccidentalVal accidVal = AccidentalVal( (_bottomTpc - Tpc::TPC_MIN) / TPC_DELTA_SEMITONE - 2 );
+                  AccidentalVal accidVal = tpc2alter(_bottomTpc);
                   accidType = Accidental::value2subtype(accidVal);
                   if (accidType == AccidentalType::NONE)
                         accidType = AccidentalType::NATURAL;
@@ -454,7 +454,7 @@ void Ambitus::draw(QPainter* p) const
       {
       qreal _spatium = spatium();
       qreal lw = lineWidth().val() * _spatium;
-      p->setPen(QPen(curColor(), lw, Qt::SolidLine, Qt::RoundCap));
+      p->setPen(QPen(curColor(), lw, Qt::SolidLine, Qt::FlatCap));
       drawSymbol(noteHead(), p, _topPos);
       drawSymbol(noteHead(), p, _bottomPos);
       if (_hasLine)
@@ -468,9 +468,9 @@ void Ambitus::draw(QPainter* p) const
             int numOfLines    = stf->lines(tick);
             qreal step        = lineDist * _spatium;
             qreal stepTolerance = step * 0.1;
-            qreal ledgerOffset = score()->styleS(Sid::ledgerLineLength).val() * 0.5 * _spatium;
+            qreal ledgerOffset = score()->styleS(Sid::ledgerLineLength).val() * _spatium;
             p->setPen(QPen(curColor(), score()->styleS(Sid::ledgerLineWidth).val() * _spatium,
-                        Qt::SolidLine, Qt::RoundCap) );
+                        Qt::SolidLine, Qt::FlatCap) );
             if (_topPos.y()-stepTolerance <= -step) {
                   qreal xMin = _topPos.x() - ledgerOffset;
                   qreal xMax = _topPos.x() + headWidth() + ledgerOffset;
@@ -607,7 +607,7 @@ void Ambitus::updateRange()
                   for (Note* n : chord->notes()) {
                         if (!n->play())         // skip notes which are not to be played
                               continue;
-                        int pitch = n->ppitch();
+                        int pitch = n->epitch();
                         if (pitch > pitchTop) {
                               pitchTop = pitch;
                               tpcTop   = n->tpc();
@@ -629,6 +629,16 @@ void Ambitus::updateRange()
             }
       }
 
+void Ambitus::remove(Element* e)
+      {
+      if (e->type() == ElementType::ACCIDENTAL) {
+            //! NOTE Do nothing (removing _topAccid or _bottomAccid)
+            return;
+            }
+
+      Element::remove(e);
+      }
+
 //---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
@@ -644,7 +654,7 @@ QVariant Ambitus::getProperty(Pid propertyId) const
                   return int(direction());
             case Pid::GHOST:                 // recycled property = _hasLine
                   return hasLine();
-            case Pid::LINE_WIDTH:
+            case Pid::LINE_WIDTH_SPATIUM:
                   return lineWidth();
             case Pid::TPC1:
                   return topTpc();
@@ -682,7 +692,7 @@ bool Ambitus::setProperty(Pid propertyId, const QVariant& v)
             case Pid::GHOST:                 // recycled property = _hasLine
                   setHasLine(v.toBool());
                   break;
-            case Pid::LINE_WIDTH:
+            case Pid::LINE_WIDTH_SPATIUM:
                   setLineWidth(v.value<Spatium>());
                   break;
             case Pid::TPC1:
@@ -698,10 +708,10 @@ bool Ambitus::setProperty(Pid propertyId, const QVariant& v)
                   setBottomPitch(v.toInt());
                   break;
             case Pid::FBPARENTHESIS3:        // recycled property = octave of _topPitch
-                  setTopPitch(topPitch() % 12 + v.toInt() * 12);
+                  setTopPitch(topPitch() % 12 + (v.toInt() + 1) * 12);
                   break;
             case Pid::FBPARENTHESIS4:        // recycled property = octave of _bottomPitch
-                  setBottomPitch(bottomPitch() % 12 + v.toInt() * 12);
+                  setBottomPitch(bottomPitch() % 12 + (v.toInt() + 1) * 12);
                   break;
             default:
                   return Element::setProperty(propertyId, v);
@@ -725,7 +735,7 @@ QVariant Ambitus::propertyDefault(Pid id) const
                   return int(DIR_DEFAULT);
             case Pid::GHOST:
                   return HASLINE_DEFAULT;
-            case Pid::LINE_WIDTH:
+            case Pid::LINE_WIDTH_SPATIUM:
                   return Spatium(LINEWIDTH_DEFAULT);
             case Pid::TPC1:                  // no defaults for pitches, tpc's and octaves
             case Pid::FBPARENTHESIS1:
@@ -764,11 +774,11 @@ Element* Ambitus::prevSegmentElement()
 
 QString Ambitus::accessibleInfo() const
       {
-      return QObject::tr("%1; Top pitch: %2%3; Bottom pitch: %4%5").arg(Element::accessibleInfo())
-                                                          .arg(tpc2name(topTpc(), NoteSpellingType::STANDARD, NoteCaseType::AUTO, false))
-                                                          .arg(QString::number(topOctave()))
-                                                          .arg(tpc2name(bottomTpc(), NoteSpellingType::STANDARD, NoteCaseType::AUTO, false))
-                                                          .arg(QString::number(bottomOctave()));
+      return QObject::tr("%1; Top pitch: %2%3; Bottom pitch: %4%5").arg(Element::accessibleInfo(),
+                                                               tpc2name(topTpc(), NoteSpellingType::STANDARD, NoteCaseType::AUTO, false),
+                                                               QString::number(topOctave()),
+                                                               tpc2name(bottomTpc(), NoteSpellingType::STANDARD, NoteCaseType::AUTO, false),
+                                                               QString::number(bottomOctave()));
       }
 }
 

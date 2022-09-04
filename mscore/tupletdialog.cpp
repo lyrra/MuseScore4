@@ -50,6 +50,23 @@ TupletDialog::TupletDialog(QWidget* parent)
       }
 
 //---------------------------------------------------------
+//   defaultToStyleSettings
+//---------------------------------------------------------
+
+void TupletDialog::defaultToStyleSettings(Score* score)
+      {
+      TupletNumberType nt = TupletNumberType(score->styleI(Sid::tupletNumberType));
+      number->setChecked(nt == TupletNumberType::SHOW_NUMBER);
+      relation->setChecked(nt == TupletNumberType::SHOW_RELATION);
+      noNumber->setChecked(nt == TupletNumberType::NO_TEXT);
+
+      TupletBracketType bt = TupletBracketType(score->styleI(Sid::tupletBracketType));
+      autoBracket->setChecked(bt == TupletBracketType::AUTO_BRACKET);
+      bracket->setChecked(bt == TupletBracketType::SHOW_BRACKET);
+      noBracket->setChecked(bt == TupletBracketType::SHOW_NO_BRACKET);
+      }
+
+//---------------------------------------------------------
 //   setupTuplet
 //---------------------------------------------------------
 
@@ -68,6 +85,16 @@ void TupletDialog::setupTuplet(Tuplet* tuplet)
             tuplet->setBracketType(TupletBracketType::SHOW_BRACKET);
       else if (noBracket->isChecked())
             tuplet->setBracketType(TupletBracketType::SHOW_NO_BRACKET);
+
+      if (tuplet->numberType() == TupletNumberType(tuplet->score()->styleI(Sid::tupletNumberType)))
+            tuplet->setPropertyFlags(Pid::NUMBER_TYPE, PropertyFlags::STYLED);
+      else
+            tuplet->setPropertyFlags(Pid::NUMBER_TYPE, PropertyFlags::UNSTYLED);
+
+      if (tuplet->bracketType() == TupletBracketType(tuplet->score()->styleI(Sid::tupletBracketType)))
+            tuplet->setPropertyFlags(Pid::BRACKET_TYPE, PropertyFlags::STYLED);
+      else
+            tuplet->setPropertyFlags(Pid::BRACKET_TYPE, PropertyFlags::UNSTYLED);
       }
 
 //---------------------------------------------------------
@@ -89,7 +116,7 @@ Tuplet* MuseScore::tupletDialog()
             cr = cs->getSelectedChordRest();
       if (cr == 0)
             return 0;
-      if (cr->durationType() < TDuration(TDuration::DurationType::V_128TH) && cr->durationType() != TDuration(TDuration::DurationType::V_MEASURE)) {
+      if (cr->durationType() < TDuration(TDuration::DurationType::V_512TH) && cr->durationType() != TDuration(TDuration::DurationType::V_MEASURE)) {
             noteTooShortForTupletDialog();
             return 0;
             }
@@ -98,6 +125,7 @@ Tuplet* MuseScore::tupletDialog()
             return 0;
 
       TupletDialog td;
+      td.defaultToStyleSettings(cs);
       if (!td.exec())
             return 0;
 

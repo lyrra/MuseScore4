@@ -61,18 +61,18 @@ class RangeMap {
 //---------------------------------------------------------
 
 class MidiRenderer {
-      MasterScore* score;
+      Score* score{nullptr};
       bool needUpdate = true;
       int minChunkSize = 0;
 
    public:
       class Chunk {
             int _tickOffset;
-            Measure* first;
-            Measure* last;
+            Measure const * first;
+            Measure const * last;
 
          public:
-            Chunk(int tickOffset, Measure* fst, Measure* lst)
+            Chunk(int tickOffset, Measure const * fst, Measure const * lst)
                : _tickOffset(tickOffset), first(fst), last(lst) {}
 
             Chunk() // "invalid chunk" constructor
@@ -80,8 +80,9 @@ class MidiRenderer {
 
             operator bool() const { return bool(first); }
             int tickOffset() const { return _tickOffset; }
-            Measure* startMeasure() const { return first; }
-            Measure* endMeasure() const { return last ? last->nextMeasure() : nullptr; }
+            Measure const * startMeasure() const { return first; }
+            Measure const * endMeasure() const { return last ? last->nextMeasure() : nullptr; }
+            Measure const * lastMeasure() const { return last; }
             int tick1() const { return first->tick().ticks(); }
             int tick2() const { return last ? last->endTick().ticks() : tick1(); }
             int utick1() const { return tick1() + tickOffset(); }
@@ -91,25 +92,51 @@ class MidiRenderer {
    private:
       std::vector<Chunk> chunks;
 
+      struct StaffContext
+            {
+            Staff* staff{nullptr};
+            DynamicsRenderMethod method{DynamicsRenderMethod::SIMPLE};
+            int cc{0};
+            bool renderHarmony{false};
+            };
+
       void updateChunksPartition();
+      static bool canBreakChunk(const Measure* last);
       void updateState();
 
-      void renderStaffChunk(const Chunk&, EventMap* events, Staff*, DynamicsRenderMethod method, int cc);
+      void renderStaffChunk(const Chunk&, EventMap* events, const StaffContext& sctx);
       void renderSpanners(const Chunk&, EventMap* events);
       void renderMetronome(const Chunk&, EventMap* events);
-      void renderMetronome(EventMap* events, Measure* m, const Fraction& tickOffset);
+      void renderMetronome(EventMap* events, Measure const * m, const Fraction& tickOffset);
+
+      void collectMeasureEvents(EventMap* events, Measure const * m, const MidiRenderer::StaffContext& sctx, int tickOffset);
+      void collectMeasureEventsSimple(EventMap* events, Measure const * m, const StaffContext& sctx, int tickOffset);
+      void collectMeasureEventsDefault(EventMap* events, Measure const * m, const StaffContext& sctx, int tickOffset);
 
    public:
-      explicit MidiRenderer(MasterScore* s) : score(s) {}
+      explicit MidiRenderer(Score* s) : score(s) {}
 
-      void renderScore(EventMap* events, const SynthesizerState& synthState, bool metronome = true);
-      void renderChunk(const Chunk&, EventMap* events, const SynthesizerState& synthState, bool metronome = true);
+      struct Context
+            {
+            const SynthesizerState& synthState;
+            bool metronome{true};
+            bool renderHarmony{false};
+            Context(const SynthesizerState& ss) : synthState(ss) {}
+            };
+
+      void renderScore(EventMap* events, const Context& ctx);
+      void renderChunk(const Chunk&, EventMap* events, const Context& ctx);
 
       void setScoreChanged() { needUpdate = true; }
       void setMinChunkSize(int sizeMeasures) { minChunkSize = sizeMeasures; needUpdate = true; }
 
       Chunk getChunkAt(int utick);
+
+      static const int ARTICULATION_CONV_FACTOR { 100000 };
       };
+
+class Spanner;
+extern bool glissandoPitchOffsets(const Spanner* spanner, std::vector<int>& pitchOffsets);
 
 } // namespace Ms
 

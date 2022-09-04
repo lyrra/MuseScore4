@@ -406,17 +406,26 @@ void Trill::setTrillType(const QString& s)
       }
 
 //---------------------------------------------------------
+//   type2name
+//---------------------------------------------------------
+
+QString Trill::type2name(Trill::Type t)
+      {
+      for (TrillTableItem i : trillTable) {
+            if (i.type == t)
+                  return i.name;
+            }
+      qDebug("unknown Trill subtype %d", int(t));
+            return "?";
+      }
+
+//---------------------------------------------------------
 //   trillTypeName
 //---------------------------------------------------------
 
 QString Trill::trillTypeName() const
       {
-      for (TrillTableItem i : trillTable) {
-            if (i.type == trillType())
-                  return i.name;
-            }
-      qDebug("unknown Trill subtype %d", int(trillType()));
-            return "?";
+      return type2name(trillType());
       }
 
 //---------------------------------------------------------
@@ -480,7 +489,7 @@ bool Trill::setProperty(Pid propertyId, const QVariant& val)
                         return false;
                   break;
             }
-      score()->setLayoutAll();
+      triggerLayoutAll();
       return true;
       }
 
@@ -507,12 +516,23 @@ QVariant Trill::propertyDefault(Pid propertyId) const
       }
 
 //---------------------------------------------------------
+//   propertyId
+//---------------------------------------------------------
+
+Pid Trill::propertyId(const QStringRef& name) const
+      {
+      if (name == "subtype")
+            return Pid::TRILL_TYPE;
+      return SLine::propertyId(name);
+      }
+
+//---------------------------------------------------------
 //   accessibleInfo
 //---------------------------------------------------------
 
 QString Trill::accessibleInfo() const
       {
-      return QString("%1: %2").arg(Element::accessibleInfo()).arg(trillTypeUserName());
+      return QString("%1: %2").arg(Element::accessibleInfo(), trillTypeUserName());
       }
 }
 

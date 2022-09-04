@@ -20,17 +20,37 @@
 #ifndef __QMLPLUGINENGINE_H__
 #define __QMLPLUGINENGINE_H__
 
+#include "../qml/msqmlengine.h"
+#include "libmscore/score.h"
+
 namespace Ms {
 
-class QmlPlugin;
+class MuseScore;
 
 //---------------------------------------------------------
 //   QmlPluginEngine
 //---------------------------------------------------------
 
-class QmlPluginEngine : public QQmlEngine {
+class QmlPluginEngine : public MsQmlEngine {
+      Q_OBJECT
+
+      QMap<QString, QVariant> endCmdInfo;
+      int cmdCount = 0;
+      bool recursion = false;
+      bool undoRedo = false;
+
+      ScoreContentState lastScoreState;
+      ScoreContentState currScoreState;
+
+   signals:
+      void endCmd(const QMap<QString, QVariant>& changes);
    public:
       QmlPluginEngine(QObject* parent = nullptr);
+
+      void beginEndCmd(MuseScore*, bool undoRedo);
+      void endEndCmd(MuseScore*);
+
+      bool inScoreChangeActionHandler() const;
       };
 
 } // namespace Ms

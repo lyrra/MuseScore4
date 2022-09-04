@@ -39,13 +39,30 @@ class PreferenceDialog : public AbstractDialog, private Ui::PrefsDialogBase {
       QMap<QString, Shortcut*> localShortcuts;
       bool shortcutsChanged;
       QButtonGroup* recordButtons;
+      std::vector<PreferenceItem*> normalWidgets;
+      std::vector<PreferenceItem*> uiRelatedWidgets;
+      std::vector<PreferenceItem*> audioRelatedWidgets;
+      std::vector<PreferenceItem*> modifiedWidgets;
+      std::vector<PreferenceItem*> modifiedUiWidgets;
+      std::vector<PreferenceItem*> modifiedAudioWidgets;
       PreferencesListWidget* advancedWidget;
 
       virtual void hideEvent(QHideEvent*);
       void apply();
       void updateSCListView();
       void setUseMidiOutput(bool);
-      void updateValues(bool useDefaultValues = false);
+      void updateValues(bool useDefaultValues = false, bool setup = false);
+      void checkApplyActivation();
+
+      void applySetActive(bool active);
+      void updateShortestNote();
+      void applyShortestNote();
+      void languageUpdate();
+      void languageApply();
+      void updateCharsetListGP();
+      void updateCharsetListOve();
+      void updateUseLocalAvsOmr();
+      void applyPageVertical();
 
    private slots:
       void buttonBoxClicked(QAbstractButton*);
@@ -57,6 +74,8 @@ class PreferenceDialog : public AbstractDialog, private Ui::PrefsDialogBase {
       void selectPartStyle();
       void selectInstrumentList1();
       void selectInstrumentList2();
+      void selectScoreOrderList1();
+      void selectScoreOrderList2();
       void selectStartWith();
       void resetShortcutClicked();
       void saveShortcutListClicked();
@@ -76,21 +95,26 @@ class PreferenceDialog : public AbstractDialog, private Ui::PrefsDialogBase {
       void selectPluginsDirectory();
       void selectImagesDirectory();
       void selectExtensionsDirectory();
+      void zoomDefaultTypeChanged(int);
       void printShortcutsClicked();
       void filterShortcutsTextChanged(const QString &);
       void filterAdvancedPreferences(const QString&);
       void resetAdvancedPreferenceToDefault();
       void restartAudioEngine();
+      void widgetModified();
+      void uiWidgetModified();
+      void audioWidgetModified();
+      void applyActivate();
 
       void changeSoundfontPaths();
       void updateTranslationClicked();
 
    signals:
-      void preferencesChanged();
+      void preferencesChanged(bool fromWorkspace, bool changeUI);
       void mixerPreferencesChanged(bool showMidiControls);
 
    protected:
-      virtual void retranslate() { retranslateUi(this); updateValues(); }
+      virtual void retranslate();
 
    public:
       PreferenceDialog(QWidget* parent);

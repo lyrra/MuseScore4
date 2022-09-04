@@ -26,6 +26,7 @@ InspectorElementBase::InspectorElementBase(QWidget* parent)
       {
       e.setupUi(addWidget());
       e.offset->showRaster(true);
+
       iList = {
             { Pid::VISIBLE,   0, e.visible,    e.resetVisible   },
             { Pid::Z,         0, e.z,          e.resetZ         },
@@ -44,7 +45,7 @@ InspectorElementBase::InspectorElementBase(QWidget* parent)
 void InspectorElementBase::setElement()
       {
       InspectorBase::setElement();
-      if (inspector->element()->sizeIsSpatiumDependent())
+      if (inspector->element()->offsetIsSpatiumDependent())
             e.offset->setSuffix("sp");
       else
             e.offset->setSuffix("mm");

@@ -12,8 +12,6 @@
 
 #include "inspector.h"
 #include "inspectorTextLine.h"
-#include "musescore.h"
-#include "libmscore/score.h"
 
 namespace Ms {
 
@@ -27,7 +25,8 @@ InspectorTextLine::InspectorTextLine(QWidget* parent)
       ttl.setupUi(addWidget());
 
       const std::vector<InspectorItem> il = {
-            { Pid::PLACEMENT,  0, ttl.placement,  ttl.resetPlacement             },
+            { Pid::PLACEMENT,   0, ttl.placement,      ttl.resetPlacement        },
+            { Pid::SYSTEM_FLAG, 0, ttl.systemTextLine, 0                         },
             };
       const std::vector<InspectorPanel> ppList = {
             { ttl.title, ttl.panel },

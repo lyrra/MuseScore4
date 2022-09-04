@@ -35,6 +35,8 @@
 #include "libmscore/stafftype.h"
 #include "libmscore/undo.h"
 #include "libmscore/bracketItem.h"
+#include "libmscore/score.h"
+#include "libmscore/scoreOrder.h"
 
 namespace Ms {
 
@@ -43,13 +45,13 @@ namespace Ms {
 //---------------------------------------------------------
 
 InstrumentsDialog::InstrumentsDialog(QWidget* parent)
-   : QDialog(parent)
+   : AbstractDialog(parent)
       {
       setObjectName("Instruments");
       setupUi(this);
       setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint);
       QAction* a = getAction("instruments");
-      connect(a, SIGNAL(triggered()), SLOT(reject()));
+      connect(buttonBox, SIGNAL(clicked(QAbstractButton*)), SLOT(buttonBoxClicked(QAbstractButton*)));
       addAction(a);
       saveButton->setVisible(false);
       loadButton->setVisible(false);
@@ -63,6 +65,32 @@ InstrumentsDialog::InstrumentsDialog(QWidget* parent)
 void InstrumentsDialog::init()
       {
       instrumentsWidget->init();
+      }
+
+//---------------------------------------------------------
+//   retranslate
+//---------------------------------------------------------
+
+void InstrumentsDialog::retranslate()
+      {
+      retranslateUi(this);
+      }
+
+//---------------------------------------------------------
+//   buttonBoxClicked
+//---------------------------------------------------------
+
+void InstrumentsDialog::buttonBoxClicked(QAbstractButton* button)
+      {
+      switch (buttonBox->buttonRole(button)) {
+            case QDialogButtonBox::AcceptRole:
+                  accept();
+                  // fall through
+            case QDialogButtonBox::RejectRole:
+                  close();
+            default:
+                  break;
+            }
       }
 
 //---------------------------------------------------------
@@ -138,7 +166,7 @@ void InstrumentsDialog::on_loadButton_clicked()
             QMessageBox::warning(0,
                QWidget::tr("Load Style Failed"),
                QString(strerror(errno)),
-               QString::null, QWidget::tr("Quit"), QString::null, 0, 1);
+               QString(), QWidget::tr("Quit"), QString(), 0, 1);
             return;
             }
       instrumentsWidget->buildTemplateList();
@@ -172,6 +200,33 @@ void InstrumentsDialog::genPartList(Score* s)
       }
 
 //---------------------------------------------------------
+//   setScoreOrder
+//---------------------------------------------------------
+
+void InstrumentsDialog::setScoreOrder(ScoreOrder* order)
+      {
+      instrumentsWidget->setScoreOrder(order);
+      }
+
+//---------------------------------------------------------
+//   getScoreOrder
+//---------------------------------------------------------
+
+ScoreOrder* InstrumentsDialog::getScoreOrder()
+      {
+      return instrumentsWidget->getScoreOrder();
+      }
+
+//---------------------------------------------------------
+//   setBracketsAndBarlines
+//---------------------------------------------------------
+
+void InstrumentsDialog::setBracketsAndBarlines(Score* s)
+      {
+      instrumentsWidget->setBracketsAndBarlines(s);
+      }
+
+//---------------------------------------------------------
 //   partiturList
 //---------------------------------------------------------
 
@@ -198,6 +253,7 @@ void MuseScore::updateInstrumentDialog()
       if (instrList)
             instrList->buildInstrumentsList();
       }
+
 //---------------------------------------------------------
 //   editInstrList
 //---------------------------------------------------------
@@ -214,7 +270,10 @@ void MuseScore::editInstrList()
             }
       instrList->init();
       MasterScore* masterScore = cs->masterScore();
+      QList<Staff*> originalStaves = masterScore->staves();
       instrList->genPartList(masterScore);
+      ScoreOrder* order = masterScore->scoreOrder();
+      instrList->setScoreOrder(order ? order : scoreOrders.customScoreOrder());
       masterScore->startCmd();
       masterScore->deselectAll();
       int rv = instrList->exec();
@@ -230,6 +289,7 @@ void MuseScore::editInstrList()
             updateInputState(csv->score());
             }
       masterScore->inputState().setTrack(-1);
+      masterScore->undo(new ChangeScoreOrder(masterScore, instrList->getScoreOrder()));
 
       // keep the keylist of the first pitched staff to apply it to new ones
       KeyList tmpKeymap;
@@ -288,13 +348,13 @@ void MuseScore::editInstrList()
             if (pli->op == ListItemOp::I_DELETE)
                   masterScore->cmdRemovePart(pli->part);
             else if (pli->op == ListItemOp::ADD) {
-                  const InstrumentTemplate* t = ((PartListItem*)item)->it;
+                  const InstrumentTemplate* t = pli->it;
                   part = new Part(masterScore);
                   part->initFromInstrTemplate(t);
+                  part->setSoloist(pli->isSoloist());
                   masterScore->undo(new InsertPart(part, staffIdx));
 
                   pli->part = part;
-                  QList<Staff*> linked;
                   for (int cidx = 0; pli->child(cidx); ++cidx) {
                         StaffListItem* sli = static_cast<StaffListItem*>(pli->child(cidx));
                         Staff* staff       = new Staff(masterScore);
@@ -310,10 +370,8 @@ void MuseScore::editInstrList()
                         ++staffIdx;
 
                         Staff* linkedStaff = part->staves()->front();
-                        if (sli->linked() && linkedStaff != staff) {
+                        if (sli->linked() && linkedStaff != staff)
                               Excerpt::cloneStaff(linkedStaff, staff);
-                              linked.append(staff);
-                              }
                         }
 
                   //insert keysigs
@@ -324,6 +382,7 @@ void MuseScore::editInstrList()
                   }
             else {
                   part = pli->part;
+                  part->setSoloist(pli->isSoloist());
                   if (part->show() != pli->visible())
                         part->undoChangeProperty(Pid::VISIBLE, pli->visible());
                   for (int cidx = 0; pli->child(cidx); ++cidx) {
@@ -418,9 +477,11 @@ void MuseScore::editInstrList()
             }
 
       QList<int> dl;
+      QList<int> trackMap;
       int idx2 = 0;
       bool sort = false;
       for (Staff* staff : dst) {
+            trackMap.append(originalStaves.indexOf(staff));
             int idx = masterScore->staves().indexOf(staff);
             if (idx == -1)
                   qDebug("staff in dialog(%p) not found in score", staff);
@@ -433,6 +494,7 @@ void MuseScore::editInstrList()
 
       if (sort)
             masterScore->undo(new SortStaves(masterScore, dl));
+      masterScore->undo(new MapExcerptTracks(masterScore, trackMap));
 
       //
       // check for valid barLineSpan and bracketSpan
@@ -512,27 +574,14 @@ void MuseScore::editInstrList()
       const QList<Excerpt*> excerpts(masterScore->excerpts()); // excerpts list may change in the loop below
       for (Excerpt* excerpt : excerpts) {
             QList<Staff*> sl       = excerpt->partScore()->staves();
-            QMultiMap<int, int> tr = excerpt->tracks();
             if (sl.size() == 0)
                   masterScore->undo(new RemoveExcerpt(excerpt));
-            else {
-                  for (Staff* s : sl) {
-                        const LinkedElements* sll = s->links();
-                        for (auto le : *sll) {
-                              Staff* ss = toStaff(le);
-                              if (ss->primaryStaff()) {
-                                    for (int j = s->idx() * VOICES; j < (s->idx() + 1) * VOICES; j++) {
-                                          int strack = tr.key(j, -1);
-                                          if (strack != -1 && ((strack & ~3) == ss->idx()))
-                                                break;
-                                          else if (strack != -1)
-                                                tr.insert(ss->idx() + strack % VOICES, tr.value(strack, -1));
-                                          }
-                                    }
-                              }
-                        }
-                  }
             }
+
+      // Recreate brackets and barlines.
+      instrList->setBracketsAndBarlines(masterScore);
+      for (Excerpt* excerpt : excerpts)
+            instrList->setBracketsAndBarlines(excerpt->partScore());
 
       masterScore->setLayoutAll();
       masterScore->endCmd();

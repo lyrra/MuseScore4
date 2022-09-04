@@ -26,12 +26,11 @@ enum class TupletBracketType : char;
 //------------------------------------------------------------------------
 //   @@ Tuplet
 //!     Example of 1/8 triplet:
-//!       _baseLen     = 1/8
-//!       _actualNotes = 3
-//!       _normalNotes = 2     (3 notes played in the time of 2/8)
+//!       _baseLen     = 1/8  (tuplet is measured in eighth notes)
+//!       _ratio       = 3/2  (3 eighth tuplet notes played in the space of 2 regular eighth notes)
 //!
-//!    The tuplet has a  len of _baseLen * _normalNotes.
-//!    A tuplet note has len of _baseLen * _normalNotes / _actualNotes.
+//!    Entire tuplet has a duration of _baseLen * _ratio.denominator().
+//!    A single tuplet note has duration of _baseLen * _ratio.denominator() / _ratio.numerator().
 //------------------------------------------------------------------------
 
 class Tuplet final : public DurationElement {
@@ -46,6 +45,7 @@ class Tuplet final : public DurationElement {
       TDuration _baseLen;      // 1/8 for a triplet of 1/8
 
       bool _isUp;
+      bool _isSmall;
 
       Fraction _tick;
 
@@ -63,25 +63,25 @@ class Tuplet final : public DurationElement {
       Tuplet(Score*);
       Tuplet(const Tuplet&);
       ~Tuplet();
-      virtual Tuplet* clone() const override    { return new Tuplet(*this);   }
-      virtual ElementType type() const override { return ElementType::TUPLET; }
-      virtual void setTrack(int val) override;
 
-      virtual void add(Element*) override;
-      virtual void remove(Element*) override;
+      Tuplet* clone() const override    { return new Tuplet(*this);   }
+      ElementType type() const override { return ElementType::TUPLET; }
+      void setTrack(int val) override;
+
+      void add(Element*) override;
+      void remove(Element*) override;
 
       Text* number() const    { return _number; }
       void setNumber(Text* t) { _number = t; }
       void resetNumberProperty();
 
-      virtual bool isEditable() const override;
-      virtual void startEdit(EditData&) override;
-      virtual void editDrag(EditData&) override;
-      virtual void updateGrips(EditData&) const override;
+      bool isEditable() const override;
+      void startEditDrag(EditData&) override;
+      void editDrag(EditData&) override;
 
-      virtual void setSelected(bool f) override;
+      void setSelected(bool f) override;
 
-      virtual Measure* measure() const override  { return toMeasure(parent()); }
+      Measure* measure() const override  { return toMeasure(parent()); }
 
       TupletNumberType numberType() const        { return _numberType;       }
       TupletBracketType bracketType() const      { return _bracketType;      }
@@ -99,41 +99,48 @@ class Tuplet final : public DurationElement {
       void clear()                                          { _elements.clear(); }
       bool contains(const DurationElement* el) const { return std::find(_elements.begin(), _elements.end(), el) != _elements.end(); }
 
-      virtual void layout() override;
-      virtual void scanElements(void* data, void (*func)(void*, Element*), bool all=true) override;
+      void layout() override;
+      void scanElements(void* data, void (*func)(void*, Element*), bool all=true) override;
 
-      virtual void read(XmlReader&) override;
-      virtual void write(XmlWriter&) const override;
-      virtual bool readProperties(XmlReader&) override;
+      void read(XmlReader&) override;
+      void write(XmlWriter&) const override;
+      bool readProperties(XmlReader&) override;
 
-      virtual void reset() override;
+      void reset() override;
 
-      virtual void draw(QPainter*) const override;
+      void draw(QPainter*) const override;
       int id() const                       { return _id;          }
       void setId(int i) const              { _id = i;             }
 
       TDuration baseLen() const            { return _baseLen;     }
       void setBaseLen(const TDuration& d)  { _baseLen = d;        }
 
-      virtual void dump() const override;
+      void dump() const override;
 
       void setDirection(Direction d)          { _direction = d; }
       Direction direction() const             { return _direction; }
       bool isUp() const                       { return _isUp; }
-      virtual Fraction tick() const override  { return _tick; }
-      virtual Fraction rtick() const override;
+      bool isSmall() const                    { return _isSmall; }
+      Fraction tick() const override  { return _tick; }
+      Fraction rtick() const override;
       void setTick(const Fraction& v)         { _tick = v; }
       Fraction elementsDuration();
       void sortElements();
       bool cross() const;
 
-      virtual void setVisible(bool f) override;
+      void setVisible(bool f) override;
 
-      virtual QVariant getProperty(Pid propertyId) const override;
-      virtual bool setProperty(Pid propertyId, const QVariant& v) override;
-      virtual QVariant propertyDefault(Pid id) const override;
+      QVariant getProperty(Pid propertyId) const override;
+      bool setProperty(Pid propertyId, const QVariant& v) override;
+      QVariant propertyDefault(Pid id) const override;
 
-      virtual Shape shape() const override;
+      Shape shape() const override;
+
+      Element::EditBehavior normalModeEditBehavior() const override { return Element::EditBehavior::Edit; }
+      int gripsCount() const override { return 2; }
+      Grip initialEditModeGrip() const override { return Grip::END; }
+      Grip defaultGrip() const override { return Grip::START; }
+      std::vector<QPointF> gripsPositions(const EditData&) const override;
 
       void sanitizeTuplet();
       void addMissingElements();

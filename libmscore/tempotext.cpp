@@ -10,6 +10,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include <limits>
 #include "score.h"
 #include "tempotext.h"
 #include "tempo.h"
@@ -58,7 +59,11 @@ TempoText::TempoText(Score* s)
 void TempoText::write(XmlWriter& xml) const
       {
       xml.stag(this);
+      // Use maximum precision for formatting the tempo, since it's often a long decimal fraction.
+      int previousPrecision = xml.realNumberPrecision();
+      xml.setRealNumberPrecision(std::numeric_limits<decltype(_tempo)>::max_digits10);
       xml.tag("tempo", _tempo);
+      xml.setRealNumberPrecision(previousPrecision);
       if (_followText)
             xml.tag("followText", _followText);
       TextBase::writeProperties(xml);
@@ -120,6 +125,9 @@ static const TempoPattern tp[] = {
       TempoPattern("\uECA0",                     1.0/7.5,    TDuration::DurationType::V_BREVE),      // double whole
       TempoPattern("\uECAD",                     1.0/960.0,  TDuration::DurationType::V_64TH),       // 1/64
       TempoPattern("\uECAF",                     1.0/1920.0, TDuration::DurationType::V_128TH),      // 1/128
+      TempoPattern("\uECB1",                     1.0/3840.0, TDuration::DurationType::V_256TH),      // 1/256
+      TempoPattern("\uECB3",                     1.0/7680.0, TDuration::DurationType::V_512TH),      // 1/512
+      TempoPattern("\uECB5",                     1.0/15360.0,TDuration::DurationType::V_1024TH),     // 1/1024
       };
 
 //---------------------------------------------------------
@@ -155,7 +163,7 @@ static const TempoPattern tpSym[] = {
       TempoPattern("<sym>metNote8thUp</sym>\\s*<sym>metAugmentationDot</sym>\\s*<sym>metAugmentationDot</sym>",         1.75/120.0, TDuration::DurationType::V_EIGHTH, 2), // double dotted 1/8
       TempoPattern("<sym>metNote8thUp</sym>\\s*<sym>metAugmentationDot</sym>",              1.5/120.0, TDuration::DurationType::V_EIGHTH, 1),  // dotted 1/8
       TempoPattern("<sym>metNote8thUp</sym>",                                               1.0/120.0, TDuration::DurationType::V_EIGHTH),   // 1/8
-      TempoPattern("<sym>metNoteWhole</sym>\\s*<sym>metAugmentationDot</sym>",              1.5/15.0, TDuration::DurationType::V_WHOLE, 1),    // dotted whole
+      TempoPattern("<sym>metNoteWhole</sym>\\s*<sym>metAugmentationDot</sym>",              1.5/15.0,  TDuration::DurationType::V_WHOLE, 1),    // dotted whole
       TempoPattern("<sym>metNoteWhole</sym>",                                               1.0/15.0,  TDuration::DurationType::V_WHOLE),    // whole
       TempoPattern("<sym>metNote16thUp</sym>\\s*<sym>metAugmentationDot</sym>",             1.5/240.0, TDuration::DurationType::V_16TH, 1),  // dotted 1/16
       TempoPattern("<sym>metNote16thUp</sym>",                                              1.0/240.0, TDuration::DurationType::V_16TH),     // 1/16
@@ -165,7 +173,27 @@ static const TempoPattern tpSym[] = {
       TempoPattern("<sym>metNoteDoubleWhole</sym>",                                         1.0/7.5,   TDuration::DurationType::V_BREVE),    // double whole
       TempoPattern("<sym>metNote64thUp</sym>",                                              1.0/960.0, TDuration::DurationType::V_64TH),     // 1/64
       TempoPattern("<sym>metNote128thUp</sym>",                                             1.0/1920.0,TDuration::DurationType::V_128TH),    // 1/128
+      TempoPattern("<sym>metNote256thUp</sym>",                                             1.0/3840.0,TDuration::DurationType::V_256TH),    // 1/256
+      TempoPattern("<sym>metNote512thUp</sym>",                                             1.0/7680.0,TDuration::DurationType::V_512TH),    // 1/512
+      TempoPattern("<sym>metNote1024thUp</sym>",                                            1.0/15360.0,TDuration::DurationType::V_1024TH),  // 1/1024
       };
+
+//---------------------------------------------------------
+//   findTempoValue
+//    find the value (fraction of a minute) of the symbols
+//    in a string.
+//---------------------------------------------------------
+
+double TempoText::findTempoValue(const QString& s)
+      {
+      for (const auto& i : tpSym) {
+            QRegularExpression re(i.pattern);
+            if (s.contains(re)) {
+                  return i.f;
+                  }
+            }
+      return 0;
+      }
 
 //---------------------------------------------------------
 //   duration2tempoTextString
@@ -283,10 +311,10 @@ void TempoText::updateTempo()
                   }
             else {
                  for (const TempoPattern& pa2 : tp) {
-                       QString key = QString("%1_%2").arg(pa.pattern).arg(pa2.pattern);
+                       QString key = QString("%1_%2").arg(pa.pattern, pa2.pattern);
                        QRegExp re2;
                        if (!regexps2.contains(key)) {
-                             re2 = QRegExp(QString("%1\\s*=\\s*%2\\s*").arg(pa.pattern).arg(pa2.pattern));
+                             re2 = QRegExp(QString("%1\\s*=\\s*%2\\s*").arg(pa.pattern, pa2.pattern));
                              regexps2[key] = re2;
                              }
                        re2 = regexps2.value(key);
@@ -465,24 +493,13 @@ QString TempoText::accessibleInfo() const
             dots1 = duration2userName(t1);
             if (x2 != -1) {
                   dots2 = duration2userName(t2);
-                  return QString("%1: %2 %3 = %4 %5").arg(Element::accessibleInfo()).arg(dots1).arg(QObject::tr("note")).arg(dots2).arg(QObject::tr("note"));
+                  return QString("%1: %2 %3 = %4 %5").arg(Element::accessibleInfo(), dots1, QObject::tr("note"), dots2, QObject::tr("note"));
                   }
             else
-                  return QString("%1: %2 %3 = %4").arg(Element::accessibleInfo()).arg(dots1).arg(QObject::tr("note")).arg(secondPart);
+                  return QString("%1: %2 %3 = %4").arg(Element::accessibleInfo(), dots1, QObject::tr("note"), secondPart);
             }
       else
             return TextBase::accessibleInfo();
-      }
-
-//---------------------------------------------------------
-//   getPropertyStyle
-//---------------------------------------------------------
-
-Sid TempoText::getPropertyStyle(Pid pid) const
-      {
-      if (pid == Pid::OFFSET)
-            return placeAbove() ? Sid::tempoPosAbove : Sid::tempoPosBelow;
-      return TextBase::getPropertyStyle(pid);
       }
 
 }

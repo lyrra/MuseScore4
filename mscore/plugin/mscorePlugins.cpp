@@ -18,35 +18,8 @@
 //=============================================================================
 
 #include "musescore.h"
-#include "libmscore/score.h"
-#include "libmscore/undo.h"
-// #include "globals.h"
 #include "config.h"
 #include "preferences.h"
-#include "libmscore/chord.h"
-#include "libmscore/note.h"
-#include "libmscore/utils.h"
-#include "libmscore/mscore.h"
-#include "libmscore/measurebase.h"
-#include "libmscore/measure.h"
-#include "libmscore/segment.h"
-#include "libmscore/rest.h"
-#include "libmscore/stafftext.h"
-// #include "plugins.h"
-#include "libmscore/page.h"
-#include "libmscore/system.h"
-#include "libmscore/staff.h"
-#include "libmscore/part.h"
-#include "libmscore/timesig.h"
-#include "libmscore/keysig.h"
-#include "libmscore/harmony.h"
-#include "libmscore/slur.h"
-#include "libmscore/tie.h"
-#include "libmscore/notedot.h"
-#include "libmscore/figuredbass.h"
-#include "libmscore/accidental.h"
-#include "libmscore/lyrics.h"
-#include "libmscore/layoutbreak.h"
 #include "qmlplugin.h"
 #include "qmlpluginengine.h"
 #include "pluginManager.h"
@@ -116,9 +89,7 @@ void MuseScore::registerPlugin(PluginDescription* plugin)
 
       QAction* a = plugin->shortcut.action();
       pluginActions.append(a);
-      int pluginIdx = plugins.size() - 1; // plugin is already appended
-      connect(a, SIGNAL(triggered()), pluginMapper, SLOT(map()));
-      pluginMapper->setMapping(a, pluginIdx);
+      connect(a, &QAction::triggered, mscore, [_pluginPath]() { mscore->pluginTriggered(_pluginPath); });
 
       delete obj;
       }
@@ -151,9 +122,7 @@ void MuseScore::unregisterPlugin(PluginDescription* plugin)
       QAction* a = plugin->shortcut.action();
       pluginActions.removeAll(a);
 
-      disconnect(a, SIGNAL(triggered()), pluginMapper, SLOT(map()));
-      pluginMapper->removeMappings(a);
-
+      disconnect(a, 0, mscore, 0);
       }
 
 //---------------------------------------------------------
@@ -163,9 +132,6 @@ void MuseScore::unregisterPlugin(PluginDescription* plugin)
 
 void MuseScore::createMenuEntry(PluginDescription* plugin)
       {
-      if (!pluginMapper)
-            return;
-
       QString menu = plugin->menuPath;
       QStringList ml;
       QString s;
@@ -250,12 +216,21 @@ void MuseScore::createMenuEntry(PluginDescription* plugin)
             }
       }
 
+//---------------------------------------------------------
+//   addPluginMenuEntries
+//---------------------------------------------------------
+
+void MuseScore::addPluginMenuEntries()
+      {
+      for (int i = 0; i < pluginManager->pluginCount(); ++i) {
+            PluginDescription* d = pluginManager->getPluginDescription(i);
+            if (d->load)
+                  createMenuEntry(d);
+            }
+      }
 
 void MuseScore::removeMenuEntry(PluginDescription* plugin)
       {
-      if (!pluginMapper)
-            return;
-
       QString menu = plugin->menuPath;
       QStringList ml;
       QString s;
@@ -310,9 +285,8 @@ void MuseScore::removeMenuEntry(PluginDescription* plugin)
 
             QMenu* cmenu = qobject_cast<QMenu*>(cm->parent());
             if (cm->isEmpty())
-                  if(cm->isEmpty()) {
-                        delete cm;
-                        }
+                  delete cm;
+
             cm = cmenu;
             }
       }
@@ -340,8 +314,6 @@ int MuseScore::pluginIdxFromPath(QString _pluginPath) {
 
 void MuseScore::loadPlugins()
       {
-      pluginMapper = new QSignalMapper(this);
-      connect(pluginMapper, SIGNAL(mapped(int)), SLOT(pluginTriggered(int)));
       for (int i = 0; i < pluginManager->pluginCount(); ++i) {
             PluginDescription* d = pluginManager->getPluginDescription(i);
             if (d->load)
@@ -368,11 +340,6 @@ bool MuseScore::loadPlugin(const QString& filename)
       {
       bool result = false;
 
-      if (!pluginMapper) {
-            pluginMapper = new QSignalMapper(this);
-            connect(pluginMapper, SIGNAL(mapped(int)), SLOT(pluginTriggered(int)));
-            }
-
       QDir pluginDir(mscoreGlobalShare + "plugins");
       if (MScore::debugMode)
             qDebug("Plugin Path <%s>", qPrintable(mscoreGlobalShare + "plugins"));
@@ -386,8 +353,8 @@ bool MuseScore::loadPlugin(const QString& filename)
                   PluginDescription* p = new PluginDescription;
                   p->path = path;
                   p->load = false;
-                  collectPluginMetaInformation(p);
-                  registerPlugin(p);
+                  if (collectPluginMetaInformation(p))
+                        registerPlugin(p);
                   result = true;
                   }
             }
@@ -395,39 +362,100 @@ bool MuseScore::loadPlugin(const QString& filename)
       }
 
 //---------------------------------------------------------
+//   pluginPathFromIdx
+//---------------------------------------------------------
+
+QString MuseScore::pluginPathFromIdx(int idx)      {
+      if (plugins.size() > idx)
+            return plugins[idx];
+      else
+            return QString();
+      }
+
+//---------------------------------------------------------
+//   getPluginFromPath
+//---------------------------------------------------------
+
+QmlPlugin* pluginFromPath(QmlPluginEngine* engine, QString pluginPath)
+      {
+      QQmlComponent component(engine);
+      component.loadUrl(QUrl::fromLocalFile(pluginPath));
+      QObject* obj = component.create();
+      if (!obj ) {
+            foreach(QQmlError e, component.errors())
+                  qDebug("   line %d: %s", e.line(), qPrintable(e.description()));
+            return nullptr;
+            }
+
+      return qobject_cast<QmlPlugin*>(obj);
+      }
+
+//---------------------------------------------------------
+//   oscControlPlugin
+//---------------------------------------------------------
+
+#ifdef SCRIPT_INTERFACE
+
+void MuseScore::oscControlPlugin(int idx, QStringList methodPath, QVariant arg)
+      {
+      oscControlPlugin(pluginPathFromIdx(idx), methodPath, arg);
+      }
+
+void MuseScore::oscControlPlugin(QString _pluginPath, QStringList methodPath, QVariant arg)
+      {
+      if (_pluginPath.isEmpty())
+            return;
+
+      QmlPluginEngine* engine = getPluginEngine();
+      QmlPlugin* p = pluginFromPath(engine, _pluginPath);
+      if (!p)
+            return;
+
+      QObject* obj = dynamic_cast<QObject*>(p);
+
+      for (int i = 0 ; i < (methodPath.length() - 1) ; i++)
+                  obj = obj->findChild<QObject*>(methodPath[i]);
+
+      QMetaObject::invokeMethod(obj, methodPath.last().toLocal8Bit().data(), Q_ARG(QVariant, arg));
+      }
+
+#endif
+//---------------------------------------------------------
 //   pluginTriggered
 //---------------------------------------------------------
 
 void MuseScore::pluginTriggered(int idx)
       {
-      QString pp = plugins[idx];
+      pluginTriggered(pluginPathFromIdx(idx));
+      }
 
-      QQmlEngine* engine = getPluginEngine();
-
-      QQmlComponent component(engine);
-      component.loadUrl(QUrl::fromLocalFile(pp));
-      QObject* obj = component.create();
-      if (obj == 0) {
-            foreach(QQmlError e, component.errors())
-                  qDebug("   line %d: %s", e.line(), qPrintable(e.description()));
+void MuseScore::pluginTriggered(QString pp)
+      {
+      if (pp.isEmpty())
             return;
-            }
 
-      QmlPlugin* p = qobject_cast<QmlPlugin*>(obj);
-      if(MuseScoreCore::mscoreCore->currentScore() == nullptr && p->requiresScore() == true) {
+      QmlPluginEngine* engine = getPluginEngine();
+      QmlPlugin* p = pluginFromPath(engine, pp);
+      if (!p)
+            return;
+
+      if (MuseScoreCore::mscoreCore->currentScore() == nullptr && p->requiresScore() == true) {
             QMessageBox::information(0,
-                  QMessageBox::tr("MuseScore"),
-                  QMessageBox::tr("No score open.\n"
-                  "This plugin requires an open score to run.\n"),
+                  tr("MuseScore"),
+                  tr("No score open.\n"
+                  "This plugin requires an open score to run."),
                   QMessageBox::Ok, QMessageBox::NoButton);
-            delete obj;
             return;
             }
-      p->setFilePath(pp.section('/', 0, -2));
 
       if (p->pluginType() == "dock" || p->pluginType() == "dialog") {
             QQuickView* view = new QQuickView(engine, 0);
             view->setSource(QUrl::fromLocalFile(pp));
+            if (QmlPlugin* viewPluginInstance = qobject_cast<QmlPlugin*>(view->rootObject())) {
+                  // a new plugin instance was created by view, use it instead.
+                  delete p;
+                  p = viewPluginInstance;
+                  }
             view->setTitle(p->menuPath().mid(p->menuPath().lastIndexOf(".") + 1));
             view->setColor(QApplication::palette().color(QPalette::Window));
             //p->setParentItem(view->contentItem());
@@ -435,7 +463,7 @@ void MuseScore::pluginTriggered(int idx)
             //view->setHeight(p->height());
             view->setResizeMode(QQuickView::SizeRootObjectToView);
             if (p->pluginType() == "dock") {
-                  QDockWidget* dock = new QDockWidget("Plugin", 0);
+                  QDockWidget* dock = new QDockWidget(view->title(), 0);
                   dock->setAttribute(Qt::WA_DeleteOnClose);
                   Qt::DockWidgetArea area = Qt::RightDockWidgetArea;
                   if (p->dockArea() == "left")
@@ -447,6 +475,12 @@ void MuseScore::pluginTriggered(int idx)
                   QWidget* w = QWidget::createWindowContainer(view);
                   dock->setWidget(w);
                   addDockWidget(area, dock);
+                  const Qt::Orientation orientation =
+                     (area == Qt::RightDockWidgetArea || area == Qt::LeftDockWidgetArea)
+                     ? Qt::Vertical
+                     : Qt::Horizontal;
+                  const int size = (orientation == Qt::Vertical) ? view->initialSize().height() : view->initialSize().width();
+                  resizeDocks({ dock }, { size }, orientation);
                   connect(engine, SIGNAL(quit()), dock, SLOT(close()));
                   dock->show();
                   }
@@ -455,6 +489,10 @@ void MuseScore::pluginTriggered(int idx)
                   view->show();
                   }
             }
+
+      connect(engine, &QmlPluginEngine::endCmd, p, &QmlPlugin::endCmd);
+
+      p->setFilePath(pp.section('/', 0, -2));
 
       // don’t call startCmd for non modal dialog
       if (cs && p->pluginType() != "dock")
@@ -467,9 +505,11 @@ void MuseScore::pluginTriggered(int idx)
 
 //---------------------------------------------------------
 //   collectPluginMetaInformation
+///   returns false if loading a plugin for the given
+///   description has failed
 //---------------------------------------------------------
 
-void collectPluginMetaInformation(PluginDescription* d)
+bool collectPluginMetaInformation(PluginDescription* d)
       {
       qDebug("Collect meta for <%s>", qPrintable(d->path));
 
@@ -480,14 +520,16 @@ void collectPluginMetaInformation(PluginDescription* d)
             foreach(QQmlError e, component.errors()) {
                   qDebug("   line %d: %s", e.line(), qPrintable(e.description()));
                   }
-            return;
+            return false;
             }
       QmlPlugin* item = qobject_cast<QmlPlugin*>(obj);
+      const bool isQmlPlugin = bool(item);
       if (item) {
             d->version      = item->version();
             d->description  = item->description();
             }
       delete obj;
+      return isQmlPlugin;
       }
 }
 

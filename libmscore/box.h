@@ -41,8 +41,8 @@ class Box : public MeasureBase {
       qreal _rightMargin            { 0.0   };       // inner margins in metric mm
       qreal _topMargin              { 0.0   };
       qreal _bottomMargin           { 0.0   };
+      bool _isAutoSizeEnabled       { true  };
       bool editMode                 { false };
-      qreal dragX;                        // used during drag of hbox
 
    public:
       Box(Score*);
@@ -55,7 +55,6 @@ class Box : public MeasureBase {
       virtual void editDrag(EditData&) override;
       virtual void endEdit(EditData&) override;
 
-      virtual void updateGrips(EditData&) const override;
       virtual void layout() override;
       virtual void write(XmlWriter&) const override;
       virtual void write(XmlWriter& xml, int, bool, bool) const override { write(xml); }
@@ -66,6 +65,7 @@ class Box : public MeasureBase {
       virtual Element* drop(EditData&) override;
       virtual void add(Element* e) override;
 
+      QRectF contentRect() const;
       Spatium boxWidth() const        { return _boxWidth;     }
       void setBoxWidth(Spatium val)   { _boxWidth = val;      }
       Spatium boxHeight() const       { return _boxHeight;    }
@@ -82,11 +82,21 @@ class Box : public MeasureBase {
       void setTopGap(qreal val)       { _topGap = val;        }
       qreal bottomGap() const         { return _bottomGap;    }
       void setBottomGap(qreal val)    { _bottomGap = val;     }
+      bool isAutoSizeEnabled() const  { return _isAutoSizeEnabled; }
+      void setAutoSizeEnabled(const bool val) { _isAutoSizeEnabled = val; }
       void copyValues(Box* origin);
 
       virtual QVariant getProperty(Pid propertyId) const override;
       virtual bool setProperty(Pid propertyId, const QVariant&) override;
       virtual QVariant propertyDefault(Pid) const override;
+      virtual QString accessibleExtraInfo() const override;
+
+      // TODO: add a grip for moving the entire box
+      EditBehavior normalModeEditBehavior() const override { return EditBehavior::Edit; }
+      int gripsCount() const override { return 1; }
+      Grip initialEditModeGrip() const override { return Grip::START; }
+      Grip defaultGrip() const override { return Grip::START; }
+      std::vector<QPointF> gripsPositions(const EditData&) const override { return { QPointF() }; } // overriden in descendants
       };
 
 //---------------------------------------------------------
@@ -100,25 +110,28 @@ class HBox final : public Box {
    public:
       HBox(Score* score);
       virtual ~HBox() {}
-      virtual HBox* clone() const override        { return new HBox(*this); }
-      virtual ElementType type() const override { return ElementType::HBOX;       }
 
-      virtual void layout() override;
-      virtual void writeProperties(XmlWriter&) const override;
-      virtual bool readProperties(XmlReader&) override;
+      HBox* clone() const override      { return new HBox(*this); }
+      ElementType type() const override { return ElementType::HBOX; }
 
-      virtual QRectF drag(EditData&) override;
-      virtual void endEditDrag(EditData&) override;
+      void layout() override;
+      void writeProperties(XmlWriter&) const override;
+      bool readProperties(XmlReader&) override;
+
+      QRectF drag(EditData&) override;
+      void endEditDrag(EditData&) override;
       void layout2();
-      virtual bool isMovable() const override;
-      virtual void computeMinWidth();
+      bool isMovable() const override;
+      void computeMinWidth() override;
 
       bool createSystemHeader() const      { return _createSystemHeader; }
       void setCreateSystemHeader(bool val) { _createSystemHeader = val;  }
 
-      virtual QVariant getProperty(Pid propertyId) const override;
-      virtual bool setProperty(Pid propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(Pid) const override;
+      QVariant getProperty(Pid propertyId) const override;
+      bool setProperty(Pid propertyId, const QVariant&) override;
+      QVariant propertyDefault(Pid) const override;
+
+      std::vector<QPointF> gripsPositions(const EditData&) const override;
       };
 
 //---------------------------------------------------------
@@ -130,11 +143,19 @@ class VBox : public Box {
    public:
       VBox(Score* score);
       virtual ~VBox() {}
-      virtual VBox* clone() const override        { return new VBox(*this);           }
-      virtual ElementType type() const override { return ElementType::VBOX;       }
 
-      virtual void layout() override;
+      VBox* clone() const override      { return new VBox(*this); }
+      ElementType type() const override { return ElementType::VBOX; }
 
+      qreal minHeight() const;
+      qreal maxHeight() const;
+
+      QVariant getProperty(Pid propertyId) const override;
+      void layout() override;
+
+      void startEditDrag(EditData&) override;
+
+      std::vector<QPointF> gripsPositions(const EditData&) const override;
       };
 
 //---------------------------------------------------------
@@ -146,11 +167,12 @@ class FBox : public VBox {
    public:
       FBox(Score* score) : VBox(score) {}
       virtual ~FBox() {}
-      virtual FBox* clone() const override        { return new FBox(*this); }
-      virtual ElementType type() const override { return ElementType::FBOX;       }
 
-      virtual void layout() override;
-      virtual void add(Element*) override;
+      FBox* clone() const override      { return new FBox(*this); }
+      ElementType type() const override { return ElementType::FBOX; }
+
+      void layout() override;
+      void add(Element*) override;
       };
 
 

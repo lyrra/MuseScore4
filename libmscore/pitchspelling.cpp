@@ -14,7 +14,6 @@
 //  algorithmus from Emilios Cambouropoulos as published in:
 //  "Automatic Pitch Spelling: From Numbers to Sharps and Flats"
 
-#include "synthesizer/event.h"
 #include "note.h"
 #include "key.h"
 #include "pitchspelling.h"
@@ -23,6 +22,8 @@
 #include "score.h"
 #include "part.h"
 #include "utils.h"
+
+#include "audio/midi/event.h"
 
 namespace Ms {
 
@@ -45,17 +46,17 @@ int step2tpc(int step, AccidentalVal alter)
       //    "line of fifth's" LOF
 
       static const int spellings[] = {
-      //     bb  b   -   #  ##
-             0,  7, 14, 21, 28,  // C
-             2,  9, 16, 23, 30,  // D
-             4, 11, 18, 25, 32,  // E
-            -1,  6, 13, 20, 27,  // F
-             1,  8, 15, 22, 29,  // G
-             3, 10, 17, 24, 31,  // A
-             5, 12, 19, 26, 33,  // B
-             };
+      //    bbb  bb  b   -   #  ##  ###
+            -7,  0,  7, 14, 21, 28, 35,  // C
+            -5,  2,  9, 16, 23, 30, 37,  // D
+            -3,  4, 11, 18, 25, 32, 39,  // E
+            -8, -1,  6, 13, 20, 27, 34,  // F
+            -6,  1,  8, 15, 22, 29, 36,  // G
+            -4,  3, 10, 17, 24, 31, 38,  // A
+            -2,  5, 12, 19, 26, 33, 40,  // B
+            };
 
-      int i = step*5 + int(alter)+2;
+      int i = (step * TPCS_PER_STEP) + (int(alter) - int(AccidentalVal::MIN));
       Q_ASSERT(i >= 0 && (i < int(sizeof(spellings)/sizeof(*spellings))));
       return spellings[i];
       }
@@ -110,10 +111,9 @@ int tpc2step(int tpc)
 //   tpc2stepByKey
 //---------------------------------------------------------
 
-int tpc2stepByKey(int tpc, Key key, int* pAlter)
+int tpc2stepByKey(int tpc, Key key, int& alter)
       {
-      if (pAlter)
-            *pAlter = tpc2alterByKey(tpc, key);
+      alter = tpc2alterByKey(tpc, key);
       return tpc2step(tpc);
       }
 
@@ -188,13 +188,15 @@ int tpc2pitch(int tpc)
 
       static int pitches[] = {
 //step:     F   C   G   D   A   E   B
+            2, -3,  4, -1,  6,  1,  8,     // bbb
             3, -2,  5,  0,  7,  2,  9,     // bb
             4, -1,  6,  1,  8,  3, 10,     // b
             5,  0,  7,  2,  9,  4, 11,     // -
             6,  1,  8,  3, 10,  5, 12,     // #
-            7,  2,  9,  4, 11,  6, 13      // ##
+            7,  2,  9,  4, 11,  6, 13,     // ##
+            8,  3, 10,  5, 12,  7, 14      // ###
             };
-      return pitches[tpc + 1];
+      return pitches[tpc - Tpc::TPC_MIN];
       }
 
 //---------------------------------------------------------
@@ -219,7 +221,7 @@ int tpc2pitch(int tpc)
 //---------------------------------------------------------
 
 int tpc2alterByKey(int tpc, Key key) {
-      return (tpc - int(key) - int(Tpc::TPC_MIN) + int(Key::MAX)) / TPC_DELTA_SEMITONE - 3;
+      return (tpc - int(key) - int(Tpc::TPC_MIN) + int(Key::MAX)) / TPC_DELTA_SEMITONE - (int(AccidentalVal::MAX) + 1);
       }
 
 //---------------------------------------------------------
@@ -241,10 +243,25 @@ QString tpc2name(int tpc, NoteSpellingType noteSpelling, NoteCaseType noteCase, 
 
 void tpc2name(int tpc, NoteSpellingType noteSpelling, NoteCaseType noteCase, QString& s, QString& acc, bool explicitAccidental)
       {
-      int n;
-      tpc2name(tpc, noteSpelling, noteCase, s, n);
-      switch (n) {
-            case -2:
+      AccidentalVal accVal;
+      tpc2name(tpc, noteSpelling, noteCase, s, accVal);
+      switch (accVal) {
+            case AccidentalVal::FLAT3:
+                  if (explicitAccidental) {
+                        acc = QObject::tr("triple ♭");
+                        }
+                  else if (noteSpelling == NoteSpellingType::GERMAN_PURE) {
+                        switch (tpc) {
+                              case TPC_A_BBB: acc = "sasas"; break;
+                              case TPC_E_BBB: acc = "seses"; break;
+                              default: acc = "eseses";
+                              }
+                        }
+                  else {
+                        acc = "bbb";
+                        }
+                  break;
+            case AccidentalVal::FLAT2:
                   if (explicitAccidental) {
                         acc = QObject::tr("double ♭");
                         }
@@ -259,7 +276,7 @@ void tpc2name(int tpc, NoteSpellingType noteSpelling, NoteCaseType noteCase, QSt
                         acc = "bb";
                         }
                   break;
-            case -1:
+            case AccidentalVal::FLAT:
                   if (explicitAccidental)
                         acc = QObject::tr("♭");
                   else if (noteSpelling == NoteSpellingType::GERMAN_PURE)
@@ -267,22 +284,24 @@ void tpc2name(int tpc, NoteSpellingType noteSpelling, NoteCaseType noteCase, QSt
                   else
                         acc = "b";
                   break;
-            case  0: acc = ""; break;
-            case  1:
+            case  AccidentalVal::NATURAL: acc = ""; break;
+            case  AccidentalVal::SHARP:
                   if (explicitAccidental)
                         acc = QObject::tr("♯");
                   else
                         acc = (noteSpelling == NoteSpellingType::GERMAN_PURE) ? "is" : "#";
                   break;
-            case  2:
+            case  AccidentalVal::SHARP2:
                   if (explicitAccidental)
                         acc = QObject::tr("double ♯");
                   else
                         acc = (noteSpelling == NoteSpellingType::GERMAN_PURE) ? "isis" : "##";
                   break;
-            default:
-                  qDebug("tpc2name(%d): acc %d", tpc, n);
-                  acc = "";
+            case AccidentalVal::SHARP3:
+                  if (explicitAccidental)
+                        acc = QObject::tr("triple ♯");
+                  else
+                        acc = (noteSpelling == NoteSpellingType::GERMAN_PURE) ? "isisis" : "###";
                   break;
             }
       }
@@ -291,22 +310,22 @@ void tpc2name(int tpc, NoteSpellingType noteSpelling, NoteCaseType noteCase, QSt
 //   tpc2name
 //---------------------------------------------------------
 
-void tpc2name(int tpc, NoteSpellingType noteSpelling, NoteCaseType noteCase, QString& s, int& acc)
+void tpc2name(int tpc, NoteSpellingType noteSpelling, NoteCaseType noteCase, QString& s, AccidentalVal& acc)
       {
       const char names[]  = "FCGDAEB";
       const char gnames[] = "FCGDAEH";
       const QString snames[] = { "Fa", "Do", "Sol", "Re", "La", "Mi", "Si" };
 
-      acc = ((tpc+1) / 7) - 2;
-      int idx = (tpc + 1) % 7;
+      acc = tpc2alter(tpc);
+      int idx = (tpc - Tpc::TPC_MIN) % TPC_DELTA_SEMITONE;
       switch (noteSpelling) {
             case NoteSpellingType::GERMAN:
             case NoteSpellingType::GERMAN_PURE:
                   s = gnames[idx];
-                  if (s == "H" && acc == -1) {
+                  if (s == "H" && acc == AccidentalVal::FLAT) {
                         s = "B";
                         if (noteSpelling == NoteSpellingType::GERMAN_PURE)
-                              acc = 0;
+                              acc = AccidentalVal::NATURAL;
                         }
                   break;
             case NoteSpellingType::SOLFEGGIO:
@@ -338,7 +357,7 @@ void tpc2name(int tpc, NoteSpellingType noteSpelling, NoteCaseType noteCase, QSt
 QString tpc2stepName(int tpc)
       {
       const char names[] = "FCGDAEB";
-      return QString(names[(tpc + 1) % 7]);
+      return QString(names[(tpc - Tpc::TPC_MIN) % 7]);
       }
 
 // table of alternative spellings for one octave
@@ -586,13 +605,13 @@ int computeWindow(const std::vector<Note*>& notes, int start, int end)
             int pa    = 0;
             int pb    = 0;
             int l     = pitch[0] * 2 + (i & 1);
-            Q_ASSERT(l >= 0 && l <= (int)(sizeof(tab1)/sizeof(*tab1)));
+            Q_ASSERT(l >= 0 && l <= static_cast<int>(sizeof(tab1)/sizeof(*tab1)));
             int lof1a = tab1[l];
             int lof1b = tab2[l];
 
             for (k = 1; k < 10; ++k) {
                   int l1 = pitch[k] * 2 + ((i & (1 << k)) >> k);
-                  Q_ASSERT(l1 >= 0 && l1 <= (int)(sizeof(tab1)/sizeof(*tab1)));
+                  Q_ASSERT(l1 >= 0 && l1 <= static_cast<int>(sizeof(tab1)/sizeof(*tab1)));
                   int lof2a = tab1[l1];
                   int lof2b = tab2[l1];
                   pa += penalty(lof1a, lof2a, key[k]);
@@ -632,9 +651,11 @@ int computeWindow(const std::vector<Note*>& notes, int start, int end)
 
 void changeAllTpcs(Note* n, int tpc1)
       {
+      if (!n)
+            return;
       Interval v;
-      Fraction tick = n && n->chord() ? n->chord()->tick() : Fraction(-1,1);
-      if (n && n->part() && n->part()->instrument()) {
+      Fraction tick = n->chord() ? n->chord()->tick() : Fraction(-1,1);
+      if (n->part() && n->part()->instrument(tick)) {
             v = n->part()->instrument(tick)->transpose();
             v.flip();
             }
@@ -684,11 +705,11 @@ void Score::spellNotelist(std::vector<Note*>& notes)
                         case 3:
                               k = end - start - 3;
                               changeAllTpcs(notes[end-3], tab[(notes[end-3]->pitch() % 12) * 2 + ((opt & (1<<k)) >> k)]);
-                              // FALLTHROUGH
+                              Q_FALLTHROUGH();
                         case 2:
                               k = end - start - 2;
                               changeAllTpcs(notes[end-2], tab[(notes[end-2]->pitch() % 12) * 2 + ((opt & (1<<k)) >> k)]);
-                              // FALLTHROUGH
+                              Q_FALLTHROUGH();
                         case 1:
                               k = end - start - 1;
                               changeAllTpcs(notes[end-1], tab[(notes[end-1]->pitch() % 12) * 2 + ((opt & (1<<k)) >> k)]);
@@ -742,7 +763,7 @@ int pitch2tpc(int pitch, Key key, Prefer prefer)
 //    key: between Key::MIN and Key::MAX
 //---------------------------------------------------------
 
-int pitch2absStepByKey(int pitch, int tpc, Key key, int *pAlter)
+int pitch2absStepByKey(int pitch, int tpc, Key key, int& alter)
       {
       // sanitize input data
       if (pitch < 0)
@@ -758,14 +779,9 @@ int pitch2absStepByKey(int pitch, int tpc, Key key, int *pAlter)
       if (key > Key::MAX)
             key   -= Key::DELTA_ENHARMONIC;
 
-      int octave = pitch / PITCH_DELTA_OCTAVE;
-      if (tpc == Tpc::TPC_C_BB || tpc == Tpc::TPC_C_B)
-            ++octave;
-      else if (tpc == Tpc::TPC_B_S || tpc == Tpc::TPC_B_SS)
-            --octave;
+      int octave = (pitch - int(tpc2alter(tpc))) / PITCH_DELTA_OCTAVE;
       int step = tpc2step(tpc);
-      if (pAlter)
-            *pAlter = tpc2alterByKey(tpc, key);
+      alter = tpc2alterByKey(tpc, key);
       return octave * STEP_DELTA_OCTAVE + step;
       }
 
@@ -803,6 +819,78 @@ int tpc2degree(int tpc, Key key)
       QString scale = scales[int(key)+7];
       QString stepName = tpc2stepName(tpc);
       return (names.indexOf(stepName) - names.indexOf(scale) +28) % 7;
+      }
+
+//---------------------------------------------------------
+//   tpcInterval
+///   Finds tpc of a note based on an altered interval
+///   from a starting note
+//---------------------------------------------------------
+
+int tpcInterval(int startTpc, int interval, int alter)
+      {
+      Q_ASSERT(interval > 0);
+      static const int intervals[7] = {
+//          1  2  3   4  5  6  7
+            0, 2, 4, -1, 1, 3, 5
+      };
+
+      int result = startTpc + intervals[(interval - 1) % 7] + alter * TPC_DELTA_SEMITONE;
+      //ensure that we don't have anything more than double sharp or double flat
+      //(I know, breaking some convention, but it's the best we can do for now)
+      while (result > Tpc::TPC_MAX)
+            result -= TPC_DELTA_ENHARMONIC;
+      while (result < Tpc::TPC_MIN)
+            result += TPC_DELTA_ENHARMONIC;
+
+      return result;
+      }
+
+//---------------------------------------------------------
+//   step2pitchInterval
+///   Finds pitch between notes a specified altered interval away
+///
+///   For example:
+///         step = 3, alter = 0 means major 3rd
+///         step = 5, alter = -1 means diminished 5
+///         step = 6, alter = 2 means augmented sixth
+//---------------------------------------------------------
+
+int step2pitchInterval(int step, int alter)
+      {
+      Q_ASSERT(step > 0);
+      static const int intervals[7] = {
+//          1  2  3  4  5  6  7
+            0, 2, 4, 5, 7, 9, 11
+      };
+
+      return intervals[(step - 1) % 7] + alter;
+      }
+
+//----------------------------------------------
+//   function2Tpc
+///   might be temporary, just used to parse nashville notation now
+///
+//----------------------------------------------
+int function2Tpc(const QString& s, Key key) {
+      //TODO - PHV: allow for alternate spellings
+      int alter = 0;
+      int step;
+      if (!s.isEmpty() && s[0].isDigit()) {
+            step = s[0].digitValue();
+            }
+      else if (s.size() > 1 && s[1].isDigit()) {
+            step = s[1].digitValue();
+            if (s[0] == 'b')
+                  alter = -1;
+            else if (s[0] == '#')
+                  alter = 1;
+            }
+      else
+            return Tpc::TPC_INVALID;
+
+      int keyTpc = int(key) + 14; //tpc of key (ex. F# major would be Tpc::F_S)
+      return tpcInterval(keyTpc, step, alter);
       }
 
 }

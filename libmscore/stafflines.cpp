@@ -93,7 +93,8 @@ void StaffLines::layoutForWidth(qreal w)
       int _lines;
       if (s) {
             setMag(s->mag(measure()->tick()));
-            setColor(s->color());
+            setVisible(!s->invisible(measure()->tick()));
+            setColor(s->color(measure()->tick()));
             const StaffType* st = s->staffType(measure()->tick());
             dist         *= st->lineDistance().val();
             _lines        = st->lines();
@@ -114,11 +115,61 @@ void StaffLines::layoutForWidth(qreal w)
       if (_lines == 1) {
             qreal extraSize = _spatium;
             bbox().adjust(0, -extraSize, 0, extraSize);
-      }
+            }
+      else if (_lines == 0) {
+            bbox().adjust(0, -2 * dist, 0, 2*dist);
+            }
 
       lines.clear();
       for (int i = 0; i < _lines; ++i) {
             lines.push_back(QLineF(x1, y, x2, y));
+            y += dist;
+            }
+      }
+
+//---------------------------------------------------------
+//   layoutPartialWidth
+///   Layout staff lines for the specified width only, aligned
+///   to the left or right of the measure
+//---------------------------------------------------------
+
+void StaffLines::layoutPartialWidth(qreal w, qreal wPartial, bool alignRight)
+      {
+      const Staff* s = staff();
+      qreal _spatium = spatium();
+      wPartial *= spatium();
+      qreal dist     = _spatium;
+      setPos(QPointF(0.0, 0.0));
+      int _lines;
+      if (s) {
+            setMag(s->mag(measure()->tick()));
+            setColor(s->color(measure()->tick()));
+            const StaffType* st = s->staffType(measure()->tick());
+            dist         *= st->lineDistance().val();
+            _lines        = st->lines();
+            rypos()       = st->yoffset().val() * _spatium;
+            }
+      else {
+            _lines = 5;
+            setColor(MScore::defaultColor);
+            }
+      lw       = score()->styleS(Sid::staffLineWidth).val() * _spatium;
+      qreal x1 = pos().x();
+      qreal x2 = x1 + w;
+      qreal y  = pos().y();
+      bbox().setRect(x1, -lw * .5 + y, w, (_lines-1) * dist + lw);
+
+      if (_lines == 1) {
+            qreal extraSize = _spatium;
+            bbox().adjust(0, -extraSize, 0, extraSize);
+      }
+
+      lines.clear();
+      for (int i = 0; i < _lines; ++i) {
+            if (alignRight)
+                  lines.push_back(QLineF(x2-wPartial, y, x2, y));
+            else
+                  lines.push_back(QLineF(x1, y, x1 + wPartial, y));
             y += dist;
             }
       }

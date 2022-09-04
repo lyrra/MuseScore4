@@ -160,7 +160,7 @@ qreal Shape::right() const
 
 qreal Shape::top() const
       {
-      qreal dist = 0.0;
+      qreal dist = 1000000.0;
       for (const QRectF& r : *this) {
             if (r.top() < dist)
                   dist = r.top();
@@ -174,7 +174,7 @@ qreal Shape::top() const
 
 qreal Shape::bottom() const
       {
-      qreal dist = 0.0;
+      qreal dist = -1000000.0;
       for (const QRectF& r : *this) {
             if (r.bottom() > dist)
                   dist = r.bottom();
@@ -226,7 +226,7 @@ void Shape::remove(const QRectF& r)
                   return;
                   }
             }
-      // qWarning("Shape::remove: QRectF not found in Shape");
+      // qDebug("Shape::remove: QRectF not found in Shape");
       qFatal("Shape::remove: QRectF not found in Shape");
       }
 

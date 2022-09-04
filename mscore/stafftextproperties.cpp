@@ -38,10 +38,10 @@ static void initChannelCombo(QComboBox* cb, StaffTextBase* st)
       Part* part = st->staff()->part();
       Fraction tick = static_cast<Segment*>(st->parent())->tick();
       for (const Channel* a : part->instrument(tick)->channel()) {
-            if (a->name().isEmpty() || a->name() == Channel::DEFAULT_NAME)
-                  cb->addItem(QObject::tr(Channel::DEFAULT_NAME));
-            else
-                  cb->addItem(qApp->translate("InstrumentsXML", a->name().toUtf8().data()));
+            QString name = a->name();
+            if (a->name().isEmpty())
+                  name = Channel::DEFAULT_NAME;
+            cb->addItem(qApp->translate("InstrumentsXML", name.toUtf8().data()));
             }
       }
 
@@ -152,13 +152,13 @@ StaffTextProperties::StaffTextProperties(const StaffTextBase* st, QWidget* paren
                   }
             else if (_staffText->swingParameters()->swingUnit == 0) {
                  swingBox->setEnabled(false);
-                 SwingOff->setChecked(true);
+                 swingOff->setChecked(true);
                  swingBox->setValue(_staffText->swingParameters()->swingRatio);
                  }
             }
 
       connect(mapper, SIGNAL(mapped(int)), SLOT(voiceButtonClicked(int)));
-      connect(SwingOff, SIGNAL(toggled(bool)), SLOT(setSwingControls(bool)));
+      connect(swingOff, SIGNAL(toggled(bool)), SLOT(setSwingControls(bool)));
       connect(swingEighth, SIGNAL(toggled(bool)), SLOT(setSwingControls(bool)));
       connect(swingSixteenth, SIGNAL(toggled(bool)), SLOT(setSwingControls(bool)));
 
@@ -184,10 +184,10 @@ StaffTextProperties::StaffTextProperties(const StaffTextBase* st, QWidget* paren
             const Channel* a = part->instrument(tick)->channel(i);
             QTreeWidgetItem* item = new QTreeWidgetItem(channelList);
             item->setData(0, Qt::UserRole, i);
-            if (a->name().isEmpty() || a->name() == Channel::DEFAULT_NAME)
-                  item->setText(0, tr(Channel::DEFAULT_NAME));
-            else
-                  item->setText(0, qApp->translate("InstrumentsXML", a->name().toUtf8().data()));
+            QString name = a->name();
+            if (a->name().isEmpty())
+                  name = Channel::DEFAULT_NAME;
+            item->setText(0, qApp->translate("InstrumentsXML", name.toUtf8().data()));
             item->setText(1, qApp->translate("InstrumentsXML", a->descr().toUtf8().data()));
             if (i == 0)
                   selectedItem = item;
@@ -291,7 +291,7 @@ void StaffTextProperties::setSwingControls(bool checked)
       {
       if (!checked)
             return;
-      if (SwingOff->isChecked())
+      if (swingOff->isChecked())
             swingBox->setEnabled(false);
       else if (swingEighth->isChecked())
             swingBox->setEnabled(true);
@@ -388,26 +388,20 @@ void StaffTextProperties::channelItemChanged(QTreeWidgetItem* item, QTreeWidgetI
 
       for (const NamedEventList& e : part->instrument(tick)->midiActions()) {
             QTreeWidgetItem* ti = new QTreeWidgetItem(actionList);
-            if (e.name.isEmpty() || e.name == Channel::DEFAULT_NAME) {
-                  ti->setText(0, tr(Channel::DEFAULT_NAME));
-                  ti->setData(0, Qt::UserRole, Channel::DEFAULT_NAME);
-                  }
-            else {
-                  ti->setText(0, qApp->translate("InstrumentsXML", e.name.toUtf8().data()));
-                  ti->setData(0, Qt::UserRole, e.name);
-                  }
+            QString name = e.name;
+            if (e.name.isEmpty())
+                  name = Channel::DEFAULT_NAME;
+            ti->setText(0, qApp->translate("InstrumentsXML", name.toUtf8().data()));
+            ti->setData(0, Qt::UserRole, name);
             ti->setText(1, qApp->translate("InstrumentsXML", e.descr.toUtf8().data()));
             }
       for (const NamedEventList& e : channel->midiActions) {
             QTreeWidgetItem* ti = new QTreeWidgetItem(actionList);
-            if (e.name.isEmpty() || e.name == Channel::DEFAULT_NAME) {
-                  ti->setText(0, tr(Channel::DEFAULT_NAME));
-                  ti->setData(0, Qt::UserRole, Channel::DEFAULT_NAME);
-                  }
-            else {
-                  ti->setText(0, qApp->translate("InstrumentsXML", e.name.toUtf8().data()));
-                  ti->setData(0, Qt::UserRole, e.name);
-                  }
+            QString name = e.name;
+            if (e.name.isEmpty())
+                  name = Channel::DEFAULT_NAME;
+            ti->setText(0, qApp->translate("InstrumentsXML", name.toUtf8().data()));
+            ti->setData(0, Qt::UserRole, name);
             ti->setText(1, qApp->translate("InstrumentsXML", e.descr.toUtf8().data()));
             }
       for (const ChannelActions& ca : *_staffText->channelActions()) {
@@ -465,7 +459,7 @@ void StaffTextProperties::saveValues()
             }
       if (setSwingBox->isChecked()) {
             _staffText->setSwing(true);
-            if (SwingOff->isChecked()) {
+            if (swingOff->isChecked()) {
                   _staffText->setSwingParameters(0, swingBox->value());
                   swingBox->setEnabled(false);
                   }

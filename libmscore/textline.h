@@ -25,14 +25,19 @@ class Note;
 
 class TextLineSegment final : public TextLineBaseSegment {
 
-      virtual Sid getPropertyStyle(Pid) const override;
+      Sid getTextLinePos(bool above) const;
+      Sid getPropertyStyle(Pid) const override;
 
    public:
-      TextLineSegment(Spanner* sp, Score* s);
-      virtual ElementType type() const override       { return ElementType::TEXTLINE_SEGMENT; }
-      virtual TextLineSegment* clone() const override { return new TextLineSegment(*this); }
-      TextLine* textLine() const                      { return toTextLine(spanner()); }
-      virtual void layout() override;
+      TextLineSegment(Spanner* sp, Score* s, bool system=false);
+
+      ElementType type() const override       { return ElementType::TEXTLINE_SEGMENT; }
+      TextLineSegment* clone() const override { return new TextLineSegment(*this); }
+
+      virtual Element* propertyDelegate(Pid) override;
+
+      TextLine* textLine() const              { return toTextLine(spanner()); }
+      void layout() override;
       };
 
 //---------------------------------------------------------
@@ -41,20 +46,29 @@ class TextLineSegment final : public TextLineBaseSegment {
 
 class TextLine final : public TextLineBase {
 
-      virtual Sid getPropertyStyle(Pid) const override;
+      Sid getTextLinePos(bool above) const;
+      Sid getPropertyStyle(Pid) const override;
 
    public:
-      TextLine(Score* s);
+      TextLine(Score* s, bool system=false);
       TextLine(const TextLine&);
       ~TextLine() {}
 
-      virtual TextLine* clone() const           { return new TextLine(*this); }
-      virtual ElementType type() const          { return ElementType::TEXTLINE; }
-      virtual void write(XmlWriter&) const override;
-      virtual LineSegment* createLineSegment() override;
-      virtual QVariant propertyDefault(Pid) const override;
-      };
+      virtual void undoChangeProperty(Pid id, const QVariant&, PropertyFlags ps) override;
+      virtual SpannerSegment* layoutSystem(System*) override;
 
+      TextLine* clone() const override   { return new TextLine(*this); }
+      ElementType type() const override  { return ElementType::TEXTLINE; }
+
+      void write(XmlWriter&) const override;
+      void read(XmlReader&) override;
+
+      void initStyle();
+
+      LineSegment* createLineSegment() override;
+      QVariant propertyDefault(Pid) const override;
+      bool setProperty(Pid propertyId, const QVariant&) override;
+      };
 
 }     // namespace Ms
 #endif

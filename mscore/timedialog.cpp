@@ -97,6 +97,16 @@ void TimeDialog::addClicked()
       sp->append(ts, "");
       sp->setSelected(sp->size() - 1);
       _dirty = true;
+      emit timeSigAdded(ts);
+      }
+
+//---------------------------------------------------------
+//   showTimePalette
+//---------------------------------------------------------
+
+void TimeDialog::showTimePalette(bool val)
+      {
+      _timePalette->setVisible(val);
       }
 
 //---------------------------------------------------------
@@ -117,7 +127,7 @@ void TimeDialog::save()
 
 void TimeDialog::zChanged(int val)
       {
-      zText->setText(QString("%1").arg(val));
+      Q_UNUSED(val);
       Fraction sig(zNominal->value(), denominator());
       groups->setSig(sig, Groups::endings(sig), zText->text(), nText->text());
       }
@@ -126,9 +136,9 @@ void TimeDialog::zChanged(int val)
 //   nChanged
 //---------------------------------------------------------
 
-void TimeDialog::nChanged(int /*val*/)
+void TimeDialog::nChanged(int val)
       {
-      nText->setText(QString("%1").arg(denominator()));
+      Q_UNUSED(val);
       Fraction sig(zNominal->value(), denominator());
       groups->setSig(sig, Groups::endings(sig), zText->text(), nText->text());
       }
@@ -148,6 +158,7 @@ int TimeDialog::denominator2Idx(int denominator) const
             case 16: val = 4; break;
             case 32: val = 5; break;
             case 64: val = 6; break;
+            case 128:val = 7; break;
             }
       return val;
       }
@@ -167,6 +178,7 @@ int TimeDialog::denominator() const
             case 4: val = 16; break;
             case 5: val = 32; break;
             case 6: val = 64; break;
+            case 7: val = 128; break;
             }
       return val;
       }

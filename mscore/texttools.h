@@ -30,11 +30,13 @@ class TextTools : public QDockWidget {
       TextBase* text;
       TextCursor* cursor;
 
+      QToolBar* toolbar;
       QDoubleSpinBox* typefaceSize;
       QFontComboBox* typefaceFamily;
       QAction* typefaceBold;
       QAction* typefaceItalic;
       QAction* typefaceUnderline;
+      QAction* typefaceStrike;
       QAction* typefaceSubscript;
       QAction* typefaceSuperscript;
       QAction* showKeyboard;
@@ -49,9 +51,14 @@ class TextTools : public QDockWidget {
       void boldClicked(bool);
       void italicClicked(bool);
       void underlineClicked(bool);
+      void strikeClicked(bool);
       void subscriptClicked(bool);
       void superscriptClicked(bool);
       void showKeyboardClicked(bool);
+      
+   protected:
+      void changeEvent(QEvent*);
+      void retranslate();
 
    public:
       TextTools(QWidget* parent = 0);
@@ -60,6 +67,7 @@ class TextTools : public QDockWidget {
       void toggleBold();
       void toggleItalic();
       void toggleUnderline();
+      void toggleStrike();
       TextBase* textElement();
       };
 }

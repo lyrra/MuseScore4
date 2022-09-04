@@ -60,12 +60,21 @@ Startcenter::Startcenter(QWidget* parent)
 
 #ifdef USE_WEBENGINE
       if (!noWebView) {
+#if defined(WIN_PORTABLE)
+            QWebEngineProfile* defaultProfile = QWebEngineProfile::defaultProfile();
+            defaultProfile->setCachePath(QDir::cleanPath(QString("%1/../../../Data/settings/QWebEngine").arg(QCoreApplication::applicationDirPath())));
+            defaultProfile->setPersistentStoragePath(QDir::cleanPath(QString("%1/../../../Data/settings/QWebEngine").arg(QCoreApplication::applicationDirPath())));
+#endif
             _webView = new MyWebView(this);
             _webView->setMaximumWidth(200);
 
             MyWebEnginePage* page = new MyWebEnginePage(this);
             MyWebUrlRequestInterceptor* wuri = new MyWebUrlRequestInterceptor(page);
             QWebEngineProfile* profile = page->profile();
+#if defined(WIN_PORTABLE)
+            profile->setCachePath(QDir::cleanPath(QString("%1/../../../Data/settings/QWebEngine").arg(QCoreApplication::applicationDirPath())));
+            profile->setPersistentStoragePath(QDir::cleanPath(QString("%1/../../../Data/settings/QWebEngine").arg(QCoreApplication::applicationDirPath())));
+#endif
             profile->setRequestInterceptor(wuri);
             _webView->setPage(page);
 
@@ -75,7 +84,7 @@ Startcenter::Startcenter(QWidget* parent)
 
             horizontalLayout->addWidget(_webView);
             
-            //workaround for the crashes sometimes happend in Chromium on macOS with Qt 5.12
+            //workaround for the crashes sometimes happening in Chromium on macOS with Qt 5.12
             connect(_webView, &QWebEngineView::renderProcessTerminated, this, [this, profile, connectPageUrl](QWebEnginePage::RenderProcessTerminationStatus terminationStatus, int exitCode)
                     {
                     qDebug() << "Login page loading terminated" << terminationStatus << " " << exitCode;
@@ -86,7 +95,7 @@ Startcenter::Startcenter(QWidget* parent)
             }
 #endif
 
-      if (enableExperimental)
+//      if (enableExperimental)
 // right now don’t know how it use in WebEngine @handrok
 //            QWebSettings::globalSettings()->setAttribute(QWebSettings::DeveloperExtrasEnabled, true);
 //      QWebSettings::globalSettings()->setAttribute(QWebSettings::PluginsEnabled, false);
@@ -115,8 +124,8 @@ void Startcenter::loadScore(QString s)
             newScore();
             }
       else {
-            mscore->openScore(s);
             close();
+            mscore->openScore(s);
             }
       }
 

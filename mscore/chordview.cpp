@@ -155,7 +155,10 @@ ChordView::ChordView()
       setDragMode(QGraphicsView::RubberBandDrag);
       magStep   = 2;
       chord     = 0;
-      _curNote   = 0;
+      _curNote  = 0;
+      _locator  = 0;
+      _pos      = 0;
+      locatorLine = nullptr;
       _evenGrid = true;
       lg        = 0;
       rg        = 0;
@@ -337,7 +340,7 @@ void ChordView::moveLocator()
 
 void ChordView::wheelEvent(QWheelEvent* event)
       {
-      int step    = event->delta() / 120;
+      int step    = event->angleDelta().y() / 120;
       double xmag = transform().m11();
       double ymag = transform().m22();
 

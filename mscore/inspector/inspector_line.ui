@@ -139,9 +139,6 @@
         <property name="accessibleName">
          <string>Line color</string>
         </property>
-        <property name="frameShape">
-         <enum>QFrame::Box</enum>
-        </property>
        </widget>
       </item>
       <item row="5" column="1">
@@ -248,13 +245,13 @@
          <string>Dash line length</string>
         </property>
         <property name="minimum">
-         <double>1.000000000000000</double>
+         <double>0.010000000000000</double>
         </property>
         <property name="maximum">
          <double>20.000000000000000</double>
         </property>
         <property name="singleStep">
-         <double>1.000000000000000</double>
+         <double>0.250000000000000</double>
         </property>
        </widget>
       </item>
@@ -379,7 +376,7 @@
   </customwidget>
   <customwidget>
    <class>Awl::ColorLabel</class>
-   <extends>QFrame</extends>
+   <extends>QPushButton</extends>
    <header>awl/colorlabel.h</header>
    <container>1</container>
   </customwidget>

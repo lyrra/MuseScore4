@@ -55,11 +55,15 @@ class ScoreElement : public QObject {
 
       Ownership _ownership;
 
-      /// \cond MS_INTERNAL
+      qreal spatium() const;
+
    protected:
+      /// \cond MS_INTERNAL
       Ms::ScoreElement* const e;
+      /// \endcond
 
    public:
+      /// \cond MS_INTERNAL
       ScoreElement(Ms::ScoreElement* _e = nullptr, Ownership own = Ownership::PLUGIN)
          : QObject(), _ownership(own), e(_e) {}
       ScoreElement(const ScoreElement&) = delete;
@@ -80,6 +84,8 @@ class ScoreElement : public QObject {
       /// \endcond
 
       Q_INVOKABLE QString userName() const;
+      /// Checks whether two variables represent the same object. \since MuseScore 3.3
+      Q_INVOKABLE bool is(Ms::PluginAPI::ScoreElement* other) { return other && element() == other->element(); }
       };
 
 //---------------------------------------------------------
@@ -101,6 +107,24 @@ Wrapper* wrap(T* t, Ownership own = Ownership::SCORE)
 extern ScoreElement* wrap(Ms::ScoreElement* se, Ownership own = Ownership::SCORE);
 
 //---------------------------------------------------------
+//   customWrap
+///   \cond PLUGIN_API \private \endcond
+///   \internal
+///   Can be used to construct wrappers which do not
+///   support standard ownership logic or require
+///   additional arguments for initialization.
+//---------------------------------------------------------
+
+template <class Wrapper, class T, typename... Args>
+Wrapper* customWrap(T* t, Args... args)
+      {
+      Wrapper* w = t ? new Wrapper(t, std::forward<Args>(args)...) : nullptr;
+      // All wrapper objects should belong to JavaScript code.
+      QQmlEngine::setObjectOwnership(w, QQmlEngine::JavaScriptOwnership);
+      return w;
+      }
+
+//---------------------------------------------------------
 ///   QML access to containers.
 ///   A wrapper which provides read-only access for various
 ///   items containers.
@@ -111,10 +135,19 @@ class QmlListAccess : public QQmlListProperty<T> {
 public:
       /// \cond MS_INTERNAL
       QmlListAccess(QObject* obj, Container& container)
-            : QQmlListProperty<T>(obj, const_cast<void*>(static_cast<const void*>(&container)), &count, &at) {};
+            : QQmlListProperty<T>(obj, const_cast<void*>(static_cast<const void*>(&container)), &count, &at) {}
 
       static int count(QQmlListProperty<T>* l)     { return int(static_cast<Container*>(l->data)->size()); }
-      static T* at(QQmlListProperty<T>* l, int i)  { return wrap<T>(static_cast<Container*>(l->data)->at(i), Ownership::SCORE); }
+      static T* at(QQmlListProperty<T>* l, int i)
+            {
+            auto el = static_cast<Container*>(l->data)->at(i);
+            // If a polymorphic wrap() function is available
+            // for the requested type, use it for wrapping.
+            if (std::is_same<T*, decltype(wrap(el, Ownership::SCORE))>::value)
+                  return static_cast<T*>(wrap(el, Ownership::SCORE));
+            // Otherwise, wrap directly to the requested wrapper type.
+            return wrap<T>(el, Ownership::SCORE);
+            }
       /// \endcond
       };
 

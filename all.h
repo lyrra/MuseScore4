@@ -79,23 +79,30 @@
 #include <QPointF>
 #include <QVariant>
 #include <QMap>
+#include <QMultiMap>
 #include <QByteArray>
 #include <QDateTime>
 #include <QtGlobal>
 #include <QtDebug>
 #include <QSharedData>
+#include <QHash>
+#include <QKeySequence>
+#include <QAction>
 
 #include <QAtomicInt>
 #include <QErrorMessage>
+#include <QEventLoop>
 
 #include <QPainterPath>
 #include <QPixmap>
+#include <QImage>
 #include <QPainter>
 #include <QKeyEvent>
 
 #include <QFontDatabase>
 #include <QProcess>
 #include <QDesktopServices>
+#include <QDesktopWidget>
 #include <QTextDocument>
 #include <QTextDocumentFragment>
 #include <QTextCursor>
@@ -179,6 +186,9 @@
 #include <QSvgRenderer>
 #include <QSvgGenerator>
 
+#include <QFile>
+#include <QFileInfo>
+
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkCookie>
@@ -212,12 +222,6 @@
 #define Q_ASSERT_X(a,b,c)
 #undef Q_ASSERT
 #define Q_ASSERT(a)
-#endif
-
-#if (defined (_MSCVER) || defined (_MSC_VER))
-   // Undefined problematic #def'd macros in Microsoft headers
-   #undef STRING_NONE
-   #undef small
 #endif
 
 #endif  // __cplusplus

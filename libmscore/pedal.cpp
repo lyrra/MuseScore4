@@ -40,6 +40,7 @@ static const ElementStyle pedalStyle {
       { Sid::pedalBeginTextOffset,               Pid::BEGIN_TEXT_OFFSET       },
       { Sid::pedalBeginTextOffset,               Pid::CONTINUE_TEXT_OFFSET    },
       { Sid::pedalBeginTextOffset,               Pid::END_TEXT_OFFSET         },
+      { Sid::pedalLineWidth,                     Pid::LINE_WIDTH              },
       { Sid::pedalPlacement,                     Pid::PLACEMENT               },
       { Sid::pedalPosBelow,                      Pid::OFFSET                  },
       };
@@ -84,6 +85,7 @@ Pedal::Pedal(Score* s)
       initElementStyle(&pedalStyle);
       setLineVisible(true);
       resetProperty(Pid::BEGIN_TEXT);
+      resetProperty(Pid::CONTINUE_TEXT);
       resetProperty(Pid::END_TEXT);
 
       resetProperty(Pid::LINE_WIDTH);
@@ -105,7 +107,10 @@ void Pedal::read(XmlReader& e)
       if (score()->mscVersion() < 301)
             e.addSpanner(e.intAttribute("id", -1), this);
       while (e.readNextStartElement()) {
-            if (!TextLineBase::readProperties(e))
+            const QStringRef& tag(e.name());
+            if (readStyledProperty(e, tag))
+                  ;
+            else if (!TextLineBase::readProperties(e))
                   e.unknown();
             }
       }
@@ -123,6 +128,7 @@ void Pedal::write(XmlWriter& xml) const
       for (auto i : {
          Pid::END_HOOK_TYPE,
          Pid::BEGIN_TEXT,
+         Pid::CONTINUE_TEXT,
          Pid::END_TEXT,
          Pid::LINE_VISIBLE,
          Pid::BEGIN_HOOK_TYPE

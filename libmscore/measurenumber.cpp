@@ -2,18 +2,24 @@
 //  MuseScore
 //  Music Composition & Notation
 //
-//  Copyright (C) 2011-2014 Werner Schweer
+//  Copyright (C) 2020 MuseScore BVBA and others
 //
 //  This program is free software; you can redistribute it and/or modify
-//  it under the terms of the GNU General Public License version 2
-//  as published by the Free Software Foundation and appearing in
-//  the file LICENCE.GPL
+//  it under the terms of the GNU General Public License version 2.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with this program; if not, write to the Free Software
+//  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 //=============================================================================
 
+#include "score.h"
 #include "measurenumber.h"
-// #include "xml.h"
 #include "measure.h"
-#include "staff.h"
 
 namespace Ms {
 
@@ -22,16 +28,29 @@ namespace Ms {
 //---------------------------------------------------------
 
 static const ElementStyle measureNumberStyle {
+      { Sid::measureNumberVPlacement, Pid::PLACEMENT },
+      { Sid::measureNumberHPlacement, Pid::HPLACEMENT },
       };
 
 //---------------------------------------------------------
 //   MeasureNumber
 //---------------------------------------------------------
 
-MeasureNumber::MeasureNumber(Score* s) : TextBase(s, Tid::MEASURE_NUMBER)
+MeasureNumber::MeasureNumber(Score* s, Tid tid)
+      : MeasureNumberBase(s, tid)
       {
-      setFlag(ElementFlag::ON_STAFF, true);
-      resetProperty(Pid::PLACEMENT);
+      initElementStyle(&measureNumberStyle);
+
+      setHPlacement(score()->styleV(Sid::measureNumberHPlacement).value<HPlacement>());
+      }
+
+//---------------------------------------------------------
+//   MeasureNumber
+//     Copy constructor
+//---------------------------------------------------------
+
+MeasureNumber::MeasureNumber(const MeasureNumber& other): MeasureNumberBase(other)
+      {
       initElementStyle(&measureNumberStyle);
       }
 
@@ -45,33 +64,12 @@ QVariant MeasureNumber::propertyDefault(Pid id) const
             case Pid::SUB_STYLE:
                   return int(Tid::MEASURE_NUMBER);
             case Pid::PLACEMENT:
-                  return int (Placement::ABOVE);
+                  return score()->styleV(Sid::measureNumberVPlacement);
+            case Pid::HPLACEMENT:
+                  return score()->styleV(Sid::measureNumberHPlacement);
             default:
-                  return TextBase::propertyDefault(id);
+                  return MeasureNumberBase::propertyDefault(id);
             }
       }
 
-//---------------------------------------------------------
-//   layout
-//---------------------------------------------------------
-
-void MeasureNumber::layout()
-      {
-      setPos(QPointF());
-      if (!parent())
-            setOffset(0.0, 0.0);
-      //else if (isStyled(Pid::OFFSET))
-      //      setOffset(propertyDefault(Pid::OFFSET).toPointF());
-
-      const StaffType* st = staff()->constStaffType(measure()->tick());
-      if (st->lines() == 1 && staff())
-            rypos() = (placeBelow() ? 2.0 : -2.0) * spatium();
-      else {
-            if (placeBelow())
-                  rypos() = staff() ? staff()->height() : 0.0;
-            }
-      TextBase::layout1();
-      }
-
-}
-
+} // namespace MS

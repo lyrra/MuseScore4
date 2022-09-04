@@ -13,10 +13,10 @@
 #include "synthcontrol.h"
 #include "musescore.h"
 #include "seq.h"
-#include "synthesizer/msynthesizer.h"
-#include "synthesizer/synthesizer.h"
-#include "synthesizer/synthesizergui.h"
-#include "mixer.h"
+#include "audio/midi/msynthesizer.h"
+#include "audio/midi/synthesizer.h"
+#include "audio/midi/synthesizergui.h"
+#include "mixer/mixer.h"
 #include "file.h"
 #include "icons.h"
 #include "libmscore/score.h"
@@ -85,17 +85,23 @@ SynthControl::SynthControl(QWidget* parent)
       recallButton->setEnabled(false);
       changeTuningButton->setEnabled(false);
 
+      gainSlider->setLog(false);
+      gainSlider->setRange(synti->minGainAsDecibels, synti->maxGainAsDecibels);
+      gainSlider->setDclickValue1(synti->defaultGainAsDecibels);
+      gainSlider->setDclickValue2(synti->defaultGainAsDecibels);
+      gainSlider->setValue(synti->gainAsDecibels());
+
       enablePlay = new EnablePlayForWidget(this);
       connect(effectA,      SIGNAL(currentIndexChanged(int)), SLOT(effectAChanged(int)));
       connect(effectB,      SIGNAL(currentIndexChanged(int)), SLOT(effectBChanged(int)));
-      connect(gain,         SIGNAL(valueChanged(double,int)), SLOT(gainChanged(double,int)));
+      connect(gainSlider,   SIGNAL(valueChanged(double,int)), SLOT(gainChanged(double,int)));
       connect(masterTuning, SIGNAL(valueChanged(double)),     SLOT(masterTuningChanged(double)));
       connect(changeTuningButton, SIGNAL(clicked()),          SLOT(changeMasterTuning()));
       connect(loadButton,   SIGNAL(clicked()),                SLOT(loadButtonClicked()));
       connect(saveButton,   SIGNAL(clicked()),                SLOT(saveButtonClicked()));
       connect(storeButton,  SIGNAL(clicked()),                SLOT(storeButtonClicked()));
       connect(recallButton, SIGNAL(clicked()),                SLOT(recallButtonClicked()));
-      connect(gain,         SIGNAL(valueChanged(double,int)), SLOT(setDirty()));
+      connect(gainSlider,         SIGNAL(valueChanged(double,int)), SLOT(setDirty()));
       connect(dynamicsMethodList, SIGNAL(currentIndexChanged(int)), SLOT(dynamicsMethodChanged(int)));
       connect(ccToUseList,        SIGNAL(currentIndexChanged(int)), SLOT(ccToUseChanged(int)));
       connect(switchExpr,   SIGNAL(clicked()),                SLOT(switchExprButtonClicked()));
@@ -107,9 +113,11 @@ SynthControl::SynthControl(QWidget* parent)
 //   setGain
 //---------------------------------------------------------
 
+// synthesizer has signalled a gain change - update the slider
 void SynthControl::setGain(float val)
       {
-      gain->setValue(val);
+      Q_UNUSED(val);
+      gainSlider->setValue(synti->gainAsDecibels());
       }
 
 //---------------------------------------------------------
@@ -165,10 +173,7 @@ void MuseScore::showSynthControl(bool val)
             mscore->stackUnder(synthControl);
             synthControl->setScore(cs);
             connect(synti,        SIGNAL(gainChanged(float)), synthControl, SLOT(setGain(float)));
-            connect(synthControl, SIGNAL(gainChanged(float)), synti, SLOT(setGain(float)));
             connect(synthControl, SIGNAL(closed(bool)), a,     SLOT(setChecked(bool)));
-            if (mixer)
-                  connect(synthControl, SIGNAL(soundFontChanged()), mixer, SLOT(patchListChanged()));
             }
       synthControl->setVisible(val);
       }
@@ -177,9 +182,10 @@ void MuseScore::showSynthControl(bool val)
 //   gainChanged
 //---------------------------------------------------------
 
+// user has moved the gain control on this widget - update the synthesizer
 void SynthControl::gainChanged(double val, int)
       {
-      emit gainChanged(val);
+      synti->setGainAsDecibels(val);
       }
 
 //---------------------------------------------------------
@@ -208,8 +214,8 @@ void SynthControl::changeMasterTuning()
 
 void SynthControl::setMeter(float l, float r, float left_peak, float right_peak)
       {
-      gain->setMeterVal(0, l, left_peak);
-      gain->setMeterVal(1, r, right_peak);
+      gainSlider->setMeterVal(0, l, left_peak);
+      gainSlider->setMeterVal(1, r, right_peak);
       }
 
 //---------------------------------------------------------
@@ -228,8 +234,8 @@ void SynthControl::setScore(Score* s) {
 
 void SynthControl::stop()
       {
-      gain->setMeterVal(0, .0, .0);
-      gain->setMeterVal(1, .0, .0);
+      gainSlider->setMeterVal(0, .0, .0);
+      gainSlider->setMeterVal(1, .0, .0);
       }
 
 //---------------------------------------------------------
@@ -355,7 +361,10 @@ void SynthControl::saveButtonClicked()
       if (!_score)
             return;
       _score->startCmd();
-      _score->undo(new ChangeSynthesizerState(_score, synti->state()));
+      SynthesizerState ss = synti->state();
+      if (_dirty || !_score->synthesizerState().isDefault())
+            ss.setIsDefault(false);
+      _score->undo(new ChangeSynthesizerState(_score, ss));
       _score->endCmd();
 
       updateExpressivePatches();
@@ -363,6 +372,7 @@ void SynthControl::saveButtonClicked()
       saveButton->setEnabled(false);
       storeButton->setEnabled(true);
       recallButton->setEnabled(true);
+      _dirty = false;
       }
 
 //---------------------------------------------------------
@@ -391,6 +401,7 @@ void SynthControl::recallButtonClicked()
             else
                   e.unknown();
             }
+      state.setIsDefault(true);
       synti->setState(state);
       updateGui();
 
@@ -417,6 +428,7 @@ void SynthControl::storeButtonClicked()
       updateExpressivePatches();
       storeButton->setEnabled(false);
       recallButton->setEnabled(false);
+      _dirty = false;
       }
 
 //---------------------------------------------------------
@@ -479,6 +491,7 @@ void SynthControl::updateMixer()
 
 void SynthControl::setDirty()
       {
+      _dirty = true;
       loadButton->setEnabled(true);
       saveButton->setEnabled(true);
       storeButton->setEnabled(true);

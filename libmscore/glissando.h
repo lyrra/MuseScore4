@@ -34,12 +34,13 @@ class GlissandoSegment final : public LineSegment {
    public:
       GlissandoSegment(Spanner* sp, Score* s) : LineSegment(sp, s) {}
       Glissando* glissando() const                          { return toGlissando(spanner()); }
-      virtual ElementType type() const override             { return ElementType::GLISSANDO_SEGMENT; }
-      virtual GlissandoSegment* clone() const override      { return new GlissandoSegment(*this); }
-      virtual void draw(QPainter*) const override;
-      virtual void layout() override;
 
-      virtual Element* propertyDelegate(Pid) override;
+      ElementType type() const override             { return ElementType::GLISSANDO_SEGMENT; }
+      GlissandoSegment* clone() const override      { return new GlissandoSegment(*this); }
+      void draw(QPainter*) const override;
+      void layout() override;
+
+      Element* propertyDelegate(Pid) override;
       };
 
 //---------------------------------------------------------
@@ -55,6 +56,10 @@ class Glissando final : public SLine {
       M_PROPERTY(bool, showText, setShowText)
       M_PROPERTY(bool, playGlissando, setPlayGlissando)
       M_PROPERTY(FontStyle, fontStyle, setFontStyle)
+      M_PROPERTY(int, easeIn, setEaseIn)
+      M_PROPERTY(int, easeOut, setEaseOut)
+
+      static const std::array<const char *, 2> glissandoTypeNames;
 
    public:
       Glissando(Score* s);
@@ -63,20 +68,22 @@ class Glissando final : public SLine {
       static Note* guessInitialNote(Chord* chord);
       static Note* guessFinalNote(Chord* chord);
 
+      QString glissandoTypeName() { return qApp->translate("Palette", glissandoTypeNames[int(glissandoType())]); }
+
       // overridden inherited methods
-      virtual Glissando* clone() const override     { return new Glissando(*this);   }
-      virtual ElementType type() const override     { return ElementType::GLISSANDO; }
-      virtual LineSegment* createLineSegment() override;
-      virtual void scanElements(void* data, void (*func)(void*, Element*), bool all=true) override;
-      virtual void layout() override;
-      virtual void write(XmlWriter&) const override;
-      virtual void read(XmlReader&) override;
+      Glissando* clone() const override     { return new Glissando(*this);   }
+      ElementType type() const override     { return ElementType::GLISSANDO; }
+      LineSegment* createLineSegment() override;
+      void scanElements(void* data, void (*func)(void*, Element*), bool all=true) override;
+      void layout() override;
+      void write(XmlWriter&) const override;
+      void read(XmlReader&) override;
 
       // property/style methods
-      virtual QVariant getProperty(Pid propertyId) const override;
-      virtual bool     setProperty(Pid propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(Pid) const override;
-      virtual Pid propertyId(const QStringRef& xmlName) const override;
+      QVariant getProperty(Pid propertyId) const override;
+      bool     setProperty(Pid propertyId, const QVariant&) override;
+      QVariant propertyDefault(Pid) const override;
+      Pid propertyId(const QStringRef& xmlName) const override;
       };
 
 

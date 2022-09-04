@@ -8,6 +8,7 @@
   <language code="ast" name="Asturianu" />
   <language code="be" name="Беларуская мова" />
   <language code="bg" name="български" />
+  <language code="br" name="Brezhoneg" />
   <language code="ca" name="Català" />
   <language code="ca@valencia" name="Valencià" />
   <language code="cs" name="Čeština" />
@@ -54,6 +55,7 @@
   <language code="pt_BR" name="Português brasileiro" />
   <language code="ro" name="Română" />
   <language code="ru" name="Русский" />
+  <language code="scn" name="Sicilianu" />
   <language code="sk" name="Slovenčina" />
   <language code="sl" name="Slovenščina" />
   <language code="sr" name="Srpski" />
@@ -65,5 +67,6 @@
   <language code="uz@Latn" name="Oʻzbek tili" />
   <language code="vi" name="Tiếng Việt" />
   <language code="zh_CN" name="简体中文" />
+  <language code="zh_HK" name="繁體中文 (香港)" />
   <language code="zh_TW" name="繁體中文 (台灣)" />
 </languages>

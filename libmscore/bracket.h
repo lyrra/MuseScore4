@@ -45,9 +45,10 @@ class Bracket final : public Element {
 
    public:
       Bracket(Score*);
-      virtual ~Bracket();
-      virtual Bracket* clone() const override   { return new Bracket(*this); }
-      virtual ElementType type() const override { return ElementType::BRACKET;  }
+      ~Bracket();
+
+      Bracket* clone() const override   { return new Bracket(*this); }
+      ElementType type() const override { return ElementType::BRACKET;  }
 
       void setBracketItem(BracketItem* i)       { _bi = i; }
       BracketItem* bracketItem() const          { return _bi;          }
@@ -60,6 +61,7 @@ class Bracket final : public Element {
       void setStaffSpan(int a, int b);
 
       SymId braceSymbol() const                 { return _braceSymbol; }
+      void setBraceSymbol(const SymId& sym)     { _braceSymbol = sym; }
       int column() const                        { return _bi->column();  }
       int span() const                          { return _bi->bracketSpan();    }
       qreal magx() const                        { return _magx;                 }
@@ -69,36 +71,42 @@ class Bracket final : public Element {
       Measure* measure() const                  { return _measure; }
       void setMeasure(Measure* measure)         { _measure = measure; }
 
-      virtual void setHeight(qreal) override;
-      virtual qreal width() const override;
+      Fraction playTick() const override;
 
-      virtual Shape shape() const override { return _shape; }
+      void setHeight(qreal) override;
+      qreal width() const override;
 
-      virtual void draw(QPainter*) const override;
-      virtual void layout() override;
+      Shape shape() const override { return _shape; }
 
-      virtual void write(XmlWriter& xml) const override;
-      virtual void read(XmlReader&) override;
+      void draw(QPainter*) const override;
+      void layout() override;
 
-      virtual bool isEditable() const override { return true; }
-      virtual void startEdit(EditData&) override;
-      virtual bool edit(EditData&) override;
-      virtual void endEdit(EditData&) override;
-      virtual void editDrag(EditData&) override;
-      virtual void endEditDrag(EditData&) override;
-      virtual void updateGrips(EditData&) const override;
+      void write(XmlWriter& xml) const override;
+      void read(XmlReader&) override;
 
-      virtual bool acceptDrop(EditData&) const override;
-      virtual Element* drop(EditData&) override;
+      bool isEditable() const override { return true; }
+      void startEdit(EditData&) override;
+      bool edit(EditData&) override;
+      void endEdit(EditData&) override;
+      void editDrag(EditData&) override;
+      void endEditDrag(EditData&) override;
 
-      virtual QVariant getProperty(Pid propertyId) const override;
-      virtual bool setProperty(Pid propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(Pid) const override;
+      bool acceptDrop(EditData&) const override;
+      Element* drop(EditData&) override;
+
+      QVariant getProperty(Pid propertyId) const override;
+      bool setProperty(Pid propertyId, const QVariant&) override;
+      QVariant propertyDefault(Pid) const override;
 
       void undoChangeProperty(Pid id, const QVariant& v, PropertyFlags ps) override;
       using ScoreElement::undoChangeProperty;
 
-      virtual void setSelected(bool f) override;
+      int gripsCount() const override { return 1; }
+      Grip initialEditModeGrip() const override { return Grip::START; }
+      Grip defaultGrip() const override { return Grip::START; }
+      std::vector<QPointF> gripsPositions(const EditData&) const override;
+
+      void setSelected(bool f) override;
       };
 
 

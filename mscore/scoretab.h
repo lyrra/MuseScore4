@@ -19,12 +19,14 @@
 
 #ifndef __SCORETAB_H__
 #define __SCORETAB_H__
-#include "musescore.h"
+
 namespace Ms {
 
+class MuseScore;
 class ScoreView;
 class Score;
-enum class MagIdx : char;
+enum class ZoomIndex : char;
+struct ScoreViewState;
 
 //---------------------------------------------------------
 //   TabScoreView
@@ -40,19 +42,35 @@ struct TabScoreView {
       };
 
 //---------------------------------------------------------
+//   MsTabBar
+//---------------------------------------------------------
+
+class MsTabBar : public QTabBar {
+      int _middleClickedTab { -1 };
+
+   public:
+      MsTabBar(QWidget* parent = nullptr) : QTabBar(parent) {}
+
+   private:
+      void mousePressEvent(QMouseEvent* e) override;
+      void mouseReleaseEvent(QMouseEvent* e) override;
+      };
+
+//---------------------------------------------------------
 //   ScoreTab
 //---------------------------------------------------------
 
 class ScoreTab : public QWidget {
       Q_OBJECT
-      QList<MasterScore*>* scoreList;
-      QTabBar* tab;                 // list of scores
-      QTabBar* tab2;                // list of excerpts for current score
-      QStackedLayout* stack;
-      MuseScore* mainWindow;
+      QList<MasterScore*>* scoreList { nullptr };
+      MsTabBar* tab  { nullptr };                 // list of scores
+      MsTabBar* tab2 { nullptr };                 // list of excerpts for current score
+      QStackedLayout* stack { nullptr };
+      MuseScore* mainWindow { nullptr };;
       void clearTab2();
-      TabScoreView* tabScoreView(int idx) { return static_cast<TabScoreView*>(tab->tabData(idx).value<void*>()); }
-      const TabScoreView* tabScoreView(int idx) const { return const_cast<ScoreTab*>(this)->tabScoreView(idx); }
+      TabScoreView* tabScoreView(int idx);
+      const TabScoreView* tabScoreView(int idx) const;
+      std::map<int, ScoreViewState> scoreViewsToInit;
 
    signals:
       void currentScoreViewChanged(ScoreView*);
@@ -74,7 +92,7 @@ class ScoreTab : public QWidget {
       ScoreTab(QList<MasterScore*>*, QWidget* parent = 0);
       ~ScoreTab();
 
-      QTabBar* getTab() const { return tab; }
+      MsTabBar* getTab() const { return tab; }
 
       void insertTab(MasterScore*);
       void setTabText(int, const QString&);
@@ -87,7 +105,8 @@ class ScoreTab : public QWidget {
       QSplitter* viewSplitter(int n) const;
       ScoreView* view() const { return view(currentIndex()); }
       bool contains(ScoreView*) const;
-      void initScoreView(int idx, double mag, MagIdx magIdx, double xoffset, double yoffset);
+      void initScoreView(int idx);
+      void queueInitScoreView(int idx, qreal logicalZoomLevel, ZoomIndex zoomIndex, qreal xoffset, qreal yoffset);
       };
 
 

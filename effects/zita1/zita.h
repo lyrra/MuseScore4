@@ -20,7 +20,7 @@
 #define __ZITA_H__
 
 #include "effects/effect.h"
-
+#include <atomic>
 namespace Ms {
 
 class EffectGui;
@@ -36,24 +36,24 @@ class Pareq
       void calcpar1 (int nsamp, float g, float f);
       void process1 (int nsamp, float*);
 
-      volatile int16_t  _touch0;
-      volatile int16_t  _touch1;
+      std::atomic<int16_t>  _touch0 = { 0 };
+      std::atomic<int16_t>  _touch1 = { 0 };
 #if 0 // not yet (?) used
       bool              _bypass;
 #endif
-      int               _state;
-      float             _fsamp;
+      int               _state = BYPASS;
+      float             _fsamp = 1.f;
 
-      float             _g;
-      float             _g0, _g1;
-      float             _f;
-      float             _f0, _f1;
-      float             _c1, _dc1;
-      float             _c2, _dc2;
-      float             _gg, _dgg;
+      float             _g = 0.f;
+      float             _g0 = 1.f, _g1 = 1.f;
+      float             _f = 0.f;
+      float             _f0 = 1e3f, _f1 = 1e3f;
+      float             _c1 = 0.f, _dc1 = 0.f;
+      float             _c2 = 0.f, _dc2 = 0.f;
+      float             _gg = 0.f, _dgg = 0.f;
 
-      float             _z1 [MAXCH];
-      float             _z2 [MAXCH];
+      float             _z1 [MAXCH] = { 0.f, 0.f, 0.f, 0.f };
+      float             _z2 [MAXCH] = { 0.f, 0.f, 0.f, 0.f };
 
    public:
       Pareq();
@@ -61,7 +61,7 @@ class Pareq
       void setfsamp(float fsamp);
       void setparam(float f, float g) {
             _f  = f;
-            _g  = g;
+            _g  = g;//dB
             _f0 = f;
             _g0 = powf (10.0f, 0.05f * g);
             _touch0++;
@@ -87,10 +87,10 @@ class Diff1
       {
       friend class ZitaReverb;
 
-      int     _i;
-      float   _c;
+      int     _i = 0;
+      float   _c = 0.f;
       int     _size = 0;
-      float* _line = 0;
+      float* _line = nullptr;
 
       Diff1() {}
       ~Diff1();
@@ -98,6 +98,9 @@ class Diff1
       void  fini();
 
       float process(float x) {
+            if (!_line) {
+                  return 0.f;
+            }
             float z = _line [_i];
             x -= _c * z;
             _line [_i] = x;
@@ -126,12 +129,12 @@ class Filt1
             _shi += _whi * (x - _shi);
             return _gmf * _shi;
             }
-      float   _gmf;
-      float   _glo;
-      float   _wlo;
-      float   _whi;
-      float   _slo;
-      float   _shi;
+      float   _gmf = 0.f;
+      float   _glo = 0.f;
+      float   _wlo = 0.f;
+      float   _whi = 0.f;
+      float   _slo = 0.f;
+      float   _shi = 0.f;
       };
 
 //---------------------------------------------------------
@@ -148,16 +151,24 @@ class Delay
       void  init (int size);
       void  fini ();
 
-      float read () { return _line [_i]; }
+      float read () {
+            if (!_line) {
+                return 0.f;
+            }
+            return _line [_i];
+      }
 
       void write (float x) {
+            if (!_line) {
+                  return;
+            }
             _line [_i++] = x;
             if (_i == _size)
                   _i = 0;
             }
-      int     _i;
-      int     _size;
-      float  *_line;
+      int     _i = 0;
+      int     _size = 0;
+      float  *_line = nullptr;
       };
 
 //---------------------------------------------------------
@@ -176,6 +187,9 @@ class Vdelay
       void  set_delay (int del);
 
       float read () {
+            if (!_line) {
+                  return 0.f;
+            }
             float x = _line [_ir++];
             if (_ir == _size)
                   _ir = 0;
@@ -183,14 +197,17 @@ class Vdelay
             }
 
       void write (float x) {
+            if (!_line) {
+                  return;
+            }
             _line [_iw++] = x;
             if (_iw == _size)
                   _iw = 0;
             }
-      int     _ir;
-      int     _iw;
-      int     _size;
-      float* _line;
+      int     _ir = 0;
+      int     _iw = 0;
+      int     _size = 0;
+      float* _line = nullptr;
       };
 
 //---------------------------------------------------------
@@ -201,7 +218,7 @@ class ZitaReverb : public Effect
       {
       Q_OBJECT
 
-      float   _fsamp;
+      float   _fsamp = 1.f;
 
       Vdelay  _vdelay0;
       Vdelay  _vdelay1;
@@ -209,23 +226,22 @@ class ZitaReverb : public Effect
       Filt1   _filt1[8];
       Delay   _delay[8];
 
-      volatile int _cntA1;
-      volatile int _cntB1;
-      volatile int _cntC1;
-      int     _cntA2;
-      int     _cntB2;
-      int     _cntC2;
+      std::atomic<int> _cntA1 = { 1 };
+      std::atomic<int> _cntB1 = { 1 };
+      std::atomic<int> _cntC1 = { 1 };
+      int     _cntA2 = 0;
+      int     _cntB2 = 0;
+      int     _cntC2 = 0;
 
-      float   _ipdel;
-      float   _xover;
-      float   _rtlow;
-      float   _rtmid;
-      float   _fdamp;
-      float   _opmix;
-      float   _rgxyz;
+      float   _ipdel = 0.04f;
+      float   _xover = 200.0f;
+      float   _rtlow = 1.4f;
+      float   _rtmid = 2.0f;
+      float   _fdamp = 3e3f;
+      float   _opmix = 0.33f;
 
-      float   _g0, _d0;
-      float   _g1, _d1;
+      float   _g0 = 0.f, _d0 = 0.f;
+      float   _g1 = 0.f, _d1 = 0.f;
 
       Pareq   _pareq1;
       Pareq   _pareq2;
@@ -233,8 +249,8 @@ class ZitaReverb : public Effect
       static float _tdiff1 [8];
       static float _tdelay [8];
 
-      int _fragm;
-      int _nsamp;
+      int _fragm = 0;
+      int _nsamp = 0;
 
       void prepare(int n);
 

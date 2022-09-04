@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>234</width>
-    <height>180</height>
+    <width>260</width>
+    <height>161</height>
    </rect>
   </property>
   <property name="accessibleName">
@@ -16,9 +16,6 @@
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="spacing">
     <number>0</number>
-   </property>
-   <property name="sizeConstraint">
-    <enum>QLayout::SetNoConstraint</enum>
    </property>
    <property name="leftMargin">
     <number>0</number>
@@ -33,15 +30,12 @@
     <number>0</number>
    </property>
    <item>
-    <widget class="Line" name="line">
-     <property name="minimumSize">
-      <size>
-       <width>0</width>
-       <height>0</height>
-      </size>
+    <widget class="QFrame" name="frame">
+     <property name="frameShape">
+      <enum>QFrame::HLine</enum>
      </property>
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+     <property name="frameShadow">
+      <enum>QFrame::Sunken</enum>
      </property>
     </widget>
    </item>
@@ -132,6 +126,9 @@
         <property name="text">
          <string>Minimum distance:</string>
         </property>
+        <property name="buddy">
+         <cstring>minDistance</cstring>
+        </property>
        </widget>
       </item>
       <item row="0" column="0" colspan="3">
@@ -204,12 +201,6 @@
           </property>
           <property name="accessibleName">
            <string>Color</string>
-          </property>
-          <property name="frameShape">
-           <enum>QFrame::Box</enum>
-          </property>
-          <property name="frameShadow">
-           <enum>QFrame::Plain</enum>
           </property>
          </widget>
         </item>
@@ -301,6 +292,12 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="accessibleName">
+         <string>Minimum distance</string>
+        </property>
+        <property name="suffix">
+         <string>sp</string>
+        </property>
         <property name="minimum">
          <double>-999.990000000000009</double>
         </property>
@@ -345,7 +342,7 @@
   </customwidget>
   <customwidget>
    <class>Awl::ColorLabel</class>
-   <extends>QFrame</extends>
+   <extends>QPushButton</extends>
    <header>awl/colorlabel.h</header>
    <container>1</container>
   </customwidget>

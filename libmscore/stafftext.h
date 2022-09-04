@@ -25,14 +25,15 @@ namespace Ms {
 //---------------------------------------------------------
 
 class StaffText final : public StaffTextBase  {
-      virtual Sid getPropertyStyle(Pid) const override;
-      virtual QVariant propertyDefault(Pid id) const override;
+
+      QVariant propertyDefault(Pid id) const override;
 
    public:
       StaffText(Score* s = 0, Tid = Tid::STAFF);
-      virtual StaffText* clone() const override       { return new StaffText(*this); }
-      virtual ElementType type() const override       { return ElementType::STAFF_TEXT; }
-      virtual void layout() override;
+
+      StaffText* clone() const override       { return new StaffText(*this); }
+      ElementType type() const override       { return ElementType::STAFF_TEXT; }
+      void layout() override;
       };
 
 

@@ -205,12 +205,12 @@ p, li { white-space: pre-wrap; }
             <showCourtesy>0</showCourtesy>
             </TimeSig>
           <StaffText>
-            <text>Emmentaler Articulations 3</text>
+            <text>MuseJazz Articulations 3</text>
             </StaffText>
           <Chord>
             <durationType>quarter</durationType>
             <Articulation>
-              <subtype>ornamentMordent</subtype>
+              <subtype>ornamentShortTrill</subtype>
               </Articulation>
             <Note>
               <pitch>67</pitch>

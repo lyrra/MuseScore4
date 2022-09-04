@@ -6,6 +6,8 @@ set(_components
     Test
     Qml
     Quick
+    QuickControls2
+    QuickTemplates2
     QuickWidgets
     Xml
     XmlPatterns
@@ -26,6 +28,16 @@ if (USE_WEBENGINE)
     WebEngineWidgets
 	)
 endif(USE_WEBENGINE)
+
+if (WIN32)
+    set(_components
+      ${_components}
+      WinExtras
+      )
+endif(WIN32)
+
+find_package(Qt5Core ${QT_MIN_VERSION} REQUIRED)
+
 foreach(_component ${_components})
   find_package(Qt5${_component})
   list(APPEND QT_LIBRARIES ${Qt5${_component}_LIBRARIES})

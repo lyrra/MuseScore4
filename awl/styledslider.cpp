@@ -36,6 +36,15 @@ StyledSlider::StyledSlider(QWidget *parent) : QWidget(parent)
       setFocusPolicy(Qt::StrongFocus);
       }
 
+
+
+void StyledSlider::mouseDoubleClickEvent(QMouseEvent*)
+      {
+      setValue(_doubleClickValue);
+      }
+
+
+
 //---------------------------------------------------------
 //   wheelEvent
 //---------------------------------------------------------
@@ -76,7 +85,7 @@ void StyledSlider::mousePressEvent(QMouseEvent* e)
       draggingMouse = true;
       mouseDownPos = e->pos();
       mouseDownVal = _value;
-      emit(sliderPressed());
+      emit sliderPressed();
       }
 
 //---------------------------------------------------------
@@ -210,7 +219,7 @@ void StyledSlider::setValue(double v)
 
       _value = v;
       update();
-      emit(valueChanged(v));
+      emit valueChanged(v);
       }
 
 //---------------------------------------------------------
@@ -223,7 +232,7 @@ void StyledSlider::setMinValue(double v)
             return;
       _minValue = v;
       update();
-      emit(minValueChanged(v));
+      emit minValueChanged(v);
       }
 
 //---------------------------------------------------------
@@ -236,7 +245,7 @@ void StyledSlider::setMaxValue(double v)
             return;
       _maxValue = v;
       update();
-      emit(maxValueChanged(v));
+      emit maxValueChanged(v);
       }
 
 //---------------------------------------------------------
