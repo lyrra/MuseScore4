@@ -182,6 +182,9 @@ extern Ms::Synthesizer* createZerberus();
 
 namespace Ms {
 
+bool script_scheme_shell = false;
+char *script_scheme_file  = NULL;
+
 MuseScore* mscore;
 MasterSynthesizer* synti;
 
@@ -7884,6 +7887,18 @@ MuseScoreApplication::CommandLineParseResult MuseScoreApplication::parseCommandL
       if (parser.isSet("no-gui")) {
             MScore::noGui = true;
             }
+      if (parser.isSet("script-scheme-shell")) {
+            script_scheme_shell = true;
+            }
+
+      if (parser.isSet("script-scheme")) {
+            QString temp = parser.value("script-scheme");
+            if (temp.isEmpty())
+                  parser.showHelp(EXIT_FAILURE);
+            // due to scope issue, take a copy of the string
+            script_scheme_file = strdup(temp.toLocal8Bit().data());
+            std::cout << "Guile/Scheme script: " << script_scheme_file << std::endl;
+            }
 
       QStringList argv = parser.positionalArguments();
 
@@ -7995,7 +8010,7 @@ int runApplication(int& argc, char** av)
             // see issue #28706: Hangup in converter mode with MusicXML source
             qApp->processEvents();
 #endif
-            const bool ok = processNonGui(cmdLineParseResult.argv);
+            const bool ok = processNonGui(cmdLineParseResult.argv, false);
             return ok ? EXIT_SUCCESS : EXIT_FAILURE;
             }
 
@@ -8266,21 +8281,7 @@ void MuseScore::init(QStringList& argv)
       mscore->setRevision(Ms::revision);
       int files = 0;
       bool restoredSession = false;
-      bool script_scheme_shell = false;
-      char *script_scheme_file  = NULL;
 
-      if (parser.isSet("script-scheme-shell")) {
-            script_scheme_shell = true;
-            }
-
-      if (parser.isSet("script-scheme")) {
-            QString temp = parser.value("script-scheme");
-            if (temp.isEmpty())
-                  parser.showHelp(EXIT_FAILURE);
-            // due to scope issue, take a copy of the string
-            script_scheme_file = strdup(temp.toLocal8Bit().data());
-            std::cout << "Guile/Scheme script: " << script_scheme_file << std::endl;
-            }
       // if Guile/Scheme is requested, initialize it
       if (script_scheme_shell || script_scheme_file) {
             ScriptGuile::guile_init();
@@ -8288,7 +8289,7 @@ void MuseScore::init(QStringList& argv)
 
       if (MScore::noGui) {
             std::cout << "No GUI requested." << std::endl;
-            return main_nongui(0, nullptr, argv, script_scheme_shell, script_scheme_file);
+            main_nongui(0, nullptr, argv, script_scheme_shell, script_scheme_file);
             }
       else {
             showSplashMessage(sc, tr("Initializing main window…"));
@@ -8404,11 +8405,10 @@ void MuseScore::init(QStringList& argv)
             /* Starts a Guile/Scheme script shell thread on console */
             ScriptGuile::start();
             /* Runs MuseScore App inside a Guile/Scheme environment, giving it access to Guile/Scheme procedures */
-            return (int) ScriptGuile::start_func(main_gui);
+            ScriptGuile::start_func(main_gui);
             }
       else {
-            long x = (long) main_gui(nullptr);
-            return (int) x;
+            main_gui(nullptr);
             }
       }
 

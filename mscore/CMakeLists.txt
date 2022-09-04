@@ -445,10 +445,10 @@ else (MINGW)
 
        if (USE_GUILE)
          message(STATUS "GUILE_COMPILE: ${GUILE_COMPILE}")
-         target_link_libraries(mscore ${GUILE_LINK})
+         target_link_libraries(mscoreapp ${GUILE_LINK})
          #add_compile_options(${GUILE_COMPILE})
          string(REPLACE " " ";" GUILE_COMPILE_LIST ${GUILE_COMPILE})
-         set_target_properties (mscore
+         set_target_properties (mscoreapp
                                 PROPERTIES
                                 COMPILE_OPTIONS "${GUILE_COMPILE_LIST}"
          )
