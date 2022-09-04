@@ -875,7 +875,7 @@ add_subdirectory(audio)
 add_subdirectory(audiofile)
 
 subdirs(
-      awl bww2mxml share libmscore
+      s7 awl bww2mxml share libmscore
       thirdparty/qzip
       )
 

@@ -124,11 +124,14 @@ if (MSVC)
             )
 endif (MSVC)
 
-target_link_libraries(testutils_mscoreapp mscoreapp)
 
 add_executable(
       mtest
+      ${ui_headers}
+      ${mocs}
       mtest.cpp
+      s7mtest.cpp
+      ${CMAKE_CURRENT_BINARY_DIR}/s7gen.h ${CMAKE_CURRENT_BINARY_DIR}/s7gen.cpp
       )
 
 if (GUILE)
@@ -162,9 +165,30 @@ if (GUILE)
             )
 endif (GUILE)
 
+if (MTEST_LINK_MSCOREAPP)
+      target_link_libraries(mtest     testutils_mscoreapp mscoreapp)
+else (MTEST_LINK_MSCOREAPP)
+      target_link_libraries(mtest     testutils)
+endif (MTEST_LINK_MSCOREAPP)
+
 target_link_libraries(
       mtest
+      s7
       ${QT_LIBRARIES}
+      ${QT_QTTEST_LIBRARY}
+      testResources
+      libmscore
+      audio
+      mscoreapp
+      qzip
+      )
+
+set_target_properties (
+      mtest
+      PROPERTIES
+      AUTOMOC true
+      COMPILE_FLAGS "-include all.h -D QT_GUI_LIB -D TESTROOT=\\\"${PROJECT_SOURCE_DIR}\\\" -g -Wall -Wextra"
+      LINK_FLAGS    "-g"
       )
 
 if (USE_SYSTEM_FREETYPE)
@@ -208,13 +232,44 @@ add_custom_target(mtest_build_and_install
       )
 endif (NOT MSVC)
 
+add_custom_command (OUTPUT s7gen.h s7gen.cpp
+                    COMMAND ${PROJECT_BINARY_DIR}/s7/s7 -f ${CMAKE_CURRENT_SOURCE_DIR}/testgen.scm -- --mtest-gen -l ${PROJECT_SOURCE_DIR}/s7 -s ${CMAKE_CURRENT_SOURCE_DIR} ../s7/lib.scm gen.scm types.scm ms.scm ms-objects.scm decl.scm -o ${CMAKE_CURRENT_BINARY_DIR}/s7gen
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/
+                    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/testgen.scm
+                            ${CMAKE_CURRENT_SOURCE_DIR}/gen.scm
+                            ${CMAKE_CURRENT_SOURCE_DIR}/types.scm
+                            ${CMAKE_CURRENT_SOURCE_DIR}/ms.scm
+                            ${CMAKE_CURRENT_SOURCE_DIR}/ms-objects.scm
+                            ${CMAKE_CURRENT_SOURCE_DIR}/decl.scm
+                            ${PROJECT_SOURCE_DIR}/s7/lib.scm
+                    VERBATIM
+                    )
+
+add_custom_target(mtest_files ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/ms.scm ${CMAKE_CURRENT_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/mtest.scm ${CMAKE_CURRENT_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/types.scm ${CMAKE_CURRENT_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PROJECT_SOURCE_DIR}/s7/lib.scm ${CMAKE_CURRENT_BINARY_DIR}
+    COMMAND ${PROJECT_BINARY_DIR}/s7/s7 -f ${CMAKE_CURRENT_SOURCE_DIR}/testgen.scm -- -l ${PROJECT_SOURCE_DIR}/s7 ${CMAKE_CURRENT_SOURCE_DIR}/libmscore/tst_element.scm -o ${CMAKE_CURRENT_BINARY_DIR}/libmscore/tst_element.scm
+
+    COMMAND ${PROJECT_BINARY_DIR}/s7/s7 -f ${CMAKE_CURRENT_SOURCE_DIR}/testgen.scm -- -l ${PROJECT_SOURCE_DIR}/s7 ${CMAKE_CURRENT_SOURCE_DIR}/libmscore/tst_note.scm -o ${CMAKE_CURRENT_BINARY_DIR}/libmscore/tst_note.scm
+
+    COMMAND ${PROJECT_BINARY_DIR}/s7/s7 -f ${CMAKE_CURRENT_SOURCE_DIR}/testgen.scm -- -l ${PROJECT_SOURCE_DIR}/s7 ${CMAKE_CURRENT_SOURCE_DIR}/libmscore/tst_hairpin.scm -o ${CMAKE_CURRENT_BINARY_DIR}/libmscore/tst_hairpin.scm
+
+    COMMAND ${PROJECT_BINARY_DIR}/s7/s7 -f ${CMAKE_CURRENT_SOURCE_DIR}/testgen.scm -- -l ${PROJECT_SOURCE_DIR}/s7 ${CMAKE_CURRENT_SOURCE_DIR}/libmscore/tst_breath.scm -o ${CMAKE_CURRENT_BINARY_DIR}/libmscore/tst_breath.scm
+
+    DEPENDS libmscore/tst_element.scm
+            libmscore/tst_note.scm
+            libmscore/tst_hairpin.scm
+            libmscore/tst_breath.scm
+)
+
 subdirs (
         libmscore/compat114
         libmscore/compat206
 #        libmscore/album            # obsolete
         libmscore/barline
         libmscore/beam
-        libmscore/breath
         libmscore/box
         libmscore/chordsymbol
         libmscore/clef
@@ -225,9 +280,7 @@ subdirs (
         libmscore/dynamic
         libmscore/durationtype
         libmscore/earlymusic
-        libmscore/element
         libmscore/exchangevoices
-        libmscore/hairpin
         libmscore/implode_explode
         libmscore/instrumentchange
         libmscore/join

@@ -40,6 +40,7 @@ target_link_libraries(
       "-L${PROJECT_BINARY_DIR}/libmscore -lmusescore -Wl,-rpath -Wl,${PROJECT_BINARY_DIR}/libmscore"
       libmscore
       audio
+      mscoreapp
       qzip
       )
 
