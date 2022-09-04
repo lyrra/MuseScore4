@@ -13,7 +13,8 @@
 #include "scoreview.h"
 #include "zoombox.h"
 #include "musescore.h"
-#include "seq.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
 #include "texttools.h"
 #include "pianotools.h"
 #include "fotomode.h"
@@ -317,8 +318,8 @@ bool ScoreView::startTextEditingOnMouseRelease(QMouseEvent* mouseEvent)
 void ScoreView::mouseReleaseEvent(QMouseEvent* mouseEvent)
       {
       editData.buttons = Qt::NoButton;
-      if (seq)
-            seq->stopNoteTimer();
+      if (muxseq_seq_alive())
+            muxseq_stop_notetimer();
       switch (state) {
             case ViewState::DRAG:
             case ViewState::DRAG_OBJECT:
@@ -603,11 +604,12 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
 
             case ViewState::PLAY: {
                   Element* e = elementNear(editData.startMove);
-                  if (seq && e && (e->isNote() || e->isRest())) {
+                  if (muxseq_seq_alive() && e && (e->isNote() || e->isRest())) {
                         if (e->isNote())
                               e = e->parent();
                         ChordRest* cr = toChordRest(e);
-                        seq->seek(seq->score()->repeatList().tick2utick(cr->tick().ticks()));
+                        // FIX: score() was seq->score(), ensure same
+                        muxseq_seq_seek(score()->repeatList().tick2utick(cr->tick().ticks()));
                         }
                   }
                   break;
@@ -1014,8 +1016,8 @@ void ScoreView::contextMenuEvent(QContextMenuEvent* ev)
                   // editData.element = e;
                   // select(ev);
                   }
-            if (seq)
-                  seq->stopNotes();       // stop now because we don’t get a mouseRelease event
+            if (muxseq_seq_alive())
+                  muxseq_stop_notes();       // stop now because we don’t get a mouseRelease event
             objectPopup(gp, e);
             }
       else {
@@ -1110,16 +1112,20 @@ void ScoreView::seqStopped()
 
 void ScoreView::changeState(ViewState s)
       {
+      qDebug("changeState %s  -> %s", stateName(state), stateName(s));
 //      if (state == ViewState::EDIT && s == ViewState::EDIT) {
 //            startEdit();
 //            return;
 //            }
-      if (s == ViewState::PLAY && !seq)
+      if (s == ViewState::PLAY && !(muxseq_seq_alive())) {
+            qDebug("changeState, cant change state to PLAY, MUXSEQ is not alive!");
             return;
-      if (s == state)
+            }
+      if (s == state) {
+            qDebug("changeState, wont change, already in state %s!", stateName(s));
             return;
+            }
 
-      qDebug("changeState %s  -> %s", stateName(state), stateName(s));
       //
       //    end current state
       //
@@ -1156,7 +1162,8 @@ void ScoreView::changeState(ViewState s)
                   endFotoDrag();
                   break;
             case ViewState::PLAY:
-                  seq->stop();
+                  qDebug("ScoreView::changeState stopping current state PLAY");
+                  muxseq_seq_stop();
                   break;
             case ViewState::EDIT:
                   setMouseTracking(false);
@@ -1212,7 +1219,8 @@ void ScoreView::changeState(ViewState s)
             case ViewState::LASSO:
                   break;
             case ViewState::PLAY:
-                  seq->start();
+                  qDebug("ScoreView::changeState starting new state PLAY");
+                  muxseq_seq_start();
                   break;
             case ViewState::ENTRY_PLAY:
                   break;

@@ -55,7 +55,8 @@
 #include "easeInOut.h"
 #include "global/log.h"
 
-#include "audio/midi/event.h"
+#include "event.h"
+#include "eventutils.h"
 #include "mscore/preferences.h"
 
 namespace Ms {
@@ -2384,7 +2385,7 @@ void MidiRenderer::renderChunk(const Chunk& chunk, EventMap* events, const Conte
             sctx.renderHarmony = ctx.renderHarmony;
             renderStaffChunk(chunk, events, sctx);
             }
-      events->fixupMIDI();
+      eventMap_fixupMIDI(*events);
 
       // create sustain pedal events
       renderSpanners(chunk, events);

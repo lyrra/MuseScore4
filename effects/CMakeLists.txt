@@ -10,66 +10,23 @@
 #  the file LICENSE.GPL
 #=============================================================================
 
-include (${PROJECT_SOURCE_DIR}/build/gch.cmake)
-
-if (APPLE)
-      file(GLOB_RECURSE INCS "*.h")
-else (APPLE)
-      set(INCS "")
-endif (APPLE)
-
 QT5_ADD_RESOURCES (qrc_effects_files
      zita1/zita.qrc
      )
 
-QT5_WRAP_UI (ui_headers
-      compressor/compressor_gui.ui
-      )
-
-if (NOT MSVC)
-   set(_all_h_file "${PROJECT_BINARY_DIR}/all.h")
-else (NOT MSVC)
-   set(_all_h_file "${PROJECT_SOURCE_DIR}/all.h")
-endif (NOT MSVC)
+include_directories (${QT_INCLUDES})
 
 add_library (effects STATIC
-      ${ui_headers}
-      ${qrc_effects_files}
       ${_all_h_file}
-      ${PCH}
+      ${qrc_effects_files}
       effect.cpp
-      effectgui.cpp
       noeffect/noeffect.cpp
-      noeffect/noeffectgui.h
       zita1/zita.cpp
-      zita1/zitagui.cpp
       compressor/compressor.cpp
-      compressor/compressorgui.cpp
-      ${INCS}
       )
 
-if (NOT MSVC)
-   set_target_properties (
+set_target_properties (
       effects
       PROPERTIES
-         COMPILE_FLAGS "${PCH_INCLUDE} -g -Wall -Wextra -Winvalid-pch"
+         COMPILE_FLAGS "-g -Wall -Wextra ${PCH_INCLUDE} -Winvalid-pch"
       )
-else (NOT MSVC)
-   set_target_properties (
-      effects
-      PROPERTIES
-         COMPILE_FLAGS "${PCH_INCLUDE}"
-      )
-endif (NOT MSVC)   
-
-xcode_pch(effects all)
-
-# Use MSVC pre-compiled headers
-vstudio_pch( effects )
-
-# MSVC does not depend on mops1 & mops2 for PCH
-if (NOT MSVC)
-   ADD_DEPENDENCIES(effects mops1)
-   ADD_DEPENDENCIES(effects mops2)
-endif (NOT MSVC)   
-

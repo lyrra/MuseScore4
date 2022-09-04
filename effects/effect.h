@@ -66,8 +66,6 @@ class Effect : public QObject {
 
       virtual SynthesizerGroup state() const { return SynthesizerGroup(); }
       virtual void setState(const SynthesizerGroup&) {}
-
-      virtual EffectGui* gui() { return _gui; }
       };
 }
 #endif

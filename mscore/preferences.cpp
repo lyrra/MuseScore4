@@ -420,9 +420,10 @@ bool Preferences::checkIfKeyExists(const QString key) const
 
 QMetaType::Type Preferences::type(const QString key) const
       {
-      if (_allPreferences.contains(key))
+      if (_allPreferences.contains(key)) {
             return _allPreferences.value(key)->type();
-      else {
+      } else {
+            qDebug("Preferences::type UNKNOWN type, name %s", key.toUtf8().constData());
             return QMetaType::UnknownType;
             }
       }
@@ -430,7 +431,11 @@ QMetaType::Type Preferences::type(const QString key) const
 bool Preferences::checkType(const QString key, QMetaType::Type t) const
       {
       if (type(key) != t) {
-            qDebug("Preference is not of correct type: %s", key.toUtf8().constData());
+            if (type(key) == QMetaType::UnknownType) {
+                  qDebug("Preference %s is missing", key.toUtf8().constData());
+            } else {
+                  qDebug("Preference %s is not of correct type", key.toUtf8().constData());
+                  }
             Q_ASSERT(type(key) == QMetaType::Bool);
             }
       return type(key) == t;

@@ -34,8 +34,11 @@ else (NOT MSVC)
 endif (NOT MSVC)
 
 include_directories(
+      ${QT_INCLUDES}
       ${PROJECT_SOURCE_DIR}/thirdparty/dtl
       ${PROJECT_SOURCE_DIR}/global
+      ${PROJECT_SOURCE_DIR}/muxlib
+      ${PROJECT_SOURCE_DIR}/muxtools
       )
 
 set (SOURCE_FILES
@@ -159,10 +162,14 @@ else (NOT MSVC)
       )
 endif (NOT MSVC)
 
-xcode_pch(libmscore all)
+if (APPLE)
+   xcode_pch(libmscore all)
+endif (APPLE)
 
 # Use MSVC pre-compiled headers
-vstudio_pch( libmscore )
+if (MSVC)
+   vstudio_pch( libmscore )
+endif (MSVC)
 
 # MSVC does not depend on mops1 & mops2 for PCH
 if (NOT MSVC)

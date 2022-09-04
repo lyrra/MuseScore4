@@ -22,6 +22,7 @@ project(mscore)
 # Minimum tested, report if it works with older
 CMAKE_MINIMUM_REQUIRED(VERSION 3.3.0)
 
+find_package(PkgConfig)
 include(build/functions.cmake) # library of CMake functions ("fn__" namespace)
 
 # Print Qt version or fail the build if Qt (qmake) is not in PATH.
@@ -66,7 +67,7 @@ if (BUILD_WEBENGINE)
    if (MINGW)
       SET (USE_WEBENGINE 0)
    else (MINGW)
-      SET (USE_WEBENGINE 1)
+      SET (USE_WEBENGINE 0)
    endif(MINGW)
 else (BUILD_WEBENGINE)
    SET (USE_WEBENGINE 0)
@@ -82,10 +83,8 @@ endif (SCRIPT_INTERFACE)
 # Include modules
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/build" ${CMAKE_MODULE_PATH})
 include (FindQt5)
-include (UsePkgConfig1) # Defines MACRO(PKGCONFIG1 _package _minVersion _include_DIR _link_DIR _link_FLAGS _cflags)
-include (FindPulseAudio)
-include (GetCompilerVersion)
 include (CreatePrecompiledHeader)
+
 
 # For debugging the make system uncomment next line:
 # set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -123,25 +122,8 @@ if (MSCORE_UNSTABLE)
   SET (MUSESCORE_NAME_VERSION "${MUSESCORE_NAME_VERSION} (${MUSESCORE_VERSION_FULL} unstable)")
 endif (MSCORE_UNSTABLE)
 
-# Disable components not supported on Windows
-if (MSVC OR MINGW)
-      set(WIN_NOT_AVAIL "Not available on Windows")
-      option(BUILD_PULSEAUDIO ${WIN_NOT_AVAIL} OFF)
-      option(BUILD_ALSA ${WIN_NOT_AVAIL} OFF)
-endif (MSVC OR MINGW)
 
-# Disable components not supported on Mac
-if (APPLE)
-      set(MAC_NOT_AVAIL "Not available on Mac")
-      option(BUILD_PULSEAUDIO ${MAC_NOT_AVAIL} OFF)
-      option(BUILD_ALSA ${MAC_NOT_AVAIL} OFF)
-endif (APPLE)
 
-# Disable components not supported on Linux/BSD
-if (NOT APPLE AND NOT MINGW AND NOT MSVC)
-      set(NIX_NOT_AVAIL "Not available on Linux/BSD")
-      #option(BUILD_PORTMIDI "PortMidi disabled on Linux. (It uses ALSA but it's better to use ALSA directly)" OFF)
-endif (NOT APPLE AND NOT MINGW AND NOT MSVC)
 
 option(AEOLUS        "Enable pipe organ synthesizer"      OFF)
 option(ZERBERUS      "Enable experimental SFZ sampler"    ON)
@@ -157,18 +139,11 @@ option(USE_SYSTEM_QTSINGLEAPPLICATION "Use system QtSingleApplication" OFF)
 option(USE_SYSTEM_FREETYPE "Use system FreeType"          OFF) # requires freetype >= 2.5.2, does not work on win
 option(USE_SYSTEM_POPPLER  "Use system Poppler for OMR"   OFF)
 option(BUILD_LAME    "Enable MP3 export"                  ON)  # Requires libmp3lame, call CMake with -DBUILD_LAME="OFF" to disable
-option(DOWNLOAD_SOUNDFONT "Download the latest soundfont version as part of the build process" ON)
+option(DOWNLOAD_SOUNDFONT "Download the latest soundfont version as part of the build process" OFF)
 
 # licence incompatibility, must never be distributed
 set(OCR OFF)
 
-SET(JACK_LONGNAME "JACK (Jack Audio Connection Kit)")
-SET(JACK_MIN_VERSION "0.98.0")
-option(BUILD_JACK    "Build with support for ${JACK_LONGNAME} audio backend. JACK >= ${JACK_MIN_VERSION} will be needed." ON)
-option(BUILD_PULSEAUDIO "Build with support for PulseAudio audio backend." ON)
-option(BUILD_ALSA "Build with support for ALSA audio backend." ON)
-option(BUILD_PORTAUDIO "Build with support for PortAudio audio backend." ON)
-option(BUILD_PORTMIDI "Build with support for PortAudio's MIDI features." ${BUILD_PORTAUDIO}) # PortAudio required
 option(BUILD_PCH "Build using precompiled headers." ON)
 option(BUILD_FOR_WINSTORE "Build for the Windows Store." OFF)
 option(COVERAGE "Build with instrumentation to record code coverage." OFF)
@@ -272,19 +247,8 @@ if (BUILD_AUTOUPDATE STREQUAL "ON")
       endif (APPLE)
 endif(BUILD_AUTOUPDATE STREQUAL "ON")
 
-#
-#     Check for gcc compiler >= 4.8
-#
-if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
-      if (${CMAKE_CXX_COMPILER_MAJOR} LESS 4
-        OR ((${CMAKE_CXX_COMPILER_MAJOR} EQUAL 4) AND (${CMAKE_CXX_COMPILER_MINOR} LESS 8)))
-            message(FATAL_ERROR "bad gcc compiler version " ${CMAKE_CXX_COMPILER_VERSION}
-                  " >= 4.8 required")
-      endif()
-endif (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
-
 if (NOT MSVC)
-   set(CMAKE_CXX_FLAGS_DEBUG   "-g")
+   set(CMAKE_CXX_FLAGS_DEBUG   "-g -fstack-protector")
    set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG -DQT_NO_DEBUG")
 endif (NOT MSVC)
 
@@ -434,49 +398,6 @@ if (USE_SYSTEM_FREETYPE)
       endif (APPLE)
 endif (USE_SYSTEM_FREETYPE)
 
-##
-## ALSA >= 1.0.0
-##
-
-if (BUILD_ALSA)
-      PKGCONFIG1 (alsa 1.0.0 ALSA_INCDIR ALSA_LIBDIR ALSA_LIB ALSA_CPP )
-      if (NOT ALSA_INCDIR)
-            message(SEND_ERROR "Error: ALSA support requested (BUILD_ALSA=${BUILD_ALSA}), but ALSA >= 1.0.0 was not found.")
-      else (NOT ALSA_INCDIR)
-            message("ALSA >= 1.0.0 found. ALSA support enabled. INCDIR ${ALSA_INCDIR}, LIBDIR ${ALSA_LIBDIR}, LIB ${ALSA_LIB}, CPP ${ALSA_CPP}")
-            set (USE_ALSA 1)
-      endif (NOT ALSA_INCDIR)
-else (BUILD_ALSA)
-     message(STATUS "ALSA support disabled")
-endif (BUILD_ALSA)
-
-##
-## MIDI
-##
-
-if (APPLE OR MINGW OR MSVC)
-      set (HAS_MIDI 1)
-else (APPLE OR MINGW OR MSVC)
-      if (USE_ALSA)
-            set (HAS_MIDI 1)
-      endif (USE_ALSA)
-endif (APPLE OR MINGW OR MSVC)
-
-##
-## PulseAudio
-##
-
-if (BUILD_PULSEAUDIO)
-      if (PULSEAUDIO_FOUND)
-            set(USE_PULSEAUDIO 1)
-            message("PulseAudio found. PulseAudio support enabled.")
-      else (PULSEAUDIO_FOUND)
-            message(SEND_ERROR "Error: PulseAudio support requested (BUILD_PULSEAUDIO=${BUILD_PULSEAUDIO}), but PulseAudio was not found.")
-      endif (PULSEAUDIO_FOUND)
-else (BUILD_PULSEAUDIO)
-      message(STATUS "PulseAudio support disabled")
-endif (BUILD_PULSEAUDIO)
-
 
 ##
 ## LAME
@@ -507,83 +428,9 @@ else (APPLE OR MINGW)
 endif (APPLE OR MINGW)
 
 ##
-## Find JACK >= JACK_MIN_VERSION
+## Find ZeroMQ
 ##
-
-
-IF(BUILD_JACK)
-     IF(MINGW OR MSVC)
-           set (USE_JACK 1)
-           IF("$ENV{PROCESSOR_ARCHITEW6432}" STREQUAL "")
-              IF("$ENV{PROCESSOR_ARCHITECTURE}" STREQUAL "x86")
-                 # "pure" 32-bit environment
-                 set (progenv "PROGRAMFILES")
-              ELSE("$ENV{PROCESSOR_ARCHITECTURE}" STREQUAL "x86")
-                 # "pure" 64-bit environment
-                 set (progenv "PROGRAMFILES(x86)")
-              ENDIF("$ENV{PROCESSOR_ARCHITECTURE}" STREQUAL "x86")
-           ELSE("$ENV{PROCESSOR_ARCHITEW6432}" STREQUAL "")
-              IF("$ENV{PROCESSOR_ARCHITECTURE}" STREQUAL "x86")
-                 # 32-bit program running with an underlying 64-bit environment
-                 set (progenv "PROGRAMFILES(x86)")
-              ELSE("$ENV{PROCESSOR_ARCHITECTURE}" STREQUAL "x86")
-                 # Theoretically impossible case...
-                 MESSAGE(SEND_ERROR "Error: Impossible program/environment bitness combination deduced: 64-bit program running in 32-bit environment. This is a programming error. PROCESSOR_ARCHITEW6432=$ENV{PROCESSOR_ARCHITEW6432}. PROCESSOR_ARCHITECTURE=$ENV{PROCESSOR_ARCHITECTURE}")
-              ENDIF("$ENV{PROCESSOR_ARCHITECTURE}" STREQUAL "x86")
-           ENDIF("$ENV{PROCESSOR_ARCHITEW6432}" STREQUAL "")
-           set (JACK_INCDIR "$ENV{${progenv}}/Jack/includes")
-           set (JACK_LIB "$ENV{${progenv}}/Jack/lib/libjack.a")
-           MESSAGE("JACK support enabled.")
-     ELSE(MINGW OR MSVC)
-           PKGCONFIG1 (jack ${JACK_MIN_VERSION} JACK_INCDIR JACK_LIBDIR JACK_LIB JACK_CPP)
-           IF(JACK_INCDIR)
-                 MESSAGE(STATUS "${JACK_LONGNAME} >= ${JACK_MIN_VERSION} found. jack support enabled.")
-                 SET(USE_JACK 1)
-           ELSE(JACK_INCDIR)
-                 MESSAGE(STATUS "${JACK_LONGNAME} >= ${JACK_MIN_VERSION} not found")
-                 MESSAGE(SEND_ERROR "Error: JACK support requested (BUILD_JACK=${BUILD_JACK}), but JACK was not found")
-           ENDIF(JACK_INCDIR)
-     ENDIF(MINGW OR MSVC)
-ELSE(BUILD_JACK)
-     MESSAGE(STATUS "${JACK_LONGNAME} support disabled")
-ENDIF(BUILD_JACK)
-
-
-##
-## PortAudio
-##
-
-if (BUILD_PORTAUDIO)
-    if (MINGW OR MSVC)
-        set ( USE_PORTAUDIO 1 )
-        include(FindPortAudio)
-        add_library(portaudiodll SHARED IMPORTED)
-        set_target_properties(portaudiodll PROPERTIES IMPORTED_IMPLIB ${PORTAUDIO_LIBRARY})
-    else (MINGW OR MSVC)
-        PKGCONFIG1 (portaudio-2.0 19 PORTAUDIO_INCDIR PORTAUDIO_LIBDIR PORTAUDIO_LIB PORTAUDIO_CPP)
-        if (PORTAUDIO_INCDIR)
-              message("PortAudio found. PortAudio support enabled. INCDIR ${PORTAUDIO_INCDIR}, LIBDIR ${PORTAUDIO_LIBDIR}, LIB ${PORTAUDIO_LIB}")
-              set ( USE_PORTAUDIO 1 )
-        else (PORTAUDIO_INCDIR)
-              message(SEND_ERROR "Error: PortAudio support requested (BUILD_PORTAUDIO=${BUILD_PORTAUDIO}), but portaudio-2.0 version 19 was not found (package portaudio19-dev)")
-        endif (PORTAUDIO_INCDIR)
-    endif (MINGW OR MSVC)
-else (BUILD_PORTAUDIO)
-     message(STATUS "PortAudio support disabled")
-endif (BUILD_PORTAUDIO)
-
-##
-## PortMidi
-##
-
-if (BUILD_PORTMIDI)
-    if (NOT BUILD_PORTAUDIO)
-        message(SEND_ERROR "Error: PortMidi support requested (BUILD_PORTMIDI=${BUILD_PORTMIDI}), but PortAudio support is disabled (BUILD_PORTAUDIO=${BUILD_PORTAUDIO}). PortMidi requires PortAudio.")
-    endif (NOT BUILD_PORTAUDIO)
-    set (USE_PORTMIDI 1)
-else (BUILD_PORTMIDI)
-    message(STATUS "PortMidi support disabled")
-endif (BUILD_PORTMIDI)
+include(FindZeroMQ)
 
 if (APPLE)
    if(SOUNDFONT3)
@@ -807,9 +654,6 @@ endif (NOT MSVC)
 include_directories(
    ${PROJECT_SOURCE_DIR}
    ${PROJECT_BINARY_DIR}
-   ${ALSA_INCDIR}
-   ${JACK_INCDIR}
-   ${PORTAUDIO_INCDIR}
    ${OGG_INCDIR}
    ${VORBIS_INCDIR}
    ${SNDFILE_INCDIR}
@@ -822,7 +666,6 @@ if (MSVC)
    include_directories(${PROJECT_SOURCE_DIR}/dependencies/include/vorbis)
    include_directories(${SNDFILE_INCLUDE_DIR})
    include_directories(${VORBIS_INCLUDE_DIR})
-   include_directories(${PORTAUDIO_INCLUDE_DIR})
    include_directories(${OGG_INCLUDE_DIR})
 endif (MSVC)
 
@@ -849,8 +692,13 @@ endif (BUILD_TELEMETRY_MODULE)
 
 add_subdirectory(global)
 add_subdirectory(importexport)
-add_subdirectory(mscore)
 add_subdirectory(main)
+add_subdirectory(mux)
+add_subdirectory(muxlib)
+add_subdirectory(muxseq)
+add_subdirectory(muxaudio)
+add_subdirectory(muxtools)
+add_subdirectory(mscore)
 
 if (BUILD_CRASH_REPORTER)
       set (CRASHREPORTER_EXECUTABLE_NAME "${MSCORE_EXECUTABLE_NAME}-crash-reporter")

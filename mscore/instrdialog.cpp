@@ -21,7 +21,8 @@
 #include "musescore.h"
 #include "preferences.h"
 #include "scoreview.h"
-#include "seq.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
 #include "libmscore/barline.h"
 #include "libmscore/clef.h"
 #include "libmscore/excerpt.h"
@@ -586,7 +587,7 @@ void MuseScore::editInstrList()
       masterScore->setLayoutAll();
       masterScore->endCmd();
       masterScore->rebuildAndUpdateExpressive(MuseScore::synthesizer("Fluid"));
-      seq->initInstruments();
+      muxseq_seq_initInstruments();
       }
 
 }

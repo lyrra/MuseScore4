@@ -25,7 +25,8 @@
 #include "libmscore/drumset.h"
 #include "libmscore/score.h"
 #include "preferences.h"
-#include "seq.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
 #include "editdrumset.h"
 #include "libmscore/staff.h"
 #include "libmscore/part.h"
@@ -207,7 +208,7 @@ void DrumTools::drumNoteSelected(int val)
             Note* note       = ch->downNote();
             int ticks        = MScore::defaultPlayDuration;
             int pitch        = note->pitch();
-            seq->startNote(staff->part()->instrument()->channel(0)->channel(), pitch, 80, ticks, 0.0);  //tick?
+            muxseq_start_note_dur(staff->part()->instrument()->channel(0)->channel(), pitch, 80, ticks, 0.0);  //tick?
 
             int track = (_score->inputState().track() / VOICES) * VOICES + element->track();
             _score->inputState().setTrack(track);

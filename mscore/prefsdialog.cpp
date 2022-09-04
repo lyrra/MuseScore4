@@ -21,20 +21,17 @@
 #include "timeline.h"
 #include "preferences.h"
 #include "prefsdialog.h"
-#include "seq.h"
+
+#include "muxcommon.h"
+#include "muxseq_client.h"
 #include "shortcutcapturedialog.h"
 #include "scoreview.h"
 #include "shortcut.h"
 #include "workspace.h"
 
-#include "audio/drivers/pa.h"
-#ifdef USE_PORTMIDI
-#include "audio/drivers/pm.h"
-#endif
-
 #include "pathlistdialog.h"
 #include "resourceManager.h"
-#include "audio/midi/msynthesizer.h"
+//#include "audio/midi/msynthesizer.h"
 
 #ifdef AVSOMR
 #include "avsomr/avsomrlocal.h"
@@ -687,6 +684,7 @@ void PreferenceDialog::updateValues(bool useDefaultValues, bool setup)
       //
       // initialize portaudio
       //
+/* PORTAUDIO/PORTMIDI disabled, we're using the api directly, not through the driver interface
 #ifdef USE_PORTAUDIO
       if (portAudioIsUsed) {
             Portaudio* audio = static_cast<Portaudio*>(seq->driver());
@@ -738,6 +736,7 @@ void PreferenceDialog::updateValues(bool useDefaultValues, bool setup)
                   }
             }
 #endif
+*/
 
 #ifndef HAS_MIDI
       enableMidiInput->setEnabled(false);
@@ -761,6 +760,7 @@ void PreferenceDialog::updateValues(bool useDefaultValues, bool setup)
 //   portaudioApiActivated
 //---------------------------------------------------------
 
+/* disable PORTAUDIO
 #ifdef USE_PORTAUDIO
 void PreferenceDialog::portaudioApiActivated(int idx)
       {
@@ -770,8 +770,9 @@ void PreferenceDialog::portaudioApiActivated(int idx)
       portaudioDevice->addItems(devices);
       }
 #else
+*/
 void PreferenceDialog::portaudioApiActivated(int)  {}
-#endif
+//#endif
 
 //---------------------------------------------------------
 //   ShortcutItem
@@ -1390,7 +1391,7 @@ void PreferenceDialog::apply()
 #ifdef AVSOMR
       preferences.setPreference(PREF_IMPORT_AVSOMR_USELOCAL, useLocalAvsOmr->isChecked());
 #endif
-
+      qDebug("--------- PreferenceDialog::apply ----------");
       if (audioModified) {
             bool wasJack = (preferences.getBool(PREF_IO_JACK_USEJACKMIDI) || preferences.getBool(PREF_IO_JACK_USEJACKAUDIO));
             bool wasJackAudio = preferences.getBool(PREF_IO_JACK_USEJACKAUDIO);
@@ -1409,16 +1410,19 @@ void PreferenceDialog::apply()
             preferences.setPreference(PREF_IO_JACK_USEJACKTRANSPORT, jackDriver->isChecked() && useJackTransport->isChecked());
 
             if (jackParametersChanged) {
+                  //------------------------------------------------
+                  // FIX: this logic should be moved to seq
                   // Change parameters of JACK driver without unload
-                  if (seq) {
-                        if (seq->driver() == nullptr) {
-                              qDebug("sequencer driver is null");
+                  if (muxseq_seq_alive()) {
+                        //if (! g_driver_running) {
+                        //      qDebug("sequencer driver is null");
                               restartAudioEngine();
-                              }
-                        seq->driver()->init(true);
-                        if (!seq->init(true))
+                        //      }
+                        qDebug("musescore, prefsdialog calling muxseq_seq_init");
+                        if (!muxseq_seq_init(true))
                               qDebug("sequencer init failed");
                         }
+                  //------------------------------------------------
                   }
             else if (
                (wasJack != nowJack)
@@ -1444,13 +1448,16 @@ void PreferenceDialog::apply()
 
                   restartAudioEngine();
                   }
+/* disable PORTAUDIO
       #ifdef USE_PORTAUDIO
             if (portAudioIsUsed && !noSeq) {
                   Portaudio* audio = static_cast<Portaudio*>(seq->driver());
                   preferences.setPreference(PREF_IO_PORTAUDIO_DEVICE, audio->deviceIndex(portaudioApi->currentIndex(), portaudioDevice->currentIndex()));
                   }
       #endif
+*/
 
+/* disable PORTMIDI
       #ifdef USE_PORTMIDI
             preferences.setPreference(PREF_IO_PORTMIDI_INPUTDEVICE, portMidiInput->currentText());
             preferences.setPreference(PREF_IO_PORTMIDI_OUTPUTDEVICE, portMidiOutput->currentText());
@@ -1463,6 +1470,7 @@ void PreferenceDialog::apply()
                   msgBox.exec();
                   }
       #endif
+*/
             }
 
       if (shortcutsChanged) {

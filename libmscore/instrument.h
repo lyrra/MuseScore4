@@ -22,7 +22,7 @@
 #include "interval.h"
 #include "clef.h"
 
-#include "audio/midi/event.h"
+#include "event.h"
 
 namespace Ms {
 

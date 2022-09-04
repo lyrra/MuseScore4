@@ -34,10 +34,6 @@ include_directories (
       ${PROJECT_SOURCE_DIR}/thirdparty  # because include "mscore/musescore.h"
       )
 
-include (${CMAKE_CURRENT_LIST_DIR}/midi/midi.cmake)
-include (${CMAKE_CURRENT_LIST_DIR}/drivers/drivers.cmake)
-include (${CMAKE_CURRENT_LIST_DIR}/exports/exports.cmake)
-
 QT5_WRAP_UI (ui_headers
     ${MIDI_UI}
     )
@@ -46,9 +42,6 @@ add_library (${MODULE} STATIC
       ${_all_h_file}
       ${PCH}
       ${ui_headers}
-      ${MIDI_SRC}
-      ${DRIVERS_SRC}
-      ${EXPORTS_SRC}
       )
 
 target_link_libraries (${MODULE}
@@ -70,10 +63,14 @@ else (NOT MSVC)
       )
 endif (NOT MSVC)   
 
-xcode_pch(${MODULE} all)
+if (APPLE)
+      xcode_pch(${MODULE} all)
+endif (APPLE)
 
 # Use MSVC pre-compiled headers
-vstudio_pch( ${MODULE} )
+if (MSVC)
+      vstudio_pch( ${MODULE} )
+endif (MSVC)
 
 # MSVC does not depend on mops1 & mops2 for PCH
 if (NOT MSVC)

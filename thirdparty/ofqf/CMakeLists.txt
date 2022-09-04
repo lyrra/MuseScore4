@@ -31,6 +31,8 @@ else (NOT MSVC)
    set(_all_h_file "${PROJECT_SOURCE_DIR}/all.h")
 endif (NOT MSVC)
 
+include_directories (${QT_INCLUDES})
+
 add_library(ofqf STATIC
    ${_all_h_file}
    ${PCH}
@@ -52,10 +54,14 @@ else (NOT MSVC)
       )
 endif (NOT MSVC)   
 
-xcode_pch(ofqf all)
+if (APPLE)
+      xcode_pch(ofqf all)
+endif (APPLE)
 
 # Use MSVC pre-compiled headers
-vstudio_pch( ofqf )
+if (MSVC)
+      vstudio_pch( ofqf )
+endif (MSVC)
 
 # MSVC does not depend on mops1 & mops2 for PCH
 if (NOT MSVC)

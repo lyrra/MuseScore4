@@ -19,10 +19,11 @@
 #include "pianolevelschooser.h"
 #include "pianoview.h"
 #include "musescore.h"
-#include "seq.h"
 #include "preferences.h"
 #include "waveview.h"
 #include "notetweakerdialog.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
 #include "libmscore/staff.h"
 #include "libmscore/measure.h"
 #include "libmscore/note.h"
@@ -833,7 +834,7 @@ void PianorollEditor::velocityChanged(int val)
 
 void PianorollEditor::keyPressed(int p)
       {
-      seq->startNote(staff->part()->instrument()->channel(0)->channel(), p, 80, 0, 0.0);
+      muxseq_start_note_dur(staff->part()->instrument()->channel(0)->channel(), p, 80, 0, 0.0);
       }
 
 //---------------------------------------------------------
@@ -842,16 +843,16 @@ void PianorollEditor::keyPressed(int p)
 
 void PianorollEditor::keyReleased(int /*p*/)
       {
-      seq->stopNotes();
+      muxseq_stop_notes();
       }
 
 //---------------------------------------------------------
 //   heartBeat
 //---------------------------------------------------------
 
-void PianorollEditor::heartBeat(Seq* s)
+void PianorollEditor::heartBeat(void* s) // was Seq*
       {
-      unsigned tick = s->getCurTick();
+      unsigned tick = muxseq_seq_curTick();
       if (score()->masterScore())
             tick = score()->masterScore()->repeatList().utick2tick(tick);
       if (locator[0].tick() != tick) {

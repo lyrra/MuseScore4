@@ -45,6 +45,10 @@ include_directories(
       ${PROJECT_SOURCE_DIR}/thirdparty
       ${PROJECT_SOURCE_DIR}/global
       ${PROJECT_SOURCE_DIR}/importexport
+      ${PROJECT_SOURCE_DIR}/mux
+      ${PROJECT_SOURCE_DIR}/muxlib
+      ${PROJECT_SOURCE_DIR}/muxseq
+      ${PROJECT_SOURCE_DIR}/muxtools
       ${QTSINGLEAPPLICATION_INCLUDE_DIRS}
       )
 
@@ -121,15 +125,11 @@ endif (APPLE)
 if (${CMAKE_SYSTEM} MATCHES "GNU-0.3")
       # Include some cmake support file
       INCLUDE (Platform/GNU)
-      set ( USE_ALSA 0 )
-      set ( USE_PORTMIDI 0 )
 endif (${CMAKE_SYSTEM} MATCHES "GNU-0.3")
 
 if (${CMAKE_SYSTEM} MATCHES "kFreeBSD")
       # Include some cmake support file
       INCLUDE (Platform/kFreeBSD)
-      set ( USE_ALSA 0 )
-      set ( USE_PORTMIDI 0 )
 endif (${CMAKE_SYSTEM} MATCHES "kFreeBSD")
 
 if (OMR)
@@ -203,7 +203,7 @@ add_library(mscoreapp STATIC
       radiobuttongroupbox.h recordbutton.h resourceManager.h ruler.h scoreaccessibility.h
       scoreBrowser.h scoreInfo.h scorePreview.h scoretab.h scoreview.h searchComboBox.h
       selectdialog.h selectionwindow.h selectnotedialog.h selinstrument.h
-      seq.h shortcut.h shortcutcapturedialog.h simplebutton.h splitstaff.h stafftextproperties.h
+      shortcut.h shortcutcapturedialog.h simplebutton.h splitstaff.h stafftextproperties.h
       startcenter.h startupWizard.h stringutils.h svggenerator.h symboldialog.h synthcontrol.h
       templateBrowser.h textcursor.h textpalette.h texttools.h timedialog.h timeline.h timesigproperties.h
       toolbarEditor.h toolbuttonmenu.h transposedialog.h tremolobarcanvas.h realizeharmonydialog.h
@@ -226,7 +226,7 @@ add_library(mscoreapp STATIC
       timeline.cpp
       parteditbase.cpp playpanel.cpp selectionwindow.cpp
       preferences.cpp measureproperties.cpp
-      seq.cpp textpalette.cpp
+      textpalette.cpp
       timedialog.cpp symboldialog.cpp shortcutcapturedialog.cpp
       radiobuttongroupbox.cpp simplebutton.cpp
       openfilelocation.cpp
@@ -304,6 +304,12 @@ add_library(mscoreapp STATIC
       gridcanvas.h tremolobarcanvas.h bendcanvas.h fretcanvas.h keycanvas.h harmonycanvas.h
 
       sparkle/autoUpdater.h sparkle/sparkleAutoUpdater.h sparkle/winSparkleAutoUpdater.h
+
+      # MUX
+      ../muxlib/muxseq_client.h ../muxlib/muxseq_client.cpp
+      ../muxlib/muxseqsig.h     ../muxlib/muxseqsig.cpp
+      ../muxlib/muxseqlib.h     ../muxlib/muxseqlib.cpp
+
       )
 
 if (MSVC OR MINGW)
@@ -322,12 +328,15 @@ endif (LIBMUSESCORE_SHARED)
 target_link_libraries(mscoreapp
       awl
       ${QTSINGLEAPPLICATION_LIBRARIES}
-      audio
       effects
       ${MUSESCORE_LIBLINK}
+      mux
+      muxlib
+      muxtools
       qzip
       importexport
       ${COCOABRIDGE}
+      ${ZMQ_LIBRARIES}
       )
 
 if (BUILD_CRASH_REPORTER)
@@ -388,9 +397,6 @@ if (MINGW)
    endif(CMAKE_BUILD_TYPE MATCHES "DEBUG")
 
    target_link_libraries(mscoreapp
-      portaudiodll
-      portmidi
-      winmm
       mscore_freetype
       z
       )
@@ -408,7 +414,6 @@ else (MINGW)
 
    if ( NOT MSVC )
       target_link_libraries(mscoreapp
-         ${ALSA_LIB}
          ${QT_LIBRARIES}
          z
          ${CMAKE_DL_LIBS}
@@ -420,28 +425,6 @@ else (MINGW)
        else (USE_SYSTEM_FREETYPE)
             target_link_libraries(mscoreapp mscore_freetype)
        endif (USE_SYSTEM_FREETYPE)
-
-       if (USE_PORTAUDIO)
-         target_link_libraries(mscoreapp ${PORTAUDIO_LIB})
-       endif (USE_PORTAUDIO)
-
-       if (USE_PORTMIDI)
-           if (APPLE)
-               set(PORTMIDI_LIB portmidi)
-           else (APPLE)
-               find_library(PORTTIME_LIB porttime)
-               if (PORTTIME_LIB)
-                   set(PORTMIDI_LIB portmidi porttime)
-               else (PORTTIME_LIB)
-                   set(PORTMIDI_LIB portmidi)
-               endif (PORTTIME_LIB)
-           endif (APPLE)
-           target_link_libraries(mscoreapp ${PORTMIDI_LIB})
-       endif (USE_PORTMIDI)
-
-       if (USE_PULSEAUDIO)
-         target_link_libraries(mscoreapp ${PULSEAUDIO_LIBRARY})
-       endif (USE_PULSEAUDIO)
 
        if (USE_GUILE)
          message(STATUS "GUILE_COMPILE: ${GUILE_COMPILE}")
@@ -516,9 +499,6 @@ else (MINGW)
 
       include(FindStaticLibrary)
       target_link_libraries(mscoreapp
-         portaudiodll
-         portmidi
-         winmm
          mscore_freetype
          zlibstat
          )

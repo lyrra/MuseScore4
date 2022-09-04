@@ -21,15 +21,16 @@
 
 #include "musescore.h"
 
+#include "muxcommon.h"
+#include "muxseq_client.h"
 #include "libmscore/score.h"
 #include "libmscore/part.h"
 #include "mixer.h"
 #include "mixertrack.h"
 #include "mixertrackitem.h"
-#include "seq.h"
 #include "libmscore/undo.h"
 #include "synthcontrol.h"
-#include "audio/midi/msynthesizer.h"
+#include "msynthesizer.h"
 #include "preferences.h"
 
 namespace Ms {
@@ -173,14 +174,14 @@ void MixerDetails::updateFromTrack()
       //Populate patch combo
       patchCombo->blockSignals(true);
       patchCombo->clear();
-      const auto& pl = synti->getPatchInfo();
+      //const auto& pl = muxseq_synti_getPatchInfo();
       int patchIndex = 0;
 
       // Order by program number instead of bank, so similar instruments
       // appear next to each other, but ordered primarily by soundfont
       std::map<int, std::map<int, std::vector<const MidiPatch*>>> orderedPl;
 
-      for (const MidiPatch* p : pl)
+      for (const auto p : muxseq_synti_getPatchInfoList())
             orderedPl[p->sfid][p->prog].push_back(p);
 
       std::vector<QString> usedNames;
@@ -525,8 +526,7 @@ void MixerDetails::drumkitToggled(bool val)
             return;
 
       const MidiPatch* newPatch = 0;
-      const QList<MidiPatch*> pl = synti->getPatchInfo();
-      for (const MidiPatch* p : pl) {
+      for (const auto p : muxseq_synti_getPatchInfoList()) {
             if (p->drum == val) {
                   newPatch = p;
                   break;
@@ -556,7 +556,7 @@ void MixerDetails::midiChannelChanged(int)
       Part* part = _mti->part();
       Channel* channel = _mti->focusedChan();
 
-      seq->stopNotes(channel->channel());
+      muxseq_stop_notes(channel->channel());
       int p =    portSpinBox->value() - 1;
       int c = channelSpinBox->value() - 1;
 
@@ -565,13 +565,12 @@ void MixerDetails::midiChannelChanged(int)
 
       part->score()->setInstrumentsChanged(true);
       part->score()->setLayoutAll();
-      seq->initInstruments();
+      muxseq_seq_initInstruments();
 
       // Update MIDI Out ports
       int maxPort = std::max(p, part->score()->masterScore()->midiPortCount());
       part->score()->masterScore()->setMidiPortCount(maxPort);
-      if (seq->driver() && (preferences.getBool(PREF_IO_JACK_USEJACKMIDI) || preferences.getBool(PREF_IO_ALSA_USEALSAAUDIO)))
-            seq->driver()->updateOutPortCount(maxPort + 1);
+      muxseq_seq_updateOutPortCount(maxPort + 1);
       }
 
 

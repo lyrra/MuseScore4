@@ -7,6 +7,7 @@ add_definitions(
     ${Qt5Network_DEFINITIONS}
 )
 include_directories(
+    ${QT_INCLUDES}
     ${Qt5Core_INCLUDE_DIRS}
     ${Qt5Network_INCLUDE_DIRS}
 )

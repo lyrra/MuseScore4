@@ -370,7 +370,6 @@ class MScore {
       static int division;
       static int sampleRate;
       static int mtcType;
-      static Sequencer* seq;
 
       static bool saveTemplateMode;
       static bool noGui;

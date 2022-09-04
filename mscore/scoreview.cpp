@@ -27,7 +27,9 @@
 #include "preferences.h"
 #include "scoreaccessibility.h"
 #include "scoretab.h"
-#include "seq.h"
+#include "muxcommon.h"
+#include "muxseq_client.h"
+#include "muxseqsig.h"
 #include "splitstaff.h"
 #include "textcursor.h"
 #include "textpalette.h"
@@ -202,8 +204,11 @@ ScoreView::ScoreView(QWidget* parent)
             }
 
       connect(getAction("loop"), SIGNAL(toggled(bool)), SLOT(loopToggled(bool)));
-      if (seq)
-            connect(seq, SIGNAL(stopped()), SLOT(seqStopped()));
+      if (muxseq_seq_alive()) {
+            MuxSeqSig* muxseqsig = muxseqsig_get();
+            //FIX: isn't this already connected in musescore.cpp?
+            connect(muxseqsig, SIGNAL(sigSeqStopped()), SLOT(seqStopped()));
+            }
       }
 
 //---------------------------------------------------------
@@ -622,7 +627,7 @@ void ScoreView::moveCursor(const Fraction& tick)
       System* system = measure->system();
       if (system == 0)
             return;
-      double y        = system->staffYpage(0) + system->page()->pos().y();
+      double y        = system->staffYpage(0) + (system->page() ? system->page()->pos().y() : 0.0);
       double _spatium = score()->spatium();
 
       update(_matrix.mapRect(_cursor->rect()).toRect().adjusted(-1,-1,1,1));
@@ -648,7 +653,7 @@ void ScoreView::moveCursor(const Fraction& tick)
       _cursor->setRect(QRectF(x, y, w, h));
       update(_matrix.mapRect(_cursor->rect()).toRect().adjusted(-1,-1,1,1));
 
-      if (_score->layoutMode() == LayoutMode::LINE && seq->isPlaying() && panSettings().enabled)
+      if (_score->layoutMode() == LayoutMode::LINE && muxseq_seq_playing() && panSettings().enabled)
             moveControlCursor(tick);
 
       if (mscore->state() == ScoreState::STATE_PLAY && mscore->panDuringPlayback()) {
@@ -682,7 +687,7 @@ void ScoreView::moveControlCursor(const Fraction& tick)
       int controlX = _controlCursor->rect().x();
       double distance = realX - controlX;
 
-      if (seq->isPlaying() && isCursorDistanceReasonable()) {
+      if (muxseq_seq_playing() && isCursorDistanceReasonable()) {
             // playbackCursor in front of the controlCursor
             if (distance > _panSettings.rightDistance)
                   _controlModifier += _panSettings.controlModifierSteps;
@@ -1233,6 +1238,7 @@ void ScoreView::drawElements(QPainter& painter, QList<Element*>& el, Element* ed
       {
       std::stable_sort(el.begin(), el.end(), elementLessThan);
       for (const Element* e : el) {
+            if (!e) qFatal("no element");
             e->itemDiscovered = 0;
 
             // harmony element representation is different in edit mode, so don't
@@ -1421,8 +1427,9 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                               p.setPen(pen);
                               p.setBrush(Qt::NoBrush);
                               for (const System* system : page->systems()) {
+                                    if (system) {
                                     for (const MeasureBase* mb : system->measures()) {
-                                          if (mb->type() == ElementType::MEASURE) {
+                                          if (mb && mb->type() == ElementType::MEASURE) {
                                                 const Measure* m = static_cast<const Measure*>(mb);
                                                 for (int staffIdx = 0; staffIdx < m->score()->nstaves(); staffIdx++) {
                                                       if (m->corrupted(staffIdx)) {
@@ -1431,6 +1438,7 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                                                       }
                                                 }
                                           }
+                                    } // if system
                                     }
                               }
                         }
@@ -2100,8 +2108,8 @@ void ScoreView::cmd(const char* s)
       const QByteArray cmd(s);
 
       shadowNote->setVisible(false);
-      if (MScore::debugMode)
-            qDebug("ScoreView::cmd <%s>", s);
+      //if (MScore::debugMode)
+      qDebug("ScoreView::cmd <%s>", s);
 
       static const std::vector<ScoreViewCmd> cmdList {
             {{"escape"}, [](ScoreView* cv, const QByteArray&) {
@@ -2174,11 +2182,15 @@ void ScoreView::cmd(const char* s)
                   // ??
                   }},
             {{"play"}, [](ScoreView* cv, const QByteArray&) {
-                  if (seq && seq->canStart()) {
-                        if (cv->state == ViewState::NORMAL || cv->state == ViewState::NOTE_ENTRY)
+                  qDebug("-- scoreview play x1");
+                  if (muxseq_seq_alive() && muxseq_seq_can_start()) {
+                        qDebug("-- scoreview play x2, seq is alive, and can start");
+                        if (cv->state == ViewState::NORMAL || cv->state == ViewState::NOTE_ENTRY) {
+                              qDebug("-- scoreview play x3, cv-state is normal or note-entry");
                               cv->changeState(ViewState::PLAY);
-                        else if (cv->state == ViewState::PLAY)
+                        } else if (cv->state == ViewState::PLAY) {
                               cv->changeState(ViewState::NORMAL);
+                              }
                         }
                   else
                         getAction("play")->setChecked(false);
@@ -3650,7 +3662,7 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
 
             qreal xo = 0.0;  // new x offset
             QRectF curPos = playBack ? _cursor->rect() : el->canvasBoundingRect();
-            if (playBack && _cursor && seq->isPlaying() && panSettings().enabled)
+            if (playBack && _cursor && muxseq_seq_playing() && panSettings().enabled)
                   curPos = _controlCursor->rect();
             // keep current note in view as well if applicable (note input mode)
             Element* current = nullptr;
@@ -3672,7 +3684,7 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
 
             // this code implements "continuous" panning
             // it could potentially be enabled via more panning options
-            if (playBack && _cursor && seq->isPlaying() && preferences.getBool(PREF_PAN_SMOOTHLY_ENABLED)) {
+            if (playBack && _cursor && muxseq_seq_playing() && preferences.getBool(PREF_PAN_SMOOTHLY_ENABLED)) {
                   // keep playback cursor pinned at 35% (or at the percent of controlCursorScreenPos + 5%)
                   xo = -curPosL * physicalZoomLevel() + marginLeft + width() * _panSettings.controlCursorScreenPos;
                   }
@@ -4522,7 +4534,7 @@ void ScoreView::triggerCmdRealtimeAdvance()
             return;
             }
       // give audible feedback immediately to indicate a beat, but don’t advance just yet.
-      seq->playMetronomeBeat(_score->tick2beatType(is.tick()));
+      muxseq_seq_playMetronomeBeat(_score->tick2beatType(is.tick()));
       // The user will want to press notes "on the beat" and not before the beat, so wait a
       // little in case midi input event is received just after realtime-advance was called.
       QTimer::singleShot(100, Qt::PreciseTimer, this, SLOT(cmdRealtimeAdvance()));
