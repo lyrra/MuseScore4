@@ -345,7 +345,7 @@ int mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
     LD8("mux_process_bufferStereo %i.%i/%i numFrames=%i", g_ringBufferReaderStart, g_buffer_chunk_pos, g_ringBufferWriterStart, numFrames);
     int numFloats = numFrames * MUX_CHAN;
     // if buffer is not yet primed, return without moving ringbuffer-reader-position
-    if (! g_buffer_initial_full) {
+    if ((! g_buffer_initial_full) || g_state_play == false) {
         memset(bufferStereo, 0, sizeof(float) * numFloats);
         return -1;
     }
