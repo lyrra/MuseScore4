@@ -98,7 +98,7 @@ void start (char *filename)
 long start_func (void *(*func)(void *))
 {
     std::cerr << "Running function under Guile/Scheme." << std::endl;
-    return (long) scm_with_guile (func, NULL);
+    return (uint64_t) scm_with_guile (func, NULL);
     }
 
 // This function is needed to make guile initialize

@@ -502,7 +502,7 @@ init_ms_object_1 (const char *type_name, const char *slotname1)
    '(("void*" scm-ref c) ("Element*")))
   (f "if (! elm->isChord()) { return SCM_EOL; }~%{~%")
   (var-transfer-expand 6 "elm" "notelist"
-   '(("Chord*") ("std::vector<Note*>&" m"notes()" c)))
+   '(("Ms::Chord*") ("std::vector<Note*>&" m"notes()" c)))
   (f "int numnotes = notelist.size();
       SCM v = scm_c_make_vector(numnotes, SCM_EOL);
       int n = 0;

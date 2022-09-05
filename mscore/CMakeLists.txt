@@ -379,6 +379,18 @@ if (AVSOMR)
    target_link_libraries(mscoreapp avsomr)
 endif (AVSOMR)
 
+if (USE_GUILE)
+  message(STATUS "GUILE_COMPILE: ${GUILE_COMPILE}")
+  target_link_libraries(mscoreapp ${GUILE_LINK})
+  #add_compile_options(${GUILE_COMPILE})
+  string(REPLACE " " ";" GUILE_COMPILE_LIST ${GUILE_COMPILE})
+  set_target_properties (mscoreapp
+                         PROPERTIES
+                         COMPILE_OPTIONS "${GUILE_COMPILE_LIST}"
+  )
+  message(STATUS "Guile compile flags: ${COMPILE_FLAGS}")
+endif (USE_GUILE)
+
 if (MINGW)
    string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE)
    # Windows: Add -mconsole to LINK_FLAGS to get a console window for debug output
@@ -426,17 +438,6 @@ else (MINGW)
             target_link_libraries(mscoreapp mscore_freetype)
        endif (USE_SYSTEM_FREETYPE)
 
-       if (USE_GUILE)
-         message(STATUS "GUILE_COMPILE: ${GUILE_COMPILE}")
-         target_link_libraries(mscoreapp ${GUILE_LINK})
-         #add_compile_options(${GUILE_COMPILE})
-         string(REPLACE " " ";" GUILE_COMPILE_LIST ${GUILE_COMPILE})
-         set_target_properties (mscoreapp
-                                PROPERTIES
-                                COMPILE_OPTIONS "${GUILE_COMPILE_LIST}"
-         )
-         message(STATUS "Guile compile flags: ${COMPILE_FLAGS}")
-       endif (USE_GUILE)
 
       set_target_properties (
          mscoreapp
