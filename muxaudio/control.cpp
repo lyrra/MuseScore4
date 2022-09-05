@@ -11,6 +11,7 @@
 #include <thread> // FIX: should be imported by config.h
 #include <chrono>
 #include <iostream>
+#include "mux.h"
 
 namespace Ms {
 
@@ -20,12 +21,30 @@ void muxaudio_audio_process();
 void muxaudio_audio_process_stop ();
 void muxaudio_network_server_ctrl();
 
+void muxaudio_network_mainloop_ctrl();
+void muxaudio_network_mainloop_audio();
+extern struct Mux::MuxSocket g_socket_ctrl;
+extern struct Mux::MuxSocket g_socket_audio;
+
 static std::vector<std::thread> muxThreads;
 
 void mux_thread_process_init(std::string msg)
 {
     std::cout << "MUX audio-process thread initialized:" << msg << "\n";
     muxaudio_audio_process();
+}
+
+void muxaudio_network_server_ctrl()
+{
+    Mux::mux_make_connection(g_socket_ctrl, "tcp://*:7711", Mux::ZmqType::QUERY, Mux::ZmqDir::REP, Mux::ZmqServer::BIND);
+    muxaudio_network_mainloop_ctrl();
+}
+
+void muxaudio_network_server_audio()
+{
+    Mux::mux_make_connection(g_socket_audio, "tcp://*:7712", Mux::ZmqType::QUERY, Mux::ZmqDir::REQ, Mux::ZmqServer::BIND);
+    //FIX: this should be called by the thread that calls mux_audio_process() {
+    muxaudio_network_mainloop_audio();
 }
 
 /* this threads replies to queries from muxseq */
@@ -66,7 +85,7 @@ int main(int argc, char **argv)
 {
     Ms::muxaudio_threads_start();
     while(1){
-        std::this_thread::sleep_for(std::chrono::microseconds(100000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     return 0;
 }

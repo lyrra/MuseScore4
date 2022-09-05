@@ -85,9 +85,6 @@ void _logstr (char *str) {
     fflush(stdout);
 }
 
-#define MUX_SYNC_MSLEEP 100
-
-
 Driver* g_driver;
 
 void mux_send_event_to_gui(struct SparseEvent se);
@@ -280,6 +277,7 @@ int muxaudio_mq_to_audio_visit() {
     muxaudio_mq_to_audio_handle_message(msg);
     msg.type = MsgTypeInit; // mark this as free, FIX: not needed
     g_msg_to_audio_reader = (g_msg_to_audio_reader + 1) % MAILBOX_SIZE;
+    return 1;
 }
 
 /* this is called from jack */
@@ -296,8 +294,8 @@ void muxaudio_msg_from_audio(MuxaudioMsgType typ, int val)
  */
 #define MUX_CHAN 2
 #define MUX_RINGSIZE (128*MUX_CHAN)
-#define MUX_READER_USLEEP 500
-#define MUX_WRITER_USLEEP 500
+#define MUX_READER_MSLEEP 1
+#define MUX_WRITER_MSLEEP 100
 
 unsigned int g_ringBufferWriterStart = 0;
 unsigned int g_ringBufferReaderStart = 0;
@@ -332,7 +330,8 @@ int peek_ringbuffer (unsigned int newReaderPos) {
             // or sleep because there is no maximum sleep-amount guarantees,
             // if paranoid, just spin-loop
             slept++;
-            std::this_thread::sleep_for(std::chrono::microseconds(MUX_READER_USLEEP));
+            LW("RT-SLEEP: empty buffer");
+            std::this_thread::sleep_for(std::chrono::milliseconds(MUX_READER_MSLEEP));
         } else { // there is enough room in reader-part of ring-buffer to use
                 break;
         }
@@ -340,11 +339,12 @@ int peek_ringbuffer (unsigned int newReaderPos) {
     return slept;
 }
 
-// this function is called by the realtime-context,
+// this function is called by the realtime-context (jackaudio),
 // and is reading from the ring-buffer
 int mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
     LD8("mux_process_bufferStereo %i.%i/%i numFrames=%i", g_ringBufferReaderStart, g_buffer_chunk_pos, g_ringBufferWriterStart, numFrames);
     int numFloats = numFrames * MUX_CHAN;
+    // if buffer is not yet primed, return without moving ringbuffer-reader-position
     if (! g_buffer_initial_full) {
         memset(bufferStereo, 0, sizeof(float) * numFloats);
         return -1;
@@ -401,7 +401,7 @@ int mux_process_bufferStereo(unsigned int numFrames, float* bufferStereo){
         }
     }
     if (slept > 0) {
-        LW("WARNING: jack had to wait %i * %i usecs", slept, MUX_READER_USLEEP);
+        LW("WARNING: jack had to wait %i * %i msecs", slept, MUX_READER_MSLEEP);
     }
     return slept;
 }
@@ -456,7 +456,7 @@ void muxaudio_audio_process() {
         }
         if (! workDone) {
             g_writerPause++;
-            std::this_thread::sleep_for(std::chrono::milliseconds(MUX_WRITER_USLEEP));
+            std::this_thread::sleep_for(std::chrono::milliseconds(MUX_WRITER_MSLEEP));
         }
     }
     LD("MUX audio-process terminated.");
@@ -498,29 +498,17 @@ void mux_teardown_driver (JackAudio *driver) {
 /* This thread is setting up JACK callback (which inturn will read from audio-ringbuffer).
  * Then check any incoming control-messages from ZMQ
  */
-void mux_network_mainloop_audio()
+void muxaudio_network_mainloop_audio()
 {
     LD("MUX ZeroMQ audio entering main-loop");
     g_driver = driverFactory("jack");
     while (1) {
         if (! muxaudio_mq_to_audio_visit()) {
-            std::this_thread::sleep_for(std::chrono::microseconds(10000));
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
     }
     LD("mux_network_mainloop audio has exited");
 }
 
-void muxaudio_network_server_audio()
-{
-    Mux::mux_make_connection(g_socket_audio, "tcp://*:7712", Mux::ZmqType::QUERY, Mux::ZmqDir::REQ, Mux::ZmqServer::BIND);
-    //FIX: this should be called by the thread that calls mux_audio_process() {
-    mux_network_mainloop_audio();
-}
-
-void muxaudio_network_server_ctrl()
-{
-    Mux::mux_make_connection(g_socket_ctrl, "tcp://*:7711", Mux::ZmqType::QUERY, Mux::ZmqDir::REP, Mux::ZmqServer::BIND);
-    muxaudio_network_mainloop_ctrl();
-}
 
 } // end of namespace MS
