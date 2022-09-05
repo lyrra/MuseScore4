@@ -448,8 +448,7 @@ void muxaudio_audio_process() {
     g_mux_audio_process_run = 1;
     while (g_mux_audio_process_run) {
         bool workDone = false;
-        int rc = muxaudio_fill_audio_buffers();
-        if (rc >= 0) { // error, sleep longer
+        if (muxaudio_fill_audio_buffers()) {
             workDone = true;
         }
         if (muxaudio_mq_from_audio_reader_visit()) { // and message-queue is empty
