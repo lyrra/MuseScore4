@@ -3,7 +3,7 @@ name: CI_Windows
 on:
   pull_request:
     branches:
-    - funnel
+    - master
   schedule:
     - cron: '0 4 * * 0' # At 04:00 on every sunday
   workflow_dispatch:
@@ -61,7 +61,7 @@ jobs:
     - name: Clone repository
       uses: actions/checkout@v3
       with:
-        ref: funnel
+        ref: master
     - name: Setup
       shell: msys2 {0}
       run: |
