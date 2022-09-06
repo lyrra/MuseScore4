@@ -343,9 +343,6 @@ if (BUILD_CRASH_REPORTER)
       target_link_libraries(mscoreapp crashreporter-handler)
 endif (BUILD_CRASH_REPORTER)
 
-if (BUILD_TELEMETRY_MODULE)
-    target_link_libraries(mscoreapp telemetry)
-endif (BUILD_TELEMETRY_MODULE)
 add_dependencies(mscoreapp workspaces)
 
 if (USE_SYSTEM_FREETYPE)
