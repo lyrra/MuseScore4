@@ -111,6 +111,43 @@ if (LIBMUSESCORE_SHARED)
       ${LIB_SCRIPT_FILES}
       ${SOURCE_FILES}
       )
+   target_link_libraries(musescore
+           ${QT_LIBRARIES}
+           #Qt5::Core
+           #Qt5::Gui
+           #Qt5::Widgets
+           #Qt5::Svg
+           qzip # fix, use libzip (mingw-w64-libzip)
+#Qt5::Network
+#Qt5::Test
+#Qt5::Qml
+#Qt5::Quick
+#Qt5::QuickControls2
+#Qt5::QuickTemplates2
+#Qt5::QuickWidgets
+#Qt5::Xml
+#Qt5::XmlPatterns
+#Qt5::Sql
+#Qt5::PrintSupport
+#Qt5::Concurrent
+#Qt5::OpenGL
+#Qt5::Help
+#Qt5::WinExtras
+
+           z
+           )
+    if (USE_SYSTEM_FREETYPE)
+         target_link_libraries(musescore freetype)
+    else (USE_SYSTEM_FREETYPE)
+         target_link_libraries(musescore mscore_freetype)
+    endif (USE_SYSTEM_FREETYPE)
+
+   set_target_properties( mscoreapp
+        PROPERTIES
+           COMPILE_FLAGS "${PCH_INCLUDE} -Wall -Wextra -Winvalid-pch ${QT_DEFINITIONS} -DQT_SVG_LIB -DQT_GUI_LIB -DQT_XML_LIB -DQT_CORE_LIB"
+           LINK_FLAGS "-Wl,-S -mwindows -L ${QT_INSTALL_LIBS}"
+        )
+
 else (LIBMUSESCORE_SHARED)
    add_library (
       libmscore STATIC
