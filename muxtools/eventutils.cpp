@@ -13,6 +13,7 @@
 #include "libmscore/xml.h"
 //#include "libmscore/note.h"
 #include "libmscore/harmony.h"
+#include "libmscore/undo.h"
 //#include "libmscore/sig.h"
 #include "event.h"
 #include "eventutils.h"
@@ -20,6 +21,7 @@
 #include "libmscore/instrument.h"
 #include "libmscore/part.h"
 #include "libmscore/score.h"
+#include "muxseqlib.h"
 
 namespace Ms {
 
@@ -158,5 +160,49 @@ void EventList::insert(const Event& e)
       append(e);
       }
 
+//---------------------------------------------------------
+//   ChangePatch
+//---------------------------------------------------------
+
+void ChangePatch::flip(EditData*)
+      {
+      MidiPatch op;
+      op.prog          = channel->program();
+      op.bank          = channel->bank();
+      op.synti         = channel->synti();
+
+      channel->setProgram(patch.prog);
+      channel->setBank(patch.bank);
+      channel->setSynti(patch.synti);
+
+      patch            = op;
+
+      if (muxseq_seq_alive()) {
+            qWarning("no seq");
+            return;
+            }
+
+      NPlayEvent event;
+      event.setType(ME_CONTROLLER);
+      event.setChannel(channel->channel());
+
+      int hbank = (channel->bank() >> 7) & 0x7f;
+      int lbank = channel->bank() & 0x7f;
+
+      event.setController(CTRL_HBANK);
+      event.setValue(hbank);
+      muxseq_send_event(event);
+
+      event.setController(CTRL_LBANK);
+      event.setValue(lbank);
+      muxseq_send_event(event);
+
+      event.setController(CTRL_PROGRAM);
+      event.setValue(channel->program());
+
+      score->setInstrumentsChanged(true);
+
+      muxseq_send_event(event);
+      }
 
 } // Namespace Ms

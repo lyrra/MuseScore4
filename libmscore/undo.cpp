@@ -147,7 +147,6 @@ void UndoCommand::undo(EditData* ed)
       {
       int n = childList.size();
       for (int i = n-1; i >= 0; --i) {
-            qCDebug(undoRedo) << "<" << childList[i]->name() << ">";
             childList[i]->undo(ed);
             }
       flip(ed);
@@ -161,7 +160,6 @@ void UndoCommand::redo(EditData* ed)
       {
       int n = childList.size();
       for (int i = 0; i < n; ++i) {
-            qCDebug(undoRedo) << "<" << childList[i]->name() << ">";
             childList[i]->redo(ed);
             }
       flip(ed);
@@ -296,15 +294,6 @@ void UndoStack::push(UndoCommand* cmd, EditData* ed)
             delete cmd;
             return;
             }
-#ifndef QT_NO_DEBUG
-      if (!strcmp(cmd->name(), "ChangeProperty")) {
-            ChangeProperty* cp = static_cast<ChangeProperty*>(cmd);
-            qCDebug(undoRedo, "<%s> id %d %s", cmd->name(), int(cp->getId()), propertyName(cp->getId()));
-            }
-      else {
-            qCDebug(undoRedo, "<%s>", cmd->name());
-            }
-#endif
       curCmd->appendChild(cmd);
       cmd->redo(ed);
       }
@@ -454,7 +443,6 @@ void UndoStack::setClean()
 
 void UndoStack::undo(EditData* ed)
       {
-      qCDebug(undoRedo) << "===";
       // Are we currently editing text?
       if (ed && ed->element && ed->element->isTextBase()) {
             TextEditData* ted = static_cast<TextEditData*>(ed->getData(ed->element));
@@ -475,7 +463,6 @@ void UndoStack::undo(EditData* ed)
 
 void UndoStack::redo(EditData* ed)
       {
-      qCDebug(undoRedo) << "===";
       if (canRedo())
             list[curIdx++]->redo(ed);
       }
@@ -1493,50 +1480,6 @@ void EditText::undoRedo()
       text->triggerLayout();
       }
 
-//---------------------------------------------------------
-//   ChangePatch
-//---------------------------------------------------------
-
-void ChangePatch::flip(EditData*)
-      {
-      MidiPatch op;
-      op.prog          = channel->program();
-      op.bank          = channel->bank();
-      op.synti         = channel->synti();
-
-      channel->setProgram(patch.prog);
-      channel->setBank(patch.bank);
-      channel->setSynti(patch.synti);
-
-      patch            = op;
-
-      if (muxseq_seq_alive()) {
-            qWarning("no seq");
-            return;
-            }
-
-      NPlayEvent event;
-      event.setType(ME_CONTROLLER);
-      event.setChannel(channel->channel());
-
-      int hbank = (channel->bank() >> 7) & 0x7f;
-      int lbank = channel->bank() & 0x7f;
-
-      event.setController(CTRL_HBANK);
-      event.setValue(hbank);
-      muxseq_send_event(event);
-
-      event.setController(CTRL_LBANK);
-      event.setValue(lbank);
-      muxseq_send_event(event);
-
-      event.setController(CTRL_PROGRAM);
-      event.setValue(channel->program());
-
-      score->setInstrumentsChanged(true);
-
-      muxseq_send_event(event);
-      }
 
 //---------------------------------------------------------
 //   SetUserBankController
@@ -2251,8 +2194,6 @@ void MoveStaff::flip(EditData*)
 
 void ChangeProperty::flip(EditData*)
       {
-      qCDebug(undoRedo) << element->name() << int(id) << "(" << propertyName(id) << ")" << element->getProperty(id) << "->" << property;
-
       QVariant v       = element->getProperty(id);
       PropertyFlags ps = element->propertyFlags(id);
 
