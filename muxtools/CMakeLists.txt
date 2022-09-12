@@ -43,7 +43,7 @@ include_directories (
       set (LAME_SRC exportmp3.h exportmp3.cpp)
 #endif (USE_LAME)
 
-add_library (${MODULE} STATIC
+add_library (${MODULE} SHARED
       ${_all_h_file}
       ${PCH}
       muxseqtools.h muxseqtools.cpp
@@ -58,6 +58,7 @@ add_library (${MODULE} STATIC
 
 target_link_libraries (${MODULE}
       ${QT_LIBRARIES}
+      musescore
       )
 
 if (NOT MSVC)

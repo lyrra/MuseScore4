@@ -61,6 +61,8 @@ add_subdirectory(../thirdparty/beatroot beatroot) # for midiimport
 add_subdirectory(../thirdparty/rtf2html rtf2html) # for capella
 
 target_link_libraries(${MODULE}
+    musescore
+    muxtools
     ${QT_LIBRARIES}
     beatroot    # for midiimport
     rtf2html    # for capella

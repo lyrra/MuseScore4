@@ -334,6 +334,7 @@ target_link_libraries(mscoreapp
       mux
       muxlib
       muxtools
+      muxseqclient
       qzip
       importexport
       ${COCOABRIDGE}

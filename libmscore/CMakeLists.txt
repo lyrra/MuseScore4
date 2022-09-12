@@ -37,8 +37,8 @@ include_directories(
       ${QT_INCLUDES}
       ${PROJECT_SOURCE_DIR}/thirdparty/dtl
       ${PROJECT_SOURCE_DIR}/global
+      ${PROJECT_SOURCE_DIR}/mux
       ${PROJECT_SOURCE_DIR}/muxlib
-      ${PROJECT_SOURCE_DIR}/muxtools
       )
 
 set (SOURCE_FILES
@@ -101,62 +101,37 @@ set (SOURCE_FILES
      connector.cpp location.cpp skyline.cpp
      scorediff.cpp
      unrollrepeats.cpp
+     mux_client.cpp
     )
 
-if (LIBMUSESCORE_SHARED)
-   add_library (
+add_library (
       musescore SHARED
       ${_all_h_file}
       ${INCS}
       ${LIB_SCRIPT_FILES}
       ${SOURCE_FILES}
       )
-   target_link_libraries(musescore
-           ${QT_LIBRARIES}
-           #Qt5::Core
-           #Qt5::Gui
-           #Qt5::Widgets
-           #Qt5::Svg
-           qzip # fix, use libzip (mingw-w64-libzip)
-#Qt5::Network
-#Qt5::Test
-#Qt5::Qml
-#Qt5::Quick
-#Qt5::QuickControls2
-#Qt5::QuickTemplates2
-#Qt5::QuickWidgets
-#Qt5::Xml
-#Qt5::XmlPatterns
-#Qt5::Sql
-#Qt5::PrintSupport
-#Qt5::Concurrent
-#Qt5::OpenGL
-#Qt5::Help
-#Qt5::WinExtras
 
+target_link_libraries(musescore
+           mux
+           muxlib
+           ${QT_LIBRARIES}
+           qzip # fix, use libzip (mingw-w64-libzip)
+           zmq
            z
            )
-    if (USE_SYSTEM_FREETYPE)
+if (USE_SYSTEM_FREETYPE)
          target_link_libraries(musescore freetype)
-    else (USE_SYSTEM_FREETYPE)
+else (USE_SYSTEM_FREETYPE)
          target_link_libraries(musescore mscore_freetype)
-    endif (USE_SYSTEM_FREETYPE)
+endif (USE_SYSTEM_FREETYPE)
 
-   set_target_properties( mscoreapp
+set_target_properties( mscoreapp
         PROPERTIES
            COMPILE_FLAGS "${PCH_INCLUDE} -Wall -Wextra -Winvalid-pch ${QT_DEFINITIONS} -DQT_SVG_LIB -DQT_GUI_LIB -DQT_XML_LIB -DQT_CORE_LIB"
            LINK_FLAGS "-Wl,-S -mwindows -L ${QT_INSTALL_LIBS}"
         )
 
-else (LIBMUSESCORE_SHARED)
-   add_library (
-      libmscore STATIC
-      ${_all_h_file}
-      ${INCS}
-      ${LIB_SCRIPT_FILES}
-      ${SOURCE_FILES}
-      )
-endif (LIBMUSESCORE_SHARED)
 
 if (AVSOMR)
     target_link_libraries(libmscore avsomr)
@@ -177,19 +152,10 @@ endif (NOT APPLE AND NOT MINGW AND NOT MSVC AND CMAKE_BUILD_TYPE MATCHES "DEBUG"
 
 if (NOT MSVC)
 
-   if (LIBMUSESCORE_SHARED)
-      set_target_properties (
-         musescore
+    set_target_properties (musescore
          PROPERTIES
             COMPILE_FLAGS "-g ${PCH_INCLUDE} -Wall -Wextra -Winvalid-pch -Woverloaded-virtual ${COVERAGE_OPTIONS}"
          )
-   else (LIBMUSESCORE_SHARED)
-      set_target_properties (
-         libmscore
-         PROPERTIES
-            COMPILE_FLAGS "-g ${PCH_INCLUDE} -Wall -Wextra -Winvalid-pch -Woverloaded-virtual ${COVERAGE_OPTIONS}"
-         )
-   endif (LIBMUSESCORE_SHARED)
 
 else (NOT MSVC)
    set_target_properties (
@@ -210,11 +176,6 @@ endif (MSVC)
 
 # MSVC does not depend on mops1 & mops2 for PCH
 if (NOT MSVC)
-   if (LIBMUSESCORE_SHARED)
       ADD_DEPENDENCIES(musescore mops1)
       ADD_DEPENDENCIES(musescore mops2)
-   else (LIBMUSESCORE_SHARED)
-      ADD_DEPENDENCIES(libmscore mops1)
-      ADD_DEPENDENCIES(libmscore mops2)
-   endif (LIBMUSESCORE_SHARED)
 endif (NOT MSVC)
