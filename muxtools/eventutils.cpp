@@ -23,53 +23,6 @@
 
 namespace Ms {
 
-//---------------------------------------------------------
-//   MidiCoreEvent::write
-//---------------------------------------------------------
-
-void midiCoreEvent_write(MidiCoreEvent ev, XmlWriter& xml)
-      {
-      uchar _type = ev.type();
-      int _a = ev.dataA();
-      int _b = ev.dataB();
-      uchar _channel = ev.channel();
-      switch(_type) {
-            case ME_NOTEON:
-                  xml.tagE(QString("note-on  channel=\"%1\" pitch=\"%2\" velo=\"%3\"")
-                     .arg(_channel).arg(_a).arg(_b));
-                  break;
-
-            case ME_NOTEOFF:
-                  xml.tagE(QString("note-off  channel=\"%1\" pitch=\"%2\" velo=\"%3\"")
-                     .arg(_channel).arg(_a).arg(_b));
-                  break;
-
-            case ME_CONTROLLER:
-                  if (_a == CTRL_PROGRAM) {
-                        if (_channel == 0) {
-                              xml.tagE(QString("program value=\"%1\"").arg(_b));
-                              }
-                        else {
-                              xml.tagE(QString("program channel=\"%1\" value=\"%2\"")
-                                 .arg(_channel).arg(_b));
-                              }
-                        }
-                  else {
-                        if (_channel == 0) {
-                              xml.tagE(QString("controller ctrl=\"%1\" value=\"%2\"")
-                                 .arg(_a).arg(_b));
-                              }
-                        else {
-                              xml.tagE(QString("controller channel=\"%1\" ctrl=\"%2\" value=\"%3\"")
-                                 .arg(_channel).arg(_a).arg(_b));
-                              }
-                        }
-                  break;
-            default:
-                  qDebug("MidiCoreEvent::write: unknown type");
-                  break;
-            }
-      }
 
 //---------------------------------------------------------
 //   Event::write
@@ -186,32 +139,6 @@ void event_write(Event ev, XmlWriter& xml)
             }
       }
 
-//---------------------------------------------------------
-//   isMuted
-//---------------------------------------------------------
-
-bool nPlayEvent_isMuted(NPlayEvent ev)
-      {
-      const Note* n = ev.note();
-      if (n) {
-            MasterScore* cs = n->masterScore();
-            Staff* staff = n->staff();
-            Instrument* instr = staff->part()->instrument(n->tick());
-            const Channel* a = instr->playbackChannel(n->subchannel(), cs);
-            return a->mute() || a->soloMute() || !staff->playbackVoice(n->voice());
-            }
-
-      const Harmony* h = ev.harmony();
-      if (h) {
-            const Channel* hCh = h->part()->harmonyChannel();
-            if (hCh) { //if there is a harmony channel
-                  const Channel* pCh = h->masterScore()->playbackChannel(hCh);
-                  return pCh->mute() || pCh->soloMute();
-                  }
-            }
-
-      return false;
-      }
 
 //---------------------------------------------------------
 // insert
@@ -229,52 +156,6 @@ void EventList::insert(const Event& e)
                   }
             }
       append(e);
-      }
-
-//---------------------------------------------------------
-//   class EventMap::fixupMIDI
-//---------------------------------------------------------
-void eventMap_fixupMIDI(EventMap& em)
-      {
-      /* track info for each of the 128 possible MIDI notes */
-      struct channelInfo {
-            /* which event the first ME_NOTEON came from */
-            NPlayEvent *event[128];
-            /* how often is the note on right now? */
-            unsigned short nowPlaying[128];
-            };
-
-      /* track info for each channel (on the heap, 0-initialised) */
-      struct channelInfo *info = (struct channelInfo *)calloc(em.highestChannel() + 1, sizeof(struct channelInfo));
-
-      auto it = em.begin();
-      while (it != em.end()) {
-            NPlayEvent& event = it->second;
-            /* ME_NOTEOFF is never emitted, no need to check for it */
-            if (event.type() == ME_NOTEON && !nPlayEvent_isMuted(event)) {
-                  unsigned short np = info[event.channel()].nowPlaying[event.pitch()];
-                  if (event.velo() == 0) {
-                        /* already off (should not happen) or still playing? */
-                        if (np == 0 || --np > 0)
-                              event.setDiscard(1);
-                        else {
-                              /* hoist NOTEOFF to same track as NOTEON */
-                              event.setOriginatingStaff(info[event.channel()].event[event.pitch()]->getOriginatingStaff());
-                              }
-                        }
-                  else {
-                        if (++np > 1)
-                              /* restrike, possibly on different track */
-                              event.setDiscard(info[event.channel()].event[event.pitch()]->getOriginatingStaff() + 1);
-                        info[event.channel()].event[event.pitch()] = &event;
-                        }
-                  info[event.channel()].nowPlaying[event.pitch()] = np;
-                  }
-
-            ++it;
-            }
-
-            free((void *)info);
       }
 
 

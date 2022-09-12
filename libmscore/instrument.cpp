@@ -40,6 +40,54 @@ const std::initializer_list<Channel::Prop> PartChannelSettingsLink::excerptPrope
       };
 
 //---------------------------------------------------------
+//   MidiCoreEvent::write
+//---------------------------------------------------------
+
+void midiCoreEvent_write(MidiCoreEvent ev, XmlWriter& xml)
+      {
+      uchar _type = ev.type();
+      int _a = ev.dataA();
+      int _b = ev.dataB();
+      uchar _channel = ev.channel();
+      switch(_type) {
+            case ME_NOTEON:
+                  xml.tagE(QString("note-on  channel=\"%1\" pitch=\"%2\" velo=\"%3\"")
+                     .arg(_channel).arg(_a).arg(_b));
+                  break;
+
+            case ME_NOTEOFF:
+                  xml.tagE(QString("note-off  channel=\"%1\" pitch=\"%2\" velo=\"%3\"")
+                     .arg(_channel).arg(_a).arg(_b));
+                  break;
+
+            case ME_CONTROLLER:
+                  if (_a == CTRL_PROGRAM) {
+                        if (_channel == 0) {
+                              xml.tagE(QString("program value=\"%1\"").arg(_b));
+                              }
+                        else {
+                              xml.tagE(QString("program channel=\"%1\" value=\"%2\"")
+                                 .arg(_channel).arg(_b));
+                              }
+                        }
+                  else {
+                        if (_channel == 0) {
+                              xml.tagE(QString("controller ctrl=\"%1\" value=\"%2\"")
+                                 .arg(_a).arg(_b));
+                              }
+                        else {
+                              xml.tagE(QString("controller channel=\"%1\" ctrl=\"%2\" value=\"%3\"")
+                                 .arg(_channel).arg(_a).arg(_b));
+                              }
+                        }
+                  break;
+            default:
+                  qDebug("MidiCoreEvent::write: unknown type");
+                  break;
+            }
+      }
+
+//---------------------------------------------------------
 //   write
 //---------------------------------------------------------
 

@@ -37,8 +37,6 @@
 #include "sym.h"
 #include "scoreOrder.h"
 
-#include "mscore/preferences.h"
-
 #ifdef OMR
 #include "omr/omr.h"
 #include "omr/omrpage.h"
@@ -440,7 +438,7 @@ bool MasterScore::saveFile(bool generateBackup)
             // if file was already saved in this session
             // save but don't overwrite backup again
 
-            const QString backupSubdirString = preferences.getString(PREF_APP_BACKUP_SUBFOLDER);
+            const QString backupSubdirString = "."; // preferences.getString(PREF_APP_BACKUP_SUBFOLDER);
             const QString backupDirString = info.path() + QString(QDir::separator()) + backupSubdirString;
             QDir backupDir(backupDirString);
             if (!backupDir.exists()) {
@@ -746,7 +744,7 @@ bool Score::saveStyle(const QString& name)
 //    return true on success
 //---------------------------------------------------------
 
-extern QString revision;
+//extern QString revision;
 
 bool Score::saveFile(QIODevice* f, bool msczFormat, bool onlySelection)
       {
@@ -758,7 +756,7 @@ bool Score::saveFile(QIODevice* f, bool msczFormat, bool onlySelection)
 
       if (!MScore::testMode) {
             xml.tag("programVersion", VERSION);
-            xml.tag("programRevision", revision);
+            //xml.tag("programRevision", revision);
             }
       write(xml, onlySelection);
       xml.etag();
@@ -767,7 +765,7 @@ bool Score::saveFile(QIODevice* f, bool msczFormat, bool onlySelection)
       if (!onlySelection) {
             //update version values for i.e. plugin access
             _mscoreVersion = VERSION;
-            _mscoreRevision = revision.toInt(0, 16);
+            //_mscoreRevision = revision.toInt(0, 16);
             _mscVersion = MSCVERSION;
             }
       return true;
@@ -1024,7 +1022,7 @@ Score::FileError MasterScore::read1(XmlReader& e, bool ignoreVersionError)
                               return FileError::FILE_OLD_300_FORMAT;
                         }
 
-                  if (created() && !preferences.getString(PREF_SCORE_STYLE_DEFAULTSTYLEFILE).isEmpty()) {
+                  if (created() /* && !preferences.getString(PREF_SCORE_STYLE_DEFAULTSTYLEFILE).isEmpty() */) {
                         setStyle(MScore::defaultStyle());
                         }
                   else {

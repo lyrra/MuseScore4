@@ -42,7 +42,6 @@ typedef EventList::const_iterator ciEvent;
 void midiCoreEvent_write(MidiCoreEvent ev, XmlWriter& xml);
 void event_write(Event ev, XmlWriter& xml);
 bool nPlayEvent_isMuted(NPlayEvent ev);
-void eventMap_fixupMIDI(EventMap& e);
 
 }
 #endif

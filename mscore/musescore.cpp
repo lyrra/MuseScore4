@@ -7058,7 +7058,8 @@ bool MuseScore::saveMp3(Score* score, QIODevice* device, bool& wasCanceled)
                              score,
                              useCurrentSynthesizerState,
                              preferences.getInt(PREF_EXPORT_AUDIO_SAMPLERATE),
-                             preferences.getInt(PREF_EXPORT_MP3_BITRATE)
+                             preferences.getInt(PREF_EXPORT_MP3_BITRATE),
+                             preferences.getBool(PREF_UI_APP_USENATIVEDIALOGS)
                             )) {
             case -1:
             ok = false;

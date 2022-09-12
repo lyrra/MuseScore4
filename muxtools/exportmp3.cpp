@@ -57,7 +57,7 @@ MP3Exporter::~MP3Exporter()
 //   findLibrary
 //---------------------------------------------------------
 
-bool MP3Exporter::findLibrary()
+bool MP3Exporter::findLibrary(bool useNativeDialogs)
       {
       QString path;
       QString name;
@@ -80,8 +80,7 @@ bool MP3Exporter::findLibrary()
            path,
            getLibraryTypeString(),
            0,
-           preferences.getBool(PREF_UI_APP_USENATIVEDIALOGS) ? QFileDialog::Options() : QFileDialog::DontUseNativeDialog
-           );
+           useNativeDialogs ? QFileDialog::Options() : QFileDialog::DontUseNativeDialog);
 
       if (libPath.isEmpty())
             return false;
@@ -102,7 +101,7 @@ bool MP3Exporter::findLibrary()
 //   loadLibrary
 //---------------------------------------------------------
 
-bool MP3Exporter::loadLibrary(AskUser askuser)
+bool MP3Exporter::loadLibrary(AskUser askuser, bool useNativeDialogs)
       {
       if (validLibraryLoaded()) {
             freeLibrary();
@@ -140,7 +139,7 @@ bool MP3Exporter::loadLibrary(AskUser askuser)
                    "You only need to do this once.\n\n"
                    "Would you like to locate %2 now?").arg(getLibraryName(), getLibraryName()),
                    QMessageBox::Yes|QMessageBox::No, QMessageBox::NoButton);
-            if (ret == QMessageBox::Yes && findLibrary()) {
+            if (ret == QMessageBox::Yes && findLibrary(useNativeDialogs)) {
                   mLibraryLoaded = initLibrary(mLibPath);
                   }
             }

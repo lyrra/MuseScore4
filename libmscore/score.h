@@ -600,6 +600,7 @@ class Score : public QObject, public ScoreElement {
 
       virtual ElementType type() const override { return ElementType::SCORE; }
 
+      bool cmdActive;
       void rebuildBspTree();
       bool noStaves() const         { return _staves.empty(); }
       void insertPart(Part*, int);
@@ -751,6 +752,7 @@ class Score : public QObject, public ScoreElement {
       bool checkTimeDelete(Segment*, Segment*);
       void timeDelete(Measure*, Segment*, const Fraction&);
 
+      void maybeStartCmd(); // start undoable command, if not already started
       void startCmd();                          // start undoable command
       void endCmd(bool rollback = false);       // end undoable command
       void update() { update(true); }
@@ -1046,7 +1048,6 @@ class Score : public QObject, public ScoreElement {
       void splitStaff(int staffIdx, int splitPoint);
       QString tmpName() const           { return _tmpName;      }
       void setTmpName(const QString& s) { _tmpName = s;         }
-      bool processMidiInput();
       Lyrics* addLyrics();
       FiguredBass* addFiguredBass();
       void expandVoice(Segment* s, int track);

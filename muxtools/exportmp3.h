@@ -151,8 +151,8 @@ class MP3Exporter {
       MP3Exporter();
       virtual ~MP3Exporter();
 
-      bool findLibrary();
-      bool loadLibrary(AskUser askuser);
+      bool findLibrary(bool useNativeDialogs);
+      bool loadLibrary(AskUser askuser, bool useNativeDialogs);
       bool validLibraryLoaded();
 
       /* These global settings keep state over the life of the object */

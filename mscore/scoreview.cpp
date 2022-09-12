@@ -96,6 +96,8 @@
 #include "libmscore/textline.h"
 #include "libmscore/shape.h"
 
+#include "muxseqclient.h"
+
 #ifdef AVSOMR
 #include "avsomr/avsomr.h"
 #include "avsomr/avsomrdrawer.h"
@@ -2906,8 +2908,20 @@ void ScoreView::cmd(const char* s)
             QAction* a = getAction(cmd);
             _score->cmd(a, editData);
             }
-      if (_score->processMidiInput())
+      for (auto* note : processMidiInput(_score)) {
+            muxseq_start_note(note->channel, note->pitch, note->velo, note->x);
+            }
+
+      if (_score->cmdActive) {
+            _score->endCmd();
+            //after relayout
+            Element* e = _score->inputState().cr();
+            if (e) {
+                  for(MuseScoreView* v : qAsConst(_score->getViewer()))
+                        v->adjustCanvasPosition(e, false);
+                  }
             mscore->endCmd();
+            }
       }
 
 //---------------------------------------------------------

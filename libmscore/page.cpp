@@ -32,7 +32,6 @@
 
 namespace Ms {
 
-extern QString revision;
 
 //---------------------------------------------------------
 //   Page
@@ -473,18 +472,14 @@ QString Page::replaceTextMacros(const QString& s) const
                               else
                                     d += score()->mscoreVersion();
                               break;
-                        case 'r':
-                              if (score()->dirty()) {
-                                    d += revision;
-                                    }
-                              else {
+                        case 'r': {
                                     int rev = score()->mscoreRevision();
                                     if (rev > 99999)  // MuseScore 1.3 is decimal 5702, 2.0 and later uses a 7-digit hex SHA
                                           d += QString::number(rev, 16);
                                     else
                                           d += QString::number(rev, 10);
-                                    }
                               break;
+                              }
                         case '$':
                               d += '$';
                               break;

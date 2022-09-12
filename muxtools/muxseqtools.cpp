@@ -13,12 +13,12 @@ namespace Ms {
 //   canSaveMp3
 //---------------------------------------------------------
 
-bool muxseq_canSaveMp3() {
+bool muxseq_canSaveMp3(bool useNativeDialogs) {
 #ifndef USE_LAME
     return false;
 #else
     MP3Exporter exporter;
-    if (!exporter.loadLibrary(MP3Exporter::AskUser::NO)) {
+    if (!exporter.loadLibrary(MP3Exporter::AskUser::NO, useNativeDialogs)) {
         qDebug("Could not open MP3 encoding library!");
         return false;
     }
@@ -35,10 +35,11 @@ int muxseq_saveMp3(QIODevice* device,
                    Score* score,
                    bool useCurrentSynthesizerState, 
                    int sampleRate,
-                   int bitRate) {
+                   int bitRate,
+                   bool useNativeDialogs) {
 
     MP3Exporter exporter;
-    if (!exporter.loadLibrary(MP3Exporter::AskUser::MAYBE)) {
+    if (!exporter.loadLibrary(MP3Exporter::AskUser::MAYBE, useNativeDialogs)) {
         return -1;
     }
     if (!exporter.validLibraryLoaded()) {

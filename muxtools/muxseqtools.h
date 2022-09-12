@@ -8,6 +8,7 @@ int muxseq_saveMp3(QIODevice* device,
                    Score* score,
                    bool useCurrentSynthesizerState, 
                    int sampleRate,
-                   int bitRate);
+                   int bitRate,
+                   bool useNativeDialogs);
 } // namespace Ms
 #endif
