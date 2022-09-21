@@ -7689,12 +7689,19 @@ static void initZitaResources()
       }
 
 namespace Ms {
+
+void g_logstr_func (char *str) {
+      qDebug(str);
+      }
+
 //---------------------------------------------------------
 //   runApplication
 //---------------------------------------------------------
 
 int runApplication(int& argc, char** av)
       {
+      g_logstr = g_logstr_func;
+
 #ifndef NDEBUG
       qSetMessagePattern("%{file}:%{function}: %{message}");
       Ms::checkStyles();

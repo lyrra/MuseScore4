@@ -5,7 +5,7 @@
 
 namespace Ms {
 
-extern void _logstr (char *str);
+void (*g_logstr) (char *str);
 thread_local char _logbuf[256];
 
 
@@ -47,7 +47,7 @@ void _log_write () {
     get_timestamp(t);
     int n = overlap_strcat(t, _logbuf);
     if (n > 0) {
-        _logstr(t);
+        (*g_logstr)(t);
     }
 //    fflush(stdout);
 //    int fd = fileno(stdout);
@@ -56,6 +56,18 @@ void _log_write () {
 //#else
 //  fsync(fd);
 //#endif
+}
+FILE *g_logfp = NULL;
+
+void _logstr (char *str) {
+    qDebug(str);
+    if (! g_logfp) g_logfp = fopen("ms.log", "w");
+    if (g_logfp) {
+        const char *nl = "\n";
+        fwrite(str, strlen(str), 1, g_logfp);
+        fwrite(nl, 1, 1, g_logfp);
+        fflush(g_logfp);
+    }
 }
 
 const char* muxseq_msg_type_info (MuxseqMsgType type) {

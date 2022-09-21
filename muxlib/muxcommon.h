@@ -26,6 +26,7 @@
 
 namespace Ms {
 
+extern void (*g_logstr) (char *str);
 extern thread_local char _logbuf[256];
 void _log_write ();
 

@@ -14,6 +14,8 @@
 #include <chrono>
 #include <cstring>
 #include "mux.h"
+#include "muxcommon.h"
+
 namespace Ms {
 
 #define MUX_SYNC_MSLEEP 100
@@ -25,9 +27,14 @@ void muxseq_threads_start();
 
 } // end of namespace Ms
 
+void g_logstr_func (char *str) {
+    qDebug(str);
+}
+
 int main(int argc, char **argv)
 {
     fprintf(stderr, "muxseq initializing\n"); std::fflush(stderr);
+    Ms::g_logstr = g_logstr_func;
     Ms::muxseq_threads_start();
     while(1){
         std::this_thread::sleep_for(std::chrono::microseconds(100000));

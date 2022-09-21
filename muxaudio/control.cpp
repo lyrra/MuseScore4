@@ -12,6 +12,7 @@
 #include <chrono>
 #include <iostream>
 #include "mux.h"
+#include "muxcommon.h"
 
 namespace Ms {
 
@@ -79,10 +80,16 @@ void muxaudio_threads_stop()
     muxaudio_audio_process_stop();
 }
 
+
 } // end of Ms namespace
+
+void g_logstr_func (char *str) {
+    qDebug(str);
+}
 
 int main(int argc, char **argv)
 {
+    Ms::g_logstr = g_logstr_func;
     Ms::muxaudio_threads_start();
     while(1){
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
