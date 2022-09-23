@@ -307,6 +307,7 @@ add_library(mscoreapp STATIC
 
       # MUX
       ../muxlib/muxseq_client.h ../muxlib/muxseq_client.cpp
+      ../muxlib/muxseq_net.h ../muxlib/muxseq_net.cpp
       ../muxlib/muxseqsig.h     ../muxlib/muxseqsig.cpp
       ../muxlib/muxseqlib.h     ../muxlib/muxseqlib.cpp
 
@@ -332,8 +333,6 @@ target_link_libraries(mscoreapp
       effects
       ${MUSESCORE_LIBLINK}
       mux
-      muxlib
-      muxtools
       muxseqclient
       qzip
       importexport
