@@ -116,12 +116,6 @@ void muxseq_exit() {
     muxseq_send(MsgTypeSeqExit);
 }
 
-bool muxseq_seq_alive() {
-    //FIX: perhaps locally cache this?
-    muxseq_query(MsgTypeSeqAlive);
-    return true;
-}
-
 bool muxseq_seq_init (bool hotPlug) {
     muxseq_query(MsgTypeSeqInit, hotPlug);
     return true;

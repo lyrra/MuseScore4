@@ -5,14 +5,6 @@
 namespace Ms {
 
 
-bool muxseq_seq_alive() {
-    //if (seq == 0) {
-    //    return false;
-    //}
-    //FIX: send a query to muxseq-zmq
-    return true;
-}
-
 void muxseq_send_event(NPlayEvent event) {
     //FIX: send the event over muxseq-zmq
     //seq->sendEvent(event);
