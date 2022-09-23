@@ -28,9 +28,11 @@ else (NOT MSVC)
 endif (NOT MSVC)
 
 include_directories (
+      ${QT_INCLUDES}
       ${PROJECT_SOURCE_DIR}
       ${CMAKE_CURRENT_BINARY_DIR}
       ${CMAKE_CURRENT_LIST_DIR}
+      ${PROJECT_SOURCE_DIR}/mux
       ${PROJECT_SOURCE_DIR}/muxlib
       ${PROJECT_SOURCE_DIR}/muxseq
       )
@@ -51,6 +53,7 @@ add_library (${MODULE} SHARED
       exports/exportmidi.h exports/exportmidi.cpp
       synthesizergui.h synthesizergui.cpp
       midi/midifile.h midi/midifile.cpp
+      ../muxlib/muxseq_net.h ../muxlib/muxseq_net.cpp
       #${FLUID_GUI_SRC}
       #${ZERBERUS_GUI_SRC}
       ${LAME_SRC}
