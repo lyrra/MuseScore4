@@ -26,7 +26,7 @@ include_directories (
       ${PROJECT_SOURCE_DIR}/thirdparty  # because include "mscore/musescore.h"
       )
 
-add_library (${MODULE} STATIC
+add_library (${MODULE} SHARED
       ${_all_h_file}
       ${PCH}
       midi/midipatch.h
