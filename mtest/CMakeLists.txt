@@ -20,9 +20,14 @@ if (MSVC)
 endif (MSVC)
 
 include_directories(
+      ${QT_INCLUDES}
       ${PROJECT_BINARY_DIR}
       ${PROJECT_SOURCE_DIR}
       ${PROJECT_SOURCE_DIR}/thirdparty
+      ${PROJECT_SOURCE_DIR}/muxlib
+      ${PROJECT_SOURCE_DIR}/muxtools
+      ${PROJECT_SOURCE_DIR}/muxseq
+      ${PROJECT_SOURCE_DIR}/s7
       )
 link_directories(${CMAKE_SOURCE_DIR}/lib)
 

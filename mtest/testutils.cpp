@@ -22,7 +22,7 @@
 #include "mscore/musescore.h"
 #include "mscore/preferences.h"
 #include "libmscore/page.h"
-#include "audio/midi/msynthesizer.h"
+#include "msynthesizer.h"
 #include "libmscore/musescoreCore.h"
 #include "mscore/shortcut.h"
 #include "libmscore/xml.h"
@@ -340,7 +340,7 @@ void MTest::initMTest()
 //      PDPI = 120;
       MScore::noGui = true;
 
-      synti  = new MasterSynthesizer();
+      //synti  = new MasterSynthesizer();
       mscore = new MScore;
       new MuseScoreCore;
       mscore->init();
