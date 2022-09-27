@@ -88,7 +88,6 @@ set (SOURCE_LIB
       ${PROJECT_SOURCE_DIR}/muxtools/exports/exportmidi.h
       ${PROJECT_SOURCE_DIR}/mscore/preferences.cpp
       ${PROJECT_SOURCE_DIR}/mscore/shortcut.cpp
-      ${PROJECT_SOURCE_DIR}/mscore/stringutils.cpp
       ${PROJECT_SOURCE_DIR}/thirdparty/rtf2html/fmt_opts.cpp        # Required by capella.cpp and capxml.cpp
       ${PROJECT_SOURCE_DIR}/thirdparty/rtf2html/rtf2html.cpp        # Required by capella.cpp and capxml.cpp
       ${PROJECT_SOURCE_DIR}/thirdparty/rtf2html/rtf_keyword.cpp     # Required by capella.cpp and capxml.cpp
@@ -151,7 +150,7 @@ if (GUILE)
       target_link_libraries(
             mtest-guile
             ${QT_LIBRARIES}
-            "-L${PROJECT_BINARY_DIR}/libmscore -lmusescore -Wl,-rpath -Wl,${PROJECT_BINARY_DIR}/libmscore"
+            musescore
             mscore_freetype
             testutils
             testResources
@@ -182,11 +181,9 @@ target_link_libraries(
       ${QT_LIBRARIES}
       ${QT_QTTEST_LIBRARY}
       testResources
-      libmscore
-      audio
       mscoreapp
       qzip
-      )
+      ofqf)
 
 set_target_properties (
       mtest

@@ -37,11 +37,10 @@ target_link_libraries(
       ${QT_LIBRARIES}
       ${QT_QTTEST_LIBRARY}
       testResources
-      "-L${PROJECT_BINARY_DIR}/libmscore -lmusescore -Wl,-rpath -Wl,${PROJECT_BINARY_DIR}/libmscore"
-      libmscore
-      audio
+      musescore
       mscoreapp
       qzip
+      ofqf
       )
 
 if (OMR)
