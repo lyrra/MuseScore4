@@ -11,7 +11,7 @@
   (methods
     (apply undoAddElement (("Element*" goo)))
     (apply select (("Measure*" goo) (sym SelectType opt) (int staff opt)))
-    (apply setGraceNote (("Chord*" goo)
+    (apply setGraceNote (("Ms::Chord*" goo)
                          (int pitch)
                          (sym NoteType)
                          (int division)))
@@ -57,7 +57,7 @@
     ; get -- methods that acts like getters (but has no complementary setter)
     (get upNote     () ("Ms::Note*" goo))
     (get downNote   () ("Ms::Note*" goo))
-    (get graceNotes () ("QVector<Chord*>*" goo) "&(o->graceNotes())")
+    (get graceNotes () ("QVector<Ms::Chord*>*" goo) "&(o->graceNotes())")
     (get notes      () ("std::vector<Note*>*" goo) "&(o->notes())")
     (get tremolo    () ("Tremolo*" goo))
     (get durationTypeTicks () ("Ms::Fraction" stack))

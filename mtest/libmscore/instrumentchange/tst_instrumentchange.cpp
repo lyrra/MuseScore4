@@ -21,7 +21,7 @@
 #include "libmscore/part.h"
 #include "libmscore/undo.h"
 
-#include "audio/midi/midipatch.h"
+#include "midi/midipatch.h"
 
 #define DIR QString("libmscore/instrumentchange/")
 

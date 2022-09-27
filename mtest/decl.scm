@@ -351,7 +351,7 @@ extern Ms::MTest* g_mtest;
          `(emit-pop-arg-goo ,cvartype ,cvarname)
          (emit-stat-fmt "~a ~a = ~a" crestype cresvarname meth)
          `(emit-return-goo ,cresvarname ,(format #f "static_cast<uint64_t>(~a)" gootype)))))))
-  '((ms-chords-first "QVector<Chord*>*" "chords" "chords->first()" "Ms::Chord*" "chord" "GOO_TYPE::CHORD")
+  '((ms-chords-first "QVector<Ms::Chord*>*" "chords" "chords->first()" "Ms::Chord*" "chord" "GOO_TYPE::CHORD")
     (ms-notes-front "std::vector<Note*>*" "notes" "notes->front()" "Note*" "note" "GOO_TYPE::NOTE")))
 
 ; emit simple iterators

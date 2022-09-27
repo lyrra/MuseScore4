@@ -109,7 +109,7 @@ void TestBeam::beamStemDir()
       QVERIFY(score);
       Measure* m1 = score->firstMeasure();
       ChordRest* cr = toChordRest(m1->findSegment(SegmentType::ChordRest, m1->tick())->element(0));
-      Chord* c2 = toChord(cr->beam()->elements()[1]);
+      Ms::Chord* c2 = toChord(cr->beam()->elements()[1]);
       c2->setStemDirection(Direction::UP);
       score->update();
       score->doLayout();
@@ -129,7 +129,7 @@ void TestBeam::flipBeamStemDir()
       QVERIFY(score);
       Measure* m1 = score->firstMeasure();
       ChordRest* cr = toChordRest(m1->findSegment(SegmentType::ChordRest, m1->tick())->element(0));
-      Chord* c2 = toChord(cr->beam()->elements()[1]);
+      Ms::Chord* c2 = toChord(cr->beam()->elements()[1]);
       cr->beam()->setBeamDirection(Direction::UP);
       c2->setStemDirection(Direction::DOWN);
       score->update();
