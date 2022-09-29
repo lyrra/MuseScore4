@@ -39,6 +39,7 @@ include_directories(
       ${PROJECT_SOURCE_DIR}/global
       ${PROJECT_SOURCE_DIR}/mux
       ${PROJECT_SOURCE_DIR}/muxlib
+      ${PROJECT_SOURCE_DIR}/muxtools
       )
 
 set (SOURCE_FILES
