@@ -80,13 +80,16 @@ jobs:
       with:
         name: mingw-w64-musescore3
         path: musescore3-mingw64.zip
+    - name: version
+      run: echo "::set-output name=version::$(date +%Y%m%d)"
+      id: version
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
+        tag_name: release-${{ steps.version.outputs.version }}
         release_name: ${{ steps.version.outputs.version }}
         draft: false
         prerelease: false
