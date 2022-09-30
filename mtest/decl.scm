@@ -80,6 +80,13 @@ extern Ms::MTest* g_mtest;
                       (void*) new TDuration(string_to_DurationType(dur)));
 "))))
 
+(emit-cfun '(ms-make-score) 0 (lambda () (format %c "
+    return c_make_goo(sc,
+                      static_cast<uint64_t>(0 /*GOO_TYPE::CHORD*/),
+                      s7_nil(sc),
+                      new Ms::Score());
+")))
+
 (emit-cfun '(ms-make-chord) 0 (lambda () (format %c "
     return c_make_goo(sc,
                       static_cast<uint64_t>(GOO_TYPE::CHORD),

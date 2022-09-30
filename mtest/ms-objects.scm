@@ -9,6 +9,7 @@
 (define-object score
   (c-type "Ms::MasterScore")
   (methods
+    (apply appendMeasures ((int)))
     (apply undoAddElement (("Element*" goo)))
     (apply select (("Measure*" goo) (sym SelectType opt) (int staff opt)))
     (apply setGraceNote (("Ms::Chord*" goo)
@@ -29,6 +30,7 @@
     (set upDown ((bool) (sym UpDownMode)))
     (get firstMeasure () ("Ms::Measure*" goo ELEMENT_MEASURE))
     (get inputState   () ("Ms::InputState*") ref)
+    (get nstaves      () (int))
     (get tick2segment (("Ms::Fraction*" deref) (bool) (sym SegmentType)) ("Ms::Segment*"))
     (get (tick2segment-1 tick2segment) (("Ms::Fraction*" deref)) ("Ms::Segment*"))
     (get/set selection ("Ms::Selection*") ref)
@@ -112,4 +114,6 @@
   (c-type "Ms::Selection")
   (methods
     (get noteList () ("std::vector<Note*>" stack))
+    (get canCopy () (bool))
+    (get mimeType () ("QString" stack))
     ))

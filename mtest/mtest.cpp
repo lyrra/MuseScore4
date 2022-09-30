@@ -32,6 +32,7 @@ const char* tests[] = {
       "libmscore/tst_note.scm",
       "libmscore/tst_hairpin.scm",
       "libmscore/tst_breath.scm",
+      "libmscore/tst_copypaste.scm",
 #if 1
       "libmscore/readwriteundoreset/tst_readwriteundoreset",
       "libmscore/keysig/tst_keysig",

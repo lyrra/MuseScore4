@@ -260,10 +260,13 @@ add_custom_target(mtest_files ALL
 
     COMMAND ${PROJECT_BINARY_DIR}/s7/s7 -f ${CMAKE_CURRENT_SOURCE_DIR}/testgen.scm -- -l ${PROJECT_SOURCE_DIR}/s7 ${CMAKE_CURRENT_SOURCE_DIR}/libmscore/tst_breath.scm -o ${CMAKE_CURRENT_BINARY_DIR}/libmscore/tst_breath.scm
 
+    COMMAND ${PROJECT_BINARY_DIR}/s7/s7 -f ${CMAKE_CURRENT_SOURCE_DIR}/testgen.scm -- -l ${PROJECT_SOURCE_DIR}/s7 ${CMAKE_CURRENT_SOURCE_DIR}/libmscore/tst_copypaste.scm -o ${CMAKE_CURRENT_BINARY_DIR}/libmscore/tst_copypaste.scm
+
     DEPENDS libmscore/tst_element.scm
             libmscore/tst_note.scm
             libmscore/tst_hairpin.scm
             libmscore/tst_breath.scm
+            libmscore/tst_copypaste.scm
 )
 
 subdirs (
