@@ -1,15 +1,12 @@
 name: CI_Windows
 
 on:
-  pull_request:
-    branches:
-    - master
   schedule:
     - cron: '0 4 */7 * *'
   workflow_dispatch:
     inputs:
       build_mode:
-        description: 'Build mode: devel_build, nightly_build, testing_build, stable_build'
+        description: 'Build mode: devel_build, stable_build'
         required: true
         default: 'devel_build'
       publish:
@@ -63,23 +60,27 @@ jobs:
       uses: actions/checkout@v3
       with:
         ref: master
+        path: m
     - name: Setup
       shell: msys2 {0}
       run: |
+        cd m
         ./build/ci/tools/setup.sh
     - name: Build
       shell: msys2 {0}
       run: |
+        cd m
         ./build/ci/tools/build_mingw.sh
     - name: Package
       shell: msys2 {0}
       run: |
+        cd m
         ./build/ci/tools/package.sh
     - name: Artifact
       uses: actions/upload-artifact@v3
       with:
         name: mingw-w64-musescore3
-        path: musescore3-mingw64.zip
+        path: m/musescore3-mingw64.zip
     - name: version
       run: echo "::set-output name=version::$(date +%Y%m%d)"
       id: version
@@ -100,7 +101,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-        asset_path: ./musescore3-mingw64.zip
+        asset_path: ./m/musescore3-mingw64.zip
         asset_name: musescore3-mingw64.zip
         asset_content_type: application/zip
 
