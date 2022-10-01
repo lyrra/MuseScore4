@@ -64,7 +64,10 @@ jobs:
     - name: Setup
       shell: msys2 {0}
       run: |
+        ls -ltr
+        find build
         cd m
+        ls -ltr
         ../build/ci/tools/setup.sh
     - name: Build
       shell: msys2 {0}
