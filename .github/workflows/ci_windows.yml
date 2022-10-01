@@ -56,7 +56,12 @@ jobs:
           mingw-w64-x86_64-libogg
           mingw-w64-x86_64-lame
           mingw-w64-x86_64-jack2
-    - name: Clone repository
+    - name: Clone repo funnel
+      uses: actions/checkout@v3
+      with:
+        ref: funnel
+        path: f
+    - name: Clone repo master
       uses: actions/checkout@v3
       with:
         ref: master
@@ -68,17 +73,17 @@ jobs:
         find build
         cd m
         ls -ltr
-        ../build/ci/tools/setup.sh
+        ../f/build/ci/tools/setup.sh
     - name: Build
       shell: msys2 {0}
       run: |
         cd m
-        ../build/ci/tools/build_mingw.sh
+        ../f/build/ci/tools/build_mingw.sh
     - name: Package
       shell: msys2 {0}
       run: |
         cd m
-        ../build/ci/tools/package.sh
+        ../f/build/ci/tools/package.sh
     - name: Artifact
       uses: actions/upload-artifact@v3
       with:
