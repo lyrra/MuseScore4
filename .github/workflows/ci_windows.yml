@@ -70,7 +70,6 @@ jobs:
       shell: msys2 {0}
       run: |
         ls -ltr
-        find build
         cd m
         ls -ltr
         ../f/build/ci/tools/setup.sh
