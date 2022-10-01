@@ -3,6 +3,8 @@
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+include (${PROJECT_SOURCE_DIR}/build/gch.cmake)
+
 include_directories(
       ${QT_INCLUDES}
       ${CMAKE_CURRENT_BINARY_DIR}
@@ -150,7 +152,6 @@ set(_all_h_file "${PROJECT_BINARY_DIR}/all.h")
 add_library(muxseqclient STATIC
     ${_all_h_file}
     ${PCH}
-    ${INCS}
     midi.cpp
     ) 
 
