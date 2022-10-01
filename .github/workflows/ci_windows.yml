@@ -65,17 +65,17 @@ jobs:
       shell: msys2 {0}
       run: |
         cd m
-        ./build/ci/tools/setup.sh
+        ../build/ci/tools/setup.sh
     - name: Build
       shell: msys2 {0}
       run: |
         cd m
-        ./build/ci/tools/build_mingw.sh
+        ../build/ci/tools/build_mingw.sh
     - name: Package
       shell: msys2 {0}
       run: |
         cd m
-        ./build/ci/tools/package.sh
+        ../build/ci/tools/package.sh
     - name: Artifact
       uses: actions/upload-artifact@v3
       with:
