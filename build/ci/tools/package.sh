@@ -18,7 +18,13 @@ find . | \
           -e 'muxseq/muxseq.exe' \
           -e 'muxtools/libmuxtools.a' \
           -e 'muxlib/libmuxlib.a' \
-          -e 'libmscore/liblibmscore.a' \
+          -e 'muxlib/libmuxlib.dll' \
+          -e 'muxlib/libmuxlib.dll.a' \
+          -e 'muxtools/libmuxtools.a' \
+          -e 'muxtools/libmuxtools.dll' \
+          -e 'muxtools/libmuxtools.dll.a' \
+          -e 'libmscore/libmusescore.dll.a' \
+          -e 'libmscore/libmusescore.dll' \
           -e 'mscore/libmscoreapp.a' \
           -e 'main/MuseScore3.exe' \
           -e 'main/libMuseScore3.dll.a' \
