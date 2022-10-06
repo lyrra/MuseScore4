@@ -111,4 +111,19 @@ jobs:
         asset_path: ./m/musescore3-mingw64.zip
         asset_name: musescore3-mingw64.zip
         asset_content_type: application/zip
-
+  upload-nightly:
+    permissions:
+      contents: write
+    needs:
+      - build_x64
+    if: github.ref == 'refs/heads/funnel'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: mingw-w64-musescore3
+      - name: Upload musescore release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload nightly-x86_64 musescore3-* --clobber -R ${{ github.repository }}

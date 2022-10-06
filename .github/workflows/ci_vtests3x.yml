@@ -33,22 +33,14 @@ jobs:
         elif [ -n "${{ github.event.pull_request.base.sha }}" ]; then
         export BASEREF=${{ github.event.pull_request.base.sha }}
         fi
-        if [ -z "$BASEREF" ]; then
-        export found=0
-        else
-        export found=1
-        fi
+        if [ -z "$BASEREF" ]; then export found=0; else export found=1; fi
         echo "BASEREF=$BASEREF" >> $GITHUB_ENV
         echo "found=$found" >> $GITHUB_ENV
     - name: Retrieve base commit for push commit
       if: github.event_name == 'push'
       run: |
         export BASEREF=$( git show -s --pretty=%P ${{ github.sha }} | head -c 10 )
-        if [ -z "$BASEREF" ]; then
-        export found=0
-        else
-        export found=1
-        fi
+        if [ -z "$BASEREF" ]; then export found=0; else export found=1; fi
         echo "BASEREF=$BASEREF" >> $GITHUB_ENV
         echo "found=$found" >> $GITHUB_ENV
     - name: Install dependencies

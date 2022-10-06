@@ -1,0 +1,47 @@
+name: CI_utests
+
+on:
+  schedule:
+    - cron: '0 4 */1 * *' # At 04:00 on every day-of-month
+  workflow_dispatch:
+    inputs:
+      build_mode:
+        description: 'Test mode: all, modules'
+        required: true
+        default: 'all'
+
+jobs:
+  run_tests:
+    runs-on: ubuntu-latest
+    env:
+        # Enable AddressSanitizer in the mtest build
+        CFLAGS: "-fsanitize=address -fno-omit-frame-pointer"
+        CXXFLAGS: "-fsanitize=address -fno-omit-frame-pointer"
+    steps:
+    - name: Cancel Previous Runs
+      uses: styfle/cancel-workflow-action@0.9.1
+      with:
+        access_token: ${{ github.token }}
+    - name: Clone repo funnel
+      uses: actions/checkout@v3
+      with:
+        ref: funnel
+        path: f
+    - name: Clone repo master
+      uses: actions/checkout@v3
+      with:
+        ref: master
+        path: m
+    - name: Setup environment
+      run: |
+        cd m
+        ../f/build/ci/linux/setup.sh
+    - name: Build
+      run: |
+        cd m
+        mkdir -p build.debug
+        ../f/build/ci/build_mtest.sh -n ${{ github.run_id }}
+    - name: Run tests 
+      run: |
+        cd m
+        ../f/build/ci//run-mtests.sh
