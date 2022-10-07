@@ -67,6 +67,12 @@ apt_packages_standard=(
   libqt5help5
   qtbase5-dev
   portaudio19-dev
+  guile-3.0-dev
+  guile-3.0-libs
+  guile-bytestructures
+  guile-json
+  guile-zstd
+  guile-sqlite3
   make
   cmake
   gcc
