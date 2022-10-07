@@ -68,6 +68,7 @@ apt_packages_standard=(
   libqt5help5
   qtbase5-dev
   qtdeclarative5-dev
+  qttools5-dev
   portaudio19-dev
   guile-3.0-dev
   guile-3.0-libs
