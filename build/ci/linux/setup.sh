@@ -43,6 +43,7 @@ apt_packages_standard=(
   # Alphabetical order please!
   curl
   libasound2-dev 
+  libfluidsynth-dev
   libfontconfig1-dev
   libfreetype6-dev
   libfreetype6
@@ -54,6 +55,7 @@ apt_packages_standard=(
   libpulse-dev
   libsndfile1-dev
   libzmq3-dev
+  qtbase5-dev
   portaudio19-dev
   make
   cmake
@@ -69,7 +71,7 @@ apt_packages_runtime=(
   libegl1-mesa-dev
   libodbc1
   libpq-dev
-  libssl1.0.0
+  libssl-dev
   libxcomposite-dev
   libxcursor-dev
   libxi-dev
