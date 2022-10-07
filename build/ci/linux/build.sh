@@ -2,76 +2,28 @@
 
 echo "Build Linux MuseScore AppImage"
 
-#set -x
-trap 'echo Build failed; exit 1' ERR
+mkdir build.debug 2> /dev/null
+cd build.debug || exit 1
 
-df -h .
+cmake -G "Unix Makefiles" \
+      -DCMAKE_INSTALL_PREFIX=../win32install \
+      -DCMAKE_BUILD_TYPE=DEBUG \
+      -DVERBOSE=1 \
+      -DBUILD_SHARED=ON \
+      -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
+      -DCMAKE_MAKE_PROGRAM=mingw32-make.exe \
+      -DBUILD_FOR_WINSTORE=OFF \
+      -DLOGLEVEL=1 \
+      ..
+      #-DCMAKE_TOOLCHAIN_FILE=../tc-mingw.cmake  \
 
-ARTIFACTS_DIR=build.artifacts
-BUILD_MODE=""
-SUFFIX="" # appended to `mscore` command name to avoid conflicts (e.g. `mscore-dev`)
-OPTIONS=""
-
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        -n|--number) BUILD_NUMBER="$2"; shift ;;
-        --build_mode) BUILD_MODE="$2"; shift ;;
-        *) echo "Unknown parameter passed: $1"; exit 1 ;;
-    esac
-    shift
-done
-
-if [ -z "$BUILD_MODE" ]; then BUILD_MODE=$(cat $ARTIFACTS_DIR/env/build_mode.env); fi
-
-MUSESCORE_BUILD_CONFIG=dev
-
-case "${BUILD_MODE}" in
-"devel_build")   MUSESCORE_BUILD_CONFIG=dev; SUFFIX=-dev;;
-"testing_build") MUSESCORE_BUILD_CONFIG=testing; SUFFIX=-testing;;
-"stable_build")  MUSESCORE_BUILD_CONFIG=release; SUFFIX="";;
-"mtests")        MUSESCORE_BUILD_CONFIG=dev; BUILDTYPE=installdebug; OPTIONS="USE_SYSTEM_FREETYPE=ON UPDATE_CACHE=FALSE PREFIX=$ARTIFACTS_DIR/software";;
-esac
-
-if [ "${BUILDTYPE}" == "portable" ]; then
-  SUFFIX="-portable${SUFFIX}" # special value needed for CMakeLists.txt
-fi
-
-echo "MUSESCORE_BUILD_CONFIG: $MUSESCORE_BUILD_CONFIG"
-echo "BUILD_NUMBER: $BUILD_NUMBER"
-echo "BUILD_MODE: $BUILD_MODE"
-echo "BUILDTYPE: $BUILDTYPE"
-echo "OPTIONS: $OPTIONS"
-echo "BUILD_UI_MU4: $BUILD_UI_MU4"
-
-echo "=== ENVIRONMENT === "
-
-cat ./../musescore_environment.sh
-source ./../musescore_environment.sh
-
-echo " "
-${CXX} --version
-${CC} --version
-echo " "
-cmake --version
-echo " "
-
-echo "=== BUILD ==="
-
-MUSESCORE_REVISION=$(git rev-parse --short=7 HEAD)
-
-make CPUS=2 $OPTIONS \
-     MUSESCORE_BUILD_CONFIG=$MUSESCORE_BUILD_CONFIG \
-     MUSESCORE_REVISION=$MUSESCORE_REVISION \
-     BUILD_NUMBER=$BUILD_NUMBER \
-     TELEMETRY_TRACK_ID=$TELEMETRY_TRACK_ID \
-     SUFFIX=$SUFFIX \
-     $BUILDTYPE
+make
 
 
-bash ./build/ci/tools/make_release_channel_env.sh -c $MUSESCORE_BUILD_CONFIG
-bash ./build/ci/tools/make_version_env.sh $BUILD_NUMBER
-bash ./build/ci/tools/make_revision_env.sh $MUSESCORE_REVISION
-bash ./build/ci/tools/make_branch_env.sh
-bash ./build/ci/tools/make_datetime_env.sh
-
-df -h .
+#make CPUS=2 $OPTIONS \
+#     MUSESCORE_BUILD_CONFIG=$MUSESCORE_BUILD_CONFIG \
+#     MUSESCORE_REVISION=$MUSESCORE_REVISION \
+#     BUILD_NUMBER=$BUILD_NUMBER \
+#     TELEMETRY_TRACK_ID=$TELEMETRY_TRACK_ID \
+#     SUFFIX=$SUFFIX \
+#     $BUILDTYPE
