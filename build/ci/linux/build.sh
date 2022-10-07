@@ -11,7 +11,11 @@ cmake -G "Unix Makefiles" \
       -DBUILD_SHARED=ON \
       -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
       -DBUILD_FOR_WINSTORE=OFF \
-      -DLOGLEVEL=1 \
+      -DBUILD_CRASH_REPORTER=OFF \
+      -DBUILD_PULSEAUDIO=OFF \
+      -DDOWNLOAD_SOUNDFONT=ON \
+      -DBUILD_WEBENGINE=OFF \
+      -DLOGLEVEL=4 \
       ..
 
 make

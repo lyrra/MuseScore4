@@ -55,6 +55,16 @@ apt_packages_standard=(
   libpulse-dev
   libsndfile1-dev
   libzmq3-dev
+  libqt5qml5
+  libqt5quick5
+  libqt5quickcontrols2-5
+  libqt5quicktemplates2-5
+  libqt5quickwidgets5
+  libqt5xml5
+  libqt5xmlpatterns5-dev
+  libqt5svg5-dev
+  libqt5opengl5-dev
+  libqt5help5
   qtbase5-dev
   portaudio19-dev
   make
