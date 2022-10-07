@@ -1,4 +1,4 @@
-name: CI_Windows
+name: build_Windows
 
 on:
   schedule:
@@ -9,10 +9,6 @@ on:
         description: 'Build mode: devel_build, stable_build'
         required: true
         default: 'devel_build'
-      publish:
-        description: 'Publish to FTP: on - publish'
-        required: false
-        default: 'off'   
 
 jobs:
   build_x64:
@@ -72,17 +68,17 @@ jobs:
         ls -ltr
         cd m
         ls -ltr
-        ../f/build/ci/tools/setup.sh
+        ../f/build/ci/mingw/setup.sh
     - name: Build
       shell: msys2 {0}
       run: |
         cd m
-        ../f/build/ci/tools/build_mingw.sh
+        ../f/build/ci/mingw/build.sh
     - name: Package
       shell: msys2 {0}
       run: |
         cd m
-        ../f/build/ci/tools/package.sh
+        ../f/build/ci/mingw/package.sh
     - name: Artifact
       uses: actions/upload-artifact@v3
       with:
@@ -97,8 +93,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: release-${{ steps.version.outputs.version }}
-        release_name: ${{ steps.version.outputs.version }}
+        tag_name: release-mingw-${{ steps.version.outputs.version }}
+        release_name: mingw-${{ steps.version.outputs.version }}
         draft: false
         prerelease: false
     - name: Upload Release Asset
@@ -126,4 +122,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload nightly-x86_64 musescore3-* --clobber -R ${{ github.repository }}
+          gh release upload nightly-mingw musescore3* --clobber -R ${{ github.repository }}
