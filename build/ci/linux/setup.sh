@@ -71,7 +71,6 @@ apt_packages_standard=(
   guile-3.0-libs
   guile-bytestructures
   guile-json
-  guile-zstd
   guile-sqlite3
   make
   cmake
