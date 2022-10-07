@@ -39,9 +39,8 @@ jobs:
     - name: Build
       run: |
         cd m
-        mkdir -p build.debug
-        ../f/build/ci/build_mtest.sh -n ${{ github.run_id }}
+        ../f/build/ci/build-mtests.sh -n ${{ github.run_id }}
     - name: Run tests 
       run: |
         cd m
-        ../f/build/ci//run-mtests.sh
+        ../f/build/ci/run-mtests.sh
