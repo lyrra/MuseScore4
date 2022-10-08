@@ -66,6 +66,7 @@ apt_packages_standard=(
   libqt5svg5-dev
   libqt5opengl5-dev
   libqt5help5
+  qtquickcontrols2-5-dev
   qtbase5-dev
   qtdeclarative5-dev
   qttools5-dev
