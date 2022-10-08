@@ -20,6 +20,7 @@ cmake -G "Unix Makefiles" \
 
 make
 
+make install
 
 #make CPUS=2 $OPTIONS \
 #     MUSESCORE_BUILD_CONFIG=$MUSESCORE_BUILD_CONFIG \
