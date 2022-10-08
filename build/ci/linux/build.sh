@@ -6,6 +6,7 @@ mkdir build.debug 2> /dev/null
 cd build.debug || exit 1
 
 cmake -G "Unix Makefiles" \
+      -DCMAKE_INSTALL_PREFIX=install
       -DCMAKE_BUILD_TYPE=DEBUG \
       -DVERBOSE=1 \
       -DBUILD_SHARED=ON \
