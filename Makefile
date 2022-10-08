@@ -38,7 +38,6 @@ BUILD_ALSA="ON"       # Override with "OFF" to disable.
 BUILD_PORTAUDIO="ON"  # Override with "OFF" to disable.
 BUILD_PORTMIDI="ON"   # Override with "OFF" to disable.
 BUILD_WEBENGINE="ON"  # Override with "OFF" to disable.
-USE_SYSTEM_FREETYPE="OFF" # Override with "ON" to enable. Requires freetype >= 2.5.2.
 COVERAGE="OFF"        # Override with "ON" to enable.
 DOWNLOAD_SOUNDFONT="ON"   # Override with "OFF" to disable latest soundfont download.
 BUILD_GUILE="ON" # Override with "ON" to disable.
@@ -72,7 +71,6 @@ release:
   	  -DBUILD_ALSA="${BUILD_ALSA}"              \
    	  -DBUILD_PORTAUDIO="${BUILD_PORTAUDIO}"   \
    	  -DBUILD_WEBENGINE="${BUILD_WEBENGINE}"   \
-   	  -DUSE_SYSTEM_FREETYPE="${USE_SYSTEM_FREETYPE}" \
    	  -DDOWNLOAD_SOUNDFONT="${DOWNLOAD_SOUNDFONT}"   \
 	  -DUSE_ZITA_REVERB="${USE_ZITA_REVERB}"   \
   	  -DCMAKE_SKIP_RPATH="${NO_RPATH}"     ..; \
@@ -104,7 +102,6 @@ debug:
    	  -DBUILD_PORTAUDIO="${BUILD_PORTAUDIO}"              \
   	  -DBUILD_GUILE="${BUILD_GUILE}"                      \
    	  -DBUILD_WEBENGINE="${BUILD_WEBENGINE}"              \
-   	  -DUSE_SYSTEM_FREETYPE="${USE_SYSTEM_FREETYPE}"      \
           -DCOVERAGE="${COVERAGE}"                 \
    	  -DDOWNLOAD_SOUNDFONT="${DOWNLOAD_SOUNDFONT}"      \
 	  -DUSE_ZITA_REVERB="${USE_ZITA_REVERB}"   \

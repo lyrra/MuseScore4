@@ -136,7 +136,6 @@ option(OCR           "Enable OCR, requires OMR"           OFF) # Requires tesser
 option(SOUNDFONT3    "Ogg Vorbis compressed fonts"        ON)  # Enable Ogg Vorbis compressed fonts, requires Ogg & Vorbis
 option(HAS_AUDIOFILE "Enable audio export"                ON)  # Requires libsndfile
 option(USE_SYSTEM_QTSINGLEAPPLICATION "Use system QtSingleApplication" OFF)
-option(USE_SYSTEM_FREETYPE "Use system FreeType"          OFF) # requires freetype >= 2.5.2, does not work on win
 option(USE_SYSTEM_POPPLER  "Use system Poppler for OMR"   OFF)
 option(BUILD_LAME    "Enable MP3 export"                  ON)  # Requires libmp3lame, call CMake with -DBUILD_LAME="OFF" to disable
 option(DOWNLOAD_SOUNDFONT "Download the latest soundfont version as part of the build process" OFF)
@@ -373,7 +372,6 @@ endif(USE_ZITA_REVERB)
 ## freetype2 >= 2.5.2
 ##
 
-if (USE_SYSTEM_FREETYPE)
       if (APPLE)
             PKGCONFIG1 (freetype2 2.5.2 FREETYPE_INCLUDE_DIRS FREETYPE_LIBDIR FREETYPE_LIBRARIES FREETYPE_CPP)
             if (FREETYPE_INCLUDE_DIRS)
@@ -386,7 +384,6 @@ if (USE_SYSTEM_FREETYPE)
       else (APPLE)
             find_package(Freetype REQUIRED)
       endif (APPLE)
-endif (USE_SYSTEM_FREETYPE)
 
 
 ##
@@ -659,11 +656,7 @@ if (MSVC)
    include_directories(${OGG_INCLUDE_DIR})
 endif (MSVC)
 
-if (USE_SYSTEM_FREETYPE)
-      include_directories(${FREETYPE_INCLUDE_DIRS})
-else (USE_SYSTEM_FREETYPE)
-      include_directories(${PROJECT_SOURCE_DIR}/thirdparty/freetype/include)
-endif (USE_SYSTEM_FREETYPE)
+include_directories(${FREETYPE_INCLUDE_DIRS})
 
 if (OMR)
  if (NOT USE_SYSTEM_POPPLER)
@@ -752,10 +745,6 @@ endif (OMR)
 if (OSC)
       add_subdirectory(thirdparty/ofqf)
 endif (OSC)
-
-if (NOT USE_SYSTEM_FREETYPE)
-      add_subdirectory(thirdparty/freetype)
-endif (NOT USE_SYSTEM_FREETYPE)
 
 ##
 ##  Include packaging

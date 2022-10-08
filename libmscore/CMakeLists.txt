@@ -118,14 +118,10 @@ target_link_libraries(musescore
            muxlib
            ${QT_LIBRARIES}
            qzip # fix, use libzip (mingw-w64-libzip)
+           freetype
            zmq
            z
            )
-if (USE_SYSTEM_FREETYPE)
-         target_link_libraries(musescore freetype)
-else (USE_SYSTEM_FREETYPE)
-         target_link_libraries(musescore mscore_freetype)
-endif (USE_SYSTEM_FREETYPE)
 
 set_target_properties( mscoreapp
         PROPERTIES

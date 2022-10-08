@@ -28,14 +28,10 @@ include_directories(
       ${PROJECT_SOURCE_DIR}/muxtools
       ${PROJECT_SOURCE_DIR}/muxseq
       ${PROJECT_SOURCE_DIR}/s7
+      ${FREETYPE_INCLUDE_DIRS}
       )
 link_directories(${CMAKE_SOURCE_DIR}/lib)
 
-if (USE_SYSTEM_FREETYPE)
-      include_directories(${FREETYPE_INCLUDE_DIRS})
-else (USE_SYSTEM_FREETYPE)
-      include_directories(${PROJECT_SOURCE_DIR}/thirdparty/freetype/include)
-endif (USE_SYSTEM_FREETYPE)
 
 if (OMR)
 set(OMR_SRC ${PROJECT_SOURCE_DIR}/omr/importpdf.cpp)
@@ -182,6 +178,7 @@ target_link_libraries(
       ${QT_QTTEST_LIBRARY}
       testResources
       mscoreapp
+      ${FREETYPE_LIBRARIES}
       qzip
       ofqf)
 
@@ -193,11 +190,6 @@ set_target_properties (
       LINK_FLAGS    "-g"
       )
 
-if (USE_SYSTEM_FREETYPE)
-      target_link_libraries(mtest freetype)
-else (USE_SYSTEM_FREETYPE)
-      target_link_libraries(mtest mscore_freetype)
-endif (USE_SYSTEM_FREETYPE)
 
 set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
 
