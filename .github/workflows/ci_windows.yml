@@ -107,7 +107,7 @@ jobs:
         asset_path: ./m/musescore3-mingw64.zip
         asset_name: musescore3-mingw64.zip
         asset_content_type: application/zip
-  upload-nightly:
+  upload-weekly:
     permissions:
       contents: write
     needs:
@@ -122,4 +122,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload nightly-mingw musescore3* --clobber -R ${{ github.repository }}
+          gh release upload weekly-mingw musescore3* --clobber -R ${{ github.repository }}
