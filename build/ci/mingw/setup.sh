@@ -2,15 +2,7 @@
 
 # install guile
 
-wget https://github.com/lyrra/guile/releases/download/refs/heads/repoinfo/mingw-w64-x86_64-guile3-3.0.5-1-any.pkg.tar.zst
-
-ls -ltr
-
-F=`pwd`/mingw-w64-x86_64-guile3-3.0.5-1-any.pkg.tar.zst
-
-cd /
-
-pacman -U --noconfirm $F
+pacman -U --noconfirm https://github.com/lyrra/guile/releases/download/weekly-mingw/mingw-w64-x86_64-guile3-3.0.5-1-any.pkg.tar.zst
 
 echo "--------- fix /mingw64/lib/pkgconfig/guile-3.0.pc  ------------"
 cat /mingw64/lib/pkgconfig/guile-3.0.pc
