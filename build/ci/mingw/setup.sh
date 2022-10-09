@@ -2,7 +2,10 @@
 
 # install guile
 
-pacman -U --noconfirm https://github.com/lyrra/guile/releases/download/weekly-mingw/mingw-w64-x86_64-guile3-3.0.5-1-any.pkg.tar.zst
+F=mingw-w64-x86_64-guile3-3.0.5-1-any.pkg.tar.zst
+
+wget https://github.com/lyrra/guile/releases/download/weekly-mingw/$F
+pacman -U --noconfirm $F
 
 echo "--------- fix /mingw64/lib/pkgconfig/guile-3.0.pc  ------------"
 cat /mingw64/lib/pkgconfig/guile-3.0.pc
