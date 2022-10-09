@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-echo "<<<<<<<<<<<<<<<< ALL FILES in m >>>>>>>>>>>>>>>>>>>>>>>"
-find .
-echo "<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+C=`pwd`
+
+cd build.debug/install
+
+tar cvf $C/musescore3.tar.xz .
 
