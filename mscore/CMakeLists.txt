@@ -338,7 +338,7 @@ target_link_libraries(mscoreapp
       importexport
       ${COCOABRIDGE}
       ${ZMQ_LIBRARIES}
-      ${FREETYPE_LIBRARIES}
+      freetype
       )
 
 if (BUILD_CRASH_REPORTER)
@@ -404,7 +404,7 @@ if (MINGW)
    endif(CMAKE_BUILD_TYPE MATCHES "DEBUG")
 
    target_link_libraries(mscoreapp
-      mscore_freetype
+      freetype
       z
       )
 
@@ -489,7 +489,7 @@ else (MINGW)
 
       include(FindStaticLibrary)
       target_link_libraries(mscoreapp
-         mscore_freetype
+         freetype
          zlibstat
          )
 

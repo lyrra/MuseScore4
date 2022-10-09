@@ -147,12 +147,12 @@ if (GUILE)
             mtest-guile
             ${QT_LIBRARIES}
             musescore
-            mscore_freetype
             testutils
             testResources
             synthesizer
             midi
             qzip
+            freetype
             z
             )
 
