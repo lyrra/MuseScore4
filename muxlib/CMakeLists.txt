@@ -3,12 +3,6 @@ set(MODULE muxlib)
 
 include (${PROJECT_SOURCE_DIR}/build/gch.cmake)
 
-if (APPLE)
-      file(GLOB_RECURSE INCS "*.h")
-else (APPLE)
-      set(INCS "")
-endif (APPLE)
-
 if (NOT MSVC)
    set(_all_h_file "${PROJECT_BINARY_DIR}/all.h")
 else (NOT MSVC)
@@ -51,6 +45,18 @@ else (NOT MSVC)
          COMPILE_FLAGS "${PCH_INCLUDE}"
       )
 endif (NOT MSVC)   
+
+add_library(muxseqclient STATIC
+    ${_all_h_file}
+    ${PCH}
+    muxseq_client.cpp muxseq_client.h
+    )
+
+set_target_properties (
+    muxseqclient
+    PROPERTIES
+        COMPILE_FLAGS "-g ${PCH_INCLUDE} -Wall -Wextra -Winvalid-pch"
+    )
 
 # xcode_pch(${MODULE} all)
 

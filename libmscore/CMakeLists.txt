@@ -117,21 +117,16 @@ target_link_libraries(musescore
            mux
            muxlib
            ${QT_LIBRARIES}
-           qzip # fix, use libzip (mingw-w64-libzip)
+           qzip # FIX: use libzip (mingw-w64-libzip)
            freetype
            zmq
            z
            )
 
-set_target_properties( mscoreapp
-        PROPERTIES
-           COMPILE_FLAGS "${PCH_INCLUDE} -Wall -Wextra -Winvalid-pch ${QT_DEFINITIONS} -DQT_SVG_LIB -DQT_GUI_LIB -DQT_XML_LIB -DQT_CORE_LIB"
-           LINK_FLAGS "-Wl,-S -mwindows -L ${QT_INSTALL_LIBS}"
-        )
 
 
 if (AVSOMR)
-    target_link_libraries(libmscore avsomr)
+    target_link_libraries(musescore avsomr)
 endif (AVSOMR)
 
 ##

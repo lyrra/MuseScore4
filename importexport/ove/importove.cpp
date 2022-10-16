@@ -66,6 +66,13 @@
 #include "libmscore/sym.h"
 #include "libmscore/bracketItem.h"
 
+namespace Ms {
+//FIX-20221019: these are just stubs (until importexport is an standalone app)
+bool prefs_getBool(const QString key);
+bool prefs_getInt(const QString key);
+QString prefs_getString(const QString key);
+}
+
 using namespace Ms;
 
 class MeasureToTick {
@@ -2415,7 +2422,7 @@ Score::FileError importOve(MasterScore* score, const QString& name) {
 
       oveFile.close();
 
-      oveSong.setTextCodecName(preferences.getString(PREF_IMPORT_OVERTURE_CHARSET));
+      oveSong.setTextCodecName(prefs_getString(PREF_IMPORT_OVERTURE_CHARSET));
       oveLoader->setOve(&oveSong);
       oveLoader->setFileStream((unsigned char*) buffer.data(), buffer.size());
       bool result = oveLoader->load();

@@ -17,11 +17,7 @@ add_executable(
       ${TARGET}.cpp
       )
 
-if (MTEST_LINK_MSCOREAPP)
-      target_link_libraries(${TARGET} testutils_mscoreapp mscoreapp)
-else (MTEST_LINK_MSCOREAPP)
-      target_link_libraries(${TARGET} testutils)
-endif (MTEST_LINK_MSCOREAPP)
+target_link_libraries(${TARGET} testutils)
 
 if (MSVC)
       set(_all_h_file "${PROJECT_SOURCE_DIR}/all.h")
@@ -36,9 +32,8 @@ target_link_libraries(
       ${TARGET}
       ${QT_LIBRARIES}
       ${QT_QTTEST_LIBRARY}
-      testResources
-      musescore
       mscoreapp
+      importexport
       qzip
       ofqf
       )

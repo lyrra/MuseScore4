@@ -487,11 +487,8 @@ endif(APPLE)
 ## Guile scripting
 ##
 if (BUILD_GUILE)
+    include(FindGuile)
     set(USE_GUILE 1)
-    execute_process(COMMAND pkg-config --cflags guile-3.0 OUTPUT_VARIABLE GUILE_COMPILE OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND pkg-config --libs guile-3.0 OUTPUT_VARIABLE GUILE_LINK OUTPUT_STRIP_TRAILING_WHITESPACE)
-    message(STATUS "Guile compile time directives: ${GUILE_COMPILE}")
-    message(STATUS "Guile link directives: ${GUILE_LINK}")
 endif(BUILD_GUILE)
 
 ##
@@ -696,6 +693,7 @@ configure_file (
 add_subdirectory(effects)
 add_subdirectory(audio)
 add_subdirectory(audiofile)
+add_subdirectory(miditools)
 
 subdirs(
       s7 awl bww2mxml share libmscore
@@ -716,7 +714,6 @@ add_subdirectory(mtest EXCLUDE_FROM_ALL)
 endif(XCODE AND CMAKE_BUILD_TYPE MATCHES "DEBUG")
 
 add_subdirectory(rdoc EXCLUDE_FROM_ALL)
-add_subdirectory(miditools EXCLUDE_FROM_ALL)
 add_subdirectory(fonttools EXCLUDE_FROM_ALL)
 add_subdirectory(demos)
 

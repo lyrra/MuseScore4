@@ -196,8 +196,8 @@ int main(int argc, char* argv[])
 
       printf("\n");
       printf("================\n");
-     printf("  Checks pass/fail %d/%d\n", g_test_check_pass_tot, g_test_check_fail_tot);
-     printf("  processed %d  -- failed %d\n", processed, failed);
+      printf("  Checks pass/fail %d/%d\n", g_test_check_pass_tot, g_test_check_fail_tot);
+      printf("  processed %d  -- failed %d\n", processed, failed);
       printf("================\n");
       return 0;
       }

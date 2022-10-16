@@ -20,11 +20,16 @@
 #ifndef OVE_DATA_H
 #define OVE_DATA_H
 
+/*
+ * using this will turn off implicit exporting
+ * of all other symbols (that isn't declared with this)
+ * alternatively tell linker to --export-all-symbols
 #ifdef WIN32
 #define DLL_EXPORT extern "C" __declspec(dllexport)
 #else
 #define DLL_EXPORT
 #endif
+*/
 
 namespace OVE {
 
@@ -500,7 +505,8 @@ public:
       virtual void release() = 0;
       };
 
-DLL_EXPORT IOVEStreamLoader* createOveStreamLoader();
+//DLL_EXPORT
+IOVEStreamLoader* createOveStreamLoader();
 
 /////////////////////////////////////////////////////////////////////////////
 // basic element

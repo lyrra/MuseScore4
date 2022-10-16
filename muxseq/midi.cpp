@@ -1,10 +1,10 @@
-#include "types.h"
-#include "musescoreCore.h"
-#include "score.h"
-#include "staff.h"
-#include "chord.h"
-#include "part.h"
-#include "tie.h"
+#include "libmscore/types.h"
+#include "libmscore/musescoreCore.h"
+#include "libmscore/score.h"
+#include "libmscore/staff.h"
+#include "libmscore/chord.h"
+#include "libmscore/part.h"
+#include "libmscore/tie.h"
 
 #include "muxseqclient.h"
 

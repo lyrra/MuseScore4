@@ -149,14 +149,3 @@ endif (MINGW)
 
 set(_all_h_file "${PROJECT_BINARY_DIR}/all.h")
 
-add_library(muxseqclient STATIC
-    ${_all_h_file}
-    ${PCH}
-    midi.cpp
-    ) 
-
-set_target_properties (
-    muxseqclient
-    PROPERTIES
-        COMPILE_FLAGS "-g ${PCH_INCLUDE} -Wall -Wextra -Winvalid-pch"
-    )

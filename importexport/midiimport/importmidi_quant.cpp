@@ -18,7 +18,13 @@
 
 namespace Ms {
 
+//FIX-20221019: these are just stubs (until importexport is an standalone app)
+bool prefs_getBool(const QString key);
+bool prefs_getInt(const QString key);
+QString prefs_getString(const QString key);
+
 namespace Quantize {
+
 
 ReducedFraction quantValueToFraction(MidiOperations::QuantValue quantValue)
       {
@@ -96,11 +102,11 @@ MidiOperations::QuantValue fractionToQuantValue(const ReducedFraction &fraction)
 
 MidiOperations::QuantValue defaultQuantValueFromPreferences()
       {
-      const auto fraction = ReducedFraction::fromTicks(preferences.getInt(PREF_IO_MIDI_SHORTESTNOTE));
+      const auto fraction = ReducedFraction::fromTicks(prefs_getInt(PREF_IO_MIDI_SHORTESTNOTE));
       MidiOperations::QuantValue quantValue = fractionToQuantValue(fraction);
       if (quantValue == MidiOperations::QuantValue::Q_INVALID) {
             qDebug("Unknown shortestNote value %d in preferences, defaulting to 16th.",
-                   preferences.getInt(PREF_IO_MIDI_SHORTESTNOTE));
+                   prefs_getInt(PREF_IO_MIDI_SHORTESTNOTE));
             quantValue = MidiOperations::QuantValue::Q_16;
             }
       return quantValue;

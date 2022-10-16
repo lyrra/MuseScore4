@@ -20,7 +20,8 @@
 #include "libmscore/chord.h"
 #include "libmscore/note.h"
 #include "libmscore/keysig.h"
-#include "audio/exports/exportmidi.h"
+#include "midi/midifile.h"
+#include "muxtools/exports/exportmidi.h"
 
 #include "libmscore/mcursor.h"
 #include "mtest/testutils.h"

@@ -23,7 +23,9 @@
 #include "libmscore/chord.h"
 #include "libmscore/note.h"
 #include "libmscore/keysig.h"
-#include "audio/exports/exportmidi.h"
+#include "muxtools/midi/midifile.h"
+#include "muxtools/exports/exportmidi.h"
+#include "muxtools/eventutils.h"
 #include <QIODevice>
 
 #include "libmscore/mcursor.h"

@@ -35,6 +35,8 @@
 
 namespace Ms {
 
+bool prefs_getBool(const QString key);
+
 Score::FileError removeInstrumentNames(Score* score, MxmlLogger* logger)
       {
       for (Part* part : score->parts()) {
@@ -66,7 +68,7 @@ Score::FileError applyMusicXMLPVGStyles(Score* score, MxmlLogger* logger)
       }
 
       // Remove instrument names
-      if (preferences.getBool(PREF_IMPORT_MUSICXML_REMOVEINSTRUMENTNAMES))
+      if (prefs_getBool(PREF_IMPORT_MUSICXML_REMOVEINSTRUMENTNAMES))
             removeInstrumentNames(score, logger);
 
       return Score::FileError::FILE_NO_ERROR;

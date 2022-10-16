@@ -109,7 +109,7 @@
 #include "musicxmlsupport.h"
 
 namespace Ms {
-
+        
 //---------------------------------------------------------
 //   local defines for debug output
 //---------------------------------------------------------
@@ -392,6 +392,29 @@ public:
       void writeInstrumentDetails(const Instrument* instrument);
       };
 
+//FIX-20221019: these are just stubs (until importexport is an standalone app)
+bool prefs_getBool(const QString key)
+      {
+      //prefs_checkType(key, QMetaType::Bool); //FIX
+      //return prefsImportexport(key).toBool(); //FIX
+      return true; //FIX
+      }
+
+bool prefs_getInt(const QString key)
+      {
+      return 0; //FIX
+      }
+
+QString prefs_getString(const QString key)
+      {
+      return ""; //FIX
+      }
+
+MusicxmlExportBreaks prefs_musicxmlExportBreaks ()
+      {
+      return MusicxmlExportBreaks::ALL;
+      }
+
 //---------------------------------------------------------
 //   positionToQString
 //---------------------------------------------------------
@@ -429,7 +452,7 @@ static QString positionToQString(const QPointF def, const QPointF rel, const flo
 
 static QString positioningAttributes(Element const* const el, bool isSpanStart = true)
       {
-      if (!preferences.getBool(PREF_EXPORT_MUSICXML_EXPORTLAYOUT))
+      if (!prefs_getBool(PREF_EXPORT_MUSICXML_EXPORTLAYOUT))
             return "";
 
       //qDebug("single el %p _pos x,y %f %f _userOff x,y %f %f spatium %f",
@@ -1715,7 +1738,7 @@ static QString fermataPosition(const Fermata* const fermata)
       {
       QString res;
 
-      if (preferences.getBool(PREF_EXPORT_MUSICXML_EXPORTLAYOUT)) {
+      if (prefs_getBool(PREF_EXPORT_MUSICXML_EXPORTLAYOUT)) {
             constexpr qreal SPATIUM2TENTHS = 10;
             constexpr qreal EPSILON = 0.01;
             const auto spatium = fermata->spatium();
@@ -3349,7 +3372,7 @@ static QString elementPosition(const ExportMusicXml* const expMxml, const Elemen
       {
       QString res;
 
-      if (preferences.getBool(PREF_EXPORT_MUSICXML_EXPORTLAYOUT)) {
+      if (prefs_getBool(PREF_EXPORT_MUSICXML_EXPORTLAYOUT)) {
             const double pageHeight  = expMxml->getTenthsFromInches(expMxml->score()->styleD(Sid::pageHeight));
 
             const auto meas = elm->findMeasure();
@@ -4100,7 +4123,7 @@ void ExportMusicXml::words(TextBase const* const text, int staff)
 
 static QString positioningAttributesForTboxText(const QPointF position, float spatium)
       {
-      if (!preferences.getBool(PREF_EXPORT_MUSICXML_EXPORTLAYOUT))
+      if (!prefs_getBool(PREF_EXPORT_MUSICXML_EXPORTLAYOUT))
             return "";
 
       QPointF relative;       // use zero relative position
@@ -5584,8 +5607,8 @@ static void identification(XmlWriter& xml, Score const* const score)
       xml.tagE("supports element=\"beam\" type=\"yes\"");
       // set support for print new-page and new-system to match user preference
       // for MusicxmlExportBreaks::MANUAL support is "no" because "yes" breaks Finale NotePad import
-      if (preferences.getBool(PREF_EXPORT_MUSICXML_EXPORTLAYOUT)
-          && preferences.musicxmlExportBreaks() == MusicxmlExportBreaks::ALL) {
+      if (prefs_getBool(PREF_EXPORT_MUSICXML_EXPORTLAYOUT)
+          && prefs_musicxmlExportBreaks() == MusicxmlExportBreaks::ALL) {
             xml.tagE("supports element=\"print\" attribute=\"new-page\" type=\"yes\" value=\"yes\"");
             xml.tagE("supports element=\"print\" attribute=\"new-system\" type=\"yes\" value=\"yes\"");
             }
@@ -5754,11 +5777,11 @@ void ExportMusicXml::print(const Measure* const m, const int partNr, const int f
 
       QString newSystemOrPage;             // new-[system|page]="yes" or empty
       if (!mpc.scoreStart) {
-            if (preferences.musicxmlExportBreaks() == MusicxmlExportBreaks::ALL) {
+            if (prefs_musicxmlExportBreaks() == MusicxmlExportBreaks::ALL) {
                   if (mpc.pageStart) newSystemOrPage = " new-page=\"yes\"";
                   else if (mpc.systemStart) newSystemOrPage = " new-system=\"yes\"";
                   }
-            else if (preferences.musicxmlExportBreaks() == MusicxmlExportBreaks::MANUAL) {
+            else if (prefs_musicxmlExportBreaks() == MusicxmlExportBreaks::MANUAL) {
                   if (mpc.pageStart && prevPageBreak)
                         newSystemOrPage = " new-page=\"yes\"";
                   else if (mpc.systemStart && (prevMeasLineBreak || prevMeasSectionBreak))
@@ -5767,7 +5790,7 @@ void ExportMusicXml::print(const Measure* const m, const int partNr, const int f
             }
 
       bool doBreak = mpc.scoreStart || (newSystemOrPage != "");
-      bool doLayout = preferences.getBool(PREF_EXPORT_MUSICXML_EXPORTLAYOUT);
+      bool doLayout = prefs_getBool(PREF_EXPORT_MUSICXML_EXPORTLAYOUT);
 
       if (doBreak) {
             if (doLayout) {
@@ -6596,7 +6619,7 @@ void ExportMusicXml::writeMeasure(const Measure* const m,
       measureTag += mnsh.measureNumber();
       const bool isFirstActualMeasure = mnsh.isFirstActualMeasure();
 
-      if (preferences.getBool(PREF_EXPORT_MUSICXML_EXPORTLAYOUT))
+      if (prefs_getBool(PREF_EXPORT_MUSICXML_EXPORTLAYOUT))
             measureTag += QString(" width=\"%1\"").arg(QString::number(m->bbox().width() / DPMM / millimeters * tenths,'f',2));
 
       _xml.stag(measureTag);
@@ -6817,7 +6840,7 @@ void ExportMusicXml::write(QIODevice* dev)
       work(_score->measures()->first());
       identification(_xml, _score);
 
-      if (preferences.getBool(PREF_EXPORT_MUSICXML_EXPORTLAYOUT)) {
+      if (prefs_getBool(PREF_EXPORT_MUSICXML_EXPORTLAYOUT)) {
             defaults(_xml, _score, millimeters, tenths);
             credits(_xml);
             }

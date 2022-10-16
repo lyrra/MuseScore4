@@ -48,7 +48,7 @@ class ExportMidi {
       void writeHeader(MidiTrack& tempoTrack);
 
    public:
-      MidiFile mf;
+      Ms::MidiFile mf;
 
       ExportMidi(Score* s) { cs = s; }
       bool write(const QString& name, bool midiExpandRepeats, bool exportRPNs);

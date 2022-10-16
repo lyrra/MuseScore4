@@ -85,6 +85,11 @@
 
 namespace Ms {
 
+//FIX-20221019: these are just stubs (until importexport is an standalone app)
+bool prefs_getBool(const QString key);
+bool prefs_getInt(const QString key);
+QString prefs_getString(const QString key);
+
 //---------------------------------------------------------
 //   local defines for debug output
 //---------------------------------------------------------
@@ -806,7 +811,7 @@ static QString nextPartOfFormattedString(QXmlStreamReader& e)
                   importedtext += QString("<font size=\"%1\"/>").arg(size);
             }
 
-      bool needUseDefaultFont = preferences.getBool(PREF_MIGRATION_APPLY_EDWIN_FOR_XML_FILES);
+      bool needUseDefaultFont = prefs_getBool(PREF_MIGRATION_APPLY_EDWIN_FOR_XML_FILES);
 
       if (!fontFamily.isEmpty() && txt == syms && !needUseDefaultFont) {
             // add font family only if no <sym> replacement made
@@ -1280,7 +1285,7 @@ static void addTextToNote(int l, int c, QString txt, QString placement, QString 
                   TextBase* t = new Fingering(score, subType);
                   t->setPlainText(txt);
 
-                  bool needUseDefaultFont = preferences.getBool(PREF_MIGRATION_APPLY_EDWIN_FOR_XML_FILES);
+                  bool needUseDefaultFont = prefs_getBool(PREF_MIGRATION_APPLY_EDWIN_FOR_XML_FILES);
 
                   if (!fontFamily.isEmpty() && !needUseDefaultFont) {
                         t->setFamily(fontFamily);

@@ -29,6 +29,7 @@ include_directories(
       ${PROJECT_SOURCE_DIR}/muxseq
       ${PROJECT_SOURCE_DIR}/s7
       ${FREETYPE_INCLUDE_DIRS}
+      ${GUILE_INCLUDE_DIRS}
       )
 link_directories(${CMAKE_SOURCE_DIR}/lib)
 
@@ -56,29 +57,11 @@ QT5_ADD_RESOURCES(qrc_files ${PROJECT_SOURCE_DIR}/mtest/mtest.qrc
             ${PROJECT_SOURCE_DIR}/mscore/musescorefonts-FinaleBroadway.qrc
       )
 
-add_library (testResources STATIC
-      ${qrc_files}
-      )
-
-set (IMPORTEXPORT_DIR ${PROJECT_SOURCE_DIR}/importexport)
-include(${IMPORTEXPORT_DIR}/bb/bb.cmake)
-include(${IMPORTEXPORT_DIR}/capella/capella.cmake)
-include(${IMPORTEXPORT_DIR}/musicxml/musicxml.cmake)
-include(${IMPORTEXPORT_DIR}/guitarpro/guitarpro.cmake)
-include(${IMPORTEXPORT_DIR}/ove/ove.cmake)
-include(${IMPORTEXPORT_DIR}/midiimport/midiimport.cmake)
-
 set (SOURCE_LIB
+      ${qrc_files}
       testutils.cpp
       mtestglobals.cpp
-
-      ${BB_SRC}
-      ${CAPELLA_SRC}
-      ${MUSICXML_SRC}
-      ${MUSICXML_SRC}
-      ${GUITARPRO_SRC}
-      ${OVE_SRC}
-      ${MIDIIMPORT_SRC}
+      mscoreappresources.cpp
 
       ${PROJECT_SOURCE_DIR}/muxtools/exports/exportmidi.cpp
       ${PROJECT_SOURCE_DIR}/muxtools/exports/exportmidi.h
@@ -99,23 +82,28 @@ set (SOURCE_LIB
 
 if (MSVC)
     add_library(
-      testutils STATIC
+      testutils SHARED
 	  ${_all_h_file}
 	  ${PCH}
 	  ${SOURCE_LIB}
 	  )
 else (MSVC)
     add_library(
-      testutils STATIC
+      testutils SHARED
 	  ${SOURCE_LIB}
 	  )
 endif (MSVC)
 
-# testutils version that is linked to a full mscoreapp target
-add_library(testutils_mscoreapp STATIC
-      testutils.cpp
-      mscoreappresources.cpp
-      )
+target_link_libraries(testutils
+    mscoreapp
+    ${QT_LIBRARIES}
+    ${QT_QTTEST_LIBRARY}
+    )
+
+set_target_properties (
+    testutils
+    PROPERTIES LINK_FLAGS "-g -Wl,--export-all-symbols"
+    )
 
 if (MSVC)
       target_sources(testutils_mscoreapp PRIVATE
@@ -123,7 +111,6 @@ if (MSVC)
             ${PCH}
             )
 endif (MSVC)
-
 
 add_executable(
       mtest
@@ -134,53 +121,18 @@ add_executable(
       ${CMAKE_CURRENT_BINARY_DIR}/s7gen.h ${CMAKE_CURRENT_BINARY_DIR}/s7gen.cpp
       )
 
-if (GUILE)
-      execute_process(COMMAND guile-config compile OUTPUT_VARIABLE GUILE_COMPILE OUTPUT_STRIP_TRAILING_WHITESPACE)
-      execute_process(COMMAND guile-config link OUTPUT_VARIABLE GUILE_LINK OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-      add_executable(
-            mtest-guile
-            mtest-guile.cpp
-            ${ui_headers}
-            )
-      target_link_libraries(
-            mtest-guile
-            ${QT_LIBRARIES}
-            musescore
-            testutils
-            testResources
-            synthesizer
-            midi
-            qzip
-            freetype
-            z
-            )
-
-      target_link_libraries(mtest-guile ${GUILE_LINK})
-
-      set_target_properties (
-            mtest-guile
-            PROPERTIES
-            COMPILE_FLAGS "${GUILE_COMPILE}"
-            )
-endif (GUILE)
-
-if (MTEST_LINK_MSCOREAPP)
-      target_link_libraries(mtest     testutils_mscoreapp mscoreapp)
-else (MTEST_LINK_MSCOREAPP)
-      target_link_libraries(mtest     testutils)
-endif (MTEST_LINK_MSCOREAPP)
 
 target_link_libraries(
       mtest
+      testutils
       s7
-      ${QT_LIBRARIES}
-      ${QT_QTTEST_LIBRARY}
-      testResources
       mscoreapp
       ${FREETYPE_LIBRARIES}
       qzip
-      ofqf)
+      ofqf
+      ${QT_LIBRARIES}
+      ${QT_QTTEST_LIBRARY}
+      )
 
 set_target_properties (
       mtest
@@ -189,6 +141,35 @@ set_target_properties (
       COMPILE_FLAGS "-include all.h -D QT_GUI_LIB -D TESTROOT=\\\"${PROJECT_SOURCE_DIR}\\\" -g -Wall -Wextra"
       LINK_FLAGS    "-g"
       )
+
+
+if (GUILE)
+      add_executable(
+            ${_all_h_file}
+            mtest-guile
+            mtest-guile.cpp
+            ${ui_headers}
+            )
+      target_link_libraries(
+            mtest-guile
+            testutils
+            mscoreapp
+            testutils
+            ofqf
+            qzip
+            freetype
+            z
+            ${QT_QTTEST_LIBRARY}
+            ${QT_LIBRARIES}
+            )
+
+      target_include_directories(mtest-guile PRIVATE
+            ${QT_INCLUDES}
+            ${GUILE_INCLUDE_DIRS})
+
+      target_link_libraries(mtest-guile ${GUILE_LIBRARY})
+
+endif (GUILE)
 
 
 set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
@@ -206,7 +187,6 @@ else (APPLE AND (CMAKE_VERSION VERSION_LESS "3.5.0"))
 endif (APPLE AND (CMAKE_VERSION VERSION_LESS "3.5.0"))
 
 set_target_properties(testutils PROPERTIES COMPILE_FLAGS "${TESTUTILS_COMPILE_FLAGS}")
-set_target_properties(testutils_mscoreapp PROPERTIES COMPILE_FLAGS "${TESTUTILS_COMPILE_FLAGS}")
 
 if (NOT MSVC)
 add_custom_target(report
@@ -317,13 +297,6 @@ subdirs (
         scripting
         stringutils
 #        testoves
-        zerberus/comments
-        zerberus/envelopes
-        zerberus/includes
-        zerberus/global
-        zerberus/opcodeparse
-        zerberus/inputControls
-        zerberus/loop
         testscript
         )
 

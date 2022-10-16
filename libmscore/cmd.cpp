@@ -74,7 +74,6 @@
 #include "tremolo.h"
 #include "rehearsalmark.h"
 #include "sym.h"
-#include "muxseqlib.h"
 
 namespace Ms {
 

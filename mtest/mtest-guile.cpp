@@ -10,11 +10,12 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
-#include <vector>
-#include <QApplication>
+
+#include <math.h>
+
 #include <libguile.h>
 #include "all.h"
-#include "synthesizer/msynthesizer.h"
+#include "muxseq/msynthesizer.h"
 #include "libmscore/musescoreCore.h"
 #include "libmscore/xml.h"
 #include "libmscore/score.h"
@@ -25,11 +26,12 @@
 #include "libmscore/revisions.h"
 #include "mtest/testutils.h"
 
-SCM ms_obj_score_type;
+extern SCM ms_obj_score_type;
 
 namespace ScriptGuile {
 using namespace Ms;
 
+SCM init_ms_object_1 (const char *type_name, const char *slotname1);
 
 class ScriptGuile : public MTest {
       public:
@@ -75,12 +77,12 @@ MasterScore* readScoreCString(char *content)
 
 class Myqiod : public QIODevice {
    private:
-      string _score_string = string();
+      std::string _score_string = std::string("");
 
    public:
       qint64 readData(char *data, qint64 maxlen);
       qint64 writeData(const char *data, qint64 len);
-      string getData() { return _score_string; }
+      std::string getData() { return _score_string; }
 };
 
 qint64 Myqiod::readData(char *, qint64)
@@ -95,7 +97,20 @@ qint64 Myqiod::writeData(const char *data, qint64 len)
       return len;
       }
 
-string* writeScoreString(Score *score)
+SCM ms_test_read_score (SCM filename)
+{
+    char *s = scm_to_locale_string(filename);
+    fprintf(stderr, "ms_test_read_score: %s\n", s);
+    MasterScore* score = g_sg->readCreatedScore(s);
+    if (! score) {
+        fprintf(stderr, "failed to read score\n");
+    }
+    if (! score) { return SCM_BOOL_F; }
+    return scm_make_foreign_object_1 ((SCM) ms_obj_score_type,
+                                      (SCM) score);
+}
+
+std::string* writeScoreString(Score *score)
       {
       Myqiod mq;
       mq.open(QIODevice::ReadWrite);
@@ -109,13 +124,13 @@ string* writeScoreString(Score *score)
             score->masterScore()->revisions()->write(xml);
             }
       mq.close(); // flushes buffer
-      return new string(mq.getData());
+      return new std::string(mq.getData());
       }
 
 SCM ms_score_write_string (SCM score_obj)
       {
       MasterScore* score = (MasterScore*) scm_foreign_object_ref(score_obj, 0);
-      string *str = writeScoreString(score);
+      std::string *str = writeScoreString(score);
       SCM s = scm_from_locale_string(str->c_str());
       delete str;
       return s;
@@ -259,16 +274,6 @@ SCM ms_stdvec_at (SCM sv_scm, SCM idx_scm)
       return scm_from_pointer(sv->at(idx), NULL);
       }
 
-SCM
-init_ms_object_1 (const char *type_name, const char *slotname1)
-      {
-      SCM name, slo;
-      scm_t_struct_finalize finalizer = NULL;
-      name = scm_from_utf8_symbol (type_name);
-      slo = scm_list_1 (scm_from_utf8_symbol (slotname1));
-      return scm_make_foreign_object_type (name, slo, finalizer);
-      }
-
 // FFI to more complicated stuff not easily FFIable
 void init_guile_shim ()
       {
@@ -279,6 +284,9 @@ void init_guile_shim ()
       SCM_TICK; // Checks any pending GC
 
       ms_obj_score_type = init_ms_object_1("<ms-score>", "score");
+      // mtest functions
+      scm_c_define_gsubr ("ms-test-read-score", 1, 0, 0, (void *)ms_test_read_score);
+      // mscore/libmscore functions
       scm_c_define_gsubr ("ms-score-read-file", 1, 0, 0, (void *)ms_score_read_file);
       scm_c_define_gsubr ("ms-score-read-string", 1, 0, 0, (void *)ms_score_read_string);
       scm_c_define_gsubr ("ms-score-write-string", 1, 0, 0, (void *)ms_score_write_string);
@@ -294,6 +302,8 @@ void init_guile_shim ()
       scm_c_define_gsubr ("ms-qlist-at", 2, 0, 0, (void *)ms_qlist_at);
       scm_c_define_gsubr ("ms-stdvec-size", 1, 0, 0, (void *)ms_stdvec_size);
       scm_c_define_gsubr ("ms-stdvec-at", 2, 0, 0, (void *)ms_stdvec_at);
+      //
+      scm_c_export ("ms-test-read-score", NULL);
       scm_c_export ("ms-score-read-file", NULL);
       scm_c_export ("ms-score-read-string", NULL);
       scm_c_export ("ms-score-write-string", NULL);
@@ -319,19 +329,27 @@ guile_main (void *, int argc, char **argv)
       scm_shell (argc, argv);
       }
 
+QGuiApplication* my_createApplication(int &argc, char *argv[])
+{
+    for (int i = 1; i < argc; ++i) {
+        if (!qstrcmp(argv[i], "-no-gui"))
+            return new QGuiApplication(argc, argv);
+    }
+    return new QApplication(argc, argv);
+}
+
 QGuiApplication *my_qapp;
+
 static void init_musescore () {
       int argc = 0;
       char **argv = nullptr;
-      my_qapp = new QGuiApplication(argc, argv);
-      QCoreApplication::setApplicationName("mtest-guile");
+      my_qapp = my_createApplication(argc, argv);
       g_sg = new ScriptGuile();
       qApp->processEvents();
-      StaffType st;
-      fprintf(stderr, "stafftype: %p\n", &st);
       }
 
 }
+
 
 int main (int argc, char* argv[])
       {

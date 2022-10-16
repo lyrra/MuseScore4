@@ -35,6 +35,7 @@
 
 namespace Ms {
 
+
 static constexpr int minUtickBufferSize = 480 * 4 * 10; // about 10 measures of 4/4 time signature
 
 /* initialization/control
@@ -50,6 +51,7 @@ static std::vector<std::thread> muxseq_Threads;
 static ScoreView* g_cv = nullptr;
 static MasterScore* g_cs = nullptr;
 static MidiRenderer g_midi(nullptr);
+extern MuseScore *mscore;
 
 
 #define L_MUX_QUERY(type) \

@@ -65,6 +65,11 @@
 
 namespace Ms {
 
+//FIX-20221019: these are just stubs (until importexport is an standalone app)
+bool prefs_getBool(const QString key);
+bool prefs_getInt(const QString key);
+QString prefs_getString(const QString key);
+
 //---------------------------------------------------------
 //   errmsg
 //---------------------------------------------------------
@@ -101,7 +106,7 @@ GuitarPro::GuitarPro(MasterScore* s, int v)
       {
       score   = s;
       version = v;
-      _codec = QTextCodec::codecForName(preferences.getString(PREF_IMPORT_GUITARPRO_CHARSET).toLatin1());
+      _codec = QTextCodec::codecForName(prefs_getString(PREF_IMPORT_GUITARPRO_CHARSET).toLatin1());
       voltaSequence = 1;
       tempo = -1;
       }

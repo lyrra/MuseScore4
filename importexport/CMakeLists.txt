@@ -44,7 +44,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/capella/capella.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/bww/bww.cmake)
 
 add_library (
-      ${MODULE} STATIC
+      ${MODULE} SHARED
       ${_all_h_file}
       ${PCH}
       ${MUSICXML_SRC}

@@ -50,6 +50,7 @@ include_directories(
       ${PROJECT_SOURCE_DIR}/muxseq
       ${PROJECT_SOURCE_DIR}/muxtools
       ${QTSINGLEAPPLICATION_INCLUDE_DIRS}
+      ${GUILE_INCLUDE_DIRS}
       )
 
 if (BUILD_TELEMETRY_MODULE)
@@ -174,7 +175,7 @@ if (USE_GUILE)
    set_source_files_properties(guile-glue.cpp PROPERTIES GENERATED true)
 endif (USE_GUILE)
 
-add_library(mscoreapp STATIC
+add_library(mscoreapp SHARED
       ${qrc_files}
       ${ui_headers}
       ${_all_h_file}
@@ -306,11 +307,8 @@ add_library(mscoreapp STATIC
       sparkle/autoUpdater.h sparkle/sparkleAutoUpdater.h sparkle/winSparkleAutoUpdater.h
 
       # MUX
-      ../muxlib/muxseq_client.h ../muxlib/muxseq_client.cpp
-      ../muxlib/muxseq_net.h ../muxlib/muxseq_net.cpp
       ../muxlib/muxseqsig.h     ../muxlib/muxseqsig.cpp
-      ../muxlib/muxseqlib.h     ../muxlib/muxseqlib.cpp
-
+      ../muxseq/midi.cpp
       )
 
 if (MSVC OR MINGW)
@@ -333,6 +331,7 @@ target_link_libraries(mscoreapp
       effects
       ${MUSESCORE_LIBLINK}
       mux
+      muxlib
       muxseqclient
       qzip
       importexport
@@ -374,32 +373,26 @@ if (AVSOMR)
    target_link_libraries(mscoreapp avsomr)
 endif (AVSOMR)
 
-if (USE_GUILE)
-  message(STATUS "GUILE_COMPILE: ${GUILE_COMPILE}")
-  target_link_libraries(mscoreapp ${GUILE_LINK})
-  #add_compile_options(${GUILE_COMPILE})
-  string(REPLACE " " ";" GUILE_COMPILE_LIST ${GUILE_COMPILE})
-  set_target_properties (mscoreapp
-                         PROPERTIES
-                         COMPILE_OPTIONS "${GUILE_COMPILE_LIST}"
-  )
-  message(STATUS "Guile compile flags: ${COMPILE_FLAGS}")
-endif (USE_GUILE)
+#if (USE_GUILE)
+   target_link_libraries(mscoreapp ${GUILE_LIBRARIES})
+#endif (USE_GUILE)
 
 if (MINGW)
    string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE)
    # Windows: Add -mconsole to LINK_FLAGS to get a console window for debug output
+   # --export-all-symbols .. some headers uses __declspec(dllexport), which causes
+   # linker to switch from default to exporting all symbols, to export only declared
    if(CMAKE_BUILD_TYPE MATCHES "DEBUG")
      set_target_properties( mscoreapp
         PROPERTIES
-           COMPILE_FLAGS "${PCH_INCLUDE} -g -Wall -Wextra -Winvalid-pch ${QT_DEFINITIONS} -DQT_SVG_LIB -DQT_GUI_LIB -DQT_XML_LIB -DQT_CORE_LIB"
-           LINK_FLAGS "-mwindows -mconsole -L ${QT_INSTALL_LIBS}"
+           COMPILE_FLAGS "${PCH_INCLUDE} -g -Wall -Wextra -Winvalid-pch ${GUILE_COMPILE_FLAGS} ${QT_DEFINITIONS} -DQT_SVG_LIB -DQT_GUI_LIB -DQT_XML_LIB -DQT_CORE_LIB"
+           LINK_FLAGS "-mwindows -mconsole -L ${QT_INSTALL_LIBS} -Wl,--export-all-symbols"
         )
    else(CMAKE_BUILD_TYPE MATCHES "DEBUG")
      set_target_properties( mscoreapp
           PROPERTIES
              COMPILE_FLAGS "${PCH_INCLUDE} -Wall -Wextra -Winvalid-pch ${QT_DEFINITIONS} -DQT_SVG_LIB -DQT_GUI_LIB -DQT_XML_LIB -DQT_CORE_LIB"
-             LINK_FLAGS "-Wl,-S -mwindows -L ${QT_INSTALL_LIBS}"
+             LINK_FLAGS "-Wl,-S -mwindows -L ${QT_INSTALL_LIBS} -Wl,--export-all-symbols"
           )
    endif(CMAKE_BUILD_TYPE MATCHES "DEBUG")
 

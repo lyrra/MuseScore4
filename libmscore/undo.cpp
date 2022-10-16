@@ -80,7 +80,6 @@
 #include "fret.h"
 #include "textedit.h"
 #include "textline.h"
-#include "muxseqlib.h"
 
 namespace Ms {
 

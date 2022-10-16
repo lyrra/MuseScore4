@@ -42,6 +42,11 @@
 
 namespace Ms {
 
+//FIX-20221019: these are just stubs (until importexport is an standalone app)
+bool prefs_getBool(const QString key);
+bool prefs_getInt(const QString key);
+QString prefs_getString(const QString key);
+
 //---------------------------------------------------------
 //   allocateStaves
 //---------------------------------------------------------
@@ -494,7 +499,7 @@ static void addBreak(Score* const score, MeasureBase* const mb, const LayoutBrea
 static void addBreakToPreviousMeasureBase(Score* const score, MeasureBase* const mb, const LayoutBreak::Type type)
       {
       const auto pm = mb->prev();
-      if (pm && preferences.getBool(PREF_IMPORT_MUSICXML_IMPORTBREAKS))
+      if (pm && prefs_getBool(PREF_IMPORT_MUSICXML_IMPORTBREAKS))
             addBreak(score, pm, type);
       }
 
@@ -1335,7 +1340,7 @@ static QString nextPartOfFormattedString(QXmlStreamReader& e)
                   importedtext += QString("<font size=\"%1\"/>").arg(size);
             }
 
-      bool needUseDefaultFont = preferences.getBool(PREF_MIGRATION_APPLY_EDWIN_FOR_XML_FILES);
+      bool needUseDefaultFont = prefs_getBool(PREF_MIGRATION_APPLY_EDWIN_FOR_XML_FILES);
 
       if (!fontFamily.isEmpty() && txt == syms && !needUseDefaultFont) {
             // add font family only if no <sym> replacement made
@@ -1472,7 +1477,7 @@ static void updateStyles(Score* score,
       const auto dblLyricSize = lyricSize.toDouble(); // but avoid comparing (double) floating point number with exact value later
       const auto epsilon = 0.001;                     // use epsilon instead
 
-      bool needUseDefaultFont = preferences.getBool(PREF_MIGRATION_APPLY_EDWIN_FOR_XML_FILES);
+      bool needUseDefaultFont = prefs_getBool(PREF_MIGRATION_APPLY_EDWIN_FOR_XML_FILES);
 
       // loop over all text styles (except the empty, always hidden, first one)
       // set all text styles to the MusicXML defaults
@@ -1561,13 +1566,13 @@ void MusicXMLParserPass1::defaults()
                               skipLogCurrElem();
                         }
                   double _spatium = DPMM * (millimeter * 10.0 / tenths);
-                  if (preferences.getBool(PREF_IMPORT_MUSICXML_IMPORTLAYOUT))
+                  if (prefs_getBool(PREF_IMPORT_MUSICXML_IMPORTLAYOUT))
                         _score->setSpatium(_spatium);
                   }
             else if (_e.name() == "page-layout") {
                   MxmlPageFormat pf;
                   pageLayout(pf, millimeter / (tenths * INCH));
-                  if (preferences.getBool(PREF_IMPORT_MUSICXML_IMPORTLAYOUT))
+                  if (prefs_getBool(PREF_IMPORT_MUSICXML_IMPORTLAYOUT))
                         setPageFormat(_score, pf);
                   }
             else if (_e.name() == "system-layout") {
@@ -1578,7 +1583,7 @@ void MusicXMLParserPass1::defaults()
                               _e.skipCurrentElement();  // skip but don't log
                         else if (_e.name() == "system-distance") {
                               Spatium val(_e.readElementText().toDouble() / 10.0);
-                              if (preferences.getBool(PREF_IMPORT_MUSICXML_IMPORTLAYOUT)) {
+                              if (prefs_getBool(PREF_IMPORT_MUSICXML_IMPORTLAYOUT)) {
                                     _score->style().set(Sid::minSystemDistance, val);
                                     //qDebug("system distance %f", val.val());
                                     }
@@ -1593,7 +1598,7 @@ void MusicXMLParserPass1::defaults()
                   while (_e.readNextStartElement()) {
                         if (_e.name() == "staff-distance") {
                               Spatium val(_e.readElementText().toDouble() / 10.0);
-                              if (preferences.getBool(PREF_IMPORT_MUSICXML_IMPORTLAYOUT))
+                              if (prefs_getBool(PREF_IMPORT_MUSICXML_IMPORTLAYOUT))
                                     _score->style().set(Sid::staffDistance, val);
                               }
                         else
