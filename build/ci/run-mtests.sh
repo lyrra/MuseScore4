@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
+set -e
+
 echo "Run MuseScore mtest"
 trap 'echo Run tests failed; exit 1' ERR
-
-df -h .
 
 source ./../musescore_environment.sh
 
@@ -14,11 +14,9 @@ cd build.debug/mtest
 export QT_QPA_PLATFORM=minimal:enable_fonts
 # if AddressSanitizer was used, disable leak detection
 export ASAN_OPTIONS=detect_leaks=0:new_delete_type_mismatch=0
+export PATH=$PATH:../muxtools:../libmscore:../muxlib:../mscore:../importexport
 
-make -j2
+ctest --output-on-failure
+./mtest $*
+sh run-guile.sh $*
 
-df -h .
-
-ctest -j2 --output-on-failure
-
-df -h .
