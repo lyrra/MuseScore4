@@ -1,11 +1,26 @@
 #!/usr/bin/env bash
 
+set -e
+
 echo "Build MuseScore mtest"
-trap 'echo Run tests failed; exit 1' ERR
 
 source ./../musescore_environment.sh
 
-cd build.debug/mtest
+mkdir build.debug 2> /dev/null
+cd build.debug
+
+cmake -G "Unix Makefiles" \
+      -DCMAKE_INSTALL_PREFIX=install \
+      -DCMAKE_BUILD_TYPE=DEBUG \
+      -DVERBOSE=1 \
+      -DBUILD_SHARED=ON \
+      -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
+      -DDOWNLOAD_SOUNDFONT=ON \
+      -DBUILD_WEBENGINE=OFF \
+      -DLOGLEVEL=4 \
+      ..
+
+cd mtest
 
 # run the mtests in "minimal" platform for headless systems
 # enable fonts handling
