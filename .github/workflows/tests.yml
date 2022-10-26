@@ -39,8 +39,8 @@ jobs:
     - name: Build
       run: |
         cd m
-        ../f/build/ci/build-mtests.sh -n ${{ github.run_id }}
+        ../f/build/ci/tools/build-mtests.sh -n ${{ github.run_id }}
     - name: Run tests 
       run: |
         cd m
-        ../f/build/ci/run-mtests.sh
+        ../f/build/ci/tools/run-mtests.sh
