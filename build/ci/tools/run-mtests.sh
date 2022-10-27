@@ -14,9 +14,12 @@ cd build.debug/mtest
 export QT_QPA_PLATFORM=minimal:enable_fonts
 # if AddressSanitizer was used, disable leak detection
 export ASAN_OPTIONS=detect_leaks=0:new_delete_type_mismatch=0
-export PATH=$PATH:../muxtools:../libmscore:../muxlib:../mscore:../importexport
+export LD_LIBRARY_PATH=../muxtools:../libmscore:../muxlib:../mscore:../importexport:.
 
+echo "---- run ctest ----"
 ctest --output-on-failure
+echo "---- run mtest ----"
 ./mtest $*
+echo "---- run guile tests ----"
 sh run-guile.sh $*
 
