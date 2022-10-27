@@ -6,7 +6,7 @@ echo "Build MuseScore mtest"
 
 source ./../musescore_environment.sh
 
-mkdir build.debug 2> /dev/null
+mkdir build.debug
 cd build.debug
 
 cmake -G "Unix Makefiles" \
@@ -20,7 +20,11 @@ cmake -G "Unix Makefiles" \
       -DLOGLEVEL=4 \
       ..
 
-cd mtest
+pushd s7
+make
+popd
+
+pushd mtest
 
 # run the mtests in "minimal" platform for headless systems
 # enable fonts handling
@@ -32,3 +36,4 @@ export GUILE_SYSTEM_COMPILED_PATH=/mingw64/lib/guile/3.0/ccache
 
 make
 
+popd
