@@ -17,8 +17,8 @@ export QT_QPA_PLATFORM=minimal:enable_fonts
 export ASAN_OPTIONS=detect_leaks=0:new_delete_type_mismatch=0
 export LD_LIBRARY_PATH=$D/muxtools:$D/libmscore:$D/muxlib:$D/mscore:$D/importexport:$D/mtest
 
-echo "---- run ctest ----"
-(ctest --output-on-failure || true) || true
+#echo "---- run ctest ----"
+#ctest --output-on-failure
 echo "---- run mtest ----"
 ldd mtest
 ./mtest $*
