@@ -3,7 +3,6 @@
 set -e
 
 echo "Run MuseScore mtest"
-trap 'echo Run tests failed; exit 1' ERR
 
 source ./../musescore_environment.sh
 
