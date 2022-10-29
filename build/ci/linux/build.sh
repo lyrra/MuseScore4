@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-echo "Build Linux MuseScore AppImage"
+export GUILE_SYSTEM_COMPILED_PATH=/usr/lib/x86_64-linux-gnu/guile/3.0/ccache
+
+echo "Build Linux MuseScore"
 
 mkdir build.debug 2> /dev/null
 cd build.debug || exit 1

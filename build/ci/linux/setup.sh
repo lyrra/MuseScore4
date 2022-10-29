@@ -8,7 +8,6 @@ sudo apt search libqt
 sudo apt search fluidsynth
 
 echo "Setup Linux build environment"
-trap 'echo Setup failed; exit 1' ERR
 
 df -h .
 
@@ -71,6 +70,7 @@ apt_packages_standard=(
   qtdeclarative5-dev
   qttools5-dev
   portaudio19-dev
+  guile-3.0
   guile-3.0-dev
   guile-3.0-libs
   guile-bytestructures
@@ -106,6 +106,16 @@ sudo apt-get install -y --no-install-recommends \
   "${apt_packages_standard[@]}" \
   "${apt_packages_runtime[@]}"
 
+echo "---------- whereis guile 3.0 ------------"
+ls -ltr /usr/bin/guile || true
+ls -ltr /usr/bin/guile-3.0 || true
+command -v guile || true
+echo "------------ dir /usr/lib/x86_64-linux-gnu/guile  ---------------------"
+find /usr/lib/x86_64-linux-gnu/guile || true
+echo "-------- %library-dir / SCM_LIBRARY_DIR ------------------------------"
+guile -c '(begin (display (%library-dir)) (newline))'
+echo "------------------------------------------------------"
+echo "-------- GUILE_SYSTEM_COMPILED_PATH=$GUILE_SYSTEM_COMPILED_PATH ------------------------------"
 
 #echo export PATH="${qt_path}/bin:\${PATH}" >> ${ENV_FILE}
 #echo export LD_LIBRARY_PATH="${qt_path}/lib:\${LD_LIBRARY_PATH}" >> ${ENV_FILE}
