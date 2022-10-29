@@ -7,6 +7,10 @@ echo "Build MuseScore mtest"
 source ./../musescore_environment.sh
 export GUILE_SYSTEM_COMPILED_PATH=/mingw64/lib/guile/3.0/ccache
 
+echo "----------- environment variables --------------"
+env
+echo "------------------------------------------------"
+
 mkdir build.debug
 cd build.debug
 
