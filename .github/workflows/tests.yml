@@ -39,7 +39,11 @@ jobs:
     - name: Build
       run: |
         cd m
-        ../f/build/ci/tools/build-mtests.sh -n ${{ github.run_id }}
+        ../f/build/ci/linux/build.sh -n ${{ github.run_id }}
+    - name: Build mtests
+      run: |
+        cd m
+        ../f/build/ci/tools/build-mtests.sh
     - name: Run tests 
       run: |
         cd m

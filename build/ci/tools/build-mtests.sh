@@ -5,31 +5,12 @@ set -e
 echo "Build MuseScore mtest"
 
 source ./../musescore_environment.sh
-export GUILE_SYSTEM_COMPILED_PATH=/mingw64/lib/guile/3.0/ccache
 
 echo "----------- environment variables --------------"
 env
 echo "------------------------------------------------"
 
-mkdir build.debug
-cd build.debug
-
-cmake -G "Unix Makefiles" \
-      -DCMAKE_INSTALL_PREFIX=install \
-      -DCMAKE_BUILD_TYPE=DEBUG \
-      -DVERBOSE=1 \
-      -DBUILD_SHARED=ON \
-      -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-      -DDOWNLOAD_SOUNDFONT=ON \
-      -DBUILD_WEBENGINE=OFF \
-      -DLOGLEVEL=4 \
-      ..
-
-pushd s7
-make
-popd
-
-pushd mtest
+cd build.debug/mtest
 
 # run the mtests in "minimal" platform for headless systems
 # enable fonts handling
@@ -40,4 +21,3 @@ export QT_QPA_PLATFORM=minimal:enable_fonts
 
 make
 
-popd

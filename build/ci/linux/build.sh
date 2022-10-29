@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-export GUILE_SYSTEM_COMPILED_PATH=/usr/lib/x86_64-linux-gnu/guile/3.0/ccache
+#export GUILE_SYSTEM_COMPILED_PATH=/usr/lib/x86_64-linux-gnu/guile/3.0/ccache
 
 echo "Build Linux MuseScore"
 
