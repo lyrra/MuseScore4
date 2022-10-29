@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 #export GUILE_SYSTEM_COMPILED_PATH=/usr/lib/x86_64-linux-gnu/guile/3.0/ccache
+#export CFLAGS="-fsanitize=address -fno-omit-frame-pointer"
+#export CXXFLAGS="-fsanitize=address -fno-omit-frame-pointer"
 
 echo "Build Linux MuseScore"
 
