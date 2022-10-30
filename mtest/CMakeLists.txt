@@ -139,7 +139,9 @@ set_target_properties (
       )
 
 
+message("--------- mtest is using guile ? --------")
 if (GUILE)
+message("--------- mtest is using guile ! --------")
       target_link_libraries(testutils ${GUILE_LIBRARIES})
       target_link_directories(testutils PRIVATE ${GUILE_LIBRARY_DIRS})
 
@@ -147,10 +149,10 @@ if (GUILE)
       target_link_directories(mtest PRIVATE ${GUILE_LIBRARY_DIRS})
 
       add_executable(
-            ${_all_h_file}
             mtest-guile
-            mtest-guile.cpp
+            ${_all_h_file}
             ${ui_headers}
+            mtest-guile.cpp
             )
       target_link_libraries(
             mtest-guile
