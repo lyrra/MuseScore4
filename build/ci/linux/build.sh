@@ -14,6 +14,7 @@ cmake -G "Unix Makefiles" \
       -DCMAKE_BUILD_TYPE=DEBUG \
       -DVERBOSE=1 \
       -DBUILD_SHARED=ON \
+      -DGUILE=1 \
       -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
       -DBUILD_FOR_WINSTORE=OFF \
       -DBUILD_CRASH_REPORTER=OFF \
