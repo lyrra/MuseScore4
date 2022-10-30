@@ -29,21 +29,6 @@
 #include "libmscore/excerpt.h"
 #include "thirdparty/qzip/qzipreader_p.h"
 
-static void initMyResources() {
-      Q_INIT_RESOURCE(mtest);
-      Q_INIT_RESOURCE(musescorefonts_MScore);
-      Q_INIT_RESOURCE(musescorefonts_Gootville);
-      Q_INIT_RESOURCE(musescorefonts_Bravura);
-      Q_INIT_RESOURCE(musescorefonts_Leland);
-      Q_INIT_RESOURCE(musescorefonts_MuseJazz);
-      Q_INIT_RESOURCE(musescorefonts_Edwin);
-      Q_INIT_RESOURCE(musescorefonts_FreeSerif);
-      Q_INIT_RESOURCE(musescorefonts_Free);
-      Q_INIT_RESOURCE(musescorefonts_Petaluma);
-      Q_INIT_RESOURCE(musescorefonts_FinaleMaestro);
-      Q_INIT_RESOURCE(musescorefonts_FinaleBroadway);
-      }
-
 namespace Ms {
 
 //---------------------------------------------------------
@@ -335,7 +320,7 @@ void MTest::initMTest()
       {
       qputenv("QML_DISABLE_DISK_CACHE", "true");
       qSetMessagePattern("%{function}: %{message}");
-      initMyResources();
+      initMuseScoreResources();
 //      DPI  = 120;
 //      PDPI = 120;
       MScore::noGui = true;
@@ -344,8 +329,6 @@ void MTest::initMTest()
       mscore = new MScore;
       new MuseScoreCore;
       mscore->init();
-
-      preferences.init(true);
 
       root = TESTROOT "/mtest";
       loadInstrumentTemplates(":/instruments.xml");

@@ -428,7 +428,7 @@ void setIfHumanPerformance(
       if (allChords.empty())
             return;
       const bool isHuman = isHumanPerformance(allChords, sigmap);
-      auto &opers = midiImportOperations.data()->trackOpers;
+      auto &opers = midiImportOperations->data()->trackOpers;
       if (opers.isHumanPerformance.canRedefineDefaultLater())
             opers.isHumanPerformance.setDefaultValue(isHuman);
 
@@ -1043,7 +1043,7 @@ int findLastChordPosition(const std::vector<QuantData> &quantData)
 
 void applyDynamicProgramming(std::vector<QuantData> &quantData)
       {
-      const auto &opers = midiImportOperations.data()->trackOpers;
+      const auto &opers = midiImportOperations->data()->trackOpers;
       const bool isHuman = opers.isHumanPerformance.value();
       const double MERGE_PENALTY_COEFF = 5.0;
 

@@ -31,8 +31,8 @@ namespace Ms {
 
 #define TAB_DEFAULT_DUR_YOFFS (-1.0)
 
-QList<TablatureFretFont>     StaffType::_fretFonts      = QList<TablatureFretFont>();
-QList<TablatureDurationFont> StaffType::_durationFonts  = QList<TablatureDurationFont>();
+static QList<TablatureFretFont*>     _fretFonts;
+static QList<TablatureDurationFont*> _durationFonts;
 
 const char StaffType::groupNames[STAFF_GROUP_MAX][STAFF_GROUP_NAME_MAX_LENGTH] = {
       QT_TRANSLATE_NOOP("Staff type group name", "Standard"),
@@ -42,6 +42,19 @@ const char StaffType::groupNames[STAFF_GROUP_MAX][STAFF_GROUP_NAME_MAX_LENGTH] =
 
 const QString StaffType::fileGroupNames[STAFF_GROUP_MAX] = { "pitched", "percussion", "tablature" };
 
+QList<TablatureFretFont*>& get_fretFonts() {
+      return _fretFonts;
+      }
+QList<TablatureDurationFont*>& get_durationFonts() {
+      return _durationFonts;
+      }
+
+void init_static()
+      {
+      _fretFonts      = QList<TablatureFretFont*>();
+      _durationFonts  = QList<TablatureDurationFont*>();
+      }
+
 //---------------------------------------------------------
 //   StaffType
 //---------------------------------------------------------
@@ -50,8 +63,8 @@ StaffType::StaffType()
       {
       // set reasonable defaults for type-specific members */
       _symRepeat = TablatureSymbolRepeat::NEVER;
-      setDurationFontName(_durationFonts[0].displayName);
-      setFretFontName(_fretFonts[0].displayName);
+      setDurationFontName(_durationFonts[0]->displayName);
+      setFretFontName(_fretFonts[0]->displayName);
       }
 
 StaffType::StaffType(StaffGroup sg, const QString& xml, const QString& name, int lines, int stpOff, qreal lineDist,
@@ -239,10 +252,10 @@ void StaffType::write(XmlWriter& xml) const
             }
       else {
             xml.tag("durations",        _genDurations);
-            xml.tag("durationFontName", _durationFonts[_durationFontIdx].displayName); // write font names anyway for backward compatibility
+            xml.tag("durationFontName", _durationFonts[_durationFontIdx]->displayName); // write font names anyway for backward compatibility
             xml.tag("durationFontSize", _durationFontSize);
             xml.tag("durationFontY",    _durationFontUserY);
-            xml.tag("fretFontName",     _fretFonts[_fretFontIdx].displayName);
+            xml.tag("fretFontName",     _fretFonts[_fretFontIdx]->displayName);
             xml.tag("fretFontSize",     _fretFontSize);
             xml.tag("fretFontY",        _fretFontUserY);
             if (_symRepeat != TablatureSymbolRepeat::NEVER)
@@ -409,7 +422,7 @@ void StaffType::setDurationMetrics() const
       QFont font(durationFont());
       font.setPointSizeF(_durationFontSize);
       QFontMetricsF fm(font, MScore::paintDevice());
-      QString txt(_durationFonts[_durationFontIdx].displayValue, int(TabVal::NUM_OF));
+      QString txt(_durationFonts[_durationFontIdx]->displayValue, int(TabVal::NUM_OF));
       QRectF bb( fm.tightBoundingRect(txt) );
       // raise symbols by a default margin and, if marks are above lines, by half the line distance
       // (converted from spatium units to raster units)
@@ -439,20 +452,20 @@ void StaffType::setFretMetrics() const
             // compute total height of used characters
             QString txt = QString();
             for (int idx = 0; idx < 10; idx++)  // use only first 10 digits
-                  txt.append(_fretFonts[_fretFontIdx].displayDigit[idx]);
+                  txt.append(_fretFonts[_fretFontIdx]->displayDigit[idx]);
             bb = fm.tightBoundingRect(txt);
             // for numbers: centre on '0': move down by the whole part above (negative)
             // the base line ( -bb.y() ) then up by half the whole height ( -bb.height()/2 )
-            QRectF bx( fm.tightBoundingRect(_fretFonts[_fretFontIdx].displayDigit[0]) );
+            QRectF bx( fm.tightBoundingRect(_fretFonts[_fretFontIdx]->displayDigit[0]) );
             _fretYOffset = -(bx.y() + bx.height()/2.0);
             // _fretYOffset = -(bb.y() + bb.height()/2.0);  // <- using bbox of all chars
             }
       else {
             // compute total height of used characters
-            QString txt(_fretFonts[_fretFontIdx].displayLetter, NUM_OF_LETTERFRETS);
+            QString txt(_fretFonts[_fretFontIdx]->displayLetter, NUM_OF_LETTERFRETS);
             bb = fm.tightBoundingRect(txt);
             // for letters: centre on the 'a' ascender, by moving down half of the part above the base line in bx
-            QRectF bx( fm.tightBoundingRect(_fretFonts[_fretFontIdx].displayLetter[0]) );
+            QRectF bx( fm.tightBoundingRect(_fretFonts[_fretFontIdx]->displayLetter[0]) );
             _fretYOffset = -bx.y() / 2.0;
             }
       // if on string, we are done; if between strings, raise by half line distance
@@ -476,11 +489,11 @@ void StaffType::setDurationFontName(const QString& name)
       {
       int idx;
       for (idx = 0; idx < _durationFonts.size(); idx++)
-            if (_durationFonts[idx].displayName == name)
+            if (_durationFonts[idx]->displayName == name)
                   break;
       if (idx >= _durationFonts.size())
             idx = 0;          // if name not found, use first font
-      _durationFont.setFamily(_durationFonts[idx].family);
+      _durationFont.setFamily(_durationFonts[idx]->family);
       _durationFontIdx = idx;
       _durationMetricsValid = false;
       }
@@ -493,11 +506,11 @@ void StaffType::setFretFontName(const QString& name)
       if (name == "MuseScore Tab Late Renaiss")
             locName = "MuseScore Phalèse";
       for (idx = 0; idx < _fretFonts.size(); idx++)
-            if (_fretFonts[idx].displayName == locName)
+            if (_fretFonts[idx]->displayName == locName)
                   break;
       if (idx >= _fretFonts.size())
             idx = 0;          // if name not found, use first font
-      _fretFont.setFamily(_fretFonts[idx].family);
+      _fretFont.setFamily(_fretFonts[idx]->family);
       _fretFontIdx = idx;
       _fretMetricsValid = false;
       }
@@ -637,7 +650,7 @@ QString StaffType::fretString(int fret, int string, bool ghost) const
       if (fret == INVALID_FRET_INDEX)
             return unknownFret;
       if (ghost)
-            return _fretFonts[_fretFontIdx].ghostChar;
+            return _fretFonts[_fretFontIdx]->ghostChar;
       else {
             bool        hasFret;
             QString     text  = tabBassStringPrefix(string, &hasFret);
@@ -646,16 +659,16 @@ QString StaffType::fretString(int fret, int string, bool ghost) const
             // otherwise, add to prefix the relevant digit/letter string
             return text +
                   (_useNumbers ?
-                        (fret >= NUM_OF_DIGITFRETS  ? unknownFret : _fretFonts[_fretFontIdx].displayDigit[fret]) :
-                        (fret >= NUM_OF_LETTERFRETS ? unknownFret : _fretFonts[_fretFontIdx].displayLetter[fret]) );
+                        (fret >= NUM_OF_DIGITFRETS  ? unknownFret : _fretFonts[_fretFontIdx]->displayDigit[fret]) :
+                        (fret >= NUM_OF_LETTERFRETS ? unknownFret : _fretFonts[_fretFontIdx]->displayLetter[fret]) );
            }
       }
 
 QString StaffType::durationString(TDuration::DurationType type, int dots) const
       {
-      QString s = _durationFonts[_durationFontIdx].displayValue[int(type)];
+      QString s = _durationFonts[_durationFontIdx]->displayValue[int(type)];
       for(int count=0; count < dots; count++)
-            s.append(_durationFonts[_durationFontIdx].displayDot);
+            s.append(_durationFonts[_durationFontIdx]->displayDot);
       return s;
       }
 
@@ -683,7 +696,7 @@ QString StaffType::tabBassStringPrefix(int strg, bool* hasFret) const
             // return a number with the string index
             if (bassStrgIdx > NUM_OF_BASSSTRINGS_WITH_NUMBER) {
                   *hasFret    = false;
-                  return _fretFonts[_fretFontIdx].displayDigit[strg+1];
+                  return _fretFonts[_fretFontIdx]->displayDigit[strg+1];
                   }
             // if a frettable bass string, return an empty string
             return QString();
@@ -694,13 +707,13 @@ QString StaffType::tabBassStringPrefix(int strg, bool* hasFret) const
             // return a number with the bass string index itself
             if (bassStrgIdx > NUM_OF_BASSSTRINGS_WITH_LETTER) {
                   *hasFret    = false;
-                  return _fretFonts[_fretFontIdx].displayDigit[bassStrgIdx-1];
+                  return _fretFonts[_fretFontIdx]->displayDigit[bassStrgIdx-1];
                   }
             // if a frettable bass string, return a character with the relevant num. of slashes;
             // note that the number of slashes is bassStrgIdx-1 (1st bass has no slash)
             // and slashChar[] is 0-based (slashChar[0] => 1 slash, ...), whence the -2
             QString prefix    = bassStrgIdx > 1 ?
-                        QString(_fretFonts[_fretFontIdx].slashChar[bassStrgIdx - 2]) : QString();
+                        QString(_fretFonts[_fretFontIdx]->slashChar[bassStrgIdx - 2]) : QString();
             return prefix;
             }
       }
@@ -903,9 +916,9 @@ void TabDurationSymbol::layout()
             }
       // if on a chord with special beam mode, layout an 'English'-style duration grid
       else {
-            TablatureDurationFont font = _tab->_durationFonts[_tab->_durationFontIdx];
-            hbb   = font.gridStemHeight * _spatium;         // bbox height is stem height
-            wbb   = font.gridStemWidth  * _spatium;         // bbox width is stem width
+            TablatureDurationFont* font = _durationFonts[_tab->_durationFontIdx];
+            hbb   = font->gridStemHeight * _spatium;         // bbox height is stem height
+            wbb   = font->gridStemWidth  * _spatium;         // bbox width is stem width
             xbb   = -wbb * 0.5;                             // bbox is half at left and half at right of stem centre
             ybb   = -hbb;                                   // bbox top is at top of stem height
             xpos  = 0.75 * _spatium;                        // conventional centring of stem on fret marks
@@ -915,7 +928,7 @@ void TabDurationSymbol::layout()
                   _beamLength = 0.0;
                   }
             else if (chord->beamMode() == Beam::Mode::MID || chord->beamMode() == Beam::Mode::END) {
-                  _beamLevel  = static_cast<int>(chord->durationType().type()) - static_cast<int>(font.zeroBeamLevel);
+                  _beamLevel  = static_cast<int>(chord->durationType().type()) - static_cast<int>(font->zeroBeamLevel);
                   _beamGrid   = (_beamLevel < 1 ? TabBeamGrid::INITIAL : TabBeamGrid::MEDIALFINAL);
                   // _beamLength and bbox x and width will be set in layout2(),
                   // once horiz. positions of chords are known
@@ -956,7 +969,7 @@ void TabDurationSymbol::layout2()
       // update bbox x and w, but keep current y and h
       bbox().setX(beamLen);
       // set bbox width to half a stem width (magnified) plus beam length (already magnified)
-      bbox().setWidth(_tab->_durationFonts[_tab->_durationFontIdx].gridStemWidth * spatium() * 0.5 * mags - beamLen);
+      bbox().setWidth(_durationFonts[_tab->_durationFontIdx]->gridStemWidth * spatium() * 0.5 * mags - beamLen);
       }
 
 //---------------------------------------------------------
@@ -990,10 +1003,10 @@ void TabDurationSymbol::draw(QPainter* painter) const
             }
       else {
             // if beam grid, draw stem line
-            TablatureDurationFont& font = _tab->_durationFonts[_tab->_durationFontIdx];
+            TablatureDurationFont* font = _durationFonts[_tab->_durationFontIdx];
             qreal _spatium = spatium();
             pen.setCapStyle(Qt::FlatCap);
-            pen.setWidthF(font.gridStemWidth * _spatium);
+            pen.setWidthF(font->gridStemWidth * _spatium);
             painter->setPen(pen);
             // take stem height from bbox, but de-magnify it, as drawing is already magnified
             qreal h     = bbox().y() / mag;
@@ -1001,11 +1014,11 @@ void TabDurationSymbol::draw(QPainter* painter) const
             // if beam grid is medial/final, draw beam lines too: lines go from mid of
             // previous stem (delta x stored in _beamLength) to mid of this' stem (0.0)
             if (_beamGrid == TabBeamGrid::MEDIALFINAL) {
-                  pen.setWidthF(font.gridBeamWidth * _spatium);
+                  pen.setWidthF(font->gridBeamWidth * _spatium);
                   painter->setPen(pen);
                   // lower height available to beams by half a beam width,
                   // so that top beam upper border aligns with stem top
-                  h += (font.gridBeamWidth * _spatium) * 0.5;
+                  h += (font->gridBeamWidth * _spatium) * 0.5;
                   // draw beams equally spaced within the stem height (this is
                   // different from modern engraving, but common in historic prints)
                   qreal step  = -h / _beamLevel;
@@ -1212,15 +1225,15 @@ bool StaffType::readConfigFile(const QString& fileName)
                   while (e.readNextStartElement()) {
                         const QStringRef& tag(e.name());
                         if (tag == "fretFont") {
-                              TablatureFretFont ff;
-                              if (ff.read(e))
+                              TablatureFretFont* ff = new TablatureFretFont();
+                              if (ff->read(e))
                                     _fretFonts.append(ff);
                               else
                                     continue;
                               }
                         else if (tag == "durationFont") {
-                              TablatureDurationFont df;
-                              if (df.read(e))
+                              TablatureDurationFont* df = new TablatureDurationFont();
+                              if (df->read(e))
                                     _durationFonts.append(df);
                               else
                                     continue;
@@ -1245,11 +1258,11 @@ QList<QString> StaffType::fontNames(bool bDuration)
       {
       QList<QString> names;
       if(bDuration)
-            foreach(const TablatureDurationFont& f, _durationFonts)
-                  names.append(f.displayName);
+            foreach(const TablatureDurationFont* f, _durationFonts)
+                  names.append(f->displayName);
       else
-            foreach(const TablatureFretFont& f, _fretFonts)
-                  names.append(f.displayName);
+            foreach(const TablatureFretFont* f, _fretFonts)
+                  names.append(f->displayName);
       return names;
       }
 
@@ -1266,21 +1279,21 @@ bool StaffType::fontData(bool bDuration, int nIdx, QString* pFamily, QString* pD
       {
       if (bDuration) {
             if (nIdx >= 0 && nIdx < _durationFonts.size()) {
-                  TablatureDurationFont f = _durationFonts.at(nIdx);
-                  if (pFamily)      *pFamily          = f.family;
-                  if (pDisplayName) *pDisplayName     = f.displayName;
-                  if (pSize)        *pSize            = f.defPitch;
-                  if (pYOff)        *pYOff            = f.defYOffset;
+                  TablatureDurationFont* f = _durationFonts.at(nIdx);
+                  if (pFamily)      *pFamily          = f->family;
+                  if (pDisplayName) *pDisplayName     = f->displayName;
+                  if (pSize)        *pSize            = f->defPitch;
+                  if (pYOff)        *pYOff            = f->defYOffset;
                   return true;
                   }
             }
       else {
             if (nIdx >= 0 && nIdx < _fretFonts.size()) {
-                  TablatureFretFont f = _fretFonts.at(nIdx);
-                  if (pFamily)      *pFamily          = f.family;
-                  if (pDisplayName) *pDisplayName     = f.displayName;
-                  if (pSize)        *pSize            = f.defPitch;
-                  if (pYOff)        *pYOff            = f.defYOffset;
+                  TablatureFretFont* f = _fretFonts.at(nIdx);
+                  if (pFamily)      *pFamily          = f->family;
+                  if (pDisplayName) *pDisplayName     = f->displayName;
+                  if (pSize)        *pSize            = f->defPitch;
+                  if (pYOff)        *pYOff            = f->defYOffset;
                   return true;
                   }
             }
@@ -1344,6 +1357,7 @@ std::vector<StaffType> StaffType::_presets;
 
 void StaffType::initStaffTypes()
       {
+      init_static();
       readConfigFile(0);          // get TAB font config, before initStaffTypes()
 
       // keep in sync with enum class StaffTypes

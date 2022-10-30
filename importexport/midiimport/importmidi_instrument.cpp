@@ -352,7 +352,7 @@ std::vector<const InstrumentTemplate *> findSuitableInstruments(const MTrack &tr
 
 void findInstrumentsForAllTracks(const QList<MTrack> &tracks, bool forceReload)
       {
-      auto& opers = midiImportOperations;
+      auto& opers = *midiImportOperations;
       auto &instrListOption = opers.data()->trackOpers.msInstrList;
 
       if (forceReload)
@@ -373,10 +373,10 @@ void findInstrumentsForAllTracks(const QList<MTrack> &tracks, bool forceReload)
 
 void instrumentTemplatesChanged()
       {
-      QStringList files(midiImportOperations.allMidiFiles());
+      QStringList files(midiImportOperations->allMidiFiles());
       for (const QString& file : qAsConst(files)) {
-            MidiOperations::CurrentMidiFileSetter s(midiImportOperations, file);
-            MidiOperations::FileData* data = midiImportOperations.data();
+            MidiOperations::CurrentMidiFileSetter s(*midiImportOperations, file);
+            MidiOperations::FileData* data = midiImportOperations->data();
             if (data)
                   findInstrumentsForAllTracks(data->tracks, /* forceReload */ true);
             }
@@ -384,7 +384,7 @@ void instrumentTemplatesChanged()
 
 void createInstruments(Score *score, QList<MTrack> &tracks)
       {
-      const auto& opers = midiImportOperations;
+      const auto& opers = *midiImportOperations;
       const auto &instrListOption = opers.data()->trackOpers.msInstrList;
 
       const int ntracks = tracks.size();
@@ -463,7 +463,7 @@ void createInstruments(Score *score, QList<MTrack> &tracks)
 
 QString msInstrName(int trackIndex)
       {
-      const auto& opers = midiImportOperations.data()->trackOpers;
+      const auto& opers = midiImportOperations->data()->trackOpers;
 
       const int instrIndex = opers.msInstrIndex.value(trackIndex);
       const auto &trackInstrList = opers.msInstrList.value(trackIndex);

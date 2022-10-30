@@ -3,7 +3,7 @@
 
 namespace Ms {
 
-MidiOperations::Data midiImportOperations;
+MidiOperations::Data* midiImportOperations = new MidiOperations::Data();
 
 namespace MidiOperations {
 

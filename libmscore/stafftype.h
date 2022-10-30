@@ -150,6 +150,9 @@ struct TablatureDurationFont {
       bool read(XmlReader&);
       };
 
+QList<TablatureFretFont*>& get_fretFonts();
+QList<TablatureDurationFont*>& get_durationFonts();
+
 // ready-made staff types
 // keep in sync with the _presets initialization in StaffType::initStaffTypes()
 
@@ -250,8 +253,6 @@ class StaffType {
       mutable qreal _refDPI = 0.0;                // reference value used to last computed metrics and to see if they are still valid
 
       // the array of configured fonts
-      static QList<TablatureFretFont> _fretFonts;
-      static QList<TablatureDurationFont> _durationFonts;
       static std::vector<StaffType> _presets;
 
       void  setDurationMetrics() const;
@@ -346,7 +347,7 @@ class StaffType {
       qreal durationBoxY() const;
 
       const QFont&  durationFont() const     { return _durationFont;     }
-      const QString durationFontName() const { return _durationFonts[_durationFontIdx].displayName; }
+      const QString durationFontName() const { return get_durationFonts()[_durationFontIdx]->displayName; }
       qreal durationFontSize() const      { return _durationFontSize;   }
       qreal durationFontUserY() const     { return _durationFontUserY;  }
       qreal durationFontYOffset() const        { setDurationMetrics(); return _durationYOffset + _durationFontUserY * SPATIUM20; }
@@ -359,7 +360,7 @@ class StaffType {
       qreal fretMaskY() const             { return (_onLines ? -0.5 : -1.0) * _lineDistance.val() * SPATIUM20; }
 
       const QFont&  fretFont() const      { return _fretFont;           }
-      const QString fretFontName() const  { return _fretFonts[_fretFontIdx].displayName; }
+      const QString fretFontName() const  { return get_fretFonts()[_fretFontIdx]->displayName; }
       qreal fretFontSize() const          { return _fretFontSize;       }
       qreal fretFontUserY() const         { return _fretFontUserY;      }
       qreal fretFontYOffset() const       { setFretMetrics(); return _fretYOffset + _fretFontUserY * SPATIUM20; }

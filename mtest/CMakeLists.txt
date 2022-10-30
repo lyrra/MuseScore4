@@ -65,8 +65,6 @@ set (SOURCE_LIB
 
       ${PROJECT_SOURCE_DIR}/muxtools/exports/exportmidi.cpp
       ${PROJECT_SOURCE_DIR}/muxtools/exports/exportmidi.h
-      ${PROJECT_SOURCE_DIR}/mscore/preferences.cpp
-      ${PROJECT_SOURCE_DIR}/mscore/shortcut.cpp
       ${PROJECT_SOURCE_DIR}/thirdparty/rtf2html/fmt_opts.cpp        # Required by capella.cpp and capxml.cpp
       ${PROJECT_SOURCE_DIR}/thirdparty/rtf2html/rtf2html.cpp        # Required by capella.cpp and capxml.cpp
       ${PROJECT_SOURCE_DIR}/thirdparty/rtf2html/rtf_keyword.cpp     # Required by capella.cpp and capxml.cpp
@@ -75,7 +73,6 @@ set (SOURCE_LIB
       ${PROJECT_SOURCE_DIR}/thirdparty/beatroot/AgentList.cpp       # Required by importmidi.cpp
       ${PROJECT_SOURCE_DIR}/thirdparty/beatroot/BeatTracker.cpp     # Required by importmidi.cpp
       ${PROJECT_SOURCE_DIR}/thirdparty/beatroot/Induction.cpp       # Required by importmidi.cpp
-      ${PROJECT_SOURCE_DIR}/mscore/extension.cpp # required by zerberus tests
       ${OMR_SRC}
       omr
       )
@@ -100,17 +97,17 @@ target_link_libraries(testutils
     ${QT_QTTEST_LIBRARY}
     )
 
+if (MINGW)
 set_target_properties (
     testutils
     PROPERTIES LINK_FLAGS "-g -Wl,--export-all-symbols"
     )
-
-if (MSVC)
-      target_sources(testutils_mscoreapp PRIVATE
-            ${_all_h_file}
-            ${PCH}
-            )
-endif (MSVC)
+else (MINGW)
+set_target_properties (
+    testutils
+    PROPERTIES LINK_FLAGS "-g" # -ldl -Wl,-export-dynamic
+    )
+endif (MINGW)
 
 add_executable(
       mtest
@@ -120,7 +117,6 @@ add_executable(
       s7mtest.cpp
       ${CMAKE_CURRENT_BINARY_DIR}/s7gen.h ${CMAKE_CURRENT_BINARY_DIR}/s7gen.cpp
       )
-
 
 target_link_libraries(
       mtest
@@ -144,6 +140,12 @@ set_target_properties (
 
 
 if (GUILE)
+      target_link_libraries(testutils ${GUILE_LIBRARIES})
+      target_link_directories(testutils PRIVATE ${GUILE_LIBRARY_DIRS})
+
+      target_link_libraries(mtest ${GUILE_LIBRARIES})
+      target_link_directories(mtest PRIVATE ${GUILE_LIBRARY_DIRS})
+
       add_executable(
             ${_all_h_file}
             mtest-guile
@@ -167,7 +169,8 @@ if (GUILE)
             ${QT_INCLUDES}
             ${GUILE_INCLUDE_DIRS})
 
-      target_link_libraries(mtest-guile ${GUILE_LIBRARY})
+      target_link_libraries(mtest-guile ${GUILE_LIBRARIES})
+      target_link_directories(mtest-guile PRIVATE ${GUILE_LIBRARY_DIRS})
 
 endif (GUILE)
 

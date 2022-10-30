@@ -115,7 +115,7 @@ void recognizeMainKeySig(QList<MTrack> &tracks)
       {
       bool needToFindKey = false;
 
-      const auto &opers = midiImportOperations;
+      const auto &opers = *midiImportOperations;
       const bool isHuman = opers.data()->trackOpers.isHumanPerformance.value();
       if (isHuman)
             needToFindKey = true;

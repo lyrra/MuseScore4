@@ -288,7 +288,7 @@ class CurrentMidiFileSetter
 
 } // namespace MidiOperations
 
-extern MidiOperations::Data midiImportOperations;
+extern MidiOperations::Data* midiImportOperations;
 } // namespace Ms
 
 

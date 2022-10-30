@@ -17,23 +17,11 @@ add_executable(
       ${TARGET}.cpp
       )
 
-target_link_libraries(${TARGET} testutils)
-
-if (MSVC)
-      set(_all_h_file "${PROJECT_SOURCE_DIR}/all.h")
-      target_sources(${TARGET} PRIVATE
-            ${_all_h_file}
-            ${PCH}
-            )
-      include(FindStaticLibrary)
-endif (MSVC)
-
 target_link_libraries(
       ${TARGET}
+      testutils
       ${QT_LIBRARIES}
       ${QT_QTTEST_LIBRARY}
-      mscoreapp
-      importexport
       qzip
       ofqf
       )
@@ -45,30 +33,9 @@ if (OMR)
       endif (OCR)
 endif (OMR)
 
-# ZIP library
-if (MSVC)
-      target_link_libraries(
-            ${TARGET}
-            zlibstat
-            )
-else (MSVC)
-      target_link_libraries(
-            ${TARGET}
-            z
-            )
-endif (MSVC)
-
-target_link_libraries(${TARGET} freetype)
-
-if (NOT MINGW AND NOT APPLE AND NOT MSVC)
-   target_link_libraries(${TARGET}
-      dl
-      pthread)
-endif (NOT MINGW AND NOT APPLE AND NOT MSVC)
-
 if (APPLE)
-target_link_libraries(${TARGET} ${OsxFrameworks})
 target_link_libraries(${TARGET}
+      ${OsxFrameworks}
       dl
       pthread
       )
@@ -107,6 +74,11 @@ set_target_properties (
 endif (APPLE AND (CMAKE_VERSION VERSION_LESS "3.5.0"))
 
 add_test(${TARGET} ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}  -xunitxml -o result.xml)
+
+if (GUILE)
+      target_link_libraries(${TARGET} ${GUILE_LIBRARIES})
+      target_link_directories(${TARGET} PRIVATE ${GUILE_LIBRARY_DIRS})
+endif (GUILE)
 
 # On Windows some tests need access to supporting files
 # MSVC has a different definition for CMAKE_CURRENT_BINARY_DIR

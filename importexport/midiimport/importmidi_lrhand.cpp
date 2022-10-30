@@ -391,7 +391,7 @@ void splitIntoLeftRightHands(std::multimap<int, MTrack> &tracks)
       for (auto it = tracks.begin(); it != tracks.end(); ++it) {
             if (it->second.mtrack->drumTrack() || it->second.chords.empty())
                   continue;
-            const auto &opers = midiImportOperations.data()->trackOpers;
+            const auto &opers = midiImportOperations->data()->trackOpers;
                         // iterator 'it' will change after track split to ++it
                         // C++11 guarantees that newely inserted item with equal key will go after:
                         //    "The relative ordering of elements with equivalent keys is preserved,

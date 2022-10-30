@@ -3158,7 +3158,6 @@ class ScoreFont {
       double _textEnclosureThickness = 0;
       mutable QFont* font { 0 };
 
-      static QVector<ScoreFont> _scoreFonts;
       static std::array<uint, size_t(SymId::lastSym)+1> _mainSymCodeTable;
       void load();
       void computeMetrics(Sym* sym, int code);
@@ -3182,7 +3181,6 @@ class ScoreFont {
       static ScoreFont* fontFactory(QString);
       static ScoreFont* fallbackFont();
       static const char* fallbackTextFont();
-      static const QVector<ScoreFont>& scoreFonts() { return _scoreFonts; }
       static QJsonObject initGlyphNamesJson();
 
       QString toString(SymId) const;
@@ -3225,8 +3223,10 @@ class ScoreFont {
       };
 
 extern void initScoreFonts();
+extern QVector<ScoreFont*>& get_scoreFonts();
 
 }     // namespace Ms
+
 
 Q_DECLARE_METATYPE(Ms::SymId);
 #endif

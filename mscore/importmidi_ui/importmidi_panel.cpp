@@ -51,7 +51,7 @@ void ImportMidiPanel::setMidiFile(const QString &fileName)
       if (!QFile(_midiFile).exists())
             return;
 
-      MidiOperations::Data &opers = midiImportOperations;
+      MidiOperations::Data &opers = *midiImportOperations;
       MidiOperations::CurrentMidiFileSetter setCurrentMidiFile(opers, _midiFile);
 
       if (opers.data()->processingsOfOpenedFile == 1) {     // initial processing of MIDI file
@@ -89,7 +89,7 @@ void ImportMidiPanel::setMidiFile(const QString &fileName)
 
 void ImportMidiPanel::saveTableViewState()
       {
-      MidiOperations::Data &opers = midiImportOperations;
+      MidiOperations::Data &opers = *midiImportOperations;
       MidiOperations::CurrentMidiFileSetter setCurrentMidiFile(opers, _midiFile);
 
       const QByteArray hData = _ui->tracksView->horizontalHeader()->saveState();
@@ -100,7 +100,7 @@ void ImportMidiPanel::saveTableViewState()
 
 void ImportMidiPanel::restoreTableViewState()
       {
-      MidiOperations::Data &opers = midiImportOperations;
+      MidiOperations::Data &opers = *midiImportOperations;
       MidiOperations::CurrentMidiFileSetter setCurrentMidiFile(opers, _midiFile);
 
       const QByteArray hData = opers.data()->HHeaderData;
@@ -185,7 +185,7 @@ void ImportMidiPanel::hidePanel()
 
 void ImportMidiPanel::setReorderedIndexes()
       {
-      auto &opers = midiImportOperations;
+      auto &opers = *midiImportOperations;
       for (int i = 0; i != _model->trackCount(); ++i) {
             const int trackRow = _model->rowFromTrackIndex(i);
             const int reorderedRow = _ui->tracksView->verticalHeader()->logicalIndex(trackRow);
@@ -201,7 +201,7 @@ void ImportMidiPanel::applyMidiImport()
 
       _importInProgress = true;
 
-      auto &opers = midiImportOperations;
+      auto &opers = *midiImportOperations;
       MidiOperations::CurrentMidiFileSetter setCurrentMidiFile(opers, _midiFile);
                   // update charset
       if (opers.data()->charset != _ui->comboBoxCharset->currentText()) {
@@ -229,7 +229,7 @@ void ImportMidiPanel::cancelChanges()
 
 void ImportMidiPanel::doCancelChanges()
       {
-      auto &opers = midiImportOperations;
+      auto &opers = *midiImportOperations;
       MidiOperations::CurrentMidiFileSetter setCurrentMidiFile(opers, _midiFile);
 
       _model->reset(opers.data()->trackOpers,
@@ -263,7 +263,7 @@ bool ImportMidiPanel::canTryCancelChanges() const
       if (!_model->isAllApplied())
             return true;
 
-      auto &opers = midiImportOperations;
+      auto &opers = *midiImportOperations;
       MidiOperations::CurrentMidiFileSetter setCurrentMidiFile(opers, _midiFile);
       if (!opers.data())
             return false;
@@ -277,7 +277,7 @@ bool ImportMidiPanel::canTryCancelChanges() const
 
 bool ImportMidiPanel::fileDataAvailable(const QString& midiFile)
       {
-      auto &opers = midiImportOperations;
+      auto &opers = *midiImportOperations;
       MidiOperations::CurrentMidiFileSetter setCurrentMidiFile(opers, midiFile);
       return bool(opers.data());
       }
@@ -326,7 +326,7 @@ void ImportMidiPanel::excludeMidiFile(const QString &fileName)
       if (_importInProgress || _reopenInProgress)
             return;
 
-      auto &opers = midiImportOperations;
+      auto &opers = *midiImportOperations;
       opers.excludeMidiFile(fileName);
 
       if (fileName == _midiFile) {

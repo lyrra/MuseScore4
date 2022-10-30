@@ -147,7 +147,7 @@ void splitDrumTracks(std::multimap<int, MTrack> &tracks)
       for (auto it = tracks.begin(); it != tracks.end(); ++it) {
             if (!it->second.mtrack->drumTrack() || it->second.chords.empty())
                   continue;
-            const auto &opers = midiImportOperations.data()->trackOpers;
+            const auto &opers = midiImportOperations->data()->trackOpers;
             if (!opers.doStaffSplit.value(it->second.indexOfOperation))
                   continue;
             const std::map<int, MTrack> newTracks = splitDrumTrack(it->second);

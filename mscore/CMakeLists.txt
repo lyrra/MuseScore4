@@ -373,9 +373,12 @@ if (AVSOMR)
    target_link_libraries(mscoreapp avsomr)
 endif (AVSOMR)
 
-#if (USE_GUILE)
+# Does this applies to mingw too?
+if (USE_GUILE)
    target_link_libraries(mscoreapp ${GUILE_LIBRARIES})
-#endif (USE_GUILE)
+   target_link_directories(mscoreapp PRIVATE ${GUILE_LIBRARY_DIRS})
+
+endif (USE_GUILE)
 
 if (MINGW)
    string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE)

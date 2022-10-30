@@ -205,14 +205,14 @@ void extractLyricsToMidiData(const MidiFile *mf)
       for (const auto &t: mf->tracks()) {
             const auto lyrics = extractLyricsFromTrack(t, mf->division(), mf->isDivisionInTps());
             if (!lyrics.empty())
-                  midiImportOperations.data()->lyricTracks.push_back(lyrics);
+                  midiImportOperations->data()->lyricTracks.push_back(lyrics);
             }
       }
 
 void setInitialLyricsFromMidiData(const QList<MTrack> &tracks)
       {
       std::set<int> usedTracks;
-      auto &data = *midiImportOperations.data();
+      auto &data = *midiImportOperations->data();
       const auto &lyricTracks = data.lyricTracks;
       if (lyricTracks.isEmpty())
             return;
@@ -249,11 +249,11 @@ std::vector<std::pair<ReducedFraction, ReducedFraction> > findMatchedLyricTimes(
 
 void setLyricsFromOperations(const QList<MTrack> &tracks)
       {
-      const auto &lyricTracks = midiImportOperations.data()->lyricTracks;
+      const auto &lyricTracks = midiImportOperations->data()->lyricTracks;
       if (lyricTracks.isEmpty())
             return;
       for (const auto &track: tracks) {
-            const auto &opers = midiImportOperations.data()->trackOpers;
+            const auto &opers = midiImportOperations->data()->trackOpers;
             const int lyricTrackIndex = opers.lyricTrackIndex.value(track.indexOfOperation);
             if (lyricTrackIndex >= 0 && lyricTrackIndex < lyricTracks.size()) {
                   const auto &lyricTrack = lyricTracks[lyricTrackIndex];
@@ -266,7 +266,7 @@ void setLyricsFromOperations(const QList<MTrack> &tracks)
 
 void setLyricsToScore(QList<MTrack> &tracks)
       {
-      const auto *data = midiImportOperations.data();
+      const auto *data = midiImportOperations->data();
       if (data->processingsOfOpenedFile == 0) {
             setInitialLyricsFromMidiData(tracks);
             }
@@ -278,7 +278,7 @@ void setLyricsToScore(QList<MTrack> &tracks)
 QList<std::string> makeLyricsListForUI()
       {
       QList<std::string> list;
-      const auto &lyrics = midiImportOperations.data()->lyricTracks;
+      const auto &lyrics = midiImportOperations->data()->lyricTracks;
       if (lyrics.isEmpty())
             return list;
 

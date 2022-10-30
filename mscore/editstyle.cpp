@@ -450,8 +450,8 @@ EditStyle::EditStyle(Score* s, QWidget* parent)
       accidentalsGroup->setVisible(false); // disable, not yet implemented
 
       musicalSymbolFont->clear();
-      for (auto i : ScoreFont::scoreFonts()) {
-            musicalSymbolFont->addItem(i.name(), i.name());
+      for (auto i : get_scoreFonts()) {
+            musicalSymbolFont->addItem(i->name(), i->name());
             }
 
       static const SymId ids[] = {
@@ -1423,8 +1423,8 @@ void EditStyle::setValues()
 
       QString mfont(lstyle.value(Sid::MusicalSymbolFont).toString());
       int idx = 0;
-      for (const auto& i : ScoreFont::scoreFonts()) {
-            if (i.name().toLower() == mfont.toLower()) {
+      for (const auto& i : get_scoreFonts()) {
+            if (i->name().toLower() == mfont.toLower()) {
                   musicalSymbolFont->setCurrentIndex(idx);
                   break;
                   }

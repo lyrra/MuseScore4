@@ -80,6 +80,10 @@ target_include_directories(mscore PRIVATE
 
 target_link_libraries(mscore mscoreapp global)
 
+if (GUILE)
+target_link_libraries(mscore ${GUILE_LIBRARIES})
+target_link_directories(mscore PRIVATE ${GUILE_LIBRARY_DIRS})
+endif (GUILE)
 
 if (APPLE)
       set_target_properties (mscore

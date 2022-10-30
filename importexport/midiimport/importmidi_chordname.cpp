@@ -149,7 +149,7 @@ QString findChordName(
 
 void findChordNames(const std::multimap<int, MTrack> &tracks)
       {
-      auto &data = *midiImportOperations.data();
+      auto &data = *midiImportOperations->data();
 
       for (const auto &track: tracks) {
             for (const auto &event: track.second.mtrack->events()) {
@@ -167,7 +167,7 @@ void findChordNames(const std::multimap<int, MTrack> &tracks)
 
 void setChordNames(QList<MTrack> &tracks)
       {
-      const auto &data = *midiImportOperations.data();
+      const auto &data = *midiImportOperations->data();
       if (data.chordNames.empty() || !data.trackOpers.showChordNames.value())
             return;
 

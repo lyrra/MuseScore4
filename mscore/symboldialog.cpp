@@ -48,7 +48,7 @@ void SymbolDialog::createSymbolPalette()
 void SymbolDialog::createSymbols()
       {
       int currentIndex = fontList->currentIndex();
-      const ScoreFont* f = &ScoreFont::scoreFonts()[currentIndex];
+      const ScoreFont* f = get_scoreFonts()[currentIndex];
       // init the font if not done yet
       ScoreFont::fontFactory(f->name());
       sp->clear();
@@ -74,9 +74,9 @@ SymbolDialog::SymbolDialog(const QString& s, QWidget* parent)
       range = s;        // smufl symbol range
       int idx = 0;
       int currentIndex = 0;
-      for (const ScoreFont& f : ScoreFont::scoreFonts()) {
-            fontList->addItem(f.name());
-            if (f.name() == "Leland" || f.name() == "Bravura")
+      for (const ScoreFont* f : get_scoreFonts()) {
+            fontList->addItem(f->name());
+            if (f->name() == "Leland" || f->name() == "Bravura")
                   currentIndex = idx;
             ++idx;
             }
