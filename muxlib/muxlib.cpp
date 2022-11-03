@@ -1,4 +1,5 @@
 
+#include <thread>
 #include "event.h"
 #include "mux.h"
 #include "muxlib.h"
@@ -6,8 +7,12 @@
 namespace Ms {
 
 void (*g_logstr) (char *str);
+thread_local char* threadname = nullptr;
 thread_local char _logbuf[256];
 
+void _set_threadname(char *name) {
+    threadname = name;
+}
 
 int overlap_strcat(char* dst, char* src) {
     int i = 0, a = 0, f = 0;
@@ -45,6 +50,22 @@ void _log_write () {
     _logbuf[255] = 0; // ambiguous snprintf standard definition
     char t[64+256];
     get_timestamp(t);
+    size_t tid = std::hash<std::thread::id>()(std::this_thread::get_id());
+    if (threadname) {
+        overlap_strcat(t, threadname);
+    } else {
+        int tn;
+        tn = (tid >> 32) ^ (tid && 0xffffffff); // 64bit -> 32bit
+        tn = (tn  >> 16) ^ (tn  && 0xffff);     // 32bit -> 16bit
+        char ts[6];
+        ts[0] = (tn >> 12 & 0xf) + 65;
+        ts[1] = (tn >>  8 & 0xf) + 65;
+        ts[2] = (tn >>  4 & 0xf) + 65;
+        ts[3] = (tn       & 0xf) + 65;
+        ts[4] = ' ';
+        ts[5] = 0;
+        overlap_strcat(t, ts);
+    }
     int n = overlap_strcat(t, _logbuf);
     if (n > 0) {
         (*g_logstr)(t);

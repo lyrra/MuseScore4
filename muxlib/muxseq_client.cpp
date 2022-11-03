@@ -231,6 +231,7 @@ void muxseq_network_mainloop_queryrep(Mux::MuxSocket &sock)
 
 void muxseq_query_req_thread_init(std::string _notused)
 {
+    _set_threadname(">seq ");
     qDebug("Connecting to muxseq query-req-client.");
     Mux::mux_make_connection(g_muxseq_query_client_socket, MUX_MUSESCORE_QUERY_CLIENT_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REQ, Mux::ZmqServer::CONNECT);
     qDebug("Connected to muxseq (as query-req-client).");
@@ -240,6 +241,7 @@ void muxseq_query_req_thread_init(std::string _notused)
 
 void muxseq_query_rep_thread_init(std::string _notused)
 {
+    _set_threadname("<seq ");
     Mux::mux_make_connection(g_muxseq_queryreq_client_socket, MUX_MUSESCORE_QUERYREQ_CLIENT_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REP, Mux::ZmqServer::CONNECT);
     //g_thread_musescoreBulletin_started = true;
     muxseq_network_mainloop_queryrep(g_muxseq_queryreq_client_socket);

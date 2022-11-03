@@ -45,6 +45,7 @@ extern struct MuxQueue *queue_from_mscore;
 /* this thread listens on message from musescore */
 void muxseq_mscoreQueryServer_thread_init(std::string _notused)
 {
+    _set_threadname("m>  ");
     Mux::mux_make_connection(g_muxsocket_mscoreQueryServer, MUX_MUSESCORE_QUERY_SERVER_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REP, Mux::ZmqServer::BIND);
     muxseq_mscoreQueryServer_mainloop(g_muxsocket_mscoreQueryServer);
 }
@@ -52,6 +53,7 @@ void muxseq_mscoreQueryServer_thread_init(std::string _notused)
 /* this thread ask message to musescore */
 void muxseq_mscoreQueryReqServer_thread_init(std::string _notused)
 {
+    _set_threadname("m<  ");
     Mux::mux_make_connection(g_muxsocket_mscoreQueryReqServer, MUX_MUSESCORE_QUERYREQ_SERVER_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REQ, Mux::ZmqServer::BIND);
     muxseq_mscoreQueryReqServer_mainloop(g_muxsocket_mscoreQueryReqServer);
 }
@@ -60,6 +62,7 @@ void muxseq_mscoreQueryReqServer_thread_init(std::string _notused)
 /* this thread listens on message from muxaudio */
 void muxseq_muxaudioQueryClient_thread_init(std::string _notused)
 {
+    _set_threadname("<a  ");
     Mux::mux_make_connection(g_muxsocket_muxaudioQueryClientAudio, MUX_MUXAUDIO_QUERY_AUDIO_CLIENT_URL, Mux::ZmqType::QUERY, Mux::ZmqDir::REP, Mux::ZmqServer::CONNECT);
     muxseq_muxaudioQueryClient_mainloop(g_muxsocket_muxaudioQueryClientAudio);
 }
@@ -72,6 +75,7 @@ void muxseq_thread_process_init(std::string msg)
 
 void muxseq_muxaudioWorker_thread_init(std::string msg)
 {
+    _set_threadname("wrk ");
     LD("MUXSEQ audio-worker-process thread initializing.");
     muxseq_muxaudioWorker_process();
 }

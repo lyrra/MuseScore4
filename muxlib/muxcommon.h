@@ -29,6 +29,7 @@ namespace Ms {
 extern void (*g_logstr) (char *str);
 extern thread_local char _logbuf[256];
 void _log_write ();
+void _set_threadname(char *name);
 
 // transport states (also the jack audio transport states)
 enum class Transport : char {

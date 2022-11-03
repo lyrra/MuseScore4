@@ -7782,6 +7782,7 @@ inline static void showSplashMessage(MsSplashScreen* sc, QString&& message)
 
 void MuseScore::init(QStringList& argv)
       {
+      _set_threadname("gui ");
       mscoreGlobalShare = getSharePath();
       iconPath = externalIcons ? mscoreGlobalShare + QString("icons/") :  QString(":/data/icons/");
 
