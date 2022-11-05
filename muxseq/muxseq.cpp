@@ -369,7 +369,7 @@ int muxseq_handle_musescore_msg_MsgTypeMasterSynthInitInstruments(Mux::MuxSocket
     memcpy(&numSevs, ptr + 8, 4);
     LD("MSCORE ==> MUXSEQ msg %s (%i) maxMidiPorts=%i numSevs=%i", muxseq_msg_type_info((MuxseqMsgType)type), type, maxMidiPorts, numSevs);
     if (g_seq) {
-        int len = sizeof(struct SparseEvent) * numSevs;
+        int len = sizeof(struct SparseMidiEvent) * numSevs;
         void* data = malloc(12 + len);
         memcpy(data, buf, 12 + len);
         if (mux_mq_write(queue_from_mscore, data) < 0) {
@@ -424,8 +424,12 @@ int muxseq_handle_muxaudioQueryClient_msg_AudioBufferFeed (Mux::MuxSocket &sock,
     (void) msg;
     struct MuxaudioBuffer* mabuf = mux_process_bufferStereo();
     zmq_send(sock.socket, mabuf, sizeof(struct MuxaudioBuffer), 0);
-    g_utick = msg.payload.i;
-    muxseq_mscore_tell(MsgTypeSeqUTick, mabuf->utick);
+
+    uint64_t utick = msg.payload.i;
+    if (g_utick != utick) {
+        g_utick = utick;
+        muxseq_mscore_tell(MsgTypeSeqUTick, utick);
+    }
     mux_advance_bufferStereo();
     return 0;
 }
