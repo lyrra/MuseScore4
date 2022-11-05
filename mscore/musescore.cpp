@@ -53,6 +53,7 @@
 #include "libmscore/note.h"
 #include "libmscore/staff.h"
 #include "libmscore/harmony.h"
+#include "libmscore/repeatlist.h"
 #include "zoombox.h"
 #include "libmscore/sig.h"
 #include "libmscore/undo.h"
@@ -1967,6 +1968,10 @@ MuseScore::MuseScore()
       if (muxseq_seq_alive()) {
             connect(muxseqsig, SIGNAL(sigSeqStarted()), muxseqsig, SLOT(sigSeqStartedHandle()));
             connect(muxseqsig, SIGNAL(sigSeqStopped()), muxseqsig, SLOT(sigSeqStoppedHandle()));
+            connect(muxseqsig, SIGNAL(sigSeqUTick(unsigned int)), muxseqsig, SLOT(sigSeqUTickHandle(unsigned int)));
+            }
+      else {
+            qFatal("SEQ is not alive, can't connect signals");
             }
       loadScoreList();
 
@@ -4987,6 +4992,13 @@ void MuseScore::setPos(const Fraction& t)
          .arg(tick,     3, 10, QLatin1Char('0'))
          );
       }
+
+void MuseScore::handleUTick(unsigned int utick) {
+    LD("MuseScore::handleUTick utick: %ld", utick);
+    int t = cs->repeatList().utick2tick(utick);
+    currentScoreView()->moveCursor(Fraction::fromTicks(t));
+    setPos(Fraction::fromTicks(t));
+}
 
 //---------------------------------------------------------
 //   undoRedo

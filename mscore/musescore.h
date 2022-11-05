@@ -578,6 +578,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       virtual void cmd(QAction* a);
       void dirtyChanged(Score*);
       void setPos(const Fraction& tick);
+      void handleUTick(unsigned int utick);
       QString pluginPathFromIdx(int idx);
       void pluginTriggered(int);
       void pluginTriggered(QString path);
