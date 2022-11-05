@@ -897,8 +897,6 @@ void Seq::process(struct MuxaudioBuffer *mabuf)
       // Checking for the reposition from JACK Transport
       checkTransportSeek(playFrame, framesRemain, inCountIn);
 
-      mabuf->utick = playFrame;
-      LD4("Seq::process frames=%i driverState=%i state=%i playFrame=%i", framesPerPeriod, (int) driverState, (int) state, playFrame);
       if (driverState != state) {
             // Got a message from JACK Transport panel: Play
             if (state == Transport::STOP && driverState == Transport::PLAY) {
@@ -977,6 +975,8 @@ void Seq::process(struct MuxaudioBuffer *mabuf)
       processMessages();
 
       LD6("Seq::process state=%i (play=%i)", (int) state, (int) Transport::PLAY);
+      mabuf->utick = 0;
+      LD4("Seq::process frames=%i driverState=%i state=%i playFrame=%i rt_tick=%i", framesPerPeriod, (int) driverState, (int) state, playFrame, g_utick);
       if (state == Transport::PLAY) {
             // FIX: if (!cs)
             //      return;
@@ -1003,7 +1003,7 @@ void Seq::process(struct MuxaudioBuffer *mabuf)
             while (*pPlayPos != pEventsEnd) {
                   int playPosUTick = (*pPlayPos)->first;
                   int n; // current frame (relative to start of playback) that is being synthesized
-                  g_utick = mabuf->utick = playPosUTick;
+                  mabuf->utick = playPosUTick;
                   if (inCountIn) {
                         LD8("Seq::process -- #### WARNING inCountIn, NOT IMPL ####");
 #if 0
