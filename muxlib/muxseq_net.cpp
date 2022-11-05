@@ -18,7 +18,8 @@ namespace Ms {
 struct Mux::MuxSocket g_muxseq_query_client_socket;
 struct Mux::MuxSocket g_muxseq_queryreq_client_socket;
 
-int muxseq_query_zmq (MuxseqMsgType type, MuxseqMsg &msg) {
+static int muxseq_query_zmq (MuxseqMsgType type, MuxseqMsg &msg) {
+    //LD("muxseq_query_zmq %s + msg", muxseq_msg_type_info(type));
     //LD("MSCORE ==> MUXSEQ query msg %s", muxseq_msg_type_info(type));
     msg.type = type;
     Mux::mux_zmq_send(g_muxseq_query_client_socket, (void*) &msg, sizeof(struct MuxseqMsg));
@@ -26,11 +27,13 @@ int muxseq_query_zmq (MuxseqMsgType type, MuxseqMsg &msg) {
 }
 
 int muxseq_send (MuxseqMsgType type) {
+    LD("muxseq_send %s", muxseq_msg_type_info(type));
     struct MuxseqMsg msg;
     return muxseq_query_zmq(type, msg);
 }
 
 int muxseq_send (MuxseqMsgType type, int i) {
+    LD("muxseq_send %s int=%i", muxseq_msg_type_info(type), i);
     struct MuxseqMsg msg;
     msg.payload.i = i;
     //qDebug("muxseq-send msg %s, int=%i", muxseq_msg_type_info(type), msg.payload.i);
@@ -38,6 +41,7 @@ int muxseq_send (MuxseqMsgType type, int i) {
 }
 
 int muxseq_send (MuxseqMsgType type, double d) {
+    LD("muxseq_send %s float=%f", muxseq_msg_type_info(type), d);
     struct MuxseqMsg msg;
     msg.payload.d = d;
     //qDebug("muxseq-send msg %s, double=%f", muxseq_msg_type_info(type), d);
@@ -45,6 +49,7 @@ int muxseq_send (MuxseqMsgType type, double d) {
 }
 
 int muxseq_send (MuxseqMsgType type, NPlayEvent event) {
+    LD("muxseq_send %s NPlayEvent", muxseq_msg_type_info(type));
     struct MuxseqMsg msg;
     muxseq_msg_set_NPlayEvent(msg, event);
     return muxseq_query_zmq(type, msg);
@@ -60,6 +65,7 @@ int muxseq_send (MuxseqMsgType type, int maxMidiPorts, std::vector<struct Sparse
     memcpy(buf+8,  &slen, 4);
     struct SparseMidiEvent *sevs2 = (struct SparseMidiEvent *) (buf + 12);
     memcpy(sevs2, &sevs[0], sizeof(struct SparseMidiEvent) * slen);
+    LD("muxseq_send %s maxMidiPorts+sevs (%d bytes)", muxseq_msg_type_info(type), len);
     int rc = Mux::mux_zmq_send(g_muxseq_query_client_socket, buf, len);
     free(buf);
     if (rc != len) {
@@ -72,25 +78,30 @@ int muxseq_send (MuxseqMsgType type, int maxMidiPorts, std::vector<struct Sparse
        
 
 int muxseq_query (MuxseqMsgType type) {
+    LD("muxseq_query %s", muxseq_msg_type_info(type));
     struct MuxseqMsg msg;
     muxseq_query_zmq(type, msg);
     return 0;
 }
 
 bool muxseq_query_bool (MuxseqMsgType type) {
+    LD("muxseq_query_bool %s", muxseq_msg_type_info(type));
     struct MuxseqMsg msg;
     muxseq_query_zmq(type, msg);
-    //LD("muxseq_query_bool %s => %i", muxseq_msg_type_info(type), msg.payload.b);
+    LD("muxseq_query_bool %s => %i", muxseq_msg_type_info(type), msg.payload.b);
     return msg.payload.b;
 }
 
 double muxseq_query_float (MuxseqMsgType type) {
+    LD("muxseq_query_float %s", muxseq_msg_type_info(type));
     struct MuxseqMsg msg;
     muxseq_query_zmq(type, msg);
+    LD("muxseq_query_float %s => %f", muxseq_msg_type_info(type), msg.payload.d);
     return msg.payload.d;
 }
 
 void muxseq_query (MuxseqMsgType type, bool b) {
+    LD("muxseq_query %s bool %i", muxseq_msg_type_info(type), b);
     struct MuxseqMsg msg;
     msg.payload.b = b;
     muxseq_query_zmq(type, msg);
