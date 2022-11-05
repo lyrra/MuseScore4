@@ -48,9 +48,9 @@ static bool g_thread_musescoreBulletin_started = false;
 static std::vector<std::thread> muxseq_Threads;
 /**/
 // these are an mscore-side Seq object
-static ScoreView* g_cv = nullptr;
-static MasterScore* g_cs = nullptr;
-static MidiRenderer g_midi(nullptr);
+ScoreView* g_cv = nullptr;
+MasterScore* g_cs = nullptr;
+MidiRenderer g_midi(nullptr);
 extern MuseScore *mscore;
 
 
@@ -131,6 +131,8 @@ int handle_mscore_msg_SeqStopped (Mux::MuxSocket &sock, struct MuxseqMsg msg)
 {
     int playFrame = msg.payload.i;
     int tck = g_cs->repeatList().utick2tick(g_cs->utime2utick(qreal(playFrame) / qreal(MScore::sampleRate)));
+    //FIX: mscore thread need to update playpos
+    //     emit muxseqsig_seq_emit_stopped ?
     g_cs->setPlayPos(Fraction::fromTicks(tck));
     g_cs->update();
     mscore->seqStopped();
@@ -146,15 +148,10 @@ int handle_mscore_msg_SeqStopped (Mux::MuxSocket &sock, struct MuxseqMsg msg)
 
 int handle_mscore_msg_SeqUTick (Mux::MuxSocket &sock, struct MuxseqMsg msg)
 {
-    int utick = msg.payload.i;
+    uint64_t utick = msg.payload.i;
     int t = 0;
-    if (g_cs) {
-      t = g_cs->repeatList().utick2tick(utick);
-      mscore->currentScoreView()->moveCursor(Fraction::fromTicks(t));
-      mscore->setPos(Fraction::fromTicks(t));
-    }
+    muxseqsig_seq_emit_utick(utick);
     strcpy(msg.label, "mscore");
-    msg.payload.i = t;
     if (mux_query_send(sock, &msg, sizeof(struct MuxseqMsg)) == -1) {
         return -1;
     }
@@ -196,7 +193,7 @@ int muxseq_network_mainloop_queryrep_recv(Mux::MuxSocket &sock) {
     if (mux_query_recv_Muxseq(sock, msg) < 0) {
         return -1;
     }
-    LD6("MSCORE ==> MUXSEQ got query from muxseq: %s label=%s", muxseq_msg_type_info(msg.type), msg.label);
+    LD6("MUXSEQ ==> MSCORE got query from muxseq: %s label=%s", muxseq_msg_type_info(msg.type), msg.label);
     switch (msg.type) {
         case MsgTypeSeqRenderEvents:
             return handle_mscore_msg_SeqRenderEvents(sock, msg);
@@ -381,6 +378,7 @@ void muxseq_seq_emit_started () {
 void muxseq_seq_emit_stopped () {
     muxseqsig_seq_emit_stopped();
 }
+
 
 // synthesizer
 int muxseq_synthesizerFactory() {
