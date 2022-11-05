@@ -49,7 +49,7 @@ int g_mscore_division = 1; // FIX: need to set this at start
 
 
 uint64_t g_utime;
-uint64_t g_utick;
+extern uint64_t g_utick;
 
 void muxseq_stop_threads();
 extern bool g_state_play;
@@ -529,7 +529,7 @@ void Seq::guiStop()
 //      if (!cs)
 //            return;
 
-      muxseq_mscore_tell(MsgTypeSeqStopped, playFrame);
+      muxseq_mscore_tell(MsgTypeSeqStopped, g_utick);
       }
 
 //---------------------------------------------------------

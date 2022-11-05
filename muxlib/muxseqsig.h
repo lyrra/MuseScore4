@@ -8,8 +8,8 @@ class MuxSeqSig : public QObject {
 
     public:
         ~MuxSeqSig();
-        void emit_sigSeqStarted();
-        void emit_sigSeqStopped();
+        void emit_sigSeqStarted(unsigned int playframe);
+        void emit_sigSeqStopped(unsigned int playframe);
         void emit_sigSeqUTick(unsigned int tick);
         void emit_gainChanged(float gain);
     public slots:
@@ -17,20 +17,20 @@ class MuxSeqSig : public QObject {
         void setRelTempo(double tempo);
         void seek(int pos);
         void sigSeqUTickHandle(unsigned int tick);
-        void sigSeqStartedHandle();
-        void sigSeqStoppedHandle();
+        void sigSeqStartedHandle(unsigned int playframe);
+        void sigSeqStoppedHandle(unsigned int playframe);
 
     signals:
-        void sigSeqStarted();
-        void sigSeqStopped();
+        void sigSeqStarted(unsigned int playframe);
+        void sigSeqStopped(unsigned int playframe);
         void sigSeqUTick(unsigned int tick);
         void gainChanged(float); // MasterSynthesizer
 };
 
 MuxSeqSig* muxseqsig_init();
 MuxSeqSig* muxseqsig_get();
-void muxseqsig_seq_emit_started();
-void muxseqsig_seq_emit_stopped();
+void muxseqsig_seq_emit_started(uint64_t playframe);
+void muxseqsig_seq_emit_stopped(uint64_t playframe);
 void muxseqsig_seq_emit_utick(uint64_t tick);
 void muxseqsig_emit_gainChanged (float gain);
 

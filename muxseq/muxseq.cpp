@@ -48,7 +48,7 @@ void mux_send_event_to_gui(struct SparseEvent se);
 void mux_audio_send_event_to_midi(struct MuxaudioMsg msg);
 bool g_state_play = false;
 extern int g_driver_running;
-extern uint64_t g_utick;
+uint64_t g_utick = -1;
 
 static std::vector<std::thread> seqThreads;
 int g_muxseq_audio_process_run = 0;
@@ -425,7 +425,7 @@ int muxseq_handle_muxaudioQueryClient_msg_AudioBufferFeed (Mux::MuxSocket &sock,
     struct MuxaudioBuffer* mabuf = mux_process_bufferStereo();
     zmq_send(sock.socket, mabuf, sizeof(struct MuxaudioBuffer), 0);
 
-    uint64_t utick = msg.payload.i;
+    uint64_t utick = msg.payload.i; // this is the tick that is being played in real-time
     if (g_utick != utick) {
         g_utick = utick;
         muxseq_mscore_tell(MsgTypeSeqUTick, utick);

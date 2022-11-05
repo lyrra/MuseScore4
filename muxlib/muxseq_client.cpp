@@ -118,8 +118,7 @@ unsigned char* eventMap_to_muxbuffer(MuxseqMsgType type, EventMap evm,
 
 int handle_mscore_msg_SeqStarted (Mux::MuxSocket &sock, struct MuxseqMsg msg)
 {
-    LD("handle MsgTypeSeqStarted");
-    mscore->seqStarted();
+    muxseqsig_seq_emit_stopped(msg.payload.i);
     strcpy(msg.label, "mscore");
     if (mux_query_send(sock, &msg, sizeof(struct MuxseqMsg)) == -1) {
         return -1;
@@ -129,16 +128,7 @@ int handle_mscore_msg_SeqStarted (Mux::MuxSocket &sock, struct MuxseqMsg msg)
 
 int handle_mscore_msg_SeqStopped (Mux::MuxSocket &sock, struct MuxseqMsg msg)
 {
-    int playFrame = msg.payload.i;
-    int tck = g_cs->repeatList().utick2tick(g_cs->utime2utick(qreal(playFrame) / qreal(MScore::sampleRate)));
-    //FIX: mscore thread need to update playpos
-    //     emit muxseqsig_seq_emit_stopped ?
-    g_cs->setPlayPos(Fraction::fromTicks(tck));
-    g_cs->update();
-    mscore->seqStopped();
-    if (g_cv) {
-        g_cv->setCursorOn(false);
-    }
+    muxseqsig_seq_emit_stopped(msg.payload.i);
     strcpy(msg.label, "mscore");
     if (mux_query_send(sock, &msg, sizeof(struct MuxseqMsg)) == -1) {
         return -1;
@@ -148,9 +138,7 @@ int handle_mscore_msg_SeqStopped (Mux::MuxSocket &sock, struct MuxseqMsg msg)
 
 int handle_mscore_msg_SeqUTick (Mux::MuxSocket &sock, struct MuxseqMsg msg)
 {
-    uint64_t utick = msg.payload.i;
-    int t = 0;
-    muxseqsig_seq_emit_utick(utick);
+    muxseqsig_seq_emit_utick(msg.payload.i);
     strcpy(msg.label, "mscore");
     if (mux_query_send(sock, &msg, sizeof(struct MuxseqMsg)) == -1) {
         return -1;
@@ -370,15 +358,6 @@ void muxseq_seq_updateOutPortCount(int maxPorts) {
 MuxSeqSig* muxseq_init_muxseqsig() {
     return muxseqsig_init();
 }
-
-void muxseq_seq_emit_started () {
-    muxseqsig_seq_emit_started();
-}
-
-void muxseq_seq_emit_stopped () {
-    muxseqsig_seq_emit_stopped();
-}
-
 
 // synthesizer
 int muxseq_synthesizerFactory() {

@@ -279,20 +279,6 @@ void muxseq_seq_updateOutPortCount(int maxPorts) {
 
 // signals
 
-#if 0
-MuxSeqSig* muxseq_init_muxseqsig() {
-    return muxseqsig_init();
-}
-
-void muxseq_seq_emit_started () {
-    muxseqsig_seq_emit_started();
-}
-
-void muxseq_seq_emit_stopped () {
-    muxseqsig_seq_emit_stopped();
-}
-#endif
-
 // synthesizer
 MasterSynthesizer* muxseq_synthesizerFactory() {
     MasterSynthesizer* ms = new MasterSynthesizer();

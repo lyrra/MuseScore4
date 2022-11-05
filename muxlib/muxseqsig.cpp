@@ -26,12 +26,12 @@ MuxSeqSig::~MuxSeqSig()
 
 // object signal emitters
 
-void MuxSeqSig::emit_sigSeqStarted() {
-    emit sigSeqStarted();
+void MuxSeqSig::emit_sigSeqStarted(unsigned int playframe) {
+    emit sigSeqStarted(playframe);
 }
 
-void MuxSeqSig::emit_sigSeqStopped() {
-    emit sigSeqStopped();
+void MuxSeqSig::emit_sigSeqStopped(unsigned int playframe) {
+    emit sigSeqStopped(playframe);
 }
 
 void MuxSeqSig::emit_sigSeqUTick(unsigned int tick) {
@@ -45,12 +45,12 @@ void MuxSeqSig::emit_gainChanged(float gain) {
 
 // functional signal emitters
 
-void muxseqsig_seq_emit_started () {
-    muxseqsig->emit_sigSeqStarted();
+void muxseqsig_seq_emit_started (uint64_t playframe) {
+    muxseqsig->emit_sigSeqStarted(playframe);
 }
 
-void muxseqsig_seq_emit_stopped () {
-    muxseqsig->emit_sigSeqStopped();
+void muxseqsig_seq_emit_stopped (uint64_t playframe) {
+    muxseqsig->emit_sigSeqStopped(playframe);
 }
 
 void muxseqsig_seq_emit_utick (uint64_t tick) {
@@ -64,12 +64,12 @@ void muxseqsig_emit_gainChanged (float gain) {
 
 // signal handlers
 
-void MuxSeqSig::sigSeqStartedHandle() {
-    mscore->seqStarted();
+void MuxSeqSig::sigSeqStartedHandle(unsigned int playframe) {
+    mscore->seqStarted(playframe);
 }
 
-void MuxSeqSig::sigSeqStoppedHandle() {
-    mscore->seqStopped();
+void MuxSeqSig::sigSeqStoppedHandle(unsigned int playframe) {
+    mscore->seqStopped(playframe);
 }
 
 void MuxSeqSig::sigSeqUTickHandle(unsigned int utick) {

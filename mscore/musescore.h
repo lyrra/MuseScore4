@@ -573,8 +573,8 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       QByteArray exportPdfAsJSON(Score*);
 
    public slots:
-      void seqStarted();
-      void seqStopped();
+      void seqStarted(unsigned int playFrame);
+      void seqStopped(unsigned int playFrame);
       virtual void cmd(QAction* a);
       void dirtyChanged(Score*);
       void setPos(const Fraction& tick);
