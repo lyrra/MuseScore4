@@ -358,6 +358,10 @@ int muxseq_handle_musescore_msg_MsgTypeSeqSeek (Mux::MuxSocket &sock, struct Mux
     muxseq_msg_to_audio(MsgTypeTransportSeek, msg.payload.i);
     return muxseq_handle_musescore_reply_int(sock, msg, 0);
 }
+int muxseq_handle_musescore_msg_MsgTypeSeqPlaying (Mux::MuxSocket &sock, struct MuxseqMsg msg) {
+    LD("MSCORE ==> MUXSEQ msg %s tick=%i", muxseq_msg_type_info(msg.type), msg.payload.i);
+    return muxseq_handle_musescore_reply_int(sock, msg, g_state_play ? 1 : 0);
+}
 
 int muxseq_handle_musescore_msg_MsgTypeMasterSynthInitInstruments(Mux::MuxSocket &sock, void *buf) {
     unsigned char *ptr = (unsigned char*) buf;
@@ -412,6 +416,8 @@ int muxseq_handle_musescore_msg(Mux::MuxSocket &sock, void *buf)
             return muxseq_handle_musescore_msg_MsgTypeSeqSeek(sock, msg);
         case MsgTypeMasterSynthInitInstruments:
             return muxseq_handle_musescore_msg_MsgTypeMasterSynthInitInstruments(sock, buf);
+        case MsgTypeSeqPlaying:
+            return muxseq_handle_musescore_msg_MsgTypeSeqPlaying(sock, msg);
         default:
             LD("ERROR: Unknown message: %s", muxseq_msg_type_info(msg.type));
         break;

@@ -344,7 +344,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       void triggerCmdRealtimeAdvance();
       void cmdRealtimeAdvance();
       void extendCurrentNote();
-      void seqStopped();
+      void seqStopped(unsigned int);
       void tripleClickTimeOut();
 
    public slots:

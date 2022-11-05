@@ -1101,7 +1101,7 @@ static const char* stateName(ViewState s)
 //   seqStopped
 //---------------------------------------------------------
 
-void ScoreView::seqStopped()
+void ScoreView::seqStopped(unsigned int)
       {
       changeState(ViewState::NORMAL);
       }

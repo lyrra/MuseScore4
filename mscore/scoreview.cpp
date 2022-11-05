@@ -208,8 +208,7 @@ ScoreView::ScoreView(QWidget* parent)
       connect(getAction("loop"), SIGNAL(toggled(bool)), SLOT(loopToggled(bool)));
       if (muxseq_seq_alive()) {
             MuxSeqSig* muxseqsig = muxseqsig_get();
-            //FIX: isn't this already connected in musescore.cpp?
-            connect(muxseqsig, SIGNAL(sigSeqStopped()), SLOT(seqStopped()));
+            connect(muxseqsig, SIGNAL(sigSeqStopped(unsigned int)), SLOT(seqStopped(unsigned int)));
             }
       }
 

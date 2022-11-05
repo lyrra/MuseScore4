@@ -118,7 +118,7 @@ unsigned char* eventMap_to_muxbuffer(MuxseqMsgType type, EventMap evm,
 
 int handle_mscore_msg_SeqStarted (Mux::MuxSocket &sock, struct MuxseqMsg msg)
 {
-    muxseqsig_seq_emit_stopped(msg.payload.i);
+    muxseqsig_seq_emit_started(msg.payload.i);
     strcpy(msg.label, "mscore");
     if (mux_query_send(sock, &msg, sizeof(struct MuxseqMsg)) == -1) {
         return -1;

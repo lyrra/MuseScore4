@@ -26,17 +26,16 @@ MuxSeqSig::~MuxSeqSig()
 
 // object signal emitters
 
-void MuxSeqSig::emit_sigSeqStarted(unsigned int playframe) {
-    emit sigSeqStarted(playframe);
+void MuxSeqSig::emit_sigSeqStarted(unsigned int utick) {
+    emit sigSeqStarted(utick);
 }
 
-void MuxSeqSig::emit_sigSeqStopped(unsigned int playframe) {
-    emit sigSeqStopped(playframe);
+void MuxSeqSig::emit_sigSeqStopped(unsigned int utick) {
+    emit sigSeqStopped(utick);
 }
 
-void MuxSeqSig::emit_sigSeqUTick(unsigned int tick) {
-    qDebug("MuxSeqSig::emit_sigSeqUTick tick=%i", tick);
-    emit sigSeqUTick(tick);
+void MuxSeqSig::emit_sigSeqUTick(unsigned int utick) {
+    emit sigSeqUTick(utick);
 }
 
 void MuxSeqSig::emit_gainChanged(float gain) {
@@ -45,17 +44,16 @@ void MuxSeqSig::emit_gainChanged(float gain) {
 
 // functional signal emitters
 
-void muxseqsig_seq_emit_started (uint64_t playframe) {
-    muxseqsig->emit_sigSeqStarted(playframe);
+void muxseqsig_seq_emit_started (uint64_t utick) {
+    muxseqsig->emit_sigSeqStarted(utick);
 }
 
-void muxseqsig_seq_emit_stopped (uint64_t playframe) {
-    muxseqsig->emit_sigSeqStopped(playframe);
+void muxseqsig_seq_emit_stopped (uint64_t utick) {
+    muxseqsig->emit_sigSeqStopped(utick);
 }
 
-void muxseqsig_seq_emit_utick (uint64_t tick) {
-    qDebug("muxseqsig_seq_emit_utick tick=%i", tick);
-    muxseqsig->emit_sigSeqUTick(tick);
+void muxseqsig_seq_emit_utick (uint64_t utick) {
+    muxseqsig->emit_sigSeqUTick(utick);
 }
 
 void muxseqsig_emit_gainChanged (float gain) {
@@ -64,16 +62,15 @@ void muxseqsig_emit_gainChanged (float gain) {
 
 // signal handlers
 
-void MuxSeqSig::sigSeqStartedHandle(unsigned int playframe) {
-    mscore->seqStarted(playframe);
+void MuxSeqSig::sigSeqStartedHandle(unsigned int utick) {
+    mscore->seqStarted(utick);
 }
 
-void MuxSeqSig::sigSeqStoppedHandle(unsigned int playframe) {
-    mscore->seqStopped(playframe);
+void MuxSeqSig::sigSeqStoppedHandle(unsigned int utick) {
+    mscore->seqStopped(utick);
 }
 
 void MuxSeqSig::sigSeqUTickHandle(unsigned int utick) {
-    LD("MSCORE handle utick: %ld", utick);
     mscore->handleUTick(utick);
 }
 

@@ -1970,8 +1970,8 @@ MuseScore::MuseScore()
             preferencesChanged();
       MuxSeqSig* muxseqsig = muxseqsig_init();
       if (muxseq_seq_alive()) {
-            connect(muxseqsig, SIGNAL(sigSeqStarted()), muxseqsig, SLOT(sigSeqStartedHandle()));
-            connect(muxseqsig, SIGNAL(sigSeqStopped()), muxseqsig, SLOT(sigSeqStoppedHandle()));
+            connect(muxseqsig, SIGNAL(sigSeqStarted(unsigned int)), muxseqsig, SLOT(sigSeqStartedHandle(unsigned int)));
+            connect(muxseqsig, SIGNAL(sigSeqStopped(unsigned int)), muxseqsig, SLOT(sigSeqStoppedHandle(unsigned int)));
             connect(muxseqsig, SIGNAL(sigSeqUTick(unsigned int)), muxseqsig, SLOT(sigSeqUTickHandle(unsigned int)));
             }
       else {
