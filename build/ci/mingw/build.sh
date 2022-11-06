@@ -11,6 +11,12 @@ export VERBOSE=1
 mkdir build.debug 2> /dev/null
 cd build.debug || exit 1
 
+echo "-------- guile is at: --------------"
+command -v guile
+echo "------------------------------------"
+
+exit 1
+
 echo "*** PATH: $PATH"
 echo "*** Running cmake ***"
 command -v cmake
