@@ -13,6 +13,7 @@ cd build.debug || exit 1
 
 echo "-------- guile is at: --------------"
 command -v guile
+ldd /mingw64/bin/guile
 echo "------------------------------------"
 
 exit 1
