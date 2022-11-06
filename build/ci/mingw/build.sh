@@ -16,8 +16,6 @@ command -v guile
 ldd /mingw64/bin/guile
 echo "------------------------------------"
 
-exit 1
-
 echo "*** PATH: $PATH"
 echo "*** Running cmake ***"
 command -v cmake
