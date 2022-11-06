@@ -1,6 +1,7 @@
 #!/bin/sh
 
 export PATH=/mingw64/bin:/usr/local/bin:/usr/bin:/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl
+export GUILE_SYSTEM_COMPILED_PATH=/mingw64/lib/guile/3.0/ccache
 
 VERSION=$(cmake -P config.cmake | sed -n -e "s/^.*VERSION  *//p")
 BUILD_NUMBER=""
@@ -8,13 +9,9 @@ BUILD_NUMBER=""
 
 export VERBOSE=1
 
+
 mkdir build.debug 2> /dev/null
 cd build.debug || exit 1
-
-echo "-------- guile is at: --------------"
-command -v guile
-ldd /mingw64/bin/guile
-echo "------------------------------------"
 
 echo "*** PATH: $PATH"
 echo "*** Running cmake ***"
