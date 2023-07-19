@@ -1,21 +1,14 @@
-name: CI_Windows
+name: build_Windows
 
 on:
-  pull_request:
-    branches:
-    - funnel
   schedule:
     - cron: '0 4 */7 * *'
   workflow_dispatch:
     inputs:
       build_mode:
-        description: 'Build mode: devel_build, nightly_build, testing_build, stable_build'
+        description: 'Build mode: devel_build, stable_build'
         required: true
         default: 'devel_build'
-      publish:
-        description: 'Publish to FTP: on - publish'
-        required: false
-        default: 'off'   
 
 jobs:
   build_x64:
@@ -30,6 +23,7 @@ jobs:
         install: >-
           base-devel
           git
+          zip
           gettext-devel
           mingw-w64-x86_64-make
           mingw-w64-x86_64-autotools
@@ -58,31 +52,44 @@ jobs:
           mingw-w64-x86_64-libogg
           mingw-w64-x86_64-lame
           mingw-w64-x86_64-jack2
-    - name: Clone repository
+    - name: Clone repo master
       uses: actions/checkout@v3
       with:
         ref: master
+        path: m
+    - name: Setup
+      shell: msys2 {0}
+      run: |
+        ls -ltr
+        cd m
+        ls -ltr
+        ./build/ci/mingw/setup.sh
     - name: Build
       shell: msys2 {0}
       run: |
-        ./build/ci/tools/build_mingw.sh
+        cd m
+        ./build/ci/mingw/build.sh
     - name: Package
       shell: msys2 {0}
       run: |
-        ./build/ci/tools/package.sh
+        cd m
+        ./build/ci/mingw/package.sh
     - name: Artifact
       uses: actions/upload-artifact@v3
       with:
         name: mingw-w64-musescore3
-        path: musescore3-mingw64.zip
+        path: m/musescore3-mingw64.zip
+    - name: version
+      run: echo "::set-output name=version::$(date +%Y%m%d)"
+      id: version
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
-        release_name: ${{ steps.version.outputs.version }}
+        tag_name: release-mingw-${{ steps.version.outputs.version }}
+        release_name: mingw-${{ steps.version.outputs.version }}
         draft: false
         prerelease: false
     - name: Upload Release Asset
@@ -92,6 +99,23 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-        asset_path: ./musescore3-mingw64.zip
+        asset_path: ./m/musescore3-mingw64.zip
         asset_name: musescore3-mingw64.zip
         asset_content_type: application/zip
+  upload-weekly:
+    permissions:
+      contents: write
+    needs:
+      - build_x64
+    if: github.ref == 'refs/heads/master'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: mingw-w64-musescore3
+      - name: Upload musescore release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          gh release upload weekly-mingw musescore3* --clobber -R ${{ github.repository }}

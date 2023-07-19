@@ -3,8 +3,11 @@
 # For maximum AppImage compatibility, build on the oldest Linux distribution
 # that still receives security updates from its manufacturer.
 
+sudo apt search qt
+sudo apt search libqt
+sudo apt search fluidsynth
+
 echo "Setup Linux build environment"
-trap 'echo Setup failed; exit 1' ERR
 
 df -h .
 
@@ -39,6 +42,7 @@ apt_packages_standard=(
   # Alphabetical order please!
   curl
   libasound2-dev 
+  libfluidsynth-dev
   libfontconfig1-dev
   libfreetype6-dev
   libfreetype6
@@ -50,8 +54,31 @@ apt_packages_standard=(
   libpulse-dev
   libsndfile1-dev
   libzmq3-dev
-  make
+  libqt5qml5
+  libqt5qml5
+  libqt5quick5
+  libqt5quickcontrols2-5
+  libqt5quicktemplates2-5
+  libqt5quickwidgets5
+  libqt5xml5
+  libqt5xmlpatterns5-dev
+  libqt5svg5-dev
+  libqt5opengl5-dev
+  libqt5help5
+  qtquickcontrols2-5-dev
+  qtbase5-dev
+  qtdeclarative5-dev
+  qttools5-dev
   portaudio19-dev
+  guile-3.0
+  guile-3.0-dev
+  guile-3.0-libs
+  guile-bytestructures
+  guile-json
+  guile-sqlite3
+  make
+  cmake
+  gcc
   wget
   )
 
@@ -63,7 +90,7 @@ apt_packages_runtime=(
   libegl1-mesa-dev
   libodbc1
   libpq-dev
-  libssl1.0.0
+  libssl-dev
   libxcomposite-dev
   libxcursor-dev
   libxi-dev
@@ -73,66 +100,33 @@ apt_packages_runtime=(
   libdrm-dev
   )
 
-apt-get update # no package lists in Docker image
-apt-get install -y --no-install-recommends \
+sudo apt-get update # no package lists in Docker image
+sudo apt-get install -y --no-install-recommends \
   "${apt_packages_basic[@]}" \
   "${apt_packages_standard[@]}" \
   "${apt_packages_runtime[@]}"
 
-##########################################################################
-# GET QT
-##########################################################################
+echo "---------- whereis guile 3.0 ------------"
+ls -ltr /usr/bin/guile || true
+ls -ltr /usr/bin/guile-3.0 || true
+command -v guile || true
+echo "------------ dir /usr/lib/x86_64-linux-gnu/guile  ---------------------"
+find /usr/lib/x86_64-linux-gnu/guile || true
+echo "-------- %library-dir / SCM_LIBRARY_DIR ------------------------------"
+guile -c '(begin (display (%library-dir)) (newline))'
+echo "------------------------------------------------------"
+echo "-------- GUILE_SYSTEM_COMPILED_PATH=$GUILE_SYSTEM_COMPILED_PATH ------------------------------"
 
-# Get newer Qt (only used cached version if it is the same)
-qt_version="598"
-qt_dir="Qt/${qt_version}"
-if [[ ! -d "${qt_dir}" ]]; then
-  mkdir -p "${qt_dir}"
-  qt_url="https://s3.amazonaws.com/utils.musescore.org/qt${qt_version}.zip"
-  wget -q --show-progress -O qt5.zip "${qt_url}"
-  7z x -y qt5.zip -o"${qt_dir}"
-  rm -f qt5.zip
-fi
-qt_path="${PWD%/}/${qt_dir}"
-
-echo export PATH="${qt_path}/bin:\${PATH}" >> ${ENV_FILE}
-echo export LD_LIBRARY_PATH="${qt_path}/lib:\${LD_LIBRARY_PATH}" >> ${ENV_FILE}
-echo export QT_PATH="${qt_path}" >> ${ENV_FILE}
-echo export QT_PLUGIN_PATH="${qt_path}/plugins" >> ${ENV_FILE}
-echo export QML2_IMPORT_PATH="${qt_path}/qml" >> ${ENV_FILE}
+#echo export PATH="${qt_path}/bin:\${PATH}" >> ${ENV_FILE}
+#echo export LD_LIBRARY_PATH="${qt_path}/lib:\${LD_LIBRARY_PATH}" >> ${ENV_FILE}
+#echo export QT_PATH="${qt_path}" >> ${ENV_FILE}
+#echo export QT_PLUGIN_PATH="${qt_path}/plugins" >> ${ENV_FILE}
+#echo export QML2_IMPORT_PATH="${qt_path}/qml" >> ${ENV_FILE}
 
 
 ##########################################################################
 # GET TOOLS
 ##########################################################################
-
-# COMPILER
-
-gcc_version="7"
-apt-get install -y --no-install-recommends "g++-${gcc_version}"
-update-alternatives \
-  --install /usr/bin/gcc gcc "/usr/bin/gcc-${gcc_version}" 40 \
-  --slave /usr/bin/g++ g++ "/usr/bin/g++-${gcc_version}"
-
-echo export CC="/usr/bin/gcc-${gcc_version}" >> ${ENV_FILE}
-echo export CXX="/usr/bin/g++-${gcc_version}" >> ${ENV_FILE}
-
-gcc-${gcc_version} --version
-g++-${gcc_version} --version 
-
-# CMAKE
-# Get newer CMake (only used cached version if it is the same)
-cmake_version="3.16.0"
-cmake_dir="cmake/${cmake_version}"
-if [[ ! -d "${cmake_dir}" ]]; then
-  mkdir -p "${cmake_dir}"
-  cmake_url="https://cmake.org/files/v${cmake_version%.*}/cmake-${cmake_version}-Linux-x86_64.tar.gz"
-  wget -q --show-progress --no-check-certificate -O - "${cmake_url}" | tar --strip-components=1 -xz -C "${cmake_dir}"
-fi
-echo export PATH="${PWD%/}/${cmake_dir}/bin:\${PATH}" >> ${ENV_FILE}
-export PATH="${PWD%/}/${cmake_dir}/bin:${PATH}"
-cmake --version
-
 
 ##########################################################################
 # POST INSTALL
