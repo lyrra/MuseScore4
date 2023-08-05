@@ -1388,8 +1388,8 @@ void Score::addElement(EngravingItem* element)
     EngravingItem* parent = element->parentItem();
     element->triggerLayout();
 
-//      LOGD("Score(%p) EngravingItem(%p)(%s) parent %p(%s)",
-//         this, element, element->typeName(), parent, parent ? parent->typeName() : "");
+      LOGD("Score(%p) EngravingItem(%p)(%s) parent %p(%s)",
+         this, element, element->typeName(), parent, parent ? parent->typeName() : "");
 
     ElementType et = element->type();
     if (et == ElementType::MEASURE
@@ -1404,6 +1404,7 @@ void Score::addElement(EngravingItem* element)
     }
 
     if (parent) {
+        LOGD("parent(%p) element(%p)", parent, element);
         parent->add(element);
     }
 

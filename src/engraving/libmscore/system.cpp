@@ -420,7 +420,7 @@ void System::add(EngravingItem* el)
     if (!el) {
         return;
     }
-// LOGD("%p System::add: %p %s", this, el, el->typeName());
+ LOGD("%p System::add: %p %s", this, el, el->typeName());
 
     el->setParent(this);
 
@@ -431,16 +431,13 @@ void System::add(EngravingItem* el)
         toInstrumentName(el)->setSysStaff(m_staves[el->staffIdx()]);
         break;
 
-    case ElementType::BEAM:
-        score()->addElement(el);
-        break;
-
     case ElementType::BRACKET: {
         Bracket* b   = toBracket(el);
         m_brackets.push_back(b);
     }
     break;
 
+    case ElementType::BEAM:
     case ElementType::MEASURE:
     case ElementType::HBOX:
     case ElementType::VBOX:
