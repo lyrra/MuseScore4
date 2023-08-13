@@ -627,7 +627,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       ~MuseScore();
       bool checkDirty(MasterScore*);
       IPlayPanel* playPanelInterface() const;
-    AlbumManager* getAlbumManager() const { return albumManager; }
+      AlbumManager* getAlbumManager() const { return albumManager; }
       PlayPanel* getPlayPanel() const { return playPanel; }
       Mixer* getMixer() const { return mixer; }
       QMenu* genCreateMenu(QWidget* parent = 0);
@@ -659,7 +659,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       QProgressBar* showProgressBar();
       void hideProgressBar();
       void addRecentScore(Score*);
-    void addRecentAlbum(Album*);
+      void addRecentAlbum(Album*);
       QFileDialog* saveAsDialog();
       QFileDialog* saveCopyDialog();
       void showStyleDialog(Element* e = nullptr);
