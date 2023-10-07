@@ -186,6 +186,9 @@ void AudioModule::onInit(const framework::IApplication::RunMode& mode)
 
     **/
 
+    LOGI("-- onInit self=%lx --", this);
+
+
     // Init configuration
     m_configuration->init();
     m_registerAudioPluginsScenario->init();
@@ -297,3 +300,4 @@ void AudioModule::setupAudioWorker(const IAudioDriver::Spec& activeSpec)
 
     m_audioWorker->run(workerSetup, workerLoopBody);
 }
+
