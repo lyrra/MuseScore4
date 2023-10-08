@@ -19,6 +19,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#include "framework/audio/midiqueue.h"
 #include "linuxaudiodriver.h"
 #include "../alsa/alsaaudiodriver.h" //FIX: relative path, set path in CMakeLists
 #if JACK_AUDIO
@@ -41,7 +42,7 @@ LinuxAudioDriver::~LinuxAudioDriver()
 
 void LinuxAudioDriver::init()
 {
-    LOGI(" -- init --");
+    LOGI(" -- init, this: %lx", this);
     m_devicesListener.startWithCallback([this]() {
         return availableOutputDevices();
     });
@@ -104,6 +105,7 @@ bool LinuxAudioDriver::makeDevice(const AudioDeviceID& deviceId)
         LOGE() << "Unknown device name: " << deviceId;
         return false;
     }
+    LOGI(" -- driver: %lx", m_current_audioDriverState.get());
     return true;
 }
 
@@ -212,6 +214,29 @@ std::vector<unsigned int> LinuxAudioDriver::availableOutputDeviceBufferSizes() c
     std::sort(result.begin(), result.end());
 
     return result;
+}
+
+#if 0
+std::shared_ptr<ThreadSafeQueue<const Event>&> LinuxAudioDriver::getMidiQueue() const
+{
+    LOGI(" -- getAudioDriverState() m_current_audioDriverState=%lx", m_current_audioDriverState.get());
+    if (m_current_audioDriverState) {
+        LOGI(" -- driverHandle: %lx", m_current_audioDriverState->getAudioDriverQueue());
+        return m_current_audioDriverState->getAudioDriverQueue();
+    } else {
+        LOGW("Cant get audiodriver-handle, driver not open");
+        return nullptr;
+    }
+}
+#endif
+ 
+bool LinuxAudioDriver::pushMidiEvent(mu::midi::Event& e) {
+    if (m_current_audioDriverState) {
+        LOGI(" -- push midi-event to audiodriver");
+        m_current_audioDriverState->pushMidiEvent(e);
+        return true;
+    }
+    return false;
 }
 
 void LinuxAudioDriver::resume()

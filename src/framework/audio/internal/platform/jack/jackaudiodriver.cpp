@@ -20,6 +20,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "jackaudiodriver.h"
+#include <jack/midiport.h>
+#include "framework/midi/midierrors.h"
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -37,8 +39,100 @@
 #define JACK_DEFAULT_IDENTIFY_AS "MuseScore"
 
 using namespace mu::audio;
+using namespace mu::midi;
 
 namespace mu::audio {
+//
+    
+// FIX: is opcode an compatible MIDI enumeration?
+
+mu::Ret sendEvent_noteonoff (void *pb, int framePos, const mu::midi::Event& e) {
+    unsigned char* p = jack_midi_event_reserve(pb, framePos, 3);
+    if (p == 0) {
+        qDebug("JackMidi: buffer overflow, event lost");
+        return mu::Ret(false);
+    }
+    if (e.opcode() == mu::midi::Event::Opcode::NoteOn) {
+        p[0] = /* e.opcode() */ 0x90 | e.channel();
+    } else {
+        p[0] = /* e.opcode() */ 0x80 | e.channel();
+    }
+    p[1] = e.note();
+    p[2] = e.velocity();
+    return mu::Ret(true);
+}
+
+mu::Ret sendEvent_control (void *pb, int framePos, const Event& e) {
+    unsigned char* p = jack_midi_event_reserve(pb, framePos, 3);
+    if (p == 0) {
+        qDebug("JackMidi: buffer overflow, event lost");
+        return mu::Ret(false);
+    }
+    p[0] = /* e.opcode() */ 0xb0 | e.channel();
+    p[1] = e.index();
+    p[2] = e.data();
+    return mu::Ret(true);
+}
+
+mu::Ret sendEvent_program (void *pb, int framePos, const Event& e) {
+    unsigned char* p = jack_midi_event_reserve(pb, framePos, 2);
+    if (p == 0) {
+        qDebug("JackMidiOutput: buffer overflow, event lost");
+        return mu::Ret(false);
+    }
+    p[0] = /* e.opcode() */ 0xc0 | e.channel();
+    p[1] = e.program();
+    return mu::Ret(true);
+}
+
+mu::Ret sendEvent_pitchbend (void *pb, int framePos, const Event& e) {
+    unsigned char* p = jack_midi_event_reserve(pb, framePos, 3);
+    if (p == 0) {
+        qDebug("JackMidiOutput: buffer overflow, event lost");
+        return mu::Ret(false);
+    }
+    p[0] = /* e.opcode() */ 0xe0 | e.channel();
+    p[1] = e.data(); // dataA
+    p[2] = e.velocity(); // dataB
+    return mu::Ret(true);
+}
+
+mu::Ret sendEvent(const Event& e, void *pb)
+{
+    int framePos = 0;
+    LOGI() << "---- JACK-midi output sendEvent ----" << e.to_string();
+    // LOGI() << e.to_string();
+
+    //if (!isConnected()) {
+    //    LOGI() << "---- JACK-midi output sendEvent SORRY, not connected";
+    //    return make_ret(Err::MidiNotConnected);
+    //}
+
+    switch (e.opcode()) {
+    // FIX: Event::Opcode::POLYAFTER ?
+    case Event::Opcode::NoteOn:
+        LOGI() << "---- JACK-midi output sendEvent NoteOn";
+        return sendEvent_noteonoff(pb, framePos, e);
+    case Event::Opcode::NoteOff:
+        LOGI() << "---- JACK-midi output sendEvent NoteOff";
+        return sendEvent_noteonoff(pb, framePos, e);
+    case Event::Opcode::ControlChange:
+        LOGI() << "---- JACK-midi output sendEvent ControlChange";
+        return sendEvent_control(pb, framePos, e);
+    case Event::Opcode::ProgramChange:
+        LOGI() << "---- JACK-midi output sendEvent ProgramChange";
+        return sendEvent_control(pb, framePos, e);
+    case Event::Opcode::PitchBend:
+        LOGI() << "---- JACK-midi output sendEvent PitchBend";
+        return sendEvent_pitchbend(pb, framePos, e);
+    default:
+        NOT_SUPPORTED << "event: " << e.to_string();
+        return make_ret(mu::midi::Err::MidiNotSupported);
+    }
+
+    return Ret(true);
+}
+
 static int jack_process_callback(jack_nframes_t nframes, void* args)
 {
     JackDriverState* state = static_cast<JackDriverState*>(args);
@@ -53,6 +147,34 @@ static int jack_process_callback(jack_nframes_t nframes, void* args)
         *l++ = *sp++;
         *r++ = *sp++;
     }
+
+    if (!state->m_midiOutputPorts.empty()) {
+        jack_port_t* port = state->m_midiOutputPorts.front();
+        if (port) {
+            int segmentSize = jack_get_buffer_size(static_cast<jack_client_t*>(state->m_jackDeviceHandle));
+            void* pb = jack_port_get_buffer(port, segmentSize);
+            // handle midi
+            mu::midi::Event e;
+            while (1) {
+                if (state->m_midiQueue.pop(e)) {
+                    LOGI() << "Consumed: " << e.to_string();
+                    sendEvent(e, pb);
+                } else {
+                    break;
+                }
+            }
+        }
+    } else {
+        mu::midi::Event e;
+        while (1) {
+            if (state->m_midiQueue.pop(e)) {
+                LOGI() << "no jack-midi-outport, consumed unused Event: " << e.to_string();
+            } else {
+                break;
+            }
+        }
+    }
+
     return 0;
 }
 
@@ -60,6 +182,10 @@ static void jack_cleanup_callback(void*)
 {
 }
 }
+
+/******** midi ********/
+
+/**********************/
 
 JackDriverState::JackDriverState()
 {
@@ -103,6 +229,7 @@ int jack_srate_callback(jack_nframes_t newSampleRate, void* args)
 
 bool JackDriverState::open(const IAudioDriver::Spec& spec, IAudioDriver::Spec* activeSpec)
 {
+    LOGI("JackDriverState::open, this: %lx", this);
     if (isOpened()) {
         LOGW() << "Jack is already opened";
         return true;
@@ -119,6 +246,7 @@ bool JackDriverState::open(const IAudioDriver::Spec& spec, IAudioDriver::Spec* a
         return false;
     }
     m_jackDeviceHandle = handle;
+    LOGI("JackDriverState::open, handle: %lx", handle);
 
     unsigned int jackSamplerate = jack_get_sample_rate(handle);
     m_spec.sampleRate = jackSamplerate;
@@ -153,6 +281,14 @@ bool JackDriverState::open(const IAudioDriver::Spec& spec, IAudioDriver::Spec* a
         return false;
     }
 
+    // midi
+    jack_options_t options = (jack_options_t)0;
+    int portFlag = JackPortIsOutput;
+    const char* portType = JACK_DEFAULT_MIDI_TYPE;
+    jack_port_t* port = jack_port_register(handle, "Musescore", portType, portFlag, 0);
+    m_midiOutputPorts.push_back(port);
+    LOGI("registered jack-midi output-port: %lx", port);
+
     return true;
 }
 
@@ -168,3 +304,15 @@ bool JackDriverState::isOpened() const
 {
     return m_jackDeviceHandle != nullptr;
 }
+#if 0
+std::shared_ptr<ThreadSafeQueue<const Event>&> JackDriverState::getAudioDriverQueue() const
+{
+    return std::shared_ptr<ThreadSafeQueue<const Event>&>(m_midiQueue);
+}
+#endif
+
+bool JackDriverState::pushMidiEvent(mu::midi::Event& e) {
+    m_midiQueue.push(e);
+    return true;
+}
+

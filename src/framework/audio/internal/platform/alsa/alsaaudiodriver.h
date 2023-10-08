@@ -36,8 +36,12 @@ public:
     bool open(const IAudioDriver::Spec& spec, IAudioDriver::Spec* activeSpec) override;
     void close() override;
     bool isOpened() const override;
+    //ThreadSafeQueue<const Event>& getAudioDriverQueue() const override;
+    //std::shared_ptr<ThreadSafeQueue<const Event>&> getAudioDriverQueue() const override;
+    bool pushMidiEvent(mu::midi::Event& e) override;
     std::string deviceName() const;
     void deviceName(const std::string newDeviceName);
+
 
     void* m_alsaDeviceHandle = nullptr;
 

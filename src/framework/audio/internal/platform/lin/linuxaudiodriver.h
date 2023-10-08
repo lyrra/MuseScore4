@@ -56,6 +56,8 @@ public:
     async::Notification outputDeviceBufferSizeChanged() const override;
 
     std::vector<unsigned int> availableOutputDeviceBufferSizes() const override;
+    //std::shared_ptr<ThreadSafeQueue<const Event>&> getMidiQueue() const override;
+    bool pushMidiEvent(mu::midi::Event& e) override;
 
     void resume() override;
     void suspend() override;

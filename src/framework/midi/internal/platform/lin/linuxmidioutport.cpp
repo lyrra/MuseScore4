@@ -19,7 +19,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+//#include <thread>
+//#include <queue>
+//#include <mutex>
 #include "linuxmidioutport.h"
+#include "framework/audio/audiomodule.h"
 
 #include "midierrors.h"
 #include "translation.h"
@@ -28,13 +32,19 @@
 
 using namespace mu::midi;
 
-void LinuxMidiOutPort::init()
+void LinuxMidiOutPort::init(std::shared_ptr<mu::audio::AudioModule> am)
 {
-    LOGI("---- linux init ----");
+    LOGI("---- init ----");
     //m_alsa = std::make_shared<Alsa>();
+    std::shared_ptr<mu::audio::IAudioDriver> audioDriver;
+
+#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
+    m_audioModule = am;
+#endif
 
 #if JACK_AUDIO
     m_midiOutPortJack = std::make_unique<JackMidiOutPort>();
+    m_midiOutPortJack->preamble(audioDriver);
     m_midiOutPortJack->init();
 #endif
     m_midiOutPortAlsa = std::make_unique<AlsaMidiOutPort>();
@@ -167,6 +177,7 @@ bool LinuxMidiOutPort::supportsMIDI20Output() const
     return false;
 }
 
+
 mu::Ret LinuxMidiOutPort::sendEvent(const Event& e)
 {
     // LOGI() << e.to_string();
@@ -188,7 +199,13 @@ mu::Ret LinuxMidiOutPort::sendEvent(const Event& e)
         return Ret(true);
     }
 
+    LOGI() << "---- linux sendEvent to driver ----" << e.to_string();
+#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
+    Event e2(e);
+    return Ret(m_audioModule->getDriver()->pushMidiEvent(e2));
+#else // alsa
     return m_midiOutPortCurrent->sendEvent(e);
+#endif
 }
 
 bool LinuxMidiOutPort::deviceExists(const MidiDeviceID& deviceId) const

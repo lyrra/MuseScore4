@@ -5,7 +5,7 @@
  * MuseScore
  * Music Composition & Notation
  *
- * Copyright (C) 2021 MuseScore BVBA and others
+ * Copyright (C) 2023 MuseScore BVBA and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -25,6 +25,8 @@
 #include <memory>
 
 #include "async/asyncable.h"
+//#include "framework/audio/midiqueue.h"
+#include "framework/audio/audiomodule.h"
 #include "midi/imidioutport.h"
 #include "internal/midideviceslistener.h"
 
@@ -41,7 +43,8 @@ public:
     LinuxMidiOutPort() = default;
     ~LinuxMidiOutPort() = default;
 
-    void init();
+    void init(mu::audio::AudioModule *am);
+    void init(std::shared_ptr<mu::audio::AudioModule> am);
     void deinit();
 
     std::vector<MidiDevice> availableDevices() const override;
@@ -69,9 +72,9 @@ private:
 
     mutable std::mutex m_devicesMutex;
 
-    //
-    MidiPortState* m_midiOutPortCurrent;
+    std::shared_ptr<mu::audio::AudioModule> m_audioModule;
 
+    MidiPortState* m_midiOutPortCurrent;
 #if defined(JACK_AUDIO)
     std::unique_ptr<JackMidiOutPort> m_midiOutPortJack;
 #endif

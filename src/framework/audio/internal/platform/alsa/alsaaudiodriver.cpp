@@ -190,3 +190,14 @@ bool AlsaDriverState::isOpened() const
 {
     return m_alsaDeviceHandle != nullptr;
 }
+
+#if 0
+std::shared_ptr<ThreadSafeQueue<const Event>&> AlsaDriverState::getAudioDriverQueue() const
+{
+    return std::shared_ptr<ThreadSafeQueue<const Event>&>(m_midiQueue);
+}
+#endif
+
+bool AlsaDriverState::pushMidiEvent(mu::midi::Event& e) {
+    return true;
+}
