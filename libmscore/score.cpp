@@ -5502,6 +5502,9 @@ QString Score::title() const
 QString Score::realTitle() const
 {
       MeasureBase* measure = _measures.first();
+      if (!measure || measure->el().empty()) {
+            return QString();
+            }
       Element* first = measure->el().at(0);
       if (!first->isText()) {
             return QString();
