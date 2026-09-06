@@ -1302,6 +1302,7 @@ static QStringList findWorkspaceFiles()
       QStringList path;
       path << mscoreGlobalShare + "workspaces";
       path << dataPath + "/workspaces";
+      path << "workspaces";
 
       QStringList extensionsDir = Extension::getDirectoriesByType(Extension::workspacesDir);
       path.append(extensionsDir);
@@ -1312,6 +1313,7 @@ static QStringList findWorkspaceFiles()
       QStringList workspaces;
 
       for (QString& s : path) {
+            qDebug("-- workspace path: %s\n", qPrintable(s));
             QDir dir(s);
             QStringList pl = dir.entryList(nameFilters, QDir::Files, QDir::Name);
 
