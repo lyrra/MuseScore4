@@ -156,7 +156,7 @@ void Score::writeMovement(XmlWriter& xml, bool selectionOnly, bool isTopMovement
       xml.setCurTrack(-1);
 
       if (isTopMovement)                    // only top score
-            style().save(xml, true);       // save only differences to buildin style
+            style().save(xml, true, hasAlbumStyledText());       // save only differences to buildin style
 
       xml.tag("showInvisible",   _showInvisible);
       xml.tag("showUnprintable", _showUnprintable);

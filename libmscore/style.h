@@ -1573,7 +1573,7 @@ class MStyle {
       bool load(QFile* qf, bool ign = false);
       void load(XmlReader& e, int mscVersion);
       void applyNewDefaults(const MStyle& other, const int defaultsVersion);
-      void save(XmlWriter& xml, bool optimize);
+      void save(XmlWriter& xml, bool optimize, bool includeAlbumStyles = true);
       bool readProperties(XmlReader&);
       bool readProperties400(XmlReader& e, int mscVersion);
       //bool readProperties410(XmlReader& e, int mscVersion);

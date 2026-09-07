@@ -1084,6 +1084,7 @@ class Score : public QObject, public ScoreElement {
 
       void scanElements(void* data, void (*func)(void*, Element*), bool all=true);
       void scanElementsInRange(void* data, void (*func)(void*, Element*), bool all = true);
+      bool hasAlbumStyledText() const;
       int fileDivision() const { return _fileDivision; } ///< division of current loading *.msc file
       void splitStaff(int staffIdx, int splitPoint);
       QString tmpName() const           { return _tmpName;      }

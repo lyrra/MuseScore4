@@ -4437,13 +4437,15 @@ void MStyle::applyNewDefaults(const MStyle& other, const int defaultsVersion)
 //   save
 //---------------------------------------------------------
 
-void MStyle::save(XmlWriter& xml, bool optimize)
+void MStyle::save(XmlWriter& xml, bool optimize, bool includeAlbumStyles)
       {
       xml.stag("Style");
 
       for (const StyleType& st : styleTypes) {
             Sid idx = st.styleIdx();
             if (idx == Sid::spatium)       // special handling for spatium
+                  continue;
+            if (!includeAlbumStyles && !strncmp(st.name(), "album", 5))
                   continue;
             if (optimize && isDefault(idx))
                   continue;

@@ -1891,6 +1891,37 @@ void Score::scanElements(void* data, void (*func)(void*, Element*), bool all)
       }
 
 //---------------------------------------------------------
+//   hasAlbumStyledText
+///    True if this score contains a Text element using one of the album
+///    front-cover/contents styles, i.e. an album front cover or contents
+///    page has actually been generated for it. Used to decide whether the
+///    album-related style properties should be written when saving.
+//---------------------------------------------------------
+
+bool Score::hasAlbumStyledText() const
+      {
+      for (MeasureBase* mb = first(); mb; mb = mb->next()) {
+            if (!mb->isVBox())
+                  continue;
+            for (Element* e : mb->el()) {
+                  if (!e || !e->isText())
+                        continue;
+                  switch (toText(e)->tid()) {
+                        case Tid::ALBUM_FRONT_TITLE:
+                        case Tid::ALBUM_FRONT_COMPOSER:
+                        case Tid::ALBUM_FRONT_LYRICIST:
+                        case Tid::ALBUM_CONTENTS_TITLE:
+                        case Tid::ALBUM_CONTENTS_TEXT:
+                              return true;
+                        default:
+                              break;
+                        }
+                  }
+            }
+      return false;
+      }
+
+//---------------------------------------------------------
 //   scanElementsInRange
 //---------------------------------------------------------
 
