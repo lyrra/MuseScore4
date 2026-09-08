@@ -40,6 +40,8 @@ class TestAlbums : public QObject, public MTest
     void albumItemEnable();
     void albumItemBreaks();
     void albumBreaks();
+    void realTitleNoCrash();
+    void albumScoreTitlesNoCrash();
 
 private slots:
     void initTestCase();
@@ -49,6 +51,8 @@ private slots:
     void albumItemEnableTest() { albumItemEnable(); }
     void albumItemBreaksTest() { albumItemBreaks(); }
     void albumBreaksTest() { albumBreaks(); }
+    void realTitleNoCrashTest() { realTitleNoCrash(); }
+    void albumScoreTitlesNoCrashTest() { albumScoreTitlesNoCrash(); }
 };
 
 #define private public
@@ -192,6 +196,59 @@ void TestAlbums::albumBreaks()
     QVERIFY(!bScore->lastMeasure()->pageBreak());
     QVERIFY(!aScore->lastMeasure()->sectionBreak());
     QVERIFY(!bScore->lastMeasure()->sectionBreak());
+}
+
+//---------------------------------------------------------
+//   realTitleNoCrash
+///     regression test for a bugfix: Score::realTitle() used to index into
+///     measure->el() unconditionally, which crashed (std::out_of_range /
+///     null deref) for a score with no measures, or a first measure/frame
+///     with no elements (i.e. no title text box).
+//---------------------------------------------------------
+
+void TestAlbums::realTitleNoCrash()
+{
+    MasterScore* emptyScore = new MasterScore();
+    QVERIFY(emptyScore->realTitle().isEmpty());
+    delete emptyScore;
+
+    MasterScore* aScore = readScore(DIR + "AlbumItemTest.mscx");
+    MeasureBase* firstMeasure = aScore->measures()->first();
+    QVERIFY(firstMeasure);
+    QVERIFY(!aScore->realTitle().isEmpty()); // sanity check: title frame is present before clearing
+
+    firstMeasure->clearElements();
+    QVERIFY(aScore->realTitle().isEmpty());
+
+    delete aScore;
+}
+
+//---------------------------------------------------------
+//   albumScoreTitlesNoCrash
+///     regression test for the real-world trigger: creating an album and
+///     adding two scores, where the second score's title frame has been
+///     removed. Album::scoreTitles() calls Score::realTitle() for every
+///     item, so this used to crash the whole application.
+//---------------------------------------------------------
+
+void TestAlbums::albumScoreTitlesNoCrash()
+{
+    Album myAlbum;
+    Album::activeAlbum = &myAlbum;
+    MasterScore* aScore = readScore(DIR + "AlbumItemTest.mscx");
+    MasterScore* bScore = readScore(DIR + "AlbumItemTest.mscx");
+
+    MeasureBase* firstMeasure = bScore->measures()->first();
+    QVERIFY(firstMeasure);
+    firstMeasure->clearElements(); // bScore now has no title text box
+
+    myAlbum.addScore(aScore, true);
+    myAlbum.addScore(bScore, true); // same parts as aScore, so no incompatible-parts prompt
+
+    QStringList titles = myAlbum.scoreTitles(); // must not crash
+    QCOMPARE(titles.size(), 2);
+    QVERIFY(!titles.at(0).isEmpty());
+    QCOMPARE(titles.at(1), bScore->title()); // realTitle() was empty, so falls back to score title
 }
 
 QTEST_MAIN(TestAlbums)
