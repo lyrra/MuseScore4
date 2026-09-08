@@ -116,6 +116,7 @@ public:
     static bool scoreInActiveAlbum(MasterScore* score);
 
     Album();
+    ~Album() override;
 
     AlbumItem* addScore(MasterScore* score, bool enabled = true);
     void removeScore(MasterScore* score);

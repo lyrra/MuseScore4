@@ -422,6 +422,19 @@ Album::Album()
 }
 
 //---------------------------------------------------------
+//   ~Album
+///     Clears activeAlbum if it points to this Album, so that later score
+///     layouts don't dereference a dangling pointer (see doLayoutRange()).
+//---------------------------------------------------------
+
+Album::~Album()
+{
+    if (activeAlbum == this) {
+        activeAlbum = nullptr;
+    }
+}
+
+//---------------------------------------------------------
 //   createItem
 //---------------------------------------------------------
 

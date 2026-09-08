@@ -42,6 +42,7 @@ class TestAlbums : public QObject, public MTest
     void albumBreaks();
     void realTitleNoCrash();
     void albumScoreTitlesNoCrash();
+    void activeAlbumClearedOnDestruction();
 
 private slots:
     void initTestCase();
@@ -53,6 +54,7 @@ private slots:
     void albumBreaksTest() { albumBreaks(); }
     void realTitleNoCrashTest() { realTitleNoCrash(); }
     void albumScoreTitlesNoCrashTest() { albumScoreTitlesNoCrash(); }
+    void activeAlbumClearedOnDestructionTest() { activeAlbumClearedOnDestruction(); }
 };
 
 #define private public
@@ -249,6 +251,30 @@ void TestAlbums::albumScoreTitlesNoCrash()
     QCOMPARE(titles.size(), 2);
     QVERIFY(!titles.at(0).isEmpty());
     QCOMPARE(titles.at(1), bScore->title()); // realTitle() was empty, so falls back to score title
+}
+
+//---------------------------------------------------------
+//   activeAlbumClearedOnDestruction
+///     regression test: Album::activeAlbum used to stay set after the Album
+///     it pointed to was destroyed. Score::doLayoutRange() unconditionally
+///     dereferences Album::activeAlbum for every master-score layout, so a
+///     dangling activeAlbum crashed on the very next score laid out
+///     (found via ASAN: stack-buffer-overflow in Album::getCombinedScore()).
+//---------------------------------------------------------
+
+void TestAlbums::activeAlbumClearedOnDestruction()
+{
+    {
+        Album myAlbum;
+        Album::activeAlbum = &myAlbum;
+        QVERIFY(Album::activeAlbum == &myAlbum);
+    }
+    // myAlbum is now destroyed; activeAlbum must not be left dangling
+    QVERIFY(Album::activeAlbum == nullptr);
+
+    // laying out an unrelated score must not dereference a stale activeAlbum
+    MasterScore* aScore = readScore(DIR + "AlbumItemTest.mscx");
+    delete aScore;
 }
 
 QTEST_MAIN(TestAlbums)
