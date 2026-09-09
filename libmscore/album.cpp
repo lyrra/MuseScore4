@@ -463,6 +463,13 @@ AlbumItem* Album::addScore(MasterScore* score, bool enabled)
         return nullptr;
     }
 
+    for (auto& item : m_albumItems) {
+        if (item->score() == score) {
+            qDebug() << "This score is already part of the album...";
+            return nullptr;
+        }
+    }
+
     if (checkPartCompatibility() && !checkPartCompatibility(score)) { // check part compatibility
         QMessageBox msgBox;
         msgBox.setWindowTitle(QObject::tr("Incompatible parts"));

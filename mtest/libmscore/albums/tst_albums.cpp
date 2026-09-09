@@ -43,6 +43,7 @@ class TestAlbums : public QObject, public MTest
     void realTitleNoCrash();
     void albumScoreTitlesNoCrash();
     void activeAlbumClearedOnDestruction();
+    void addScoreTwiceRejected();
 
 private slots:
     void initTestCase();
@@ -55,6 +56,7 @@ private slots:
     void realTitleNoCrashTest() { realTitleNoCrash(); }
     void albumScoreTitlesNoCrashTest() { albumScoreTitlesNoCrash(); }
     void activeAlbumClearedOnDestructionTest() { activeAlbumClearedOnDestruction(); }
+    void addScoreTwiceRejectedTest() { addScoreTwiceRejected(); }
 };
 
 #define private public
@@ -275,6 +277,41 @@ void TestAlbums::activeAlbumClearedOnDestruction()
     // laying out an unrelated score must not dereference a stale activeAlbum
     MasterScore* aScore = readScore(DIR + "AlbumItemTest.mscx");
     delete aScore;
+}
+
+//---------------------------------------------------------
+//   addScoreTwiceRejected
+///     regression test: MuseScore::openScoreForAlbum() returns the existing
+///     AlbumItem's MasterScore* when the "Add score" button is used again
+///     on the same file already in the album. Album::addScore() used to
+///     accept it anyway, wrapping the same MasterScore in a second
+///     AlbumItem and adding it as a second movement to m_combinedScore,
+///     which crashed layout with "ASSERT: curSystem != nextSystem".
+//---------------------------------------------------------
+
+void TestAlbums::addScoreTwiceRejected()
+{
+    Album myAlbum;
+    Album::activeAlbum = &myAlbum;
+    MasterScore* aScore = readScore(DIR + "AlbumItemTest.mscx");
+    MasterScore* bScore = readScore(DIR + "AlbumItemTest.mscx");
+
+    QVERIFY(myAlbum.addScore(aScore, true));
+    QVERIFY(myAlbum.addScore(bScore, true));
+    QCOMPARE(myAlbum.albumItems().size(), size_t(2));
+
+    myAlbum.createCombinedScore(); // enters "Album mode", like the real addClicked() flow
+    int movementCount = myAlbum.getCombinedScore()->movements()->size();
+
+    // simulate clicking "Add score" again on a file already in the album:
+    // openScoreForAlbum() would hand back aScore itself, not a fresh load
+    AlbumItem* duplicate = myAlbum.addScore(aScore, true);
+    QVERIFY(!duplicate);
+    QCOMPARE(myAlbum.albumItems().size(), size_t(2));
+    QCOMPARE(int(myAlbum.getCombinedScore()->movements()->size()), movementCount);
+
+    // must not have corrupted the combined score's layout
+    myAlbum.getCombinedScore()->doLayout();
 }
 
 QTEST_MAIN(TestAlbums)
