@@ -131,7 +131,7 @@
            <string notr="true"/>
           </property>
           <property name="icon">
-           <iconset resource="../../../../../../../tmp/QtCreator-FLYAKj/qtc-cmake-rKuWjOTJ/mscore/musescore_qmlcache.qrc">
+           <iconset resource="musescore.qrc">
             <normaloff>:/data/icons/arrow_up.svg</normaloff>:/data/icons/arrow_up.svg</iconset>
           </property>
          </widget>
@@ -151,7 +151,7 @@
            <string notr="true"/>
           </property>
           <property name="icon">
-           <iconset resource="../../../../../../../tmp/QtCreator-FLYAKj/qtc-cmake-rKuWjOTJ/mscore/musescore_qmlcache.qrc">
+           <iconset resource="musescore.qrc">
             <normaloff>:/data/icons/arrow_down.svg</normaloff>:/data/icons/arrow_down.svg</iconset>
           </property>
          </widget>
